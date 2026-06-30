@@ -14,7 +14,11 @@ const DEFAULT_SETTINGS: AppSettings = {
   pollIntervalMs: 5000,
   defaultRemote: 'origin',
   editorCommand: '',
-  logMaxCount: 500
+  logMaxCount: 500,
+  aiProvider: 'local',
+  aiBaseUrl: 'http://localhost:1234',
+  aiApiKey: '',
+  aiModel: ''
 }
 
 export async function loadSettings(): Promise<AppSettings> {
@@ -29,7 +33,11 @@ export async function loadSettings(): Promise<AppSettings> {
       pollIntervalMs: parsed.pollIntervalMs ?? DEFAULT_SETTINGS.pollIntervalMs,
       defaultRemote: parsed.defaultRemote ?? DEFAULT_SETTINGS.defaultRemote,
       editorCommand: parsed.editorCommand ?? '',
-      logMaxCount: parsed.logMaxCount ?? DEFAULT_SETTINGS.logMaxCount
+      logMaxCount: parsed.logMaxCount ?? DEFAULT_SETTINGS.logMaxCount,
+      aiProvider: parsed.aiProvider === 'api' ? 'api' : 'local',
+      aiBaseUrl: parsed.aiBaseUrl ?? DEFAULT_SETTINGS.aiBaseUrl,
+      aiApiKey: parsed.aiApiKey ?? '',
+      aiModel: parsed.aiModel ?? ''
     }
   } catch {
     return { ...DEFAULT_SETTINGS }

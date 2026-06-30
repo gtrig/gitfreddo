@@ -36,8 +36,20 @@ npm run dev
 - Stash management
 - Remotes with fetch, pull, push
 - Merge conflict panel
+- AI assist for commit and stash messages (local LLM or cloud API)
 
 Settings are stored in `~/.config/gitfredo/settings.json`.
+
+## AI assist
+
+Configure under **Settings → AI assist**:
+
+- **Local LLM** — OpenAI-compatible server (e.g. LM Studio at `http://localhost:1234`, Ollama at `http://localhost:11434`)
+- **Cloud API** — Any OpenAI-compatible endpoint with an API key
+
+When configured, text fields show a star button to generate content from staged or working-tree diffs. Use **Ctrl+Shift+Space** while focused to trigger fill.
+
+API keys are stored locally in `~/.config/gitfredo/settings.json`.
 
 ## Architecture
 

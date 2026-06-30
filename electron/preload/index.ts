@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
+import type { AiFillParams } from '../../shared/ai'
 import type { AppSettings, GitFredoAPI, LogEntry, MenuAction } from '../../shared/ipc'
 
 const api: GitFredoAPI = {
@@ -24,6 +25,7 @@ const api: GitFredoAPI = {
   openInEditor: (relativePath) => ipcRenderer.invoke('gitfredo:open-in-editor', relativePath),
   getSettings: () => ipcRenderer.invoke('gitfredo:get-settings'),
   setSettings: (patch) => ipcRenderer.invoke('gitfredo:set-settings', patch),
+  aiFill: (params: AiFillParams) => ipcRenderer.invoke('gitfredo:ai-fill', params),
   onMenuAction: (callback) => {
     const listener = (_event: Electron.IpcRendererEvent, action: MenuAction) => callback(action)
     ipcRenderer.on('app:menu', listener)

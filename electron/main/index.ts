@@ -8,6 +8,9 @@ import { addRecentRepo, loadSettings, saveSettings } from '../settings'
 import { buildAppMenu, pickGitBinary, setMainWindow } from '../menu'
 import { onLog } from '../git/log-bus'
 import { cloneRepository } from '../git/clone'
+import { aiConfigFromSettings, aiFill } from '../llm/client'
+import { enrichAiContext } from '../llm/context'
+import type { AiFillParams } from '../../shared/ai'
 import type { AppSettings, LogEntry } from '../../shared/ipc'
 
 const repoManager = new RepoManager()
@@ -19,7 +22,11 @@ let settings: AppSettings = {
   pollIntervalMs: 5000,
   defaultRemote: 'origin',
   editorCommand: '',
-  logMaxCount: 500
+  logMaxCount: 500,
+  aiProvider: 'local',
+  aiBaseUrl: 'http://localhost:1234',
+  aiApiKey: '',
+  aiModel: ''
 }
 
 function applyGitConfig(): void {
@@ -124,6 +131,11 @@ function registerIpc(): void {
     settings = await saveSettings(patch)
     applyGitConfig()
     return settings
+  })
+
+  ipcMain.handle('gitfredo:ai-fill', async (_event, params: AiFillParams) => {
+    const enriched = await enrichAiContext(repoManager, params)
+    return aiFill(aiConfigFromSettings(settings), enriched)
   })
 
   ipcMain.handle('gitfredo:pick-file', async () => {

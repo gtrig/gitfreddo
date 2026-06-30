@@ -21,3 +21,8 @@ export function useDefaultRemote(): string {
   const { data } = useAppSettings()
   return data?.defaultRemote ?? 'origin'
 }
+
+export function useAiEnabled(): boolean {
+  const { data } = useAppSettings()
+  return Boolean(data?.aiBaseUrl?.trim())
+}

@@ -5,9 +5,10 @@ interface ModalProps {
   open: boolean
   onClose: () => void
   children: ReactNode
+  size?: 'md' | 'lg'
 }
 
-export function Modal({ title, open, onClose, children }: ModalProps) {
+export function Modal({ title, open, onClose, children, size = 'md' }: ModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -47,7 +48,9 @@ export function Modal({ title, open, onClose, children }: ModalProps) {
         aria-modal="true"
         aria-labelledby="modal-title"
         tabIndex={-1}
-        className="w-full max-w-md rounded-lg border border-zinc-700 bg-zinc-900 shadow-xl outline-none"
+        className={`w-full rounded-lg border border-zinc-700 bg-zinc-900 shadow-xl outline-none ${
+          size === 'lg' ? 'max-w-2xl' : 'max-w-md'
+        }`}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">

@@ -1,8 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Modal, FieldLabel, TextInput, ActionButton } from '@/components/ui/Modal'
+import { Modal, ActionButton } from '@/components/ui/Modal'
 import type { AppSettings } from '@/hooks/useAppSettings'
 import { useToastStore } from '@/stores/toast'
+import { SettingsSidebar } from '@/components/settings/SettingsSidebar'
+import { GitSettingsPanel } from '@/components/settings/panels/GitSettingsPanel'
+import { InterfaceSettingsPanel } from '@/components/settings/panels/InterfaceSettingsPanel'
+import { AiSettingsPanel } from '@/components/settings/panels/AiSettingsPanel'
+import {
+  loadSettingsSection,
+  saveSettingsSection,
+  type SettingsSection
+} from '@/components/settings/settingsSections'
 
 interface SettingsModalProps {
   open: boolean
@@ -15,20 +24,31 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
   const [form, setForm] = useState<AppSettings | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [section, setSection] = useState<SettingsSection>(() => loadSettingsSection())
 
   useEffect(() => {
     if (!open) return
     setLoading(true)
+    setSection(loadSettingsSection())
     void window.gitfredo
       .getSettings()
       .then((settings) => setForm(settings))
       .finally(() => setLoading(false))
   }, [open])
 
+  function updateForm(patch: Partial<AppSettings>) {
+    setForm((current) => (current ? { ...current, ...patch } : current))
+  }
+
+  function selectSection(next: SettingsSection) {
+    setSection(next)
+    saveSettingsSection(next)
+  }
+
   async function handlePickGit() {
     const path = await window.gitfredo.pickGitBinary()
     if (path && form) {
-      setForm({ ...form, gitBinaryPath: path })
+      updateForm({ gitBinaryPath: path })
     }
   }
 
@@ -49,68 +69,30 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
   }
 
   return (
-    <Modal title="Settings" open={open} onClose={onClose}>
+    <Modal title="Settings" open={open} onClose={onClose} size="lg">
       {loading || !form ? (
         <p className="text-sm text-zinc-500">Loading…</p>
       ) : (
-        <div className="space-y-3">
-          <div>
-            <FieldLabel>git binary path</FieldLabel>
-            <div className="flex gap-2">
-              <TextInput
-                value={form.gitBinaryPath}
-                onChange={(e) => setForm({ ...form, gitBinaryPath: e.target.value })}
-              />
-              <ActionButton onClick={() => void handlePickGit()}>Browse</ActionButton>
+        <>
+          <div className="flex min-h-[280px] gap-4">
+            <SettingsSidebar active={section} onSelect={selectSection} />
+            <div className="min-w-0 flex-1">
+              {section === 'git' && (
+                <GitSettingsPanel form={form} onChange={updateForm} onPickGit={() => void handlePickGit()} />
+              )}
+              {section === 'interface' && (
+                <InterfaceSettingsPanel form={form} onChange={updateForm} />
+              )}
+              {section === 'ai' && <AiSettingsPanel form={form} onChange={updateForm} />}
             </div>
           </div>
-
-          <div>
-            <FieldLabel>Default remote</FieldLabel>
-            <TextInput
-              value={form.defaultRemote}
-              onChange={(e) => setForm({ ...form, defaultRemote: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <FieldLabel>Poll interval (ms, 0 = off)</FieldLabel>
-            <TextInput
-              type="number"
-              value={String(form.pollIntervalMs)}
-              onChange={(e) =>
-                setForm({ ...form, pollIntervalMs: Number.parseInt(e.target.value, 10) || 0 })
-              }
-            />
-          </div>
-
-          <div>
-            <FieldLabel>Commit graph max commits</FieldLabel>
-            <TextInput
-              type="number"
-              value={String(form.logMaxCount)}
-              onChange={(e) =>
-                setForm({ ...form, logMaxCount: Number.parseInt(e.target.value, 10) || 500 })
-              }
-            />
-          </div>
-
-          <div>
-            <FieldLabel>External editor command (optional)</FieldLabel>
-            <TextInput
-              value={form.editorCommand}
-              onChange={(e) => setForm({ ...form, editorCommand: e.target.value })}
-              placeholder="code --wait"
-            />
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="mt-4 flex justify-end gap-2 border-t border-zinc-800 pt-4">
             <ActionButton onClick={onClose}>Cancel</ActionButton>
-            <ActionButton onClick={() => void handleSave()} disabled={saving}>
+            <ActionButton variant="primary" onClick={() => void handleSave()} disabled={saving}>
               {saving ? 'Saving…' : 'Save'}
             </ActionButton>
           </div>
-        </div>
+        </>
       )}
     </Modal>
   )

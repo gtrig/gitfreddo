@@ -13,6 +13,10 @@ export interface AppSettings {
   defaultRemote: string
   editorCommand: string
   logMaxCount: number
+  aiProvider: 'local' | 'api'
+  aiBaseUrl: string
+  aiApiKey: string
+  aiModel: string
 }
 
 export type MenuAction = 'open-workspace' | 'open-settings' | 'refresh' | 'quit'
@@ -49,6 +53,7 @@ export interface GitFredoAPI {
   openInEditor: (relativePath: string) => Promise<void>
   getSettings: () => Promise<AppSettings>
   setSettings: (patch: Partial<AppSettings>) => Promise<AppSettings>
+  aiFill: (params: import('./ai').AiFillParams) => Promise<string>
   onMenuAction: (callback: (action: MenuAction) => void) => () => void
   onLogEntry: (callback: (entry: LogEntry) => void) => () => void
 }

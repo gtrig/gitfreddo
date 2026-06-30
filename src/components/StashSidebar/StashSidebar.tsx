@@ -1,15 +1,24 @@
+import { useMemo, useState } from 'react'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
-import { useStashList } from '@/hooks/useGit'
+import { useStashList, useWorkingStatus } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { ActionButton } from '@/components/ui/Modal'
+import { AiFillTextInput } from '@/components/ui/AiFillField'
 
 export function StashSidebar() {
   const connected = useWorkspaceStore((s) => s.connected)
   const { data: stashes, isLoading, error } = useStashList(connected)
+  const { data: working } = useWorkingStatus(connected)
   const { stashPush, stashPop, stashApply, stashDrop } = useGitMutations()
   const selectStash = useSelectionStore((s) => s.selectStash)
+  const [stashMessage, setStashMessage] = useState('')
+
+  const changedPaths = useMemo(() => {
+    if (!working) return []
+    return [...working.unstaged, ...working.untracked, ...working.conflicted].map((f) => f.path)
+  }, [working])
 
   if (!connected) {
     return (
@@ -23,13 +32,27 @@ export function StashSidebar() {
 
   return (
     <aside className="p-4">
-      <CollapsibleSection
-        sectionId="sidebar.stash"
-        title="Stash"
-        headerActions={
-          <ActionButton onClick={() => void stashPush.mutateAsync({})}>Push</ActionButton>
-        }
-      >
+      <CollapsibleSection sectionId="sidebar.stash" title="Stash" defaultOpen>
+        <div className="mb-3 space-y-2">
+          <AiFillTextInput
+            label="Stash message (optional)"
+            value={stashMessage}
+            onChange={setStashMessage}
+            purpose="stash_message"
+            context={{ filePaths: changedPaths, branch: working?.branch }}
+            placeholder="WIP on feature"
+          />
+          <ActionButton
+            onClick={() =>
+              void stashPush
+                .mutateAsync({ message: stashMessage.trim() || undefined })
+                .then(() => setStashMessage(''))
+            }
+          >
+            Push stash
+          </ActionButton>
+        </div>
+
         {isLoading && <p className="text-sm text-zinc-500">Loading…</p>}
         {error && <p className="text-sm text-red-400">{(error as Error).message}</p>}
         {!isLoading && (stashes ?? []).length === 0 && (

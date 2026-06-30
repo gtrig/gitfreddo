@@ -1,6 +1,9 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Modal, ActionButton } from '@/components/ui/Modal'
+import { AiFillTextArea } from '@/components/ui/AiFillField'
 import { useGitMutations } from '@/hooks/useGitMutations'
+import { useWorkingStatus } from '@/hooks/useGit'
+import { useWorkspaceStore } from '@/stores/workspace'
 
 interface CommitModalProps {
   open: boolean
@@ -10,23 +13,35 @@ interface CommitModalProps {
 export function CommitModal({ open, onClose }: CommitModalProps) {
   const [message, setMessage] = useState('')
   const { commit } = useGitMutations()
+  const connected = useWorkspaceStore((s) => s.connected)
+  const { data: working } = useWorkingStatus(connected)
+
+  const stagedPaths = useMemo(
+    () => working?.staged.map((file) => file.path) ?? [],
+    [working?.staged]
+  )
+
+  function handleClose() {
+    setMessage('')
+    onClose()
+  }
 
   return (
-    <Modal open={open} title="Create commit" onClose={onClose}>
+    <Modal open={open} title="Create commit" onClose={handleClose}>
       <div className="space-y-3 p-4">
-        <label className="block text-sm">
-          <span className="text-zinc-400">Commit message</span>
-          <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            rows={4}
-            className="mt-1 w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm"
-            placeholder="Describe your changes"
-          />
-        </label>
+        <AiFillTextArea
+          label="Commit message"
+          value={message}
+          onChange={setMessage}
+          purpose="commit_message"
+          context={{ filePaths: stagedPaths, branch: working?.branch }}
+          rows={4}
+          placeholder="Describe your changes"
+        />
         <div className="flex justify-end gap-2">
-          <ActionButton onClick={onClose}>Cancel</ActionButton>
+          <ActionButton onClick={handleClose}>Cancel</ActionButton>
           <ActionButton
+            variant="primary"
             onClick={async () => {
               if (!message.trim()) return
               await commit.mutateAsync({ message: message.trim() })
