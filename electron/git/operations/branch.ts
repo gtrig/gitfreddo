@@ -1,0 +1,118 @@
+import { runGit, runGitOrThrow } from '../git-runner'
+import type { GitBranch } from '../types'
+
+function parseBranchLine(line: string): GitBranch | null {
+  const trimmed = line.trim()
+  if (!trimmed) return null
+
+  let isCurrent = false
+  let isRemote = false
+  let rest = trimmed
+
+  if (rest.startsWith('* ')) {
+    isCurrent = true
+    rest = rest.slice(2)
+  } else if (rest.startsWith('  ')) {
+    rest = rest.slice(2)
+  }
+
+  if (rest.startsWith('remotes/')) {
+    isRemote = true
+  }
+
+  const [name, head] = rest.split(/\s+/)
+  if (!name || !head) return null
+
+  return {
+    name,
+    head,
+    ahead: 0,
+    behind: 0,
+    isCurrent,
+    isRemote
+  }
+}
+
+async function branchAheadBehind(
+  cwd: string,
+  gitBinaryPath: string,
+  branch: string,
+  upstream: string
+): Promise<{ ahead: number; behind: number }> {
+  try {
+    const out = await runGitOrThrow(
+      ['rev-list', '--left-right', '--count', `${upstream}...${branch}`],
+      { cwd, gitBinaryPath }
+    )
+    const [behind, ahead] = out.trim().split(/\s+/).map(Number)
+    return { ahead: ahead ?? 0, behind: behind ?? 0 }
+  } catch {
+    return { ahead: 0, behind: 0 }
+  }
+}
+
+export async function branchList(cwd: string, gitBinaryPath: string): Promise<GitBranch[]> {
+  const stdout = await runGitOrThrow(['branch', '-v', '--no-abbrev'], { cwd, gitBinaryPath })
+  const branches = stdout
+    .split('\n')
+    .map(parseBranchLine)
+    .filter((b): b is GitBranch => b !== null && !b.isRemote)
+
+  for (const branch of branches) {
+    try {
+      const upstream = (
+        await runGit(['rev-parse', '--abbrev-ref', `${branch.name}@{upstream}`], {
+          cwd,
+          gitBinaryPath
+        })
+      ).stdout.trim()
+      if (upstream) {
+        branch.upstream = upstream
+        const ab = await branchAheadBehind(cwd, gitBinaryPath, branch.name, upstream)
+        branch.ahead = ab.ahead
+        branch.behind = ab.behind
+      }
+    } catch {
+      // no upstream
+    }
+  }
+
+  return branches
+}
+
+export async function branchCheckout(
+  cwd: string,
+  gitBinaryPath: string,
+  name: string
+): Promise<void> {
+  await runGitOrThrow(['checkout', name], { cwd, gitBinaryPath })
+}
+
+export async function branchCreate(
+  cwd: string,
+  gitBinaryPath: string,
+  name: string,
+  startPoint?: string
+): Promise<void> {
+  const args = ['branch', name]
+  if (startPoint) args.push(startPoint)
+  await runGitOrThrow(args, { cwd, gitBinaryPath })
+}
+
+export async function branchDelete(
+  cwd: string,
+  gitBinaryPath: string,
+  name: string,
+  force = false
+): Promise<void> {
+  await runGitOrThrow(['branch', force ? '-D' : '-d', name], { cwd, gitBinaryPath })
+}
+
+export async function branchRename(
+  cwd: string,
+  gitBinaryPath: string,
+  oldName: string,
+  newName: string
+): Promise<void> {
+  await runGitOrThrow(['branch', '-m', oldName, newName], { cwd, gitBinaryPath })
+}

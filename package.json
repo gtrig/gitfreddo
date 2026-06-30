@@ -1,0 +1,61 @@
+{
+  "name": "gitfredo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Desktop git client with commit graph",
+  "author": "ArctosWebLabs",
+  "type": "module",
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "NO_SANDBOX=1 electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "NO_SANDBOX=1 electron-vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.web.json && tsc --noEmit -p tsconfig.node.json",
+    "test": "vitest run",
+    "dist": "npm run build && electron-builder",
+    "smoke": "bash scripts/smoke-test.sh"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.90.2",
+    "@xyflow/react": "^12.11.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.13",
+    "@types/node": "^22.18.6",
+    "@types/react": "^18.3.24",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
+    "electron-vite": "^2.3.0",
+    "tailwindcss": "^4.1.13",
+    "typescript": "^5.9.2",
+    "vite": "^5.4.20",
+    "vitest": "^3.2.6"
+  },
+  "build": {
+    "appId": "com.arctosweblabs.gitfredo",
+    "productName": "GitFredo",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "Development"
+    },
+    "mac": {
+      "target": ["dmg"],
+      "category": "public.app-category.developer-tools"
+    },
+    "win": {
+      "target": ["nsis"]
+    }
+  }
+}
