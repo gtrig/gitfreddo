@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { HeaderIconLogs } from '@/components/actions/HeaderIcons'
 import { useLogStore, type LogTab } from '@/stores/logs'
 import type { LogEntry, LogLevel } from '../../../shared/ipc'
 
@@ -219,15 +220,16 @@ export function LogToggleButton() {
     <button
       type="button"
       onClick={toggleOpen}
-      className={`rounded border px-3 py-1 text-xs ${
+      className={`inline-flex items-center justify-center gap-1.5 rounded border px-3 py-1 text-xs ${
         open
           ? 'border-gf-border-strong bg-gf-surface text-gf-fg'
           : 'border-gf-border-strong text-gf-fg-muted hover:bg-gf-bg'
       }`}
       title="Toggle log drawer (Ctrl+`)"
     >
+      <HeaderIconLogs className="h-3.5 w-3.5 shrink-0" />
       Logs
-      {total > 0 && <span className="ml-1.5 text-gf-fg-subtle">({total})</span>}
+      {total > 0 && <span className="text-gf-fg-subtle">({total})</span>}
     </button>
   )
 }

@@ -11,6 +11,7 @@ import { ToastBanner } from '@/components/layout/ToastBanner'
 import { LogDrawer, LogToggleButton, useLogSubscription } from '@/components/layout/LogDrawer'
 import { ResizableMainLayout } from '@/components/layout/ResizableMainLayout'
 import { SettingsModal } from '@/components/settings/SettingsModal'
+import { HeaderIconSettings } from '@/components/actions/HeaderIcons'
 import { Spinner } from '@/components/ui/Spinner'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useAutoRefresh, useManualRefresh } from '@/hooks/useAutoRefresh'
@@ -127,21 +128,23 @@ export default function App() {
         </div>
       )}
       <WorkspaceTabs />
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-gf-border px-4 py-2">
+      <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-gf-border px-4 py-2">
         <p className="min-w-0 truncate text-sm text-gf-fg-subtle" title={activePath ?? undefined}>
           {activePath}
         </p>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center justify-center gap-3">
           <ActionBar />
           <LogToggleButton />
           <button
             type="button"
             onClick={() => setSettingsOpen(true)}
-            className="rounded border border-gf-border-strong px-3 py-1 text-xs text-gf-fg-muted hover:bg-gf-bg"
+            className="inline-flex items-center justify-center gap-1.5 rounded border border-gf-border-strong px-3 py-1 text-xs text-gf-fg-muted hover:bg-gf-bg"
           >
+            <HeaderIconSettings className="h-3.5 w-3.5 shrink-0" />
             Settings
           </button>
         </div>
+        <div aria-hidden />
       </header>
 
       <ResizableMainLayout
