@@ -55,6 +55,11 @@ function toTreeItems(files: GitFileChange[]): CommitFileItem[] {
   return files.map((file) => ({ path: file.path, kind: toCommitKind(file.status) }))
 }
 
+function fileNameFromPath(path: string): string {
+  const parts = path.split('/')
+  return parts[parts.length - 1] || path
+}
+
 function Chevron({ open }: { open: boolean }) {
   return (
     <svg
@@ -139,13 +144,28 @@ function TreeNode({
   const file = pathToFile.get(node.path)
   if (!file) return null
   return (
-    <div style={{ paddingLeft: 18 + depth * 12 }}>
-      <FileRow
-        file={file}
-        selected={selectedFile === file.path}
-        onSelect={() => setSelectedFile(file.path, mode)}
-        onStage={onStage ? () => onStage(file.path) : undefined}
-      />
+    <div className="flex items-center gap-1" style={{ paddingLeft: 22 + depth * 12 }}>
+      <button
+        type="button"
+        onClick={() => setSelectedFile(file.path, mode)}
+        className={`min-w-0 flex-1 rounded px-2 py-1 text-left text-xs hover:bg-gf-surface-hover ${
+          selectedFile === file.path ? 'bg-gf-surface text-white' : 'text-gf-fg-muted'
+        }`}
+      >
+        <span className={`mr-2 inline-block w-3 text-center font-mono text-[11px] ${statusColor(file.status)}`}>
+          {statusLabel(file.status)}
+        </span>
+        <span className="truncate font-mono">{fileNameFromPath(file.path)}</span>
+      </button>
+      {onStage && (
+        <button
+          type="button"
+          onClick={() => onStage(file.path)}
+          className="rounded px-2 py-0.5 text-[10px] text-gf-fg-subtle hover:bg-gf-surface-hover"
+        >
+          {mode === 'staged' ? 'unstage' : 'stage'}
+        </button>
+      )}
     </div>
   )
 }
