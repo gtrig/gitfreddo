@@ -3,6 +3,7 @@ import {
   extractChatCompletionContent,
   normalizeBaseUrl,
   pickChatModelId,
+  type AiCustomInstructions,
   type AiFillParams,
   type AiProvider,
   type ChatCompletionBody
@@ -18,6 +19,7 @@ export interface AiClientConfig {
   baseUrl: string
   apiKey: string
   model: string
+  instructions: AiCustomInstructions
 }
 
 function stripModelResponse(text: string): string {
@@ -54,7 +56,12 @@ export function aiConfigFromSettings(settings: AppSettings): AiClientConfig {
     provider: settings.aiProvider ?? 'local',
     baseUrl: settings.aiBaseUrl ?? '',
     apiKey: settings.aiApiKey ?? '',
-    model: settings.aiModel ?? ''
+    model: settings.aiModel ?? '',
+    instructions: {
+      system: settings.aiSystemInstructions ?? '',
+      commitMessage: settings.aiCommitInstructions ?? '',
+      stashMessage: settings.aiStashInstructions ?? ''
+    }
   }
 }
 
@@ -69,7 +76,7 @@ export async function aiFill(config: AiClientConfig, params: AiFillParams): Prom
   }
 
   const resolvedModel = await resolveModel(normalized, config.apiKey, config.model)
-  const { system, user } = buildAiMessages(params.purpose, params.context)
+  const { system, user } = buildAiMessages(params.purpose, params.context, config.instructions)
 
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   if (config.apiKey.trim()) {

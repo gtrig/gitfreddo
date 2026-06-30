@@ -14,6 +14,20 @@ export interface AiFillParams {
   context?: AiFillContext
 }
 
+export interface AiCustomInstructions {
+  system?: string
+  commitMessage?: string
+  stashMessage?: string
+}
+
+function appendCustomInstructions(base: string, custom?: string): string {
+  const extra = custom?.trim()
+  if (!extra) {
+    return base
+  }
+  return `${base}\n\n${extra}`
+}
+
 export function normalizeBaseUrl(url: string): string {
   const trimmed = url.trim().replace(/\/+$/, '')
   if (!trimmed) {
@@ -27,7 +41,8 @@ export function normalizeBaseUrl(url: string): string {
 
 export function buildAiMessages(
   purpose: AiFillPurpose,
-  context: AiFillContext = {}
+  context: AiFillContext = {},
+  instructions: AiCustomInstructions = {}
 ): { system: string; user: string } {
   const files =
     context.filePaths && context.filePaths.length > 0
@@ -39,31 +54,37 @@ export function buildAiMessages(
     ? `\nChanges (unified diff):\n${context.diffText.trim()}\n`
     : ''
 
-  const system =
+  const system = appendCustomInstructions(
     'You write concise, technical text for git workflows. ' +
-    'Respond with only the requested text — no quotes, markdown fences, or preamble.'
+      'Respond with only the requested text — no quotes, markdown fences, or preamble.',
+    instructions.system
+  )
 
   let user: string
 
   switch (purpose) {
     case 'commit_message':
-      user =
+      user = appendCustomInstructions(
         'Write a git commit message for the staged changes.\n' +
-        'Use an imperative subject line (≤72 chars) and an optional body separated by a blank line.\n' +
-        (branch ? `Branch: ${branch}\n` : '') +
-        (files ? `Staged files:\n${files}\n` : '') +
-        diffBlock +
-        (seed ? `Starting idea: ${seed}\n` : '') +
-        'Summarize the actual code changes clearly based on the diff when provided.'
+          'Use an imperative subject line (≤72 chars) and an optional body separated by a blank line.\n' +
+          (branch ? `Branch: ${branch}\n` : '') +
+          (files ? `Staged files:\n${files}\n` : '') +
+          diffBlock +
+          (seed ? `Starting idea: ${seed}\n` : '') +
+          'Summarize the actual code changes clearly based on the diff when provided.',
+        instructions.commitMessage
+      )
       break
     case 'stash_message':
-      user =
+      user = appendCustomInstructions(
         'Write a short git stash message describing work in progress.\n' +
-        (branch ? `Branch: ${branch}\n` : '') +
-        (files ? `Changed files:\n${files}\n` : '') +
-        diffBlock +
-        (seed ? `Starting idea: ${seed}\n` : '') +
-        'Keep it brief and informal; reflect the diff when provided.'
+          (branch ? `Branch: ${branch}\n` : '') +
+          (files ? `Changed files:\n${files}\n` : '') +
+          diffBlock +
+          (seed ? `Starting idea: ${seed}\n` : '') +
+          'Keep it brief and informal; reflect the diff when provided.',
+        instructions.stashMessage
+      )
       break
   }
 

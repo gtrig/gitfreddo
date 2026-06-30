@@ -1,9 +1,37 @@
-import { FieldLabel, TextInput } from '@/components/ui/Modal'
+import { FieldLabel, TextArea, TextInput } from '@/components/ui/Modal'
 import type { AppSettings } from '@/hooks/useAppSettings'
 
 interface PanelProps {
   form: AppSettings
   onChange: (patch: Partial<AppSettings>) => void
+}
+
+function InstructionField({
+  label,
+  description,
+  value,
+  placeholder,
+  onChange
+}: {
+  label: string
+  description: string
+  value: string
+  placeholder: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <div>
+      <FieldLabel>{label}</FieldLabel>
+      <TextArea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={3}
+        className="resize-y text-xs leading-relaxed"
+      />
+      <p className="mt-1 text-[11px] text-gf-fg-subtle">{description}</p>
+    </div>
+  )
 }
 
 export function AiSettingsPanel({ form, onChange }: PanelProps) {
@@ -75,6 +103,33 @@ export function AiSettingsPanel({ form, onChange }: PanelProps) {
           onChange={(e) => onChange({ aiModel: e.target.value })}
           placeholder="Leave empty to auto-select first available model"
         />
+      </div>
+
+      <div className="border-t border-gf-border pt-3">
+        <p className="mb-3 text-xs font-medium text-gf-fg-muted">Custom instructions</p>
+        <div className="space-y-3">
+          <InstructionField
+            label="System instructions"
+            description="Appended to the system prompt for every AI assist request."
+            value={form.aiSystemInstructions}
+            placeholder="e.g. Use British English. Prefer conventional commit prefixes."
+            onChange={(value) => onChange({ aiSystemInstructions: value })}
+          />
+          <InstructionField
+            label="Commit message instructions"
+            description="Added when generating commit messages from staged changes."
+            value={form.aiCommitInstructions}
+            placeholder="e.g. Reference ticket IDs. Keep the subject under 50 characters."
+            onChange={(value) => onChange({ aiCommitInstructions: value })}
+          />
+          <InstructionField
+            label="Stash message instructions"
+            description="Added when generating stash messages from working-tree changes."
+            value={form.aiStashInstructions}
+            placeholder="e.g. Prefix messages with WIP: and mention the feature area."
+            onChange={(value) => onChange({ aiStashInstructions: value })}
+          />
+        </div>
       </div>
     </div>
   )

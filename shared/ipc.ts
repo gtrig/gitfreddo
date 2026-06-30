@@ -27,6 +27,9 @@ export interface AppSettings {
   aiBaseUrl: string
   aiApiKey: string
   aiModel: string
+  aiSystemInstructions: string
+  aiCommitInstructions: string
+  aiStashInstructions: string
   githubLogin: string
   githubConnectedAt: number | null
 }

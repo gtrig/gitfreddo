@@ -41,6 +41,20 @@ describe('buildAiMessages', () => {
     })
     expect(user).toContain('+++ b/README.md')
   })
+
+  it('appends custom system and purpose instructions', () => {
+    const { system, user } = buildAiMessages(
+      'commit_message',
+      { currentText: 'fix bug' },
+      {
+        system: 'Always write in Spanish.',
+        commitMessage: 'Include the JIRA ticket when mentioned in the diff.'
+      }
+    )
+    expect(system).toContain('Always write in Spanish.')
+    expect(user).toContain('Include the JIRA ticket')
+    expect(user).toContain('fix bug')
+  })
 })
 
 describe('pickChatModelId', () => {

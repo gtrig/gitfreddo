@@ -21,6 +21,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   aiBaseUrl: 'http://localhost:1234',
   aiApiKey: '',
   aiModel: '',
+  aiSystemInstructions: '',
+  aiCommitInstructions: '',
+  aiStashInstructions: '',
   githubLogin: '',
   githubConnectedAt: null
 }
@@ -42,6 +45,9 @@ export async function loadSettings(): Promise<AppSettings> {
       aiBaseUrl: parsed.aiBaseUrl ?? DEFAULT_SETTINGS.aiBaseUrl,
       aiApiKey: parsed.aiApiKey ?? '',
       aiModel: parsed.aiModel ?? '',
+      aiSystemInstructions: parsed.aiSystemInstructions ?? '',
+      aiCommitInstructions: parsed.aiCommitInstructions ?? '',
+      aiStashInstructions: parsed.aiStashInstructions ?? '',
       githubLogin: parsed.githubLogin ?? '',
       githubConnectedAt: parsed.githubConnectedAt ?? null,
       theme: normalizeAppTheme(parsed.theme)

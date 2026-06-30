@@ -50,6 +50,9 @@ let settings: AppSettings = {
   aiBaseUrl: 'http://localhost:1234',
   aiApiKey: '',
   aiModel: '',
+  aiSystemInstructions: '',
+  aiCommitInstructions: '',
+  aiStashInstructions: '',
   githubLogin: '',
   githubConnectedAt: null
 }
