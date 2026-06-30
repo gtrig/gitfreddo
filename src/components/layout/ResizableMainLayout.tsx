@@ -1,61 +1,6 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { ColumnResizeHandle } from '@/components/ui/ColumnResizeHandle'
 import { CENTER_MIN, useLayoutStore } from '@/stores/layout'
-
-function ColumnResizeHandle({
-  onDrag,
-  onResizeStart,
-  onResizeEnd
-}: {
-  onDrag: (delta: number) => void
-  onResizeStart: () => void
-  onResizeEnd: () => void
-}) {
-  const [resizing, setResizing] = useState(false)
-  const lastX = useRef(0)
-
-  const onMouseDown = useCallback(
-    (event: React.MouseEvent) => {
-      event.preventDefault()
-      lastX.current = event.clientX
-      setResizing(true)
-      onResizeStart()
-    },
-    [onResizeStart]
-  )
-
-  useEffect(() => {
-    if (!resizing) {
-      return
-    }
-
-    const onMove = (event: MouseEvent) => {
-      const delta = event.clientX - lastX.current
-      lastX.current = event.clientX
-      onDrag(delta)
-    }
-
-    const onUp = () => {
-      setResizing(false)
-      onResizeEnd()
-    }
-
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-    return () => {
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
-    }
-  }, [onDrag, onResizeEnd, resizing])
-
-  return (
-    <div
-      role="separator"
-      aria-orientation="vertical"
-      onMouseDown={onMouseDown}
-      className={`w-1 shrink-0 cursor-col-resize bg-gf-surface/60 hover:bg-gf-surface-hover ${resizing ? 'bg-gf-fg-subtle' : ''}`}
-    />
-  )
-}
 
 interface ResizableMainLayoutProps {
   left: ReactNode

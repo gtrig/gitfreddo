@@ -10,6 +10,7 @@ import {
   columnCenterX,
   DEFAULT_GRAPH_METRICS,
   graphWidth,
+  type GraphMetrics,
   WORKING_TREE_COLUMN
 } from '@/lib/graphMetrics'
 import { useGraphColors } from '@/hooks/useGraphColors'
@@ -19,22 +20,24 @@ export function CommitGraphOverlay({
   showWorkingRow,
   workingSelected,
   selectedHash,
-  rowHeight = GRAPH_ROW_HEIGHT
+  rowHeight = GRAPH_ROW_HEIGHT,
+  metrics = DEFAULT_GRAPH_METRICS
 }: {
   layout: GitGraphLayout
   showWorkingRow: boolean
   workingSelected: boolean
   selectedHash: string | null
   rowHeight?: number
+  metrics?: GraphMetrics
 }) {
   const colors = useGraphColors()
   const rowCount = showWorkingRow ? layout.rows.length + 1 : layout.rows.length
   const height = graphHeight(rowCount, rowHeight)
-  const width = graphWidth(layout.laneCount, DEFAULT_GRAPH_METRICS)
+  const width = graphWidth(layout.laneCount, metrics)
   const rowByKey = new Map(layout.rows.map((row) => [row.key, row]))
   const headRow = layout.rows.find((row) => row.isHead)
 
-  const wipX = columnCenterX(WORKING_TREE_COLUMN, DEFAULT_GRAPH_METRICS)
+  const wipX = columnCenterX(WORKING_TREE_COLUMN, metrics)
   const wipY = rowCenterY(0, rowHeight)
   const headY = headRow
     ? rowCenterY(visualRowIndex(headRow.rowIndex, showWorkingRow), rowHeight)
@@ -78,9 +81,9 @@ export function CommitGraphOverlay({
         const toRow = rowByKey.get(edge.toKey)
         if (!fromRow || !toRow) return null
 
-        const x1 = columnCenterX(edge.fromColumn, DEFAULT_GRAPH_METRICS)
+        const x1 = columnCenterX(edge.fromColumn, metrics)
         const y1 = rowCenter(fromRow.rowIndex)
-        const x2 = columnCenterX(edge.toColumn, DEFAULT_GRAPH_METRICS)
+        const x2 = columnCenterX(edge.toColumn, metrics)
         const y2 = rowCenter(toRow.rowIndex)
 
         return (
@@ -108,7 +111,7 @@ export function CommitGraphOverlay({
       )}
 
       {layout.rows.map((row) => {
-        const x = columnCenterX(row.column, DEFAULT_GRAPH_METRICS)
+        const x = columnCenterX(row.column, metrics)
         const y = rowCenter(row.rowIndex)
         const selected = selectedHash === row.key
 

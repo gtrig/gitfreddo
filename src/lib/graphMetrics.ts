@@ -20,13 +20,26 @@ export const GRAPH_LANE_WIDTH_MIN = 18
 export const GRAPH_LANE_WIDTH_MAX = 64
 export const GRAPH_LANE_WIDTH_DEFAULT = 18
 
-const STORAGE_KEY = 'gitfredo.timeline.graphLaneWidth'
+export const BRANCH_TAG_WIDTH_MIN = 72
+export const BRANCH_TAG_WIDTH_MAX = 280
+export const BRANCH_TAG_WIDTH_DEFAULT = 116
+
+const LANE_WIDTH_STORAGE_KEY = 'gitfredo.timeline.graphLaneWidth'
+const BRANCH_TAG_STORAGE_KEY = 'gitfredo.timeline.branchTagWidth'
+
+function clampLaneWidth(width: number): number {
+  return Math.min(GRAPH_LANE_WIDTH_MAX, Math.max(GRAPH_LANE_WIDTH_MIN, width))
+}
+
+function clampBranchTagWidth(width: number): number {
+  return Math.min(BRANCH_TAG_WIDTH_MAX, Math.max(BRANCH_TAG_WIDTH_MIN, width))
+}
 
 export function loadGraphLaneWidth(): number {
   if (typeof localStorage === 'undefined') {
     return GRAPH_LANE_WIDTH_DEFAULT
   }
-  const stored = localStorage.getItem(STORAGE_KEY)
+  const stored = localStorage.getItem(LANE_WIDTH_STORAGE_KEY)
   if (!stored) {
     return GRAPH_LANE_WIDTH_DEFAULT
   }
@@ -34,15 +47,57 @@ export function loadGraphLaneWidth(): number {
   if (!Number.isFinite(parsed)) {
     return GRAPH_LANE_WIDTH_DEFAULT
   }
-  return Math.min(GRAPH_LANE_WIDTH_MAX, Math.max(GRAPH_LANE_WIDTH_MIN, parsed))
+  return clampLaneWidth(parsed)
 }
 
 export function saveGraphLaneWidth(width: number): void {
   if (typeof localStorage === 'undefined') {
     return
   }
-  const clamped = Math.min(GRAPH_LANE_WIDTH_MAX, Math.max(GRAPH_LANE_WIDTH_MIN, width))
-  localStorage.setItem(STORAGE_KEY, String(clamped))
+  localStorage.setItem(LANE_WIDTH_STORAGE_KEY, String(clampLaneWidth(width)))
+}
+
+export function loadBranchTagWidth(): number {
+  if (typeof localStorage === 'undefined') {
+    return BRANCH_TAG_WIDTH_DEFAULT
+  }
+  const stored = localStorage.getItem(BRANCH_TAG_STORAGE_KEY)
+  if (!stored) {
+    return BRANCH_TAG_WIDTH_DEFAULT
+  }
+  const parsed = Number.parseInt(stored, 10)
+  if (!Number.isFinite(parsed)) {
+    return BRANCH_TAG_WIDTH_DEFAULT
+  }
+  return clampBranchTagWidth(parsed)
+}
+
+export function saveBranchTagWidth(width: number): void {
+  if (typeof localStorage === 'undefined') {
+    return
+  }
+  localStorage.setItem(BRANCH_TAG_STORAGE_KEY, String(clampBranchTagWidth(width)))
+}
+
+export function graphMetricsWithLaneWidth(laneWidth: number): GraphMetrics {
+  return { ...DEFAULT_GRAPH_METRICS, laneWidth: clampLaneWidth(laneWidth) }
+}
+
+export function laneWidthForGraphColumn(
+  graphColumnWidth: number,
+  laneCount: number,
+  metrics: GraphMetrics = DEFAULT_GRAPH_METRICS
+): number {
+  const lanes = Math.max(1, laneCount)
+  const inner = graphColumnWidth - metrics.sidePadding * 2
+  return clampLaneWidth(inner / lanes)
+}
+
+export function minGraphColumnWidth(
+  laneCount: number,
+  metrics: GraphMetrics = DEFAULT_GRAPH_METRICS
+): number {
+  return graphWidth(laneCount, { ...metrics, laneWidth: GRAPH_LANE_WIDTH_MIN })
 }
 
 export function graphWidth(

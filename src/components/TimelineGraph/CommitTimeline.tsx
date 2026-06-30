@@ -2,15 +2,16 @@ import { useMemo } from 'react'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
 import { useLogGraph, useRepoStatus, useWorkingStatus } from '@/hooks/useGit'
+import { useTimelineColumnSizes } from '@/hooks/useTimelineColumnSizes'
 import { branchColor } from '@/lib/types'
 import { buildGitGraphLayout } from '@/lib/gitGraphLayout'
-import { graphWidth, DEFAULT_GRAPH_METRICS } from '@/lib/graphMetrics'
 import { countWorkingChanges } from '@/lib/workingChanges'
 import { CommitGraphOverlay } from './CommitGraphOverlay'
+import { ColumnResizeHandle } from '@/components/ui/ColumnResizeHandle'
 import { LoadingRow } from '@/components/ui/Spinner'
 
 const COMPACT_ROW_HEIGHT = 28
-const BRANCH_TAG_COLUMN_WIDTH = 116
+const RESIZE_HANDLE_WIDTH = 4
 
 function timelineRefs(rawRefs: string[]): string[] {
   const refs = rawRefs
@@ -46,7 +47,15 @@ export function CommitTimeline() {
   const head = repoStatus?.head ?? ''
 
   const layout = useMemo(() => buildGitGraphLayout(commits, head), [commits, head])
-  const graphColumnWidth = graphWidth(Math.max(layout.laneCount, 1), DEFAULT_GRAPH_METRICS)
+  const {
+    branchTagWidth,
+    graphColumnWidth,
+    metrics,
+    resizing,
+    setResizing,
+    onBranchTagResize,
+    onGraphLaneResize
+  } = useTimelineColumnSizes(layout.laneCount)
   const selectedHash = selection?.kind === 'commit' ? selection.id : null
 
   if (!connected) {
@@ -57,21 +66,24 @@ export function CommitTimeline() {
   if (error) return <p className="p-4 text-sm text-red-400">{(error as Error).message}</p>
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto">
+    <div className={`min-h-0 flex-1 overflow-y-auto ${resizing ? 'select-none' : ''}`}>
       <div className="flex min-w-max flex-col">
         <div className="sticky top-0 z-20 flex border-b border-gf-border/70 bg-gf-bg-deep/95 px-2 py-1 text-[10px] uppercase tracking-wide text-gf-fg-subtle backdrop-blur">
-          <div className="shrink-0" style={{ width: BRANCH_TAG_COLUMN_WIDTH }}>
+          <div className="shrink-0" style={{ width: branchTagWidth }}>
             Branch / Tag
           </div>
+          <div className="shrink-0" style={{ width: RESIZE_HANDLE_WIDTH }} />
           <div className="shrink-0" style={{ width: graphColumnWidth }}>
             Graph
           </div>
+          <div className="shrink-0" style={{ width: RESIZE_HANDLE_WIDTH }} />
           <div className="min-w-0 flex-1 pl-2">Commit message</div>
         </div>
+
         <div className="flex">
           <div
             className="sticky left-0 z-10 shrink-0 border-r border-gf-border/60 bg-gf-bg-deep"
-            style={{ width: BRANCH_TAG_COLUMN_WIDTH }}
+            style={{ width: branchTagWidth }}
           >
             {showWorkingRow && (
               <div
@@ -109,6 +121,12 @@ export function CommitTimeline() {
             })}
           </div>
 
+          <ColumnResizeHandle
+            onDrag={onBranchTagResize}
+            onResizeStart={() => setResizing(true)}
+            onResizeEnd={() => setResizing(false)}
+          />
+
           <div className="sticky left-0 z-10 shrink-0 bg-gf-bg-deep" style={{ width: graphColumnWidth }}>
             <CommitGraphOverlay
               layout={layout}
@@ -116,8 +134,15 @@ export function CommitTimeline() {
               workingSelected={selection?.kind === 'working'}
               selectedHash={selectedHash}
               rowHeight={COMPACT_ROW_HEIGHT}
+              metrics={metrics}
             />
           </div>
+
+          <ColumnResizeHandle
+            onDrag={onGraphLaneResize}
+            onResizeStart={() => setResizing(true)}
+            onResizeEnd={() => setResizing(false)}
+          />
 
           <div className="min-w-0 flex-1">
             {showWorkingRow && (
