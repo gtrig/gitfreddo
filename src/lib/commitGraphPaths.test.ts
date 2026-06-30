@@ -23,11 +23,12 @@ describe('buildGraphEdgePath', () => {
     expect(path).not.toContain('C ')
   })
 
-  it('routes branch-out edges horizontally from the child row', () => {
-    const path = buildGraphEdgePath(30, 20, 60, 80, 'parent')
-    expect(path).toContain('M 30 20')
-    expect(path).toContain('60 20')
+  it('routes branch-in parent edges with a bottom elbow at the fork', () => {
+    const path = buildGraphEdgePath(60, 20, 30, 80, 'parent')
+    expect(path).toContain('M 60 20')
     expect(path).toContain('60 80')
+    expect(path).toContain('30 80')
+    expect(path).not.toContain('60 20 L 30 20')
   })
 })
 
