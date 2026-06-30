@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { buildAiMessages, normalizeBaseUrl } from './ai'
+import {
+  buildAiMessages,
+  extractChatCompletionContent,
+  normalizeBaseUrl,
+  pickChatModelId
+} from './ai'
 
 describe('normalizeBaseUrl', () => {
   it('appends /v1 when missing', () => {
@@ -35,5 +40,47 @@ describe('buildAiMessages', () => {
       diffText: '+++ b/README.md\n+hello'
     })
     expect(user).toContain('+++ b/README.md')
+  })
+})
+
+describe('pickChatModelId', () => {
+  it('skips embedding models when a chat model is available', () => {
+    expect(pickChatModelId(['text-embedding-3-small', 'llama3'])).toBe('llama3')
+  })
+
+  it('falls back to first model when all look non-chat', () => {
+    expect(pickChatModelId(['nomic-embed-text'])).toBe('nomic-embed-text')
+  })
+})
+
+describe('extractChatCompletionContent', () => {
+  it('reads string content from OpenAI-style responses', () => {
+    expect(
+      extractChatCompletionContent({
+        choices: [{ message: { content: 'fix auth validation' } }]
+      })
+    ).toBe('fix auth validation')
+  })
+
+  it('reads array content parts', () => {
+    expect(
+      extractChatCompletionContent({
+        choices: [{ message: { content: [{ type: 'text', text: 'hello' }] } }]
+      })
+    ).toBe('hello')
+  })
+
+  it('falls back to reasoning_content for reasoning models', () => {
+    expect(
+      extractChatCompletionContent({
+        choices: [{ message: { content: '', reasoning_content: 'Add login form' } }]
+      })
+    ).toBe('Add login form')
+  })
+
+  it('throws API error messages from the response body', () => {
+    expect(() =>
+      extractChatCompletionContent({ error: { message: 'model not found' } })
+    ).toThrow('model not found')
   })
 })

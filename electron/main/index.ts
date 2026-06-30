@@ -121,6 +121,10 @@ function registerIpc(): void {
   ipcMain.handle(
     'gitfredo:invoke',
     async (_event, method: string, params?: unknown, repoPath?: string) => {
+      if (method === 'ai.fill') {
+        const enriched = await enrichAiContext(repoManager, params as AiFillParams)
+        return aiFill(aiConfigFromSettings(settings), enriched)
+      }
       return repoManager.invoke(repoPath, method, params)
     }
   )

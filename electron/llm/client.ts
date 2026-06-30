@@ -1,14 +1,13 @@
 import {
   buildAiMessages,
+  extractChatCompletionContent,
   normalizeBaseUrl,
+  pickChatModelId,
   type AiFillParams,
-  type AiProvider
+  type AiProvider,
+  type ChatCompletionBody
 } from '../../shared/ai'
 import type { AppSettings } from '../../shared/ipc'
-
-interface ChatCompletionResponse {
-  choices?: Array<{ message?: { content?: string } }>
-}
 
 interface ModelsResponse {
   data?: Array<{ id?: string }>
@@ -42,7 +41,8 @@ async function resolveModel(baseUrl: string, apiKey: string, model?: string): Pr
     throw new Error(`Models request failed (${response.status})`)
   }
   const body = (await response.json()) as ModelsResponse
-  const id = body.data?.[0]?.id
+  const ids = (body.data ?? []).map((entry) => entry.id ?? '').filter(Boolean)
+  const id = pickChatModelId(ids)
   if (!id) {
     throw new Error('No models available from the configured endpoint')
   }
@@ -86,7 +86,7 @@ export async function aiFill(config: AiClientConfig, params: AiFillParams): Prom
         { role: 'user', content: user }
       ],
       temperature: 0.4,
-      max_tokens: 512,
+      max_tokens: 100000,
       stream: false
     })
   })
@@ -98,10 +98,21 @@ export async function aiFill(config: AiClientConfig, params: AiFillParams): Prom
     )
   }
 
-  const body = (await response.json()) as ChatCompletionResponse
-  const content = body.choices?.[0]?.message?.content
-  if (!content?.trim()) {
-    throw new Error('AI returned an empty response')
+  const body = (await response.json()) as ChatCompletionBody
+  let content: string
+  try {
+    content = extractChatCompletionContent(body)
+  } catch (error) {
+    throw error instanceof Error ? error : new Error(String(error))
+  }
+
+  if (!content.trim()) {
+    const model = resolvedModel
+    const finishReason = body.choices?.[0]?.finish_reason ?? 'unknown'
+    throw new Error(
+      `AI returned an empty response (model: ${model}, finish_reason: ${finishReason}). ` +
+        'Try setting an explicit chat model in Settings → AI assist.'
+    )
   }
   return stripModelResponse(content)
 }
