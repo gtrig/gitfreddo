@@ -77,7 +77,7 @@ export async function createRepo(params: GitHubCreateRepoParams): Promise<GitHub
       name: params.name,
       description: params.description ?? '',
       private: params.private ?? false,
-      auto_init: true,
+      auto_init: params.autoInit ?? false,
       gitignore_template: params.gitignoreTemplate || undefined,
       license_template: params.licenseTemplate || undefined
     })

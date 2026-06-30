@@ -6,16 +6,31 @@ import { useDefaultRemote } from '@/hooks/useAppSettings'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { ActionButton, Modal } from '@/components/ui/Modal'
 import { RepoPicker } from '@/components/GitHub/RepoPicker'
+import { CreateGitHubRepoModal } from '@/components/GitHub/CreateGitHubRepoModal'
+import { useToastStore } from '@/stores/toast'
 
 export function RemotePanel() {
   const connected = useWorkspaceStore((s) => s.connected)
   const { data: remotes, isLoading, error } = useRemotes(connected)
   const { fetch, push, pull, remoteAdd } = useGitMutations()
   const defaultRemote = useDefaultRemote()
+  const show = useToastStore((s) => s.show)
   const [addOpen, setAddOpen] = useState(false)
   const [browseOpen, setBrowseOpen] = useState(false)
+  const [createOpen, setCreateOpen] = useState(false)
   const [newName, setNewName] = useState('')
   const [newUrl, setNewUrl] = useState('')
+
+  async function addRemoteFromRepo(repo: { cloneUrl: string; name: string; fullName: string }) {
+    const remoteName = newName.trim() || repo.name || 'origin'
+    await remoteAdd.mutateAsync({ name: remoteName, url: repo.cloneUrl })
+    show(`Added remote "${remoteName}" → ${repo.fullName}`, 'success')
+    setAddOpen(false)
+    setBrowseOpen(false)
+    setCreateOpen(false)
+    setNewName('')
+    setNewUrl('')
+  }
 
   if (!connected) {
     return (
@@ -79,7 +94,10 @@ export function RemotePanel() {
               placeholder="https://github.com/user/repo.git"
             />
           </label>
-          <ActionButton onClick={() => setBrowseOpen(true)}>Browse GitHub</ActionButton>
+          <div className="flex flex-wrap gap-2">
+            <ActionButton onClick={() => setBrowseOpen(true)}>Browse GitHub</ActionButton>
+            <ActionButton onClick={() => setCreateOpen(true)}>Create on GitHub</ActionButton>
+          </div>
           <div className="flex justify-end gap-2">
             <ActionButton onClick={() => setAddOpen(false)}>Cancel</ActionButton>
             <ActionButton
@@ -97,7 +115,7 @@ export function RemotePanel() {
       </Modal>
 
       <Modal open={browseOpen} title="Browse GitHub repositories" onClose={() => setBrowseOpen(false)}>
-        <div className="p-4">
+        <div className="space-y-3 p-4">
           <RepoPicker
             selectedFullName={null}
             compact
@@ -109,8 +127,25 @@ export function RemotePanel() {
               setBrowseOpen(false)
             }}
           />
+          <div className="flex justify-end gap-2 border-t border-gf-border pt-3">
+            <ActionButton onClick={() => setCreateOpen(true)}>Create new repository</ActionButton>
+          </div>
         </div>
       </Modal>
+
+      <CreateGitHubRepoModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        autoInit={false}
+        submitLabel="Create & add remote"
+        onCreated={async (repo) => {
+          setNewUrl(repo.cloneUrl)
+          if (!newName.trim()) {
+            setNewName(repo.name)
+          }
+          await addRemoteFromRepo(repo)
+        }}
+      />
     </aside>
   )
 }

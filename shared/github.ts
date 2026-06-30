@@ -56,6 +56,7 @@ export interface GitHubCreateRepoParams {
   name: string
   description?: string
   private?: boolean
+  autoInit?: boolean
   gitignoreTemplate?: string
   licenseTemplate?: string
 }
