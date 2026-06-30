@@ -10,6 +10,7 @@ import { onLog } from '../git/log-bus'
 import { cloneRepository } from '../git/clone'
 import { aiConfigFromSettings, aiFill } from '../llm/client'
 import { enrichAiContext } from '../llm/context'
+import { connectGitHub, disconnectGitHub, getGitHubStatus } from '../github/service'
 import type { AiFillParams } from '../../shared/ai'
 import type { AppSettings, LogEntry } from '../../shared/ipc'
 
@@ -32,7 +33,9 @@ let settings: AppSettings = {
   aiProvider: 'local',
   aiBaseUrl: 'http://localhost:1234',
   aiApiKey: '',
-  aiModel: ''
+  aiModel: '',
+  githubLogin: '',
+  githubConnectedAt: null
 }
 
 function applyGitConfig(): void {
@@ -158,6 +161,18 @@ function registerIpc(): void {
   ipcMain.handle('gitfredo:ai-fill', async (_event, params: AiFillParams) => {
     const enriched = await enrichAiContext(repoManager, params)
     return aiFill(aiConfigFromSettings(settings), enriched)
+  })
+
+  ipcMain.handle('gitfredo:github-get-status', async () => getGitHubStatus(settings))
+
+  ipcMain.handle('gitfredo:github-connect', async () => {
+    const result = await connectGitHub(settings)
+    settings = result.settings
+    return result.status
+  })
+
+  ipcMain.handle('gitfredo:github-disconnect', async () => {
+    settings = await disconnectGitHub(settings)
   })
 
   ipcMain.handle('gitfredo:pick-file', async () => {

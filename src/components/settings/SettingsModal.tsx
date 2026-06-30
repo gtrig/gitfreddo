@@ -7,6 +7,7 @@ import { SettingsSidebar } from '@/components/settings/SettingsSidebar'
 import { GitSettingsPanel } from '@/components/settings/panels/GitSettingsPanel'
 import { InterfaceSettingsPanel } from '@/components/settings/panels/InterfaceSettingsPanel'
 import { AiSettingsPanel } from '@/components/settings/panels/AiSettingsPanel'
+import { IntegrationsSettingsPanel } from '@/components/settings/panels/IntegrationsSettingsPanel'
 import {
   loadSettingsSection,
   saveSettingsSection,
@@ -84,6 +85,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
                 <InterfaceSettingsPanel form={form} onChange={updateForm} />
               )}
               {section === 'ai' && <AiSettingsPanel form={form} onChange={updateForm} />}
+              {section === 'integrations' && <IntegrationsSettingsPanel />}
             </div>
           </div>
           <div className="mt-4 flex justify-end gap-2 border-t border-gf-border pt-4">

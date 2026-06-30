@@ -27,6 +27,13 @@ export interface AppSettings {
   aiBaseUrl: string
   aiApiKey: string
   aiModel: string
+  githubLogin: string
+  githubConnectedAt: number | null
+}
+
+export interface GitHubStatus {
+  connected: boolean
+  login: string | null
 }
 
 export type MenuAction = 'open-workspace' | 'open-settings' | 'refresh' | 'quit'
@@ -63,6 +70,9 @@ export interface GitFreddoAPI {
   openInEditor: (relativePath: string) => Promise<void>
   getSettings: () => Promise<AppSettings>
   setSettings: (patch: Partial<AppSettings>) => Promise<AppSettings>
+  githubGetStatus: () => Promise<GitHubStatus>
+  githubConnect: () => Promise<GitHubStatus>
+  githubDisconnect: () => Promise<void>
   aiFill: (params: import('./ai').AiFillParams) => Promise<string>
   onMenuAction: (callback: (action: MenuAction) => void) => () => void
   onLogEntry: (callback: (entry: LogEntry) => void) => () => void

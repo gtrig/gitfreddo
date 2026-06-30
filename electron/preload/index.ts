@@ -25,6 +25,9 @@ const api: GitFreddoAPI = {
   openInEditor: (relativePath) => ipcRenderer.invoke('gitfredo:open-in-editor', relativePath),
   getSettings: () => ipcRenderer.invoke('gitfredo:get-settings'),
   setSettings: (patch) => ipcRenderer.invoke('gitfredo:set-settings', patch),
+  githubGetStatus: () => ipcRenderer.invoke('gitfredo:github-get-status'),
+  githubConnect: () => ipcRenderer.invoke('gitfredo:github-connect'),
+  githubDisconnect: () => ipcRenderer.invoke('gitfredo:github-disconnect'),
   aiFill: (params: AiFillParams) => ipcRenderer.invoke('gitfredo:ai-fill', params),
   onMenuAction: (callback) => {
     const listener = (_event: Electron.IpcRendererEvent, action: MenuAction) => callback(action)
