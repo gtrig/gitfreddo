@@ -50,22 +50,6 @@ export function CommitGraphOverlay({
       className="pointer-events-none shrink-0"
       aria-hidden
     >
-      {Array.from({ length: layout.laneCount }, (_, column) => {
-        const x = columnCenterX(column, DEFAULT_GRAPH_METRICS)
-        return (
-          <line
-            key={`lane-${column}`}
-            x1={x}
-            y1={0}
-            x2={x}
-            y2={height}
-            stroke={colors.lane(column)}
-            strokeWidth={column === WORKING_TREE_COLUMN ? 1.5 : 1}
-            opacity={column === WORKING_TREE_COLUMN ? 0.14 : 0.08}
-          />
-        )
-      })}
-
       {showWorkingRow && headRow && (
         <path
           d={buildWipToHeadPath(wipX, wipY, headY)}
@@ -93,10 +77,10 @@ export function CommitGraphOverlay({
             key={`${edge.fromKey}-${edge.toKey}-${edge.kind}`}
             d={buildGraphEdgePath(x1, y1, x2, y2, edge.kind === 'merge' ? 'merge' : 'parent')}
             fill="none"
-            stroke={edge.kind === 'merge' ? colors.merge : colors.edge}
-            strokeWidth={1.75}
+            stroke={colors.lane(edge.kind === 'merge' ? edge.toColumn : edge.fromColumn)}
+            strokeWidth={2.1}
             strokeLinecap="round"
-            opacity={0.9}
+            opacity={0.96}
           />
         )
       })}
@@ -105,7 +89,7 @@ export function CommitGraphOverlay({
         <circle
           cx={wipX}
           cy={wipY}
-          r={workingSelected ? 5 : 4.5}
+          r={workingSelected ? 4.6 : 4.1}
           fill={colors.wip}
           stroke={workingSelected ? colors.selected : colors.wipStroke}
           strokeWidth={workingSelected ? 2 : 1.5}
@@ -122,7 +106,7 @@ export function CommitGraphOverlay({
             key={row.key}
             cx={x}
             cy={y}
-            r={selected ? 5 : 4.5}
+            r={selected ? 4.7 : 4.2}
             fill={row.isMerge ? colors.merge : row.isHead ? colors.head : colors.lane(row.column)}
             stroke={selected ? colors.selected : row.isHead ? colors.headStroke : colors.nodeStroke}
             strokeWidth={selected ? 2 : 1.5}

@@ -8,6 +8,8 @@ import { graphWidth, DEFAULT_GRAPH_METRICS } from '@/lib/graphMetrics'
 import { countWorkingChanges } from '@/lib/workingChanges'
 import { CommitGraphOverlay } from './CommitGraphOverlay'
 
+const COMPACT_ROW_HEIGHT = Math.max(34, GRAPH_ROW_HEIGHT - 16)
+
 export function CommitTimeline() {
   const connected = useWorkspaceStore((s) => s.connected)
   const { data: graph, isLoading, error } = useLogGraph(connected)
@@ -45,6 +47,7 @@ export function CommitTimeline() {
               showWorkingRow={showWorkingRow}
               workingSelected={selection?.kind === 'working'}
               selectedHash={selectedHash}
+              rowHeight={COMPACT_ROW_HEIGHT}
             />
           </div>
 
@@ -53,32 +56,42 @@ export function CommitTimeline() {
               <button
                 type="button"
                 onClick={() => selectTimelineNode('working', 'changes')}
-                style={{ height: GRAPH_ROW_HEIGHT }}
-                className={`flex w-full items-center gap-3 px-4 text-left text-sm hover:bg-gf-bg/50 ${
-                  selection?.kind === 'working' ? 'bg-gf-surface/60' : ''
+                style={{ height: COMPACT_ROW_HEIGHT }}
+                className={`flex w-full items-center justify-between gap-3 border-b border-gf-border/50 px-3 text-left text-xs hover:bg-gf-bg/50 ${
+                  selection?.kind === 'working' ? 'bg-gf-accent/20' : ''
                 }`}
               >
-                <span className="font-medium text-amber-300">Uncommitted changes</span>
-                {changeCounts && (
-                  <span className="flex flex-wrap items-center gap-2 text-xs">
-                    {changeCounts.added > 0 && (
-                      <span className="text-emerald-400">{changeCounts.added} added</span>
-                    )}
-                    {changeCounts.modified > 0 && (
-                      <span className="text-amber-400">{changeCounts.modified} modified</span>
-                    )}
-                    {changeCounts.deleted > 0 && (
-                      <span className="text-rose-400">{changeCounts.deleted} deleted</span>
-                    )}
-                  </span>
-                )}
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="font-medium text-amber-300">Uncommitted changes</span>
+                  {workingStatus?.branch && (
+                    <span className="shrink-0 rounded bg-gf-surface px-1 py-0.5 text-[10px] text-gf-fg-muted">
+                      {workingStatus.branch}
+                    </span>
+                  )}
+                  {changeCounts && (
+                    <span className="flex flex-wrap items-center gap-2 text-[10px]">
+                      {changeCounts.modified > 0 && (
+                        <span className="text-amber-400">{changeCounts.modified} modified</span>
+                      )}
+                      {changeCounts.added > 0 && (
+                        <span className="text-emerald-400">+{changeCounts.added} added</span>
+                      )}
+                      {changeCounts.deleted > 0 && (
+                        <span className="text-rose-400">-{changeCounts.deleted} deleted</span>
+                      )}
+                    </span>
+                  )}
+                </span>
+                <span className="shrink-0 rounded border border-gf-border-strong px-2 py-0.5 text-[10px] text-gf-fg-subtle">
+                  View Changes
+                </span>
               </button>
             )}
 
             {commits.length === 0 && (
               <p
-                className="px-4 text-sm text-gf-fg-subtle"
-                style={{ height: GRAPH_ROW_HEIGHT, lineHeight: `${GRAPH_ROW_HEIGHT}px` }}
+                className="px-3 text-sm text-gf-fg-subtle"
+                style={{ height: COMPACT_ROW_HEIGHT, lineHeight: `${COMPACT_ROW_HEIGHT}px` }}
               >
                 No commits yet.
               </p>
@@ -92,28 +105,33 @@ export function CommitTimeline() {
                   key={commit.hash}
                   type="button"
                   onClick={() => selectTimelineNode('commit', commit.hash)}
-                  style={{ height: GRAPH_ROW_HEIGHT }}
-                  className={`flex w-full items-center gap-3 overflow-hidden px-4 text-left hover:bg-gf-bg/50 ${
-                    selected ? 'bg-gf-surface/60' : ''
+                  style={{ height: COMPACT_ROW_HEIGHT }}
+                  className={`flex w-full items-center gap-2 overflow-hidden border-b border-gf-border/40 px-3 text-left hover:bg-gf-bg/50 ${
+                    selected ? 'bg-gf-accent/20' : ''
                   }`}
                 >
-                  <div className="min-w-0 flex-1 leading-tight">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono text-xs text-gf-fg-subtle">{commit.shortHash}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="shrink-0 font-mono text-[11px] text-gf-fg-subtle">{commit.shortHash}</span>
                       {branchRef && (
-                        <span className={`text-xs ${branchColor(branchRef)}`}>{branchRef}</span>
+                        <span
+                          className={`shrink-0 rounded-sm border border-gf-border/70 px-1 py-0.5 text-[10px] leading-none ${branchColor(
+                            branchRef
+                          )}`}
+                        >
+                          {branchRef}
+                        </span>
                       )}
                       {commit.hash === head && (
-                        <span className="text-xs text-emerald-400">HEAD</span>
+                        <span className="shrink-0 rounded-sm border border-emerald-500/40 px-1 py-0.5 text-[10px] leading-none text-emerald-400">
+                          HEAD
+                        </span>
                       )}
                       {commit.parents.length > 1 && (
-                        <span className="text-xs text-violet-400">merge</span>
+                        <span className="shrink-0 text-[10px] text-violet-400">merge</span>
                       )}
+                      <p className="min-w-0 truncate text-[12px] text-gf-fg">{commit.subject}</p>
                     </div>
-                    <p className="mt-0.5 truncate text-sm text-gf-fg">{commit.subject}</p>
-                    <p className="mt-0.5 truncate text-xs text-gf-fg-subtle">
-                      {commit.author.name} · {new Date(commit.author.date).toLocaleString()}
-                    </p>
                   </div>
                 </button>
               )

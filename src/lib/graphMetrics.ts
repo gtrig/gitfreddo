@@ -9,16 +9,16 @@ export interface GraphMetrics {
 export const WORKING_TREE_COLUMN = 0
 
 export const DEFAULT_GRAPH_METRICS: GraphMetrics = {
-  laneWidth: 28,
-  minGraphWidth: 72,
-  sidePadding: 12,
+  laneWidth: 18,
+  minGraphWidth: 56,
+  sidePadding: 8,
   // Base 4.2; effective radius is scaled in commitGraphPaths (currently ×0.945).
   cornerRadius: 4.2
 }
 
 export const GRAPH_LANE_WIDTH_MIN = 18
 export const GRAPH_LANE_WIDTH_MAX = 64
-export const GRAPH_LANE_WIDTH_DEFAULT = 28
+export const GRAPH_LANE_WIDTH_DEFAULT = 18
 
 const STORAGE_KEY = 'gitfredo.timeline.graphLaneWidth'
 

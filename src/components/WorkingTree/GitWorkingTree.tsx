@@ -1,8 +1,11 @@
+import { useMemo, useState } from 'react'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
 import { useWorkingStatus } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { statusColor, statusLabel, type GitFileChange } from '@/lib/types'
+import { buildFileTree, collectFolderPaths, countCommitFiles, type FileTreeNode } from '@/lib/fileTree'
+import type { CommitFileItem } from '@/lib/types'
 
 function FileRow({
   file,
@@ -20,14 +23,14 @@ function FileRow({
       <button
         type="button"
         onClick={onSelect}
-        className={`min-w-0 flex-1 rounded px-2 py-1 text-left text-sm hover:bg-gf-surface-hover ${
+        className={`min-w-0 flex-1 rounded px-2 py-1 text-left text-xs hover:bg-gf-surface-hover ${
           selected ? 'bg-gf-surface text-white' : 'text-gf-fg-muted'
         }`}
       >
-        <span className={`mr-2 font-mono text-xs ${statusColor(file.status)}`}>
+        <span className={`mr-2 inline-block w-3 text-center font-mono text-[11px] ${statusColor(file.status)}`}>
           {statusLabel(file.status)}
         </span>
-        {file.path}
+        <span className="font-mono">{file.path}</span>
       </button>
       {onStage && (
         <button
@@ -42,12 +45,119 @@ function FileRow({
   )
 }
 
+function toCommitKind(status: GitFileChange['status']): CommitFileItem['kind'] {
+  if (status === 'added' || status === 'untracked' || status === 'copied') return 'added'
+  if (status === 'deleted') return 'removed'
+  return 'changed'
+}
+
+function toTreeItems(files: GitFileChange[]): CommitFileItem[] {
+  return files.map((file) => ({ path: file.path, kind: toCommitKind(file.status) }))
+}
+
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      aria-hidden
+      className={`h-3 w-3 shrink-0 text-gf-fg-subtle transition-transform ${open ? 'rotate-90' : ''}`}
+      fill="currentColor"
+    >
+      <path d="M6 4l4 4-4 4V4z" />
+    </svg>
+  )
+}
+
+function FolderCounts({
+  counts
+}: {
+  counts: ReturnType<typeof countCommitFiles>
+}) {
+  return (
+    <span className="inline-flex items-center gap-2 text-[10px]">
+      {counts.changed > 0 && <span className="text-amber-400">{counts.changed}</span>}
+      {counts.added > 0 && <span className="text-emerald-400">+{counts.added}</span>}
+      {counts.removed > 0 && <span className="text-rose-400">-{counts.removed}</span>}
+    </span>
+  )
+}
+
+function TreeNode({
+  node,
+  depth,
+  selectedFile,
+  setSelectedFile,
+  expandedPaths,
+  toggleExpanded,
+  pathToFile,
+  mode,
+  onStage
+}: {
+  node: FileTreeNode
+  depth: number
+  selectedFile: string | null
+  setSelectedFile: (path: string, mode: 'working' | 'staged') => void
+  expandedPaths: Set<string>
+  toggleExpanded: (path: string) => void
+  pathToFile: Map<string, GitFileChange>
+  mode: 'working' | 'staged'
+  onStage?: (path: string) => void
+}) {
+  if (node.type === 'folder') {
+    const open = expandedPaths.has(node.path)
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => toggleExpanded(node.path)}
+          className="flex w-full items-center gap-2 px-2 py-1 text-left text-xs text-gf-fg-muted hover:bg-gf-surface-hover"
+          style={{ paddingLeft: 8 + depth * 12 }}
+        >
+          <Chevron open={open} />
+          <span className="min-w-0 flex-1 truncate">{node.name}</span>
+          <FolderCounts counts={node.counts} />
+        </button>
+        {open &&
+          node.children.map((child) => (
+            <TreeNode
+              key={child.path}
+              node={child}
+              depth={depth + 1}
+              selectedFile={selectedFile}
+              setSelectedFile={setSelectedFile}
+              expandedPaths={expandedPaths}
+              toggleExpanded={toggleExpanded}
+              pathToFile={pathToFile}
+              mode={mode}
+              onStage={onStage}
+            />
+          ))}
+      </>
+    )
+  }
+
+  const file = pathToFile.get(node.path)
+  if (!file) return null
+  return (
+    <div style={{ paddingLeft: 18 + depth * 12 }}>
+      <FileRow
+        file={file}
+        selected={selectedFile === file.path}
+        onSelect={() => setSelectedFile(file.path, mode)}
+        onStage={onStage ? () => onStage(file.path) : undefined}
+      />
+    </div>
+  )
+}
+
 export function GitWorkingTree() {
   const connected = useWorkspaceStore((s) => s.connected)
   const { data, isLoading, error } = useWorkingStatus(connected)
   const { stageAdd, stageReset } = useGitMutations()
   const selectedFile = useSelectionStore((s) => s.selectedWorkingFile)
   const setSelectedWorkingFile = useSelectionStore((s) => s.setSelectedWorkingFile)
+  const [viewMode, setViewMode] = useState<'path' | 'tree'>('tree')
+  const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set())
 
   if (!connected) {
     return <p className="p-4 text-sm text-gf-fg-subtle">Open a repository to view changes.</p>
@@ -62,57 +172,133 @@ export function GitWorkingTree() {
     mode: 'working' | 'staged',
     canStage: boolean
   ) => (
-    <div className="mb-4">
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gf-fg-subtle">{title}</h3>
+    <div className="mb-3">
+      <h3 className="mb-1 text-[11px] font-semibold text-gf-fg-subtle">
+        {title} ({files.length})
+      </h3>
       {files.length === 0 ? (
-        <p className="text-xs text-gf-fg-subtle">None</p>
+        <p className="text-xs text-gf-fg-subtle">—</p>
       ) : (
-        <div className="space-y-0.5">
-          {files.map((file) => (
-            <FileRow
-              key={file.path}
-              file={file}
-              selected={selectedFile === file.path}
-              onSelect={() => setSelectedWorkingFile(file.path, mode)}
-              onStage={
-                canStage
-                  ? () => void stageAdd.mutateAsync({ paths: [file.path] })
-                  : () => void stageReset.mutateAsync({ paths: [file.path] })
-              }
-            />
-          ))}
-        </div>
+        <>
+          {viewMode === 'path' ? (
+            <div className="space-y-0.5">
+              {files.map((file) => (
+                <FileRow
+                  key={file.path}
+                  file={file}
+                  selected={selectedFile === file.path}
+                  onSelect={() => setSelectedWorkingFile(file.path, mode)}
+                  onStage={
+                    canStage
+                      ? () => void stageAdd.mutateAsync({ paths: [file.path] })
+                      : () => void stageReset.mutateAsync({ paths: [file.path] })
+                  }
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-0.5">
+              {buildFileTree(toTreeItems(files))
+                .children.map((node) => (
+                  <TreeNode
+                    key={node.path}
+                    node={node}
+                    depth={0}
+                    selectedFile={selectedFile}
+                    setSelectedFile={setSelectedWorkingFile}
+                    expandedPaths={expandedPaths}
+                    toggleExpanded={(path) =>
+                      setExpandedPaths((current) => {
+                        const next = new Set(current)
+                        if (next.has(path)) next.delete(path)
+                        else next.add(path)
+                        return next
+                      })
+                    }
+                    pathToFile={new Map(files.map((f) => [f.path, f]))}
+                    mode={mode}
+                    onStage={
+                      canStage
+                        ? (path) => void stageAdd.mutateAsync({ paths: [path] })
+                        : (path) => void stageReset.mutateAsync({ paths: [path] })
+                    }
+                  />
+                ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   )
 
   return (
-    <div className="p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <p className="text-sm text-gf-fg-muted">
-          Branch <span className="text-gf-fg">{data?.branch}</span>
+    <div className="flex h-full flex-col bg-gf-bg-deep">
+      <div className="flex items-center justify-between border-b border-gf-border px-3 py-2">
+        <p className="text-xs text-gf-fg-muted">
+          {data?.staged.length ?? 0} file change{(data?.staged.length ?? 0) === 1 ? '' : 's'} in{' '}
+          <span className="rounded bg-gf-surface px-1 py-0.5 text-[10px] text-gf-fg">{data?.branch}</span>
+        </p>
+        <button
+          type="button"
+          onClick={() => setViewMode((m) => (m === 'path' ? 'tree' : 'path'))}
+          className="rounded border border-gf-border-strong px-2 py-0.5 text-[10px] text-gf-fg-subtle hover:bg-gf-surface"
+        >
+          {viewMode === 'path' ? 'Path' : 'Tree'}
+        </button>
+      </div>
+
+      <div className="flex items-center justify-between border-b border-gf-border px-3 py-2">
+        <div className="flex items-center gap-2">
+          <p className="text-xs text-gf-fg-subtle">
+            {data && (data.unstaged.length > 0 || data.untracked.length > 0 || data.conflicted.length > 0)
+              ? 'Unstage Files'
+              : 'No unstaged files'}
+          </p>
+          <button
+            type="button"
+            onClick={() =>
+              setExpandedPaths(
+                new Set(
+                  collectFolderPaths(buildFileTree(toTreeItems([...(data?.unstaged ?? []), ...(data?.untracked ?? []), ...(data?.conflicted ?? [])])))
+                )
+              )
+            }
+            className="text-[10px] text-gf-accent-fg hover:text-gf-fg"
+          >
+            Expand all
+          </button>
+        </div>
+        {data && !data.isClean && (
+          <button
+            type="button"
+            onClick={() => void stageAdd.mutateAsync({ paths: [] })}
+            className="rounded border border-gf-border-strong px-2 py-0.5 text-[10px] text-gf-fg-muted hover:bg-gf-surface"
+          >
+            Stage All Changes
+          </button>
+        )}
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+        {renderSection(
+          'Unstaged',
+          [...(data?.unstaged ?? []), ...(data?.untracked ?? []), ...(data?.conflicted ?? [])],
+          'working',
+          true
+        )}
+        <div className="my-4 border-t border-gf-border/70" />
+        {renderSection('Staged Files', data?.staged ?? [], 'staged', false)}
+      </div>
+      <div className="border-t border-gf-border px-3 py-2">
+        <p className="text-[10px] text-gf-fg-subtle">
           {data && (data.ahead > 0 || data.behind > 0) && (
-            <span className="ml-2 text-xs text-gf-fg-subtle">
+            <span>
               {data.ahead > 0 && `↑${data.ahead}`}
               {data.behind > 0 && ` ↓${data.behind}`}
             </span>
           )}
         </p>
-        {data && !data.isClean && (
-          <button
-            type="button"
-            onClick={() => void stageAdd.mutateAsync({ paths: [] })}
-            className="text-xs text-gf-accent-fg hover:text-gf-accent-fg"
-          >
-            Stage all
-          </button>
-        )}
       </div>
-      {renderSection('Staged', data?.staged ?? [], 'staged', false)}
-      {renderSection('Unstaged', data?.unstaged ?? [], 'working', true)}
-      {renderSection('Untracked', data?.untracked ?? [], 'working', true)}
-      {(data?.conflicted ?? []).length > 0 &&
-        renderSection('Conflicted', data?.conflicted ?? [], 'working', true)}
     </div>
   )
 }
