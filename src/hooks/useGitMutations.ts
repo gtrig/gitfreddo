@@ -1,12 +1,22 @@
 import { useMutation } from '@tanstack/react-query'
 import { useInvalidateGit } from '@/hooks/useInvalidateGit'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { useToastStore } from '@/stores/toast'
+
+const REMOTE_ACTION_LABELS: Record<string, { success: string; error: string }> = {
+  fetch: { success: 'Fetched from remote', error: 'Fetch failed' },
+  push: { success: 'Pushed to remote', error: 'Push failed' },
+  pull: { success: 'Pulled from remote', error: 'Pull failed' }
+}
 
 export function useGitMutations() {
   const invalidate = useInvalidateGit()
   const repoPath = useWorkspaceStore((s) => s.activePath)
+  const showToast = useToastStore((s) => s.show)
 
   const wrap = (method: string, invalidateKeys: string[] = []) => {
+    const remoteAction = REMOTE_ACTION_LABELS[method]
+
     return useMutation({
       mutationFn: async (params?: unknown) => {
         if (!repoPath) throw new Error('No repository connected')
@@ -14,6 +24,15 @@ export function useGitMutations() {
       },
       onSuccess: () => {
         invalidate(...invalidateKeys)
+        if (remoteAction) {
+          showToast(remoteAction.success, 'success')
+        }
+      },
+      onError: (error) => {
+        if (remoteAction) {
+          const message = error instanceof Error ? error.message : String(error)
+          showToast(message || remoteAction.error, 'error')
+        }
       }
     })
   }

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useRemotes } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
-import { useDefaultRemote } from '@/hooks/useAppSettings'
+import { useResolvedRemote } from '@/hooks/useAppSettings'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { ActionButton, Modal } from '@/components/ui/Modal'
 import { LoadingRow } from '@/components/ui/Spinner'
@@ -14,7 +14,7 @@ export function RemotePanel() {
   const connected = useWorkspaceStore((s) => s.connected)
   const { data: remotes, isLoading, error } = useRemotes(connected)
   const { fetch, push, pull, remoteAdd } = useGitMutations()
-  const defaultRemote = useDefaultRemote()
+  const defaultRemote = useResolvedRemote()
   const show = useToastStore((s) => s.show)
   const [addOpen, setAddOpen] = useState(false)
   const [browseOpen, setBrowseOpen] = useState(false)

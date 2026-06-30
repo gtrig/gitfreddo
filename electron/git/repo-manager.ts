@@ -142,7 +142,7 @@ export class RepoManager {
         return remoteOps.pushRemote(
           cwd,
           git,
-          p.remote as string,
+          p.remote as string | undefined,
           p.branch as string | undefined,
           Boolean(p.setUpstream)
         )

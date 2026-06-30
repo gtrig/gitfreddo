@@ -1,4 +1,4 @@
-import { chmod, writeFile, mkdir } from 'fs/promises'
+import { chmod, mkdir, readFile, writeFile } from 'fs/promises'
 import { homedir } from 'os'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
@@ -9,19 +9,11 @@ const INSTALLED_ASKPASS_PATH = join(SETTINGS_DIR, 'github-askpass.cjs')
 
 const ASKPASS_SOURCE = join(dirname(fileURLToPath(import.meta.url)), 'github-askpass.cjs')
 
-const ASKPASS_CONTENT = `#!/usr/bin/env node
-const token = process.env.GITFREDO_GITHUB_TOKEN || ''
-process.stdout.write('x-access-token\\n' + token)
-`
-
 async function ensureAskpassScript(): Promise<string> {
   await mkdir(SETTINGS_DIR, { recursive: true })
-  try {
-    await writeFile(INSTALLED_ASKPASS_PATH, ASKPASS_CONTENT, { flag: 'wx' })
-    await chmod(INSTALLED_ASKPASS_PATH, 0o755)
-  } catch {
-    // already exists
-  }
+  const source = await readFile(ASKPASS_SOURCE, 'utf8')
+  await writeFile(INSTALLED_ASKPASS_PATH, source)
+  await chmod(INSTALLED_ASKPASS_PATH, 0o755)
   return INSTALLED_ASKPASS_PATH
 }
 

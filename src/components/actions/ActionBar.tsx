@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useGitMutations } from '@/hooks/useGitMutations'
-import { useDefaultRemote } from '@/hooks/useAppSettings'
+import { useResolvedRemote } from '@/hooks/useAppSettings'
 import { ConflictPanel } from '@/components/ConflictPanel/ConflictPanel'
 import { useMergeStatus } from '@/hooks/useGit'
 import { Spinner } from '@/components/ui/Spinner'
@@ -38,7 +38,7 @@ function ActionBarButton({
 export function ActionBar() {
   const connected = useWorkspaceStore((s) => s.connected)
   const { fetch, pull, push, stashPush } = useGitMutations()
-  const defaultRemote = useDefaultRemote()
+  const defaultRemote = useResolvedRemote()
   const { data: mergeStatus } = useMergeStatus(connected)
 
   if (!connected) return null
