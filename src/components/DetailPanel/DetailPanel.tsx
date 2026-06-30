@@ -20,7 +20,7 @@ export function DetailPanel() {
 
   if (!connected) {
     return (
-      <aside className="flex h-full items-center justify-center p-4 text-sm text-zinc-600">
+      <aside className="flex h-full items-center justify-center p-4 text-sm text-gf-fg-subtle">
         Select a repository tab.
       </aside>
     )
@@ -28,7 +28,7 @@ export function DetailPanel() {
 
   if (selection?.kind === 'working') {
     return (
-      <aside className="h-full overflow-y-auto border-l border-zinc-800">
+      <aside className="h-full overflow-y-auto border-l border-gf-border">
         <GitWorkingTree />
       </aside>
     )
@@ -36,21 +36,21 @@ export function DetailPanel() {
 
   if (selection?.kind === 'commit' && commit) {
     return (
-      <aside className="h-full overflow-y-auto border-l border-zinc-800 p-4">
-        <h2 className="font-mono text-sm text-sky-400">{commit.shortHash}</h2>
-        <p className="mt-2 text-sm font-medium text-zinc-100">{commit.subject}</p>
-        <p className="mt-1 text-xs text-zinc-500">
+      <aside className="h-full overflow-y-auto border-l border-gf-border p-4">
+        <h2 className="font-mono text-sm text-gf-accent-fg">{commit.shortHash}</h2>
+        <p className="mt-2 text-sm font-medium text-gf-fg">{commit.subject}</p>
+        <p className="mt-1 text-xs text-gf-fg-subtle">
           {commit.author.name} &lt;{commit.author.email}&gt;
         </p>
-        <p className="text-xs text-zinc-500">{new Date(commit.author.date).toLocaleString()}</p>
+        <p className="text-xs text-gf-fg-subtle">{new Date(commit.author.date).toLocaleString()}</p>
         {commit.refs.length > 0 && (
-          <p className="mt-2 text-xs text-zinc-400">Refs: {commit.refs.join(', ')}</p>
+          <p className="mt-2 text-xs text-gf-fg-muted">Refs: {commit.refs.join(', ')}</p>
         )}
-        <pre className="mt-4 whitespace-pre-wrap text-xs text-zinc-400">{commit.message}</pre>
+        <pre className="mt-4 whitespace-pre-wrap text-xs text-gf-fg-muted">{commit.message}</pre>
         {showOutput.data && (
           <div className="mt-4">
-            <h3 className="text-xs font-semibold uppercase text-zinc-500">Files changed</h3>
-            <pre className="mt-2 whitespace-pre-wrap font-mono text-xs text-zinc-400">
+            <h3 className="text-xs font-semibold uppercase text-gf-fg-subtle">Files changed</h3>
+            <pre className="mt-2 whitespace-pre-wrap font-mono text-xs text-gf-fg-muted">
               {showOutput.data}
             </pre>
           </div>
@@ -60,7 +60,7 @@ export function DetailPanel() {
   }
 
   return (
-    <aside className="flex h-full items-center justify-center border-l border-zinc-800 p-4 text-sm text-zinc-600">
+    <aside className="flex h-full items-center justify-center border-l border-gf-border p-4 text-sm text-gf-fg-subtle">
       Select a commit or uncommitted changes.
     </aside>
   )

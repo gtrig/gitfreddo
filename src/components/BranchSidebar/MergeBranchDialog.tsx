@@ -19,9 +19,9 @@ export function MergeBranchDialog({ sourceBranch, onClose }: MergeBranchDialogPr
   return (
     <Modal open title={`Merge ${sourceBranch}`} onClose={onClose}>
       <div className="space-y-3 p-4">
-        <p className="text-sm text-zinc-400">
-          Merge <span className="text-zinc-200">{sourceBranch}</span> into{' '}
-          <span className="text-zinc-200">{current?.name ?? 'current branch'}</span>?
+        <p className="text-sm text-gf-fg-muted">
+          Merge <span className="text-gf-fg">{sourceBranch}</span> into{' '}
+          <span className="text-gf-fg">{current?.name ?? 'current branch'}</span>?
         </p>
         {error && <p className="text-sm text-red-400">{error}</p>}
         <div className="flex justify-end gap-2">

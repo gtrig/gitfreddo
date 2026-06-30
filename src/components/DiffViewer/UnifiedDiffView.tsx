@@ -8,15 +8,15 @@ function formatLineNo(value: number | null): string {
 function unifiedRowClass(kind: DiffRow['kind']): string {
   switch (kind) {
     case 'add':
-      return 'bg-[#1b3728]/80'
+      return 'bg-gf-diff-add'
     case 'remove':
-      return 'bg-[#3d1f24]/80'
+      return 'bg-gf-diff-del'
     case 'hunk':
-      return 'bg-[#1c2d41]/60 text-sky-300/90'
+      return 'bg-gf-diff-hunk text-gf-accent-fg/90'
     case 'context':
       return 'bg-transparent'
     default:
-      return 'bg-transparent text-zinc-500'
+      return 'bg-transparent text-gf-fg-subtle'
   }
 }
 
@@ -27,11 +27,11 @@ function unifiedTextClass(kind: DiffRow['kind']): string {
     case 'remove':
       return 'text-red-200'
     case 'hunk':
-      return 'text-sky-300/90'
+      return 'text-gf-accent-fg/90'
     case 'context':
-      return 'text-zinc-300'
+      return 'text-gf-fg-muted'
     default:
-      return 'text-zinc-500'
+      return 'text-gf-fg-subtle'
   }
 }
 
@@ -56,12 +56,12 @@ interface UnifiedDiffViewProps {
 
 export function UnifiedDiffView({ rows, loading, emptyMessage }: UnifiedDiffViewProps) {
   if (loading) {
-    return <p className="px-4 py-6 text-sm text-zinc-500">Loading diff…</p>
+    return <p className="px-4 py-6 text-sm text-gf-fg-subtle">Loading diff…</p>
   }
 
   if (rows.length === 0) {
     return (
-      <p className="px-4 py-6 text-sm text-zinc-500">
+      <p className="px-4 py-6 text-sm text-gf-fg-subtle">
         {emptyMessage ?? 'No diff content for this file.'}
       </p>
     )
@@ -75,7 +75,7 @@ export function UnifiedDiffView({ rows, loading, emptyMessage }: UnifiedDiffView
         <div key={groupIndex}>
           {group[0]?.kind === 'hunk' && (
             <div
-              className={`border-y border-zinc-800/80 px-4 py-1 ${unifiedRowClass('hunk')} ${unifiedTextClass('hunk')}`}
+              className={`border-y border-gf-border/80 px-4 py-1 ${unifiedRowClass('hunk')} ${unifiedTextClass('hunk')}`}
             >
               {group[0].content}
             </div>
@@ -87,19 +87,19 @@ export function UnifiedDiffView({ rows, loading, emptyMessage }: UnifiedDiffView
                 key={`${groupIndex}-${index}`}
                 className={`grid grid-cols-[44px_44px_20px_minmax(0,1fr)] ${unifiedRowClass(row.kind)}`}
               >
-                <span className="select-none border-r border-zinc-800/60 bg-[#161b22] px-2 text-right text-[11px] text-zinc-600">
+                <span className="select-none border-r border-gf-border/60 bg-gf-diff-gutter px-2 text-right text-[11px] text-gf-fg-subtle">
                   {formatLineNo(row.oldLine)}
                 </span>
-                <span className="select-none border-r border-zinc-800/60 bg-[#161b22] px-2 text-right text-[11px] text-zinc-600">
+                <span className="select-none border-r border-gf-border/60 bg-gf-diff-gutter px-2 text-right text-[11px] text-gf-fg-subtle">
                   {formatLineNo(row.newLine)}
                 </span>
                 <span
-                  className={`select-none border-r border-zinc-800/60 px-1 text-center text-[11px] ${
+                  className={`select-none border-r border-gf-border/60 px-1 text-center text-[11px] ${
                     row.kind === 'add'
                       ? 'text-emerald-400'
                       : row.kind === 'remove'
                         ? 'text-red-400'
-                        : 'text-zinc-700'
+                        : 'text-gf-fg-subtle'
                   }`}
                 >
                   {markerForKind(row.kind)}

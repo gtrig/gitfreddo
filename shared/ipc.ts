@@ -4,7 +4,14 @@ export interface CliResult {
   code: number
 }
 
+export type AppTheme = 'dark' | 'freddo'
+
+export function normalizeAppTheme(value: unknown): AppTheme {
+  return value === 'freddo' ? 'freddo' : 'dark'
+}
+
 export interface AppSettings {
+  theme: AppTheme
   gitBinaryPath: string
   recentRepos: string[]
   openRepoTabs: string[]

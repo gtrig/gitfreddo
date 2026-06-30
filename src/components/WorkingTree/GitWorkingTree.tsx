@@ -20,8 +20,8 @@ function FileRow({
       <button
         type="button"
         onClick={onSelect}
-        className={`min-w-0 flex-1 rounded px-2 py-1 text-left text-sm hover:bg-zinc-800 ${
-          selected ? 'bg-zinc-800 text-white' : 'text-zinc-300'
+        className={`min-w-0 flex-1 rounded px-2 py-1 text-left text-sm hover:bg-gf-surface-hover ${
+          selected ? 'bg-gf-surface text-white' : 'text-gf-fg-muted'
         }`}
       >
         <span className={`mr-2 font-mono text-xs ${statusColor(file.status)}`}>
@@ -33,7 +33,7 @@ function FileRow({
         <button
           type="button"
           onClick={onStage}
-          className="rounded px-2 py-0.5 text-[10px] text-zinc-500 hover:bg-zinc-800"
+          className="rounded px-2 py-0.5 text-[10px] text-gf-fg-subtle hover:bg-gf-surface-hover"
         >
           stage
         </button>
@@ -50,10 +50,10 @@ export function GitWorkingTree() {
   const setSelectedWorkingFile = useSelectionStore((s) => s.setSelectedWorkingFile)
 
   if (!connected) {
-    return <p className="p-4 text-sm text-zinc-600">Open a repository to view changes.</p>
+    return <p className="p-4 text-sm text-gf-fg-subtle">Open a repository to view changes.</p>
   }
 
-  if (isLoading) return <p className="p-4 text-sm text-zinc-500">Loading…</p>
+  if (isLoading) return <p className="p-4 text-sm text-gf-fg-subtle">Loading…</p>
   if (error) return <p className="text-sm text-red-400 p-4">{(error as Error).message}</p>
 
   const renderSection = (
@@ -63,9 +63,9 @@ export function GitWorkingTree() {
     canStage: boolean
   ) => (
     <div className="mb-4">
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">{title}</h3>
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gf-fg-subtle">{title}</h3>
       {files.length === 0 ? (
-        <p className="text-xs text-zinc-600">None</p>
+        <p className="text-xs text-gf-fg-subtle">None</p>
       ) : (
         <div className="space-y-0.5">
           {files.map((file) => (
@@ -89,10 +89,10 @@ export function GitWorkingTree() {
   return (
     <div className="p-4">
       <div className="mb-3 flex items-center justify-between">
-        <p className="text-sm text-zinc-400">
-          Branch <span className="text-zinc-200">{data?.branch}</span>
+        <p className="text-sm text-gf-fg-muted">
+          Branch <span className="text-gf-fg">{data?.branch}</span>
           {data && (data.ahead > 0 || data.behind > 0) && (
-            <span className="ml-2 text-xs text-zinc-500">
+            <span className="ml-2 text-xs text-gf-fg-subtle">
               {data.ahead > 0 && `↑${data.ahead}`}
               {data.behind > 0 && ` ↓${data.behind}`}
             </span>
@@ -102,7 +102,7 @@ export function GitWorkingTree() {
           <button
             type="button"
             onClick={() => void stageAdd.mutateAsync({ paths: [] })}
-            className="text-xs text-sky-400 hover:text-sky-300"
+            className="text-xs text-gf-accent-fg hover:text-gf-accent-fg"
           >
             Stage all
           </button>

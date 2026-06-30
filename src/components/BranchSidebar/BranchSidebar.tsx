@@ -22,7 +22,7 @@ export function BranchSidebar() {
     return (
       <aside className="p-4">
         <CollapsibleSection sectionId="sidebar.branches" title="Branches" defaultOpen>
-          <p className="text-sm text-zinc-600">Open a repository to view branches.</p>
+          <p className="text-sm text-gf-fg-subtle">Open a repository to view branches.</p>
         </CollapsibleSection>
       </aside>
     )
@@ -35,7 +35,7 @@ export function BranchSidebar() {
         title="Branches"
         headerActions={<ActionButton onClick={() => setCreateOpen(true)}>+ New</ActionButton>}
       >
-        {isLoading && <p className="text-sm text-zinc-500">Loading…</p>}
+        {isLoading && <p className="text-sm text-gf-fg-subtle">Loading…</p>}
         {error && <p className="text-sm text-red-400">{(error as Error).message}</p>}
         <ul className="space-y-1">
           {(branches ?? [])
@@ -49,7 +49,7 @@ export function BranchSidebar() {
                     if (!branch.isCurrent) void checkout.mutateAsync({ name: branch.name })
                   }}
                   className={`min-w-0 flex-1 rounded px-2 py-1.5 text-left text-sm ${
-                    branch.isCurrent ? 'bg-zinc-800 text-white' : 'text-zinc-300 hover:bg-zinc-900'
+                    branch.isCurrent ? 'bg-gf-surface text-white' : 'text-gf-fg-muted hover:bg-gf-bg'
                   }`}
                   title="Click to focus commit · Double-click to checkout"
                 >
@@ -58,7 +58,7 @@ export function BranchSidebar() {
                     <span className="ml-2 text-xs text-emerald-400">current</span>
                   )}
                   {(branch.ahead > 0 || branch.behind > 0) && (
-                    <span className="ml-2 text-xs text-zinc-500">
+                    <span className="ml-2 text-xs text-gf-fg-subtle">
                       {branch.ahead > 0 && `↑${branch.ahead}`}
                       {branch.behind > 0 && ` ↓${branch.behind}`}
                     </span>
@@ -68,7 +68,7 @@ export function BranchSidebar() {
                   <button
                     type="button"
                     onClick={() => setMergeSource(branch.name)}
-                    className="rounded px-1.5 py-1 text-[10px] text-zinc-500 hover:bg-zinc-800"
+                    className="rounded px-1.5 py-1 text-[10px] text-gf-fg-subtle hover:bg-gf-surface-hover"
                     title="Merge into current branch"
                   >
                     merge
@@ -78,7 +78,7 @@ export function BranchSidebar() {
                   <button
                     type="button"
                     onClick={() => setPendingDelete(branch.name)}
-                    className="rounded px-1.5 py-1 text-[10px] text-zinc-500 hover:bg-zinc-800 hover:text-red-400"
+                    className="rounded px-1.5 py-1 text-[10px] text-gf-fg-subtle hover:bg-gf-surface-hover hover:text-red-400"
                     title="Delete branch"
                   >
                     ×

@@ -34,20 +34,20 @@ export function DiffOverlay({ onClose }: DiffOverlayProps) {
   if (!path) return null
 
   return (
-    <div className="absolute inset-0 z-20 flex flex-col bg-zinc-950/95">
-      <header className="flex items-center justify-between border-b border-zinc-800 px-4 py-2">
-        <p className="truncate text-sm text-zinc-300">{path}</p>
+    <div className="absolute inset-0 z-20 flex flex-col bg-gf-bg-deep/95">
+      <header className="flex items-center justify-between border-b border-gf-border px-4 py-2">
+        <p className="truncate text-sm text-gf-fg-muted">{path}</p>
         <button
           type="button"
           onClick={onClose}
-          className="rounded border border-zinc-700 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-900"
+          className="rounded border border-gf-border-strong px-3 py-1 text-xs text-gf-fg-muted hover:bg-gf-bg"
         >
           Close
         </button>
       </header>
       <div className="min-h-0 flex-1 overflow-auto p-4">
         {workingDiff.isLoading || stagedDiff.isLoading ? (
-          <p className="text-sm text-zinc-500">Loading diff…</p>
+          <p className="text-sm text-gf-fg-subtle">Loading diff…</p>
         ) : (
           <UnifiedDiffView rows={rows} loading={workingDiff.isLoading || stagedDiff.isLoading} />
         )}

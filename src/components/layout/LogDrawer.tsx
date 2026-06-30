@@ -3,10 +3,10 @@ import { useLogStore, type LogTab } from '@/stores/logs'
 import type { LogEntry, LogLevel } from '../../../shared/ipc'
 
 const LEVEL_STYLES: Record<LogLevel, string> = {
-  info: 'text-zinc-300',
+  info: 'text-gf-fg-muted',
   warn: 'text-amber-300',
   error: 'text-red-300',
-  debug: 'text-zinc-500'
+  debug: 'text-gf-fg-subtle'
 }
 
 function formatTime(timestamp: number): string {
@@ -19,11 +19,11 @@ function formatTime(timestamp: number): string {
 
 function LogLine({ entry }: { entry: LogEntry }) {
   return (
-    <div className="border-b border-zinc-800/60 px-3 py-1 font-mono text-[11px] leading-relaxed">
-      <span className="text-zinc-600">{formatTime(entry.timestamp)}</span>{' '}
+    <div className="border-b border-gf-border/60 px-3 py-1 font-mono text-[11px] leading-relaxed">
+      <span className="text-gf-fg-subtle">{formatTime(entry.timestamp)}</span>{' '}
       <span className={LEVEL_STYLES[entry.level]}>{entry.message}</span>
       {entry.details && (
-        <pre className="mt-0.5 whitespace-pre-wrap break-all text-zinc-500">{entry.details}</pre>
+        <pre className="mt-0.5 whitespace-pre-wrap break-all text-gf-fg-subtle">{entry.details}</pre>
       )}
     </div>
   )
@@ -51,7 +51,7 @@ function LogList({ entries }: { entries: LogEntry[] }) {
   }, [entries])
 
   if (entries.length === 0) {
-    return <p className="px-3 py-6 text-center text-xs text-zinc-600">No log entries yet.</p>
+    return <p className="px-3 py-6 text-center text-xs text-gf-fg-subtle">No log entries yet.</p>
   }
 
   return (
@@ -80,13 +80,13 @@ function TabButton({
       onClick={onClick}
       className={`rounded px-2.5 py-1 text-xs ${
         active
-          ? 'bg-zinc-800 text-zinc-100'
-          : 'text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300'
+          ? 'bg-gf-surface text-gf-fg'
+          : 'text-gf-fg-subtle hover:bg-gf-bg hover:text-gf-fg-muted'
       }`}
     >
       {label}
       {count > 0 && (
-        <span className="ml-1.5 rounded bg-zinc-700 px-1.5 py-0.5 text-[10px] text-zinc-400">
+        <span className="ml-1.5 rounded bg-gf-surface-hover px-1.5 py-0.5 text-[10px] text-gf-fg-muted">
           {count}
         </span>
       )}
@@ -143,7 +143,7 @@ export function LogDrawer() {
 
   return (
     <div
-      className={`flex shrink-0 flex-col border-t border-zinc-800 bg-zinc-950 ${
+      className={`flex shrink-0 flex-col border-t border-gf-border bg-gf-bg-deep ${
         resizing ? 'select-none' : ''
       }`}
       style={{ height: open ? height : 32 }}
@@ -153,20 +153,20 @@ export function LogDrawer() {
           role="separator"
           aria-orientation="horizontal"
           onMouseDown={onResizeStart}
-          className="h-1 shrink-0 cursor-row-resize bg-zinc-800/80 hover:bg-zinc-700"
+          className="h-1 shrink-0 cursor-row-resize bg-gf-surface/80 hover:bg-gf-surface-hover"
         />
       )}
 
-      <div className="flex shrink-0 items-center gap-2 border-b border-zinc-800 px-3 py-1.5">
+      <div className="flex shrink-0 items-center gap-2 border-b border-gf-border px-3 py-1.5">
         <button
           type="button"
           onClick={toggleOpen}
-          className="text-xs text-zinc-400 hover:text-zinc-200"
+          className="text-xs text-gf-fg-muted hover:text-gf-fg"
           aria-expanded={open}
         >
           {open ? '▼' : '▲'} Logs
           {!open && totalCount > 0 && (
-            <span className="ml-1.5 text-zinc-600">({totalCount})</span>
+            <span className="ml-1.5 text-gf-fg-subtle">({totalCount})</span>
           )}
         </button>
 
@@ -188,14 +188,14 @@ export function LogDrawer() {
             <button
               type="button"
               onClick={() => clear(activeTab)}
-              className="rounded px-2 py-0.5 text-[11px] text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300"
+              className="rounded px-2 py-0.5 text-[11px] text-gf-fg-subtle hover:bg-gf-bg hover:text-gf-fg-muted"
             >
               Clear
             </button>
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="rounded px-2 py-0.5 text-[11px] text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300"
+              className="rounded px-2 py-0.5 text-[11px] text-gf-fg-subtle hover:bg-gf-bg hover:text-gf-fg-muted"
             >
               Close
             </button>
@@ -221,13 +221,13 @@ export function LogToggleButton() {
       onClick={toggleOpen}
       className={`rounded border px-3 py-1 text-xs ${
         open
-          ? 'border-zinc-600 bg-zinc-800 text-zinc-200'
-          : 'border-zinc-700 text-zinc-300 hover:bg-zinc-900'
+          ? 'border-gf-border-strong bg-gf-surface text-gf-fg'
+          : 'border-gf-border-strong text-gf-fg-muted hover:bg-gf-bg'
       }`}
       title="Toggle log drawer (Ctrl+`)"
     >
       Logs
-      {total > 0 && <span className="ml-1.5 text-zinc-500">({total})</span>}
+      {total > 0 && <span className="ml-1.5 text-gf-fg-subtle">({total})</span>}
     </button>
   )
 }

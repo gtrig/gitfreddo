@@ -8,7 +8,7 @@ interface SettingsSidebarProps {
 
 export function SettingsSidebar({ active, onSelect }: SettingsSidebarProps) {
   return (
-    <nav className="w-40 shrink-0 border-r border-zinc-800 pr-2" aria-label="Settings sections">
+    <nav className="w-40 shrink-0 border-r border-gf-border pr-2" aria-label="Settings sections">
       <ul className="space-y-0.5">
         {SETTINGS_SECTIONS.map((item) => (
           <li key={item.id}>
@@ -18,8 +18,8 @@ export function SettingsSidebar({ active, onSelect }: SettingsSidebarProps) {
               aria-current={active === item.id ? 'page' : undefined}
               className={`w-full rounded px-3 py-2 text-left text-sm transition ${
                 active === item.id
-                  ? 'bg-zinc-800 text-zinc-100'
-                  : 'text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300'
+                  ? 'bg-gf-surface text-gf-fg'
+                  : 'text-gf-fg-subtle hover:bg-gf-bg hover:text-gf-fg-muted'
               }`}
             >
               {item.label}

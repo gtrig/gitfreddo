@@ -48,19 +48,19 @@ export function Modal({ title, open, onClose, children, size = 'md' }: ModalProp
         aria-modal="true"
         aria-labelledby="modal-title"
         tabIndex={-1}
-        className={`w-full rounded-lg border border-zinc-700 bg-zinc-900 shadow-xl outline-none ${
+        className={`w-full rounded-lg border border-gf-border-strong bg-gf-bg shadow-xl outline-none ${
           size === 'lg' ? 'max-w-2xl' : 'max-w-md'
         }`}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
-          <h2 id="modal-title" className="text-sm font-semibold text-zinc-100">
+        <div className="flex items-center justify-between border-b border-gf-border px-4 py-3">
+          <h2 id="modal-title" className="text-sm font-semibold text-gf-fg">
             {title}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-zinc-500 hover:text-zinc-300"
+            className="text-gf-fg-subtle hover:text-gf-fg-muted"
             aria-label="Close"
           >
             ×
@@ -93,13 +93,13 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   return (
     <Modal title={title} open={open} onClose={onCancel}>
-      <p className="mb-4 text-sm text-zinc-300">{message}</p>
+      <p className="mb-4 text-sm text-gf-fg-muted">{message}</p>
       <div className="flex justify-end gap-2">
         <button
           type="button"
           onClick={onCancel}
           disabled={busy}
-          className="rounded border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 disabled:opacity-50"
+          className="rounded border border-gf-border-strong px-3 py-1.5 text-xs text-gf-fg-muted hover:bg-gf-surface-hover disabled:opacity-50"
         >
           Cancel
         </button>
@@ -107,7 +107,7 @@ export function ConfirmDialog({
           type="button"
           onClick={onConfirm}
           disabled={busy}
-          className="rounded bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-500 disabled:opacity-50"
+          className="rounded bg-gf-accent px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
         >
           {busy ? 'Working…' : confirmLabel}
         </button>
@@ -117,14 +117,14 @@ export function ConfirmDialog({
 }
 
 export function FieldLabel({ children }: { children: ReactNode }) {
-  return <label className="mb-1 block text-xs font-medium text-zinc-400">{children}</label>
+  return <label className="mb-1 block text-xs font-medium text-gf-fg-muted">{children}</label>
 }
 
 export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className={`w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-sky-600 ${props.className ?? ''}`}
+      className={`w-full rounded border border-gf-border-strong bg-gf-bg-deep px-3 py-2 text-sm text-gf-fg outline-none focus:border-gf-accent ${props.className ?? ''}`}
     />
   )
 }
@@ -133,7 +133,7 @@ export function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement
   return (
     <textarea
       {...props}
-      className={`w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-sky-600 ${props.className ?? ''}`}
+      className={`w-full rounded border border-gf-border-strong bg-gf-bg-deep px-3 py-2 text-sm text-gf-fg outline-none focus:border-gf-accent ${props.className ?? ''}`}
     />
   )
 }
@@ -142,7 +142,7 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
       {...props}
-      className={`w-full rounded border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-sky-600 ${props.className ?? ''}`}
+      className={`w-full rounded border border-gf-border-strong bg-gf-bg-deep px-3 py-2 text-sm text-gf-fg outline-none focus:border-gf-accent ${props.className ?? ''}`}
     />
   )
 }
@@ -154,10 +154,10 @@ export function ActionButton({
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'danger' }) {
   const styles =
     variant === 'primary'
-      ? 'bg-sky-600 text-white hover:bg-sky-500'
+      ? 'bg-gf-accent text-white hover:opacity-90'
       : variant === 'danger'
         ? 'border border-red-800 text-red-300 hover:bg-red-950'
-        : 'border border-zinc-700 text-zinc-300 hover:bg-zinc-800'
+        : 'border border-gf-border-strong text-gf-fg-muted hover:bg-gf-surface-hover'
 
   return (
     <button

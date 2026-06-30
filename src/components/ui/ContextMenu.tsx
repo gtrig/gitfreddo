@@ -72,7 +72,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
   return (
     <div
       ref={menuRef}
-      className="fixed z-50 min-w-[180px] rounded-md border border-zinc-700 bg-zinc-900 py-1 shadow-xl"
+      className="fixed z-50 min-w-[180px] rounded-md border border-gf-border-strong bg-gf-bg py-1 shadow-xl"
       style={{ left: x, top: y }}
       role="menu"
     >
@@ -92,7 +92,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
           className={`block w-full px-3 py-1.5 text-left text-xs disabled:cursor-default disabled:opacity-40 ${
             item.danger
               ? 'text-red-300 hover:bg-red-950/60'
-              : 'text-zinc-200 hover:bg-zinc-800'
+              : 'text-gf-fg hover:bg-gf-surface-hover'
           }`}
         >
           {item.label}

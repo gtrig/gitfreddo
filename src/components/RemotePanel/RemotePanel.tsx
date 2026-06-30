@@ -19,7 +19,7 @@ export function RemotePanel() {
     return (
       <aside className="p-4">
         <CollapsibleSection sectionId="sidebar.remotes" title="Remotes" defaultOpen>
-          <p className="text-sm text-zinc-600">Open a repository to view remotes.</p>
+          <p className="text-sm text-gf-fg-subtle">Open a repository to view remotes.</p>
         </CollapsibleSection>
       </aside>
     )
@@ -43,13 +43,13 @@ export function RemotePanel() {
             Push
           </ActionButton>
         </div>
-        {isLoading && <p className="text-sm text-zinc-500">Loading…</p>}
+        {isLoading && <p className="text-sm text-gf-fg-subtle">Loading…</p>}
         {error && <p className="text-sm text-red-400">{(error as Error).message}</p>}
         <ul className="space-y-2">
           {(remotes ?? []).map((remote) => (
-            <li key={remote.name} className="rounded border border-zinc-800 p-2 text-sm">
-              <p className="font-medium text-zinc-200">{remote.name}</p>
-              <p className="truncate text-xs text-zinc-500" title={remote.url}>
+            <li key={remote.name} className="rounded border border-gf-border p-2 text-sm">
+              <p className="font-medium text-gf-fg">{remote.name}</p>
+              <p className="truncate text-xs text-gf-fg-subtle" title={remote.url}>
                 {remote.url}
               </p>
             </li>
@@ -60,20 +60,20 @@ export function RemotePanel() {
       <Modal open={addOpen} title="Add remote" onClose={() => setAddOpen(false)}>
         <div className="space-y-3 p-4">
           <label className="block text-sm">
-            <span className="text-zinc-400">Name</span>
+            <span className="text-gf-fg-muted">Name</span>
             <input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              className="mt-1 w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5"
+              className="mt-1 w-full rounded border border-gf-border-strong bg-gf-bg px-2 py-1.5"
               placeholder="origin"
             />
           </label>
           <label className="block text-sm">
-            <span className="text-zinc-400">URL</span>
+            <span className="text-gf-fg-muted">URL</span>
             <input
               value={newUrl}
               onChange={(e) => setNewUrl(e.target.value)}
-              className="mt-1 w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5"
+              className="mt-1 w-full rounded border border-gf-border-strong bg-gf-bg px-2 py-1.5"
               placeholder="https://github.com/user/repo.git"
             />
           </label>

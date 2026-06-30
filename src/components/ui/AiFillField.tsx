@@ -54,7 +54,7 @@ function AiFillStarButton({
       disabled={pending}
       aria-label={pending ? 'Filling with AI…' : 'Fill with AI'}
       title={pending ? 'Filling…' : 'Fill with AI (Ctrl+Shift+Space)'}
-      className={`absolute right-2 flex h-6 w-6 items-center justify-center rounded text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-sky-400 disabled:cursor-not-allowed disabled:opacity-40 ${positionClassName}`}
+      className={`absolute right-2 flex h-6 w-6 items-center justify-center rounded text-gf-fg-subtle transition-colors hover:bg-gf-surface-hover hover:text-gf-accent-fg disabled:cursor-not-allowed disabled:opacity-40 ${positionClassName}`}
     >
       <FourRayStarIcon className={`h-3.5 w-3.5 ${pending ? 'animate-pulse' : ''}`} />
     </button>

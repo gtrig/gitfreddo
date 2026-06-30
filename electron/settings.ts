@@ -2,11 +2,13 @@ import { readFile, writeFile, mkdir } from 'fs/promises'
 import { homedir } from 'os'
 import { join } from 'path'
 import type { AppSettings } from '../shared/ipc'
+import { normalizeAppTheme } from '../shared/ipc'
 
 const SETTINGS_DIR = join(homedir(), '.config', 'gitfredo')
 const SETTINGS_PATH = join(SETTINGS_DIR, 'settings.json')
 
 const DEFAULT_SETTINGS: AppSettings = {
+  theme: 'dark',
   gitBinaryPath: 'git',
   recentRepos: [],
   openRepoTabs: [],
@@ -37,7 +39,8 @@ export async function loadSettings(): Promise<AppSettings> {
       aiProvider: parsed.aiProvider === 'api' ? 'api' : 'local',
       aiBaseUrl: parsed.aiBaseUrl ?? DEFAULT_SETTINGS.aiBaseUrl,
       aiApiKey: parsed.aiApiKey ?? '',
-      aiModel: parsed.aiModel ?? ''
+      aiModel: parsed.aiModel ?? '',
+      theme: normalizeAppTheme(parsed.theme)
     }
   } catch {
     return { ...DEFAULT_SETTINGS }

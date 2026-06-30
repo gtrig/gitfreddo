@@ -19,7 +19,7 @@ function Chevron({ open }: { open: boolean }) {
     <svg
       aria-hidden
       viewBox="0 0 16 16"
-      className={`h-3 w-3 shrink-0 text-zinc-500 transition-transform ${open ? 'rotate-90' : ''}`}
+      className={`h-3 w-3 shrink-0 text-gf-fg-subtle transition-transform ${open ? 'rotate-90' : ''}`}
       fill="currentColor"
     >
       <path d="M6 4l4 4-4 4V4z" />
@@ -73,11 +73,11 @@ export function CollapsibleSection({
         <button
           type="button"
           onClick={toggle}
-          className="flex min-w-0 flex-1 items-center gap-1.5 rounded py-0.5 text-left hover:text-zinc-200"
+          className="flex min-w-0 flex-1 items-center gap-1.5 rounded py-0.5 text-left hover:text-gf-fg"
           aria-expanded={open}
         >
           <Chevron open={open} />
-          <span className="truncate text-xs font-semibold uppercase tracking-wide text-zinc-500">
+          <span className="truncate text-xs font-semibold uppercase tracking-wide text-gf-fg-subtle">
             {title}
           </span>
         </button>

@@ -118,7 +118,7 @@ export interface CommitFileItem {
 }
 
 export const BRANCH_COLORS = [
-  'text-sky-400',
+  'text-gf-accent-fg',
   'text-emerald-400',
   'text-amber-400',
   'text-violet-400',
@@ -167,10 +167,10 @@ export function statusColor(status: FileChangeStatus): string {
     case 'renamed':
       return 'text-violet-400'
     case 'untracked':
-      return 'text-zinc-500'
+      return 'text-gf-fg-subtle'
     case 'conflicted':
       return 'text-orange-400'
     default:
-      return 'text-zinc-400'
+      return 'text-gf-fg-muted'
   }
 }

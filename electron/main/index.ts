@@ -14,7 +14,13 @@ import type { AiFillParams } from '../../shared/ai'
 import type { AppSettings, LogEntry } from '../../shared/ipc'
 
 const repoManager = new RepoManager()
+const THEME_BG_COLORS = {
+  dark: '#18181b',
+  freddo: '#1c1612'
+} as const
+
 let settings: AppSettings = {
+  theme: 'dark',
   gitBinaryPath: 'git',
   recentRepos: [],
   openRepoTabs: [],
@@ -33,6 +39,15 @@ function applyGitConfig(): void {
   repoManager.setConfig({ gitBinaryPath: settings.gitBinaryPath })
 }
 
+function applyWindowTheme(theme: AppSettings['theme']): void {
+  const backgroundColor = THEME_BG_COLORS[theme]
+  for (const window of BrowserWindow.getAllWindows()) {
+    if (!window.isDestroyed()) {
+      window.setBackgroundColor(backgroundColor)
+    }
+  }
+}
+
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
     width: 1280,
@@ -40,7 +55,7 @@ function createWindow(): void {
     minWidth: 960,
     minHeight: 640,
     show: false,
-    backgroundColor: '#0f1117',
+    backgroundColor: THEME_BG_COLORS[settings.theme],
     title: 'GitFredo',
     webPreferences: {
       preload: join(__dirname, '../preload/index.mjs'),
@@ -134,6 +149,9 @@ function registerIpc(): void {
   ipcMain.handle('gitfredo:set-settings', async (_event, patch: Partial<AppSettings>) => {
     settings = await saveSettings(patch)
     applyGitConfig()
+    if (patch.theme) {
+      applyWindowTheme(settings.theme)
+    }
     return settings
   })
 

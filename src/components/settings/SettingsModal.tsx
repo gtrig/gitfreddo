@@ -71,7 +71,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
   return (
     <Modal title="Settings" open={open} onClose={onClose} size="lg">
       {loading || !form ? (
-        <p className="text-sm text-zinc-500">Loading…</p>
+        <p className="text-sm text-gf-fg-subtle">Loading…</p>
       ) : (
         <>
           <div className="flex min-h-[280px] gap-4">
@@ -86,7 +86,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
               {section === 'ai' && <AiSettingsPanel form={form} onChange={updateForm} />}
             </div>
           </div>
-          <div className="mt-4 flex justify-end gap-2 border-t border-zinc-800 pt-4">
+          <div className="mt-4 flex justify-end gap-2 border-t border-gf-border pt-4">
             <ActionButton onClick={onClose}>Cancel</ActionButton>
             <ActionButton variant="primary" onClick={() => void handleSave()} disabled={saving}>
               {saving ? 'Saving…' : 'Save'}

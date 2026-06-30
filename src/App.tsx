@@ -118,7 +118,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-zinc-900 text-zinc-100">
+    <div className="flex h-screen flex-col bg-gf-bg text-gf-fg">
       <WorkspaceBanner onReconnect={reconnect} />
       <ToastBanner />
       {error && (
@@ -127,8 +127,8 @@ export default function App() {
         </div>
       )}
       <WorkspaceTabs />
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 px-4 py-2">
-        <p className="min-w-0 truncate text-sm text-zinc-500" title={activePath ?? undefined}>
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-gf-border px-4 py-2">
+        <p className="min-w-0 truncate text-sm text-gf-fg-subtle" title={activePath ?? undefined}>
           {activePath}
         </p>
         <div className="flex flex-wrap items-center gap-3">
@@ -137,7 +137,7 @@ export default function App() {
           <button
             type="button"
             onClick={() => setSettingsOpen(true)}
-            className="rounded border border-zinc-700 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-900"
+            className="rounded border border-gf-border-strong px-3 py-1 text-xs text-gf-fg-muted hover:bg-gf-bg"
           >
             Settings
           </button>
@@ -161,8 +161,8 @@ export default function App() {
         right={<DetailPanel />}
         overlay={
           connecting ? (
-            <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-zinc-950/40">
-              <p className="rounded bg-zinc-900 px-4 py-2 text-sm text-zinc-300">Opening repository…</p>
+            <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-gf-bg-deep/40">
+              <p className="rounded bg-gf-bg px-4 py-2 text-sm text-gf-fg-muted">Opening repository…</p>
             </div>
           ) : null
         }

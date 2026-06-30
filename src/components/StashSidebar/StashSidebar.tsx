@@ -24,7 +24,7 @@ export function StashSidebar() {
     return (
       <aside className="p-4">
         <CollapsibleSection sectionId="sidebar.stash" title="Stash" defaultOpen>
-          <p className="text-sm text-zinc-600">Open a repository to view stashes.</p>
+          <p className="text-sm text-gf-fg-subtle">Open a repository to view stashes.</p>
         </CollapsibleSection>
       </aside>
     )
@@ -53,41 +53,41 @@ export function StashSidebar() {
           </ActionButton>
         </div>
 
-        {isLoading && <p className="text-sm text-zinc-500">Loading…</p>}
+        {isLoading && <p className="text-sm text-gf-fg-subtle">Loading…</p>}
         {error && <p className="text-sm text-red-400">{(error as Error).message}</p>}
         {!isLoading && (stashes ?? []).length === 0 && (
-          <p className="text-sm text-zinc-500">No stashes.</p>
+          <p className="text-sm text-gf-fg-subtle">No stashes.</p>
         )}
         <ul className="space-y-1">
           {(stashes ?? []).map((stash) => (
-            <li key={stash.index} className="rounded border border-zinc-800 p-2">
+            <li key={stash.index} className="rounded border border-gf-border p-2">
               <button
                 type="button"
                 onClick={() => selectStash(stash.index)}
-                className="w-full text-left text-sm text-zinc-300 hover:text-white"
+                className="w-full text-left text-sm text-gf-fg-muted hover:text-white"
               >
-                <span className="text-xs text-zinc-500">stash@{'{'}{stash.index}{'}'}</span>
+                <span className="text-xs text-gf-fg-subtle">stash@{'{'}{stash.index}{'}'}</span>
                 <p className="mt-0.5 truncate">{stash.message || '(no message)'}</p>
               </button>
               <div className="mt-2 flex gap-1">
                 <button
                   type="button"
                   onClick={() => void stashApply.mutateAsync({ index: stash.index })}
-                  className="rounded bg-zinc-800 px-2 py-0.5 text-[10px] text-zinc-400 hover:text-white"
+                  className="rounded bg-gf-surface px-2 py-0.5 text-[10px] text-gf-fg-muted hover:text-white"
                 >
                   Apply
                 </button>
                 <button
                   type="button"
                   onClick={() => void stashPop.mutateAsync({ index: stash.index })}
-                  className="rounded bg-zinc-800 px-2 py-0.5 text-[10px] text-zinc-400 hover:text-white"
+                  className="rounded bg-gf-surface px-2 py-0.5 text-[10px] text-gf-fg-muted hover:text-white"
                 >
                   Pop
                 </button>
                 <button
                   type="button"
                   onClick={() => void stashDrop.mutateAsync({ index: stash.index })}
-                  className="rounded bg-zinc-800 px-2 py-0.5 text-[10px] text-red-400 hover:text-red-300"
+                  className="rounded bg-gf-surface px-2 py-0.5 text-[10px] text-red-400 hover:text-red-300"
                 >
                   Drop
                 </button>

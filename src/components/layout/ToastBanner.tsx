@@ -14,7 +14,7 @@ export function ToastBanner() {
       ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200'
       : tone === 'error'
         ? 'border-red-500/30 bg-red-500/10 text-red-200'
-        : 'border-sky-500/30 bg-sky-500/10 text-sky-200'
+        : 'border-gf-accent/30 bg-gf-accent/10 text-gf-accent-fg'
 
   return (
     <div className={`flex items-center justify-between border-b px-4 py-2 text-sm ${styles}`}>

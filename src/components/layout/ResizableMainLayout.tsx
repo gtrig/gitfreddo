@@ -52,7 +52,7 @@ function ColumnResizeHandle({
       role="separator"
       aria-orientation="vertical"
       onMouseDown={onMouseDown}
-      className={`w-1 shrink-0 cursor-col-resize bg-zinc-800/60 hover:bg-zinc-600 ${resizing ? 'bg-zinc-500' : ''}`}
+      className={`w-1 shrink-0 cursor-col-resize bg-gf-surface/60 hover:bg-gf-surface-hover ${resizing ? 'bg-gf-fg-subtle' : ''}`}
     />
   )
 }
@@ -128,7 +128,7 @@ export function ResizableMainLayout({ left, center, right, overlay }: ResizableM
       className={`relative flex min-h-0 flex-1 ${resizing ? 'select-none' : ''}`}
     >
       <div
-        className="flex min-h-0 shrink-0 flex-col overflow-auto border-r border-zinc-800 bg-zinc-950"
+        className="flex min-h-0 shrink-0 flex-col overflow-auto border-r border-gf-border bg-gf-bg-deep"
         style={{ width: leftWidth }}
       >
         {left}
@@ -140,7 +140,7 @@ export function ResizableMainLayout({ left, center, right, overlay }: ResizableM
         onResizeEnd={() => setResizing(false)}
       />
 
-      <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden border-r border-zinc-800">
+      <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden border-r border-gf-border">
         {center}
       </div>
 

@@ -11,12 +11,7 @@ import {
   graphWidth,
   WORKING_TREE_COLUMN
 } from '@/lib/graphMetrics'
-
-const LANE_COLORS = ['#71717a', '#38bdf8', '#a78bfa', '#f472b6', '#fbbf24', '#34d399', '#fb923c']
-
-function laneColor(column: number): string {
-  return LANE_COLORS[column % LANE_COLORS.length]
-}
+import { useGraphColors } from '@/hooks/useGraphColors'
 
 export function CommitGraphOverlay({
   layout,
@@ -31,6 +26,7 @@ export function CommitGraphOverlay({
   selectedHash: string | null
   rowHeight?: number
 }) {
+  const colors = useGraphColors()
   const rowCount = showWorkingRow ? layout.rows.length + 1 : layout.rows.length
   const height = graphHeight(rowCount, rowHeight)
   const width = graphWidth(layout.laneCount, DEFAULT_GRAPH_METRICS)
@@ -57,7 +53,7 @@ export function CommitGraphOverlay({
             y1={0}
             x2={x}
             y2={height}
-            stroke={laneColor(column)}
+            stroke={colors.lane(column)}
             strokeWidth={column === WORKING_TREE_COLUMN ? 1.5 : 1}
             opacity={column === WORKING_TREE_COLUMN ? 0.14 : 0.08}
           />
@@ -68,7 +64,7 @@ export function CommitGraphOverlay({
         <path
           d={buildWipToHeadPath(wipX, wipY, headY)}
           fill="none"
-          stroke="#f59e0b"
+          stroke={colors.wip}
           strokeWidth={2}
           strokeDasharray="4 3"
           opacity={0.85}
@@ -91,7 +87,7 @@ export function CommitGraphOverlay({
             key={`${edge.fromKey}-${edge.toKey}-${edge.kind}`}
             d={buildGraphEdgePath(x1, y1, x2, y2, edge.kind === 'merge' ? 'merge' : 'parent')}
             fill="none"
-            stroke={edge.kind === 'merge' ? '#34d399' : '#71717a'}
+            stroke={edge.kind === 'merge' ? colors.merge : colors.edge}
             strokeWidth={1.75}
             strokeLinecap="round"
             opacity={0.9}
@@ -104,8 +100,8 @@ export function CommitGraphOverlay({
           cx={wipX}
           cy={wipY}
           r={workingSelected ? 5 : 4.5}
-          fill="#f59e0b"
-          stroke={workingSelected ? '#38bdf8' : '#fbbf24'}
+          fill={colors.wip}
+          stroke={workingSelected ? colors.selected : colors.wipStroke}
           strokeWidth={workingSelected ? 2 : 1.5}
         />
       )}
@@ -121,8 +117,8 @@ export function CommitGraphOverlay({
             cx={x}
             cy={y}
             r={selected ? 5 : 4.5}
-            fill={row.isMerge ? '#34d399' : row.isHead ? '#34d399' : laneColor(row.column)}
-            stroke={selected ? '#38bdf8' : row.isHead ? '#6ee7b7' : '#52525b'}
+            fill={row.isMerge ? colors.merge : row.isHead ? colors.head : colors.lane(row.column)}
+            stroke={selected ? colors.selected : row.isHead ? colors.headStroke : colors.nodeStroke}
             strokeWidth={selected ? 2 : 1.5}
           />
         )

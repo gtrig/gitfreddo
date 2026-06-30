@@ -15,11 +15,11 @@ export function CreateBranchModal({ open, onClose }: CreateBranchModalProps) {
     <Modal open={open} title="Create branch" onClose={onClose}>
       <div className="space-y-3 p-4">
         <label className="block text-sm">
-          <span className="text-zinc-400">Branch name</span>
+          <span className="text-gf-fg-muted">Branch name</span>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="mt-1 w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5"
+            className="mt-1 w-full rounded border border-gf-border-strong bg-gf-bg px-2 py-1.5"
           />
         </label>
         <div className="flex justify-end gap-2">

@@ -28,28 +28,28 @@ export function ActionBar() {
         <button
           type="button"
           onClick={() => void stashPush.mutateAsync({})}
-          className="rounded border border-zinc-700 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-900"
+          className="rounded border border-gf-border-strong px-3 py-1 text-xs text-gf-fg-muted hover:bg-gf-bg"
         >
           Stash
         </button>
         <button
           type="button"
           onClick={() => void fetch.mutateAsync({ remote: defaultRemote })}
-          className="rounded border border-zinc-700 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-900"
+          className="rounded border border-gf-border-strong px-3 py-1 text-xs text-gf-fg-muted hover:bg-gf-bg"
         >
           Fetch
         </button>
         <button
           type="button"
           onClick={() => void pull.mutateAsync({ remote: defaultRemote })}
-          className="rounded border border-zinc-700 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-900"
+          className="rounded border border-gf-border-strong px-3 py-1 text-xs text-gf-fg-muted hover:bg-gf-bg"
         >
           Pull
         </button>
         <button
           type="button"
           onClick={() => void push.mutateAsync({ remote: defaultRemote })}
-          className="rounded border border-zinc-700 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-900"
+          className="rounded border border-gf-border-strong px-3 py-1 text-xs text-gf-fg-muted hover:bg-gf-bg"
         >
           Push
         </button>
