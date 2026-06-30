@@ -2,7 +2,10 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import { workspaceTabLabel } from '@/stores/workspace'
 import { repoNameFromUrl } from '@/lib/git'
 
+import { RepoPicker } from '@/components/GitHub/RepoPicker'
+
 type HubView = 'hub' | 'clone'
+type CloneTab = 'url' | 'github'
 
 interface WorkspaceHubProps {
   variant: 'page' | 'modal'
@@ -66,6 +69,11 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
 
   const [cloneUrl, setCloneUrl] = useState('')
   const [cloneParent, setCloneParent] = useState('')
+  const [cloneTab, setCloneTab] = useState<CloneTab>('url')
+  const [selectedRepo, setSelectedRepo] = useState<string | null>(null)
+  const [createRepoOpen, setCreateRepoOpen] = useState(false)
+  const [newRepoName, setNewRepoName] = useState('')
+  const [newRepoPrivate, setNewRepoPrivate] = useState(false)
 
   const loadRecents = useCallback(() => {
     void window.gitfredo.getRecentRepos().then(setRecents)
@@ -104,7 +112,11 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
     )
   }, [recents, search])
 
-  const predictedCloneName = cloneUrl.trim() ? repoNameFromUrl(cloneUrl) : ''
+  const predictedCloneName = (cloneTab === 'github' && selectedRepo
+    ? selectedRepo.split('/').pop()
+    : cloneUrl.trim()
+      ? repoNameFromUrl(cloneUrl)
+      : '') ?? ''
 
   async function handleOpenFolder() {
     setError(null)
@@ -142,10 +154,40 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
     }
   }
 
+  async function handleCreateOnGitHub() {
+    setError(null)
+    if (!newRepoName.trim()) {
+      setError('Repository name is required')
+      return
+    }
+    if (!cloneParent.trim()) {
+      setError('Choose a folder for the local clone')
+      return
+    }
+    setBusy(true)
+    try {
+      const repo = await window.gitfredo.githubCreateRepo({
+        name: newRepoName.trim(),
+        private: newRepoPrivate
+      })
+      const path = await window.gitfredo.cloneRepository(repo.cloneUrl, cloneParent)
+      await onOpen(path)
+      onClose?.()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function handleClone() {
     setError(null)
-    if (!cloneUrl.trim()) {
-      setError('Enter a repository URL')
+    const url =
+      cloneTab === 'github' && selectedRepo
+        ? `https://github.com/${selectedRepo}.git`
+        : cloneUrl
+    if (!url.trim()) {
+      setError(cloneTab === 'github' ? 'Select a repository' : 'Enter a repository URL')
       return
     }
     if (!cloneParent.trim()) {
@@ -155,7 +197,7 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
 
     setBusy(true)
     try {
-      const path = await window.gitfredo.cloneRepository(cloneUrl, cloneParent)
+      const path = await window.gitfredo.cloneRepository(url, cloneParent)
       await onOpen(path)
       onClose?.()
     } catch (err) {
@@ -195,6 +237,20 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
                 icon={<CloneIcon />}
                 onClick={() => {
                   setView('clone')
+                  setCloneTab('url')
+                  setError(null)
+                  if (!cloneParent && recents[0]) {
+                    setCloneParent(recents[0].replace(/[/\\][^/\\]+$/, ''))
+                  }
+                }}
+                disabled={busy}
+              />
+              <ActionCard
+                title="Create on GitHub"
+                description="Create a new repository on GitHub and clone it locally."
+                icon={<CloneIcon />}
+                onClick={() => {
+                  setCreateRepoOpen(true)
                   setError(null)
                   if (!cloneParent && recents[0]) {
                     setCloneParent(recents[0].replace(/[/\\][^/\\]+$/, ''))
@@ -216,19 +272,47 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
                 ← Back
               </button>
 
-              <div>
-                <label htmlFor="clone-url" className="mb-1 block text-xs font-medium text-gf-fg-muted">
-                  Repository URL
-                </label>
-                <input
-                  id="clone-url"
-                  type="url"
-                  value={cloneUrl}
-                  onChange={(event) => setCloneUrl(event.target.value)}
-                  placeholder="https://github.com/org/repo.git"
-                  className="w-full rounded border border-gf-border-strong bg-gf-bg-deep px-3 py-2 text-sm text-gf-fg placeholder:text-gf-fg-subtle focus:border-gf-accent focus:outline-none"
-                />
+              <div className="flex gap-2">
+                {(['url', 'github'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setCloneTab(tab)}
+                    className={`rounded border px-3 py-1.5 text-xs capitalize ${
+                      cloneTab === tab
+                        ? 'border-gf-accent bg-gf-accent/10 text-gf-fg'
+                        : 'border-gf-border-strong text-gf-fg-muted hover:bg-gf-bg'
+                    }`}
+                  >
+                    {tab === 'url' ? 'URL' : 'GitHub'}
+                  </button>
+                ))}
               </div>
+
+              {cloneTab === 'url' ? (
+                <div>
+                  <label htmlFor="clone-url" className="mb-1 block text-xs font-medium text-gf-fg-muted">
+                    Repository URL
+                  </label>
+                  <input
+                    id="clone-url"
+                    type="url"
+                    value={cloneUrl}
+                    onChange={(event) => setCloneUrl(event.target.value)}
+                    placeholder="https://github.com/org/repo.git"
+                    className="w-full rounded border border-gf-border-strong bg-gf-bg-deep px-3 py-2 text-sm text-gf-fg placeholder:text-gf-fg-subtle focus:border-gf-accent focus:outline-none"
+                  />
+                </div>
+              ) : (
+                <RepoPicker
+                  selectedFullName={selectedRepo}
+                  onSelect={(repo) => {
+                    setSelectedRepo(repo.fullName)
+                    setCloneUrl(repo.cloneUrl)
+                  }}
+                  compact
+                />
+              )}
 
               <div>
                 <label
@@ -322,36 +406,106 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
     </div>
   )
 
-  if (variant === 'page') {
-    return (
-      <div className="flex h-screen flex-col bg-gf-bg text-gf-fg">
-        <div className="mx-auto flex h-full w-full max-w-5xl flex-col py-8">
-          <div className="mb-6 px-6 text-center">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gf-accent-fg">GitFreddo</p>
-          </div>
-          <div className="mx-6 flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gf-border bg-gf-bg-deep shadow-2xl">
-            {content}
-          </div>
+  const createRepoDialog = createRepoOpen ? (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-6">
+      <div className="w-full max-w-md rounded-xl border border-gf-border-strong bg-gf-bg-deep p-4 shadow-2xl">
+        <h2 className="text-sm font-medium text-gf-fg">Create repository on GitHub</h2>
+        <div className="mt-3 space-y-3">
+          <label className="block text-sm">
+            <span className="text-gf-fg-muted">Name</span>
+            <input
+              value={newRepoName}
+              onChange={(e) => setNewRepoName(e.target.value)}
+              className="mt-1 w-full rounded border border-gf-border-strong bg-gf-bg px-2 py-1.5"
+              placeholder="my-new-repo"
+            />
+          </label>
+          <label className="flex items-center gap-2 text-sm text-gf-fg-muted">
+            <input
+              type="checkbox"
+              checked={newRepoPrivate}
+              onChange={(e) => setNewRepoPrivate(e.target.checked)}
+            />
+            Private repository
+          </label>
+          <label className="block text-sm">
+            <span className="text-gf-fg-muted">Clone into</span>
+            <div className="mt-1 flex gap-2">
+              <input
+                readOnly
+                value={cloneParent}
+                placeholder="Choose a parent folder…"
+                className="min-w-0 flex-1 rounded border border-gf-border-strong bg-gf-bg px-2 py-1.5 text-gf-fg-muted"
+              />
+              <button
+                type="button"
+                onClick={() => void handlePickCloneParent()}
+                className="rounded border border-gf-border-strong px-3 py-1.5 text-xs"
+              >
+                Browse
+              </button>
+            </div>
+          </label>
+        </div>
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => setCreateRepoOpen(false)}
+            className="rounded border border-gf-border-strong px-3 py-1.5 text-xs"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleCreateOnGitHub()}
+            disabled={busy}
+            className="rounded bg-gf-accent px-3 py-1.5 text-xs text-white disabled:opacity-50"
+          >
+            {busy ? 'Creating…' : 'Create & clone'}
+          </button>
         </div>
       </div>
+    </div>
+  ) : null
+
+  if (variant === 'page') {
+    return (
+      <>
+        <div className="flex h-screen flex-col bg-gf-bg text-gf-fg">
+          <div className="mx-auto flex h-full w-full max-w-5xl flex-col py-8">
+            <div className="mb-6 px-6 text-center">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gf-accent-fg">
+                GitFreddo
+              </p>
+            </div>
+            <div className="mx-6 flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gf-border bg-gf-bg-deep shadow-2xl">
+              {content}
+            </div>
+          </div>
+        </div>
+        {createRepoDialog}
+      </>
     )
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
-      <div className="flex max-h-[min(720px,90vh)] w-full max-w-4xl flex-col overflow-hidden rounded-xl border border-gf-border-strong bg-gf-bg-deep shadow-2xl">
-        <div className="flex shrink-0 justify-end border-b border-gf-border px-4 py-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded px-2 py-1 text-sm text-gf-fg-subtle hover:bg-gf-bg hover:text-gf-fg-muted"
-            aria-label="Close"
-          >
-            ×
-          </button>
+    <>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
+        <div className="flex max-h-[min(720px,90vh)] w-full max-w-4xl flex-col overflow-hidden rounded-xl border border-gf-border-strong bg-gf-bg-deep shadow-2xl">
+          <div className="flex shrink-0 justify-end border-b border-gf-border px-4 py-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded px-2 py-1 text-sm text-gf-fg-subtle hover:bg-gf-bg hover:text-gf-fg-muted"
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
+          <div className="min-h-0 flex-1 overflow-auto">{content}</div>
         </div>
-        <div className="min-h-0 flex-1 overflow-auto">{content}</div>
       </div>
-    </div>
+      {createRepoDialog}
+    </>
   )
 }

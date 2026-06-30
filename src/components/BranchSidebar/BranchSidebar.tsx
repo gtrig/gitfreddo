@@ -3,20 +3,36 @@ import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
 import { useBranches } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
+import { useGitHubRepoContext } from '@/hooks/useGitHubRepos'
+import { useGitHubStatus } from '@/hooks/useGitHubStatus'
 import { ActionButton, ConfirmDialog } from '@/components/ui/Modal'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { branchColor } from '@/lib/types'
 import { CreateBranchModal } from '@/components/actions/CreateBranchModal'
 import { MergeBranchDialog } from '@/components/BranchSidebar/MergeBranchDialog'
+import { CreatePrModal } from '@/components/GitHub/CreatePrModal'
+import { useInvalidateGitHubPullRequests } from '@/hooks/useGitHubPullRequests'
+import { useToastStore } from '@/stores/toast'
 
 export function BranchSidebar() {
   const connected = useWorkspaceStore((s) => s.connected)
+  const repoPath = useWorkspaceStore((s) => s.activePath)
   const { data: branches, isLoading, error } = useBranches(connected)
+  const { data: ghStatus } = useGitHubStatus()
+  const { data: ghCtx } = useGitHubRepoContext(repoPath, connected)
   const { checkout, deleteBranch } = useGitMutations()
+  const invalidatePrs = useInvalidateGitHubPullRequests()
+  const show = useToastStore((s) => s.show)
   const selectTimelineNode = useSelectionStore((s) => s.selectTimelineNode)
   const [createOpen, setCreateOpen] = useState(false)
   const [mergeSource, setMergeSource] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
+  const [prBranch, setPrBranch] = useState<string | null>(null)
+
+  const defaultBase =
+    branches?.find((b) => b.name === 'main' && !b.isRemote)?.name ??
+    branches?.find((b) => !b.isRemote)?.name ??
+    'main'
 
   if (!connected) {
     return (
@@ -64,6 +80,16 @@ export function BranchSidebar() {
                     </span>
                   )}
                 </button>
+                {!branch.isCurrent && ghStatus?.connected && ghCtx && branch.ahead > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setPrBranch(branch.name)}
+                    className="rounded px-1.5 py-1 text-[10px] text-gf-fg-subtle hover:bg-gf-surface-hover"
+                    title="Start pull request"
+                  >
+                    PR
+                  </button>
+                )}
                 {!branch.isCurrent && (
                   <button
                     type="button"
@@ -104,6 +130,20 @@ export function BranchSidebar() {
             setPendingDelete(null)
           }}
           onCancel={() => setPendingDelete(null)}
+        />
+      )}
+      {prBranch && repoPath && (
+        <CreatePrModal
+          open
+          onClose={() => setPrBranch(null)}
+          defaultHead={prBranch}
+          defaultBase={defaultBase}
+          onSubmit={async (params) => {
+            await window.gitfredo.githubCreatePullRequest(repoPath, params)
+            await invalidatePrs(repoPath)
+            show('Pull request created', 'success')
+            setPrBranch(null)
+          }}
         />
       )}
     </aside>

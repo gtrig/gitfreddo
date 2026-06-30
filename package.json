@@ -39,6 +39,12 @@
   "build": {
     "appId": "com.arctosweblabs.gitfredo",
     "productName": "GitFreddo",
+    "protocols": [
+      {
+        "name": "GitFreddo OAuth",
+        "schemes": ["gitfredo"]
+      }
+    ],
     "directories": {
       "output": "release"
     },

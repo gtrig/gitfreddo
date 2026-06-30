@@ -1,7 +1,9 @@
-import { useState } from 'react'
-import { ActionButton } from '@/components/ui/Modal'
+import { useEffect, useState } from 'react'
+import { ActionButton, TextInput } from '@/components/ui/Modal'
 import { useGitHubStatus, useInvalidateGitHubStatus } from '@/hooks/useGitHubStatus'
 import { useToastStore } from '@/stores/toast'
+
+type ConnectMode = 'oauth' | 'pat'
 
 export function GithubIntegrationCard() {
   const { data: status, isLoading } = useGitHubStatus()
@@ -9,20 +11,40 @@ export function GithubIntegrationCard() {
   const show = useToastStore((s) => s.show)
   const [connecting, setConnecting] = useState(false)
   const [disconnecting, setDisconnecting] = useState(false)
+  const [mode, setMode] = useState<ConnectMode>('oauth')
+  const [pat, setPat] = useState('')
+  const [progress, setProgress] = useState<{ userCode: string; verificationUri: string } | null>(
+    null
+  )
+  const [uploadingKey, setUploadingKey] = useState(false)
 
   const connected = status?.connected ?? false
   const login = status?.login ?? null
+  const avatarUrl = status?.avatarUrl ?? null
+
+  useEffect(() => {
+    const unsubscribe = window.gitfredo.onGitHubConnectProgress((next) => {
+      setProgress(next)
+    })
+    return unsubscribe
+  }, [])
 
   async function handleConnect() {
     setConnecting(true)
+    setProgress(null)
     try {
-      const result = await window.gitfredo.githubConnect()
+      const result =
+        mode === 'pat'
+          ? await window.gitfredo.githubConnectPat(pat)
+          : await window.gitfredo.githubConnect()
       await invalidate()
       show(`Connected to GitHub as @${result.login}`, 'success')
+      setPat('')
     } catch (error) {
       show(error instanceof Error ? error.message : String(error), 'error')
     } finally {
       setConnecting(false)
+      setProgress(null)
     }
   }
 
@@ -39,13 +61,26 @@ export function GithubIntegrationCard() {
     }
   }
 
+  async function handleUploadSshKey() {
+    setUploadingKey(true)
+    try {
+      const result = await window.gitfredo.githubUploadSshKey(`GitFreddo ${new Date().toISOString()}`)
+      show(`SSH key uploaded: ${result.title}`, 'success')
+    } catch (error) {
+      show(error instanceof Error ? error.message : String(error), 'error')
+    } finally {
+      setUploadingKey(false)
+    }
+  }
+
   return (
     <div className="rounded border border-gf-border-strong p-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="text-sm font-medium text-gf-fg">GitHub</h3>
           <p className="mt-1 text-xs leading-relaxed text-gf-fg-subtle">
-            Sign in to authenticate git clone, fetch, push, and pull against GitHub HTTPS remotes.
+            Sign in to browse repositories, manage pull requests and issues, and authenticate git
+            operations.
           </p>
         </div>
         <span
@@ -61,32 +96,83 @@ export function GithubIntegrationCard() {
 
       <div className="mt-3">
         {connected && login ? (
-          <p className="text-xs text-gf-fg">
-            Signed in as <span className="font-medium">@{login}</span>
-          </p>
+          <div className="flex items-center gap-2">
+            {avatarUrl && (
+              <img src={avatarUrl} alt="" className="h-8 w-8 rounded-full border border-gf-border" />
+            )}
+            <p className="text-xs text-gf-fg">
+              Signed in as <span className="font-medium">@{login}</span>
+            </p>
+          </div>
         ) : (
           <p className="text-xs text-gf-fg-muted">No GitHub account linked.</p>
         )}
       </div>
 
-      {connecting && (
-        <p className="mt-2 text-xs text-gf-fg-subtle">
-          Waiting for authorization in your browser… Enter the code shown on GitHub if prompted.
-        </p>
+      {!connected && (
+        <div className="mt-3 flex gap-2">
+          {(['oauth', 'pat'] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setMode(value)}
+              className={`rounded border px-2 py-1 text-[11px] capitalize ${
+                mode === value
+                  ? 'border-gf-accent bg-gf-accent/10 text-gf-fg'
+                  : 'border-gf-border-strong text-gf-fg-muted hover:bg-gf-surface-hover'
+              }`}
+            >
+              {value === 'oauth' ? 'OAuth' : 'Token'}
+            </button>
+          ))}
+        </div>
       )}
 
-      <div className="mt-3 flex gap-2">
+      {!connected && mode === 'pat' && (
+        <div className="mt-3">
+          <TextInput
+            type="password"
+            value={pat}
+            onChange={(e) => setPat(e.target.value)}
+            placeholder="ghp_… or github_pat_…"
+            autoComplete="off"
+          />
+        </div>
+      )}
+
+      {connecting && progress && (
+        <div className="mt-3 rounded border border-gf-border bg-gf-bg/60 p-2">
+          <p className="text-xs text-gf-fg-subtle">
+            Enter this code on GitHub:{' '}
+            <span className="font-mono text-sm font-semibold text-gf-fg">{progress.userCode}</span>
+          </p>
+          <p className="mt-1 text-[11px] text-gf-fg-subtle">
+            Waiting for authorization in your browser…
+          </p>
+        </div>
+      )}
+
+      {connecting && !progress && mode === 'oauth' && (
+        <p className="mt-2 text-xs text-gf-fg-subtle">Starting GitHub authorization…</p>
+      )}
+
+      <div className="mt-3 flex flex-wrap gap-2">
         {connected ? (
-          <ActionButton onClick={() => void handleDisconnect()} disabled={disconnecting}>
-            {disconnecting ? 'Disconnecting…' : 'Disconnect'}
-          </ActionButton>
+          <>
+            <ActionButton onClick={() => void handleDisconnect()} disabled={disconnecting}>
+              {disconnecting ? 'Disconnecting…' : 'Disconnect'}
+            </ActionButton>
+            <ActionButton onClick={() => void handleUploadSshKey()} disabled={uploadingKey}>
+              {uploadingKey ? 'Uploading…' : 'Upload SSH key'}
+            </ActionButton>
+          </>
         ) : (
           <ActionButton
             variant="primary"
             onClick={() => void handleConnect()}
-            disabled={connecting || isLoading}
+            disabled={connecting || isLoading || (mode === 'pat' && !pat.trim())}
           >
-            {connecting ? 'Connecting…' : 'Connect with GitHub'}
+            {connecting ? 'Connecting…' : mode === 'pat' ? 'Connect with token' : 'Connect with GitHub'}
           </ActionButton>
         )}
       </div>

@@ -5,6 +5,7 @@ import { useGitMutations } from '@/hooks/useGitMutations'
 import { useDefaultRemote } from '@/hooks/useAppSettings'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { ActionButton, Modal } from '@/components/ui/Modal'
+import { RepoPicker } from '@/components/GitHub/RepoPicker'
 
 export function RemotePanel() {
   const connected = useWorkspaceStore((s) => s.connected)
@@ -12,6 +13,7 @@ export function RemotePanel() {
   const { fetch, push, pull, remoteAdd } = useGitMutations()
   const defaultRemote = useDefaultRemote()
   const [addOpen, setAddOpen] = useState(false)
+  const [browseOpen, setBrowseOpen] = useState(false)
   const [newName, setNewName] = useState('')
   const [newUrl, setNewUrl] = useState('')
 
@@ -77,6 +79,7 @@ export function RemotePanel() {
               placeholder="https://github.com/user/repo.git"
             />
           </label>
+          <ActionButton onClick={() => setBrowseOpen(true)}>Browse GitHub</ActionButton>
           <div className="flex justify-end gap-2">
             <ActionButton onClick={() => setAddOpen(false)}>Cancel</ActionButton>
             <ActionButton
@@ -90,6 +93,22 @@ export function RemotePanel() {
               Add
             </ActionButton>
           </div>
+        </div>
+      </Modal>
+
+      <Modal open={browseOpen} title="Browse GitHub repositories" onClose={() => setBrowseOpen(false)}>
+        <div className="p-4">
+          <RepoPicker
+            selectedFullName={null}
+            compact
+            onSelect={(repo) => {
+              setNewUrl(repo.cloneUrl)
+              if (!newName) {
+                setNewName(repo.fullName.split('/').pop() ?? 'origin')
+              }
+              setBrowseOpen(false)
+            }}
+          />
         </div>
       </Modal>
     </aside>
