@@ -5,6 +5,7 @@ import { useGitMutations } from '@/hooks/useGitMutations'
 import { useDefaultRemote } from '@/hooks/useAppSettings'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { ActionButton, Modal } from '@/components/ui/Modal'
+import { LoadingRow } from '@/components/ui/Spinner'
 
 export function RemotePanel() {
   const connected = useWorkspaceStore((s) => s.connected)
@@ -33,17 +34,26 @@ export function RemotePanel() {
         headerActions={<ActionButton onClick={() => setAddOpen(true)}>+ Add</ActionButton>}
       >
         <div className="mb-3 flex flex-wrap gap-1">
-          <ActionButton onClick={() => void fetch.mutateAsync({ remote: defaultRemote })}>
+          <ActionButton
+            loading={fetch.isPending}
+            onClick={() => void fetch.mutateAsync({ remote: defaultRemote })}
+          >
             Fetch
           </ActionButton>
-          <ActionButton onClick={() => void pull.mutateAsync({ remote: defaultRemote })}>
+          <ActionButton
+            loading={pull.isPending}
+            onClick={() => void pull.mutateAsync({ remote: defaultRemote })}
+          >
             Pull
           </ActionButton>
-          <ActionButton onClick={() => void push.mutateAsync({ remote: defaultRemote })}>
+          <ActionButton
+            loading={push.isPending}
+            onClick={() => void push.mutateAsync({ remote: defaultRemote })}
+          >
             Push
           </ActionButton>
         </div>
-        {isLoading && <p className="text-sm text-gf-fg-subtle">Loading…</p>}
+        {isLoading && <LoadingRow />}
         {error && <p className="text-sm text-red-400">{(error as Error).message}</p>}
         <ul className="space-y-2">
           {(remotes ?? []).map((remote) => (
@@ -80,6 +90,7 @@ export function RemotePanel() {
           <div className="flex justify-end gap-2">
             <ActionButton onClick={() => setAddOpen(false)}>Cancel</ActionButton>
             <ActionButton
+              loading={remoteAdd.isPending}
               onClick={async () => {
                 await remoteAdd.mutateAsync({ name: newName, url: newUrl })
                 setAddOpen(false)

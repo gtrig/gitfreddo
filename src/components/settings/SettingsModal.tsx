@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Modal, ActionButton } from '@/components/ui/Modal'
+import { LoadingRow } from '@/components/ui/Spinner'
 import type { AppSettings } from '@/hooks/useAppSettings'
 import { useToastStore } from '@/stores/toast'
 import { SettingsSidebar } from '@/components/settings/SettingsSidebar'
@@ -71,7 +72,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
   return (
     <Modal title="Settings" open={open} onClose={onClose} size="lg">
       {loading || !form ? (
-        <p className="text-sm text-gf-fg-subtle">Loading…</p>
+        <LoadingRow />
       ) : (
         <>
           <div className="flex min-h-[280px] gap-4">
@@ -88,7 +89,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
           </div>
           <div className="mt-4 flex justify-end gap-2 border-t border-gf-border pt-4">
             <ActionButton onClick={onClose}>Cancel</ActionButton>
-            <ActionButton variant="primary" onClick={() => void handleSave()} disabled={saving}>
+            <ActionButton variant="primary" onClick={() => void handleSave()} loading={saving}>
               {saving ? 'Saving…' : 'Save'}
             </ActionButton>
           </div>

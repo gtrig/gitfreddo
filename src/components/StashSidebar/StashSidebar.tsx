@@ -5,6 +5,7 @@ import { useStashList, useWorkingStatus } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { ActionButton } from '@/components/ui/Modal'
+import { LoadingRow, Spinner } from '@/components/ui/Spinner'
 import { AiFillTextInput } from '@/components/ui/AiFillField'
 
 export function StashSidebar() {
@@ -43,6 +44,7 @@ export function StashSidebar() {
             placeholder="WIP on feature"
           />
           <ActionButton
+            loading={stashPush.isPending}
             onClick={() =>
               void stashPush
                 .mutateAsync({ message: stashMessage.trim() || undefined })
@@ -53,7 +55,7 @@ export function StashSidebar() {
           </ActionButton>
         </div>
 
-        {isLoading && <p className="text-sm text-gf-fg-subtle">Loading…</p>}
+        {isLoading && <LoadingRow />}
         {error && <p className="text-sm text-red-400">{(error as Error).message}</p>}
         {!isLoading && (stashes ?? []).length === 0 && (
           <p className="text-sm text-gf-fg-subtle">No stashes.</p>
@@ -72,23 +74,38 @@ export function StashSidebar() {
               <div className="mt-2 flex gap-1">
                 <button
                   type="button"
+                  disabled={stashApply.isPending}
                   onClick={() => void stashApply.mutateAsync({ index: stash.index })}
-                  className="rounded bg-gf-surface px-2 py-0.5 text-[10px] text-gf-fg-muted hover:text-white"
+                  className="inline-flex items-center gap-1 rounded bg-gf-surface px-2 py-0.5 text-[10px] text-gf-fg-muted hover:text-white disabled:opacity-50"
                 >
+                  {stashApply.isPending &&
+                    (stashApply.variables as { index: number } | undefined)?.index === stash.index && (
+                    <Spinner size="sm" />
+                  )}
                   Apply
                 </button>
                 <button
                   type="button"
+                  disabled={stashPop.isPending}
                   onClick={() => void stashPop.mutateAsync({ index: stash.index })}
-                  className="rounded bg-gf-surface px-2 py-0.5 text-[10px] text-gf-fg-muted hover:text-white"
+                  className="inline-flex items-center gap-1 rounded bg-gf-surface px-2 py-0.5 text-[10px] text-gf-fg-muted hover:text-white disabled:opacity-50"
                 >
+                  {stashPop.isPending &&
+                    (stashPop.variables as { index: number } | undefined)?.index === stash.index && (
+                    <Spinner size="sm" />
+                  )}
                   Pop
                 </button>
                 <button
                   type="button"
+                  disabled={stashDrop.isPending}
                   onClick={() => void stashDrop.mutateAsync({ index: stash.index })}
-                  className="rounded bg-gf-surface px-2 py-0.5 text-[10px] text-red-400 hover:text-red-300"
+                  className="inline-flex items-center gap-1 rounded bg-gf-surface px-2 py-0.5 text-[10px] text-red-400 hover:text-red-300 disabled:opacity-50"
                 >
+                  {stashDrop.isPending &&
+                    (stashDrop.variables as { index: number } | undefined)?.index === stash.index && (
+                    <Spinner size="sm" className="border-red-400/30 border-t-red-300" />
+                  )}
                   Drop
                 </button>
               </div>

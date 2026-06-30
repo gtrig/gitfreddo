@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { workspaceTabLabel } from '@/stores/workspace'
 import { repoNameFromUrl } from '@/lib/git'
+import { Spinner } from '@/components/ui/Spinner'
 
 type HubView = 'hub' | 'clone'
 
@@ -266,8 +267,9 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
                 type="button"
                 onClick={() => void handleClone()}
                 disabled={busy}
-                className="w-full rounded-md bg-gf-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-gf-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
               >
+                {busy && <Spinner size="sm" className="border-white/30 border-t-white" />}
                 {busy ? 'Cloning…' : 'Clone repository'}
               </button>
             </div>

@@ -13,6 +13,7 @@ import { ToastBanner } from '@/components/layout/ToastBanner'
 import { LogDrawer, LogToggleButton, useLogSubscription } from '@/components/layout/LogDrawer'
 import { ResizableMainLayout } from '@/components/layout/ResizableMainLayout'
 import { SettingsModal } from '@/components/settings/SettingsModal'
+import { Spinner } from '@/components/ui/Spinner'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useAutoRefresh, useManualRefresh } from '@/hooks/useAutoRefresh'
 import { useAppLogger } from '@/hooks/useAppLogger'
@@ -163,7 +164,10 @@ export default function App() {
         overlay={
           connecting ? (
             <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-gf-bg-deep/40">
-              <p className="rounded bg-gf-bg px-4 py-2 text-sm text-gf-fg-muted">Opening repository…</p>
+              <p className="flex items-center gap-2 rounded bg-gf-bg px-4 py-2 text-sm text-gf-fg-muted">
+                <Spinner />
+                Opening repository…
+              </p>
             </div>
           ) : null
         }

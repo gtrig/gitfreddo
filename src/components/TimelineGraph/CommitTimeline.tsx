@@ -3,10 +3,11 @@ import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
 import { useLogGraph, useRepoStatus, useWorkingStatus } from '@/hooks/useGit'
 import { branchColor } from '@/lib/types'
-import { buildGitGraphLayout, GRAPH_ROW_HEIGHT } from '@/lib/gitGraphLayout'
+import { buildGitGraphLayout } from '@/lib/gitGraphLayout'
 import { graphWidth, DEFAULT_GRAPH_METRICS } from '@/lib/graphMetrics'
 import { countWorkingChanges } from '@/lib/workingChanges'
 import { CommitGraphOverlay } from './CommitGraphOverlay'
+import { LoadingRow } from '@/components/ui/Spinner'
 
 const COMPACT_ROW_HEIGHT = 28
 const BRANCH_TAG_COLUMN_WIDTH = 116
@@ -35,7 +36,7 @@ export function CommitTimeline() {
     return <p className="p-4 text-sm text-gf-fg-subtle">Open a repository to view commits.</p>
   }
 
-  if (isLoading) return <p className="p-4 text-sm text-gf-fg-subtle">Loading commits…</p>
+  if (isLoading) return <div className="p-4"><LoadingRow label="Loading commits…" /></div>
   if (error) return <p className="p-4 text-sm text-red-400">{(error as Error).message}</p>
 
   return (

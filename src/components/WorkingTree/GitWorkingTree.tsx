@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
 import { useWorkingStatus } from '@/hooks/useGit'
@@ -6,6 +6,7 @@ import { useGitMutations } from '@/hooks/useGitMutations'
 import { statusColor, statusLabel, type GitFileChange } from '@/lib/types'
 import { buildFileTree, collectFolderPaths, countCommitFiles, type FileTreeNode } from '@/lib/fileTree'
 import type { CommitFileItem } from '@/lib/types'
+import { LoadingRow, Spinner } from '@/components/ui/Spinner'
 
 function FileRow({
   file,
@@ -183,7 +184,7 @@ export function GitWorkingTree() {
     return <p className="p-4 text-sm text-gf-fg-subtle">Open a repository to view changes.</p>
   }
 
-  if (isLoading) return <p className="p-4 text-sm text-gf-fg-subtle">Loading…</p>
+  if (isLoading) return <div className="p-4"><LoadingRow /></div>
   if (error) return <p className="text-sm text-red-400 p-4">{(error as Error).message}</p>
 
   const renderSection = (
@@ -291,9 +292,11 @@ export function GitWorkingTree() {
         {data && !data.isClean && (
           <button
             type="button"
+            disabled={stageAdd.isPending}
             onClick={() => void stageAdd.mutateAsync({ paths: [] })}
-            className="rounded border border-gf-border-strong px-2 py-0.5 text-[10px] text-gf-fg-muted hover:bg-gf-surface"
+            className="inline-flex items-center gap-1 rounded border border-gf-border-strong px-2 py-0.5 text-[10px] text-gf-fg-muted hover:bg-gf-surface disabled:opacity-50"
           >
+            {stageAdd.isPending && <Spinner size="sm" />}
             Stage All Changes
           </button>
         )}

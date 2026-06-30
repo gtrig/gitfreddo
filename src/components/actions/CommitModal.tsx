@@ -42,6 +42,7 @@ export function CommitModal({ open, onClose }: CommitModalProps) {
           <ActionButton onClick={handleClose}>Cancel</ActionButton>
           <ActionButton
             variant="primary"
+            loading={commit.isPending}
             onClick={async () => {
               if (!message.trim()) return
               await commit.mutateAsync({ message: message.trim() })

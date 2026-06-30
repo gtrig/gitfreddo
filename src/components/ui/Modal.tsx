@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react'
+import { Spinner } from '@/components/ui/Spinner'
 
 interface ModalProps {
   title: string
@@ -107,8 +108,9 @@ export function ConfirmDialog({
           type="button"
           onClick={onConfirm}
           disabled={busy}
-          className="rounded bg-gf-accent px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded bg-gf-accent px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
         >
+          {busy && <Spinner size="sm" className="border-white/30 border-t-white" />}
           {busy ? 'Working…' : confirmLabel}
         </button>
       </div>
@@ -150,8 +152,12 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
 export function ActionButton({
   children,
   variant = 'secondary',
+  loading = false,
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'danger' }) {
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: 'primary' | 'secondary' | 'danger'
+  loading?: boolean
+}) {
   const styles =
     variant === 'primary'
       ? 'bg-gf-accent text-white hover:opacity-90'
@@ -159,12 +165,21 @@ export function ActionButton({
         ? 'border border-red-800 text-red-300 hover:bg-red-950'
         : 'border border-gf-border-strong text-gf-fg-muted hover:bg-gf-surface-hover'
 
+  const spinnerClass =
+    variant === 'primary'
+      ? 'border-white/30 border-t-white'
+      : variant === 'danger'
+        ? 'border-red-400/30 border-t-red-300'
+        : ''
+
   return (
     <button
       type="button"
       {...props}
-      className={`rounded px-3 py-1.5 text-xs font-medium disabled:opacity-50 ${styles} ${props.className ?? ''}`}
+      disabled={loading || props.disabled}
+      className={`inline-flex items-center justify-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium disabled:opacity-50 ${styles} ${props.className ?? ''}`}
     >
+      {loading && <Spinner size="sm" className={spinnerClass} />}
       {children}
     </button>
   )

@@ -1,10 +1,41 @@
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useDefaultRemote } from '@/hooks/useAppSettings'
 import { CommitModal } from '@/components/actions/CommitModal'
 import { ConflictPanel } from '@/components/ConflictPanel/ConflictPanel'
 import { useMergeStatus } from '@/hooks/useGit'
+import { Spinner } from '@/components/ui/Spinner'
+
+function ActionBarButton({
+  onClick,
+  loading,
+  children,
+  variant = 'secondary'
+}: {
+  onClick: () => void
+  loading?: boolean
+  children: ReactNode
+  variant?: 'primary' | 'secondary'
+}) {
+  const base =
+    variant === 'primary'
+      ? 'bg-emerald-600 text-white hover:bg-emerald-500'
+      : 'border border-gf-border-strong text-gf-fg-muted hover:bg-gf-bg'
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={loading}
+      className={`inline-flex items-center gap-1.5 rounded px-3 py-1 text-xs font-medium disabled:opacity-50 ${base}`}
+    >
+      {loading && <Spinner size="sm" className={variant === 'primary' ? 'border-white/30 border-t-white' : ''} />}
+      {children}
+    </button>
+  )
+}
 
 export function ActionBar() {
   const connected = useWorkspaceStore((s) => s.connected)
@@ -18,41 +49,33 @@ export function ActionBar() {
   return (
     <>
       <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setCommitOpen(true)}
-          className="rounded bg-emerald-600 px-3 py-1 text-xs font-medium text-white hover:bg-emerald-500"
-        >
+        <ActionBarButton variant="primary" onClick={() => setCommitOpen(true)}>
           Commit
-        </button>
-        <button
-          type="button"
+        </ActionBarButton>
+        <ActionBarButton
+          loading={stashPush.isPending}
           onClick={() => void stashPush.mutateAsync({})}
-          className="rounded border border-gf-border-strong px-3 py-1 text-xs text-gf-fg-muted hover:bg-gf-bg"
         >
           Stash
-        </button>
-        <button
-          type="button"
+        </ActionBarButton>
+        <ActionBarButton
+          loading={fetch.isPending}
           onClick={() => void fetch.mutateAsync({ remote: defaultRemote })}
-          className="rounded border border-gf-border-strong px-3 py-1 text-xs text-gf-fg-muted hover:bg-gf-bg"
         >
           Fetch
-        </button>
-        <button
-          type="button"
+        </ActionBarButton>
+        <ActionBarButton
+          loading={pull.isPending}
           onClick={() => void pull.mutateAsync({ remote: defaultRemote })}
-          className="rounded border border-gf-border-strong px-3 py-1 text-xs text-gf-fg-muted hover:bg-gf-bg"
         >
           Pull
-        </button>
-        <button
-          type="button"
+        </ActionBarButton>
+        <ActionBarButton
+          loading={push.isPending}
           onClick={() => void push.mutateAsync({ remote: defaultRemote })}
-          className="rounded border border-gf-border-strong px-3 py-1 text-xs text-gf-fg-muted hover:bg-gf-bg"
         >
           Push
-        </button>
+        </ActionBarButton>
       </div>
       <CommitModal open={commitOpen} onClose={() => setCommitOpen(false)} />
       {mergeStatus?.inProgress && <ConflictPanel />}

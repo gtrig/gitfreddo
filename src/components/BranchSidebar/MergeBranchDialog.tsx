@@ -27,6 +27,7 @@ export function MergeBranchDialog({ sourceBranch, onClose }: MergeBranchDialogPr
         <div className="flex justify-end gap-2">
           <ActionButton onClick={onClose}>Cancel</ActionButton>
           <ActionButton
+            loading={merge.isPending}
             onClick={async () => {
               try {
                 await merge.mutateAsync({ branch: sourceBranch })

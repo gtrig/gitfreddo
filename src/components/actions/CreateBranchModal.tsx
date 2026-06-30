@@ -25,6 +25,7 @@ export function CreateBranchModal({ open, onClose }: CreateBranchModalProps) {
         <div className="flex justify-end gap-2">
           <ActionButton onClick={onClose}>Cancel</ActionButton>
           <ActionButton
+            loading={createBranch.isPending}
             onClick={async () => {
               if (!name.trim()) return
               await createBranch.mutateAsync({ name: name.trim() })

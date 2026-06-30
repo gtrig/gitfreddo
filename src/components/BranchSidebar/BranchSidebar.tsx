@@ -5,6 +5,7 @@ import { useBranches } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { ActionButton, ConfirmDialog } from '@/components/ui/Modal'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
+import { LoadingRow } from '@/components/ui/Spinner'
 import { branchColor } from '@/lib/types'
 import { CreateBranchModal } from '@/components/actions/CreateBranchModal'
 import { MergeBranchDialog } from '@/components/BranchSidebar/MergeBranchDialog'
@@ -35,7 +36,8 @@ export function BranchSidebar() {
         title="Branches"
         headerActions={<ActionButton onClick={() => setCreateOpen(true)}>+ New</ActionButton>}
       >
-        {isLoading && <p className="text-sm text-gf-fg-subtle">Loading…</p>}
+        {isLoading && <LoadingRow />}
+        {checkout.isPending && <LoadingRow label="Checking out…" />}
         {error && <p className="text-sm text-red-400">{(error as Error).message}</p>}
         <ul className="space-y-1">
           {(branches ?? [])
@@ -99,6 +101,7 @@ export function BranchSidebar() {
           title="Delete branch"
           message={`Delete branch "${pendingDelete}"?`}
           confirmLabel="Delete"
+          busy={deleteBranch.isPending}
           onConfirm={async () => {
             await deleteBranch.mutateAsync({ name: pendingDelete, force: true })
             setPendingDelete(null)
