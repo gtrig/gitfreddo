@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { LOG_RECORD_SEPARATOR, parseLogGraphOutput } from './gitLog'
+import { buildLogGraphArgs, LOG_RECORD_SEPARATOR, parseLogGraphOutput } from './gitLog'
+
+describe('buildLogGraphArgs', () => {
+  it('includes all refs and topological ordering for branch-aware graphs', () => {
+    const args = buildLogGraphArgs(500)
+    expect(args).toContain('--all')
+    expect(args).toContain('--topo-order')
+    expect(args).not.toContain('--date-order')
+    expect(args).toContain('--max-count=500')
+  })
+})
 
 describe('parseLogGraphOutput', () => {
   it('parses commits separated by record delimiter', () => {

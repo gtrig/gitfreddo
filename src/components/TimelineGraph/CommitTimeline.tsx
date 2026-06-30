@@ -12,6 +12,23 @@ import { LoadingRow } from '@/components/ui/Spinner'
 const COMPACT_ROW_HEIGHT = 28
 const BRANCH_TAG_COLUMN_WIDTH = 116
 
+function timelineRefs(rawRefs: string[]): string[] {
+  const refs = rawRefs
+    .map((ref) => ref.replace(/^HEAD\s*->\s*/, '').trim())
+    .filter(Boolean)
+
+  const unique = [...new Set(refs)]
+  const locals = unique.filter((ref) => !ref.includes('/'))
+  const localNames = new Set(locals)
+  const remotes = unique.filter((ref) => {
+    if (!ref.includes('/')) return false
+    const shortName = ref.includes('/') ? ref.slice(ref.indexOf('/') + 1) : ref
+    return !localNames.has(shortName)
+  })
+
+  return [...locals, ...remotes]
+}
+
 export function CommitTimeline() {
   const connected = useWorkspaceStore((s) => s.connected)
   const { data: graph, isLoading, error } = useLogGraph(connected)
@@ -67,9 +84,7 @@ export function CommitTimeline() {
               </div>
             )}
             {commits.map((commit) => {
-              const refs = commit.refs
-                .map((ref) => ref.replace(/^HEAD\s*->\s*/, '').trim())
-                .filter((ref, index, arr) => ref.length > 0 && arr.indexOf(ref) === index)
+              const refs = timelineRefs(commit.refs)
 
               return (
                 <div

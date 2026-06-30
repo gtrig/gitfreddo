@@ -215,7 +215,7 @@ export function buildGitGraphLayout(commits: GitCommit[], head: string): GitGrap
     }
   }
 
-  const laneCount = Math.max(1, branches.length)
+  const laneCount = Math.max(1, branches.length, ...rows.map((row) => row.column + 1))
 
   return {
     rows,

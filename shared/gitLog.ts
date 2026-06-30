@@ -23,7 +23,13 @@ export function buildLogGraphArgs(maxCount: number): string[] {
     '%D'
   ].join(LOG_FIELD_SEPARATOR)
 
-  return ['log', `--max-count=${maxCount}`, `--format=${format}${LOG_RECORD_SEPARATOR}`, '--date-order']
+  return [
+    'log',
+    '--all',
+    `--max-count=${maxCount}`,
+    `--format=${format}${LOG_RECORD_SEPARATOR}`,
+    '--topo-order'
+  ]
 }
 
 function parseLogRecord(block: string): ParsedGitCommit | null {
