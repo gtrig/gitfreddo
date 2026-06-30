@@ -6,6 +6,7 @@ describe('normalizeTheme', () => {
   it('accepts dark and freddo only', () => {
     expect(normalizeTheme('dark')).toBe('dark')
     expect(normalizeTheme('freddo')).toBe('freddo')
+    expect(normalizeTheme('fredo')).toBe('freddo')
     expect(normalizeTheme('light')).toBe('dark')
     expect(normalizeTheme(undefined)).toBe('dark')
     expect(normalizeAppTheme('invalid')).toBe('dark')
@@ -49,6 +50,11 @@ describe('applyTheme', () => {
     applyTheme('dark')
     expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark')
     expect(readStoredTheme()).toBe('dark')
+  })
+
+  it('normalizes legacy fredo in localStorage', () => {
+    localStorage.setItem(THEME_STORAGE_KEY, 'fredo')
+    expect(readStoredTheme()).toBe('freddo')
   })
 
   it('normalizes invalid themes to dark', () => {

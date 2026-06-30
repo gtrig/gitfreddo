@@ -1,4 +1,4 @@
-# GitFredo
+# GitFreddo
 
 Desktop git client with commit graph — an Electron + React app that talks to `git` on your PATH.
 

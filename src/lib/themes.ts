@@ -27,7 +27,7 @@ export function applyTheme(theme: AppTheme): void {
 export function readStoredTheme(): AppTheme | null {
   try {
     const stored = localStorage.getItem(THEME_STORAGE_KEY)
-    return stored === 'freddo' || stored === 'dark' ? stored : null
+    return stored === 'freddo' || stored === 'fredo' || stored === 'dark' ? normalizeTheme(stored) : null
   } catch {
     return null
   }

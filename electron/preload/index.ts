@@ -1,8 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { AiFillParams } from '../../shared/ai'
-import type { AppSettings, GitFredoAPI, LogEntry, MenuAction } from '../../shared/ipc'
+import type { AppSettings, GitFreddoAPI, LogEntry, MenuAction } from '../../shared/ipc'
 
-const api: GitFredoAPI = {
+const api: GitFreddoAPI = {
   openWorkspace: () => ipcRenderer.invoke('gitfredo:open-workspace'),
   pickDirectory: (defaultPath) => ipcRenderer.invoke('gitfredo:pick-directory', defaultPath),
   cloneRepository: (url, parentDir) =>
@@ -40,4 +40,4 @@ const api: GitFredoAPI = {
 
 contextBridge.exposeInMainWorld('gitfredo', api)
 
-export type { AppSettings, GitFredoAPI }
+export type { AppSettings, GitFreddoAPI }

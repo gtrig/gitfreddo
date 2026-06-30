@@ -3,12 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GitFredo</title>
+    <title>GitFreddo</title>
     <script>
       try {
         var theme = localStorage.getItem('gitfredo:theme')
-        if (theme === 'dark' || theme === 'freddo') {
-          document.documentElement.dataset.theme = theme
+        if (theme === 'dark' || theme === 'freddo' || theme === 'fredo') {
+          document.documentElement.dataset.theme = theme === 'fredo' ? 'freddo' : theme
         }
       } catch (e) {}
     </script>

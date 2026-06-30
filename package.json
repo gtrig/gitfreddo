@@ -38,7 +38,7 @@
   },
   "build": {
     "appId": "com.arctosweblabs.gitfredo",
-    "productName": "GitFredo",
+    "productName": "GitFreddo",
     "directories": {
       "output": "release"
     },

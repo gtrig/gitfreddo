@@ -7,7 +7,10 @@ export interface CliResult {
 export type AppTheme = 'dark' | 'freddo'
 
 export function normalizeAppTheme(value: unknown): AppTheme {
-  return value === 'freddo' ? 'freddo' : 'dark'
+  if (value === 'freddo' || value === 'fredo') {
+    return 'freddo'
+  }
+  return 'dark'
 }
 
 export interface AppSettings {
@@ -40,7 +43,7 @@ export interface LogEntry {
   details?: string
 }
 
-export interface GitFredoAPI {
+export interface GitFreddoAPI {
   openWorkspace: () => Promise<string | null>
   pickDirectory: (defaultPath?: string) => Promise<string | null>
   cloneRepository: (url: string, parentDir: string) => Promise<string>
@@ -67,7 +70,7 @@ export interface GitFredoAPI {
 
 declare global {
   interface Window {
-    gitfredo: GitFredoAPI
+    gitfredo: GitFreddoAPI
   }
 }
 

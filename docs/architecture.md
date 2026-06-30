@@ -1,6 +1,6 @@
-# GitFredo Architecture
+# GitFreddo Architecture
 
-GitFredo is an Electron desktop client that runs `git` subprocesses in the main process and exposes a typed IPC API to the React renderer.
+GitFreddo is an Electron desktop client that runs `git` subprocesses in the main process and exposes a typed IPC API to the React renderer.
 
 ## Layers
 

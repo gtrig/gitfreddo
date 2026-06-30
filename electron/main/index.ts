@@ -56,7 +56,7 @@ function createWindow(): void {
     minHeight: 640,
     show: false,
     backgroundColor: THEME_BG_COLORS[settings.theme],
-    title: 'GitFredo',
+    title: 'GitFreddo',
     webPreferences: {
       preload: join(__dirname, '../preload/index.mjs'),
       contextIsolation: true,

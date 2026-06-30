@@ -6,6 +6,10 @@ describe('normalizeAppTheme', () => {
     expect(normalizeAppTheme('freddo')).toBe('freddo')
   })
 
+  it('maps legacy fredo to freddo', () => {
+    expect(normalizeAppTheme('fredo')).toBe('freddo')
+  })
+
   it('falls back to dark for unknown values', () => {
     expect(normalizeAppTheme('dark')).toBe('dark')
     expect(normalizeAppTheme('light')).toBe('dark')

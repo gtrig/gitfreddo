@@ -76,7 +76,7 @@ export function buildAppMenu(): void {
       label: 'Help',
       submenu: [
         {
-          label: 'GitFredo on GitHub',
+          label: 'GitFreddo on GitHub',
           click: () => {
             void shell.openExternal('https://github.com/ArctosWebLabs/GitFredo')
           }

@@ -3,6 +3,6 @@ import { appLog } from '@/stores/logs'
 
 export function useAppLogger(): void {
   useEffect(() => {
-    appLog('info', 'GitFredo started')
+    appLog('info', 'GitFreddo started')
   }, [])
 }

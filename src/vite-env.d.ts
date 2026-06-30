@@ -1,10 +1,10 @@
 /// <reference types="vite/client" />
 
-import type { GitFredoAPI } from '../shared/ipc'
+import type { GitFreddoAPI } from '../shared/ipc'
 
 declare global {
   interface Window {
-    gitfredo: GitFredoAPI
+    gitfredo: GitFreddoAPI
   }
 }
 

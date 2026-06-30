@@ -327,7 +327,7 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
       <div className="flex h-screen flex-col bg-gf-bg text-gf-fg">
         <div className="mx-auto flex h-full w-full max-w-5xl flex-col py-8">
           <div className="mb-6 px-6 text-center">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gf-accent-fg">GitFredo</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gf-accent-fg">GitFreddo</p>
           </div>
           <div className="mx-6 flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gf-border bg-gf-bg-deep shadow-2xl">
             {content}

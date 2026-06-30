@@ -23,7 +23,7 @@ git commit -q -m "Feature commit"
 git checkout -q "$MAIN"
 
 echo "Smoke repo ready at $TMPDIR/smoke-repo"
-echo "Run GitFredo and open that path, or use npm run dev after build."
+echo "Run GitFreddo and open that path, or use npm run dev after build."
 
 # Quick node smoke of git-runner if built
 if [[ -f "$ROOT/out/main/index.js" ]]; then
