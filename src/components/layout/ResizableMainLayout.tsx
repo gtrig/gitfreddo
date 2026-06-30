@@ -73,7 +73,7 @@ export function ResizableMainLayout({ left, center, right, overlay }: ResizableM
       className={`relative flex min-h-0 flex-1 ${resizing ? 'select-none' : ''}`}
     >
       <div
-        className="flex min-h-0 shrink-0 flex-col overflow-auto border-r border-gf-border bg-gf-bg-deep"
+        className="flex min-h-0 shrink-0 flex-col overflow-hidden border-r border-gf-border bg-gf-bg-deep"
         style={{ width: leftWidth }}
       >
         {left}

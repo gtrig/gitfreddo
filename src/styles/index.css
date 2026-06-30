@@ -15,7 +15,9 @@
   --color-gf-diff-add: var(--gf-diff-add);
   --color-gf-diff-del: var(--gf-diff-del);
   --color-gf-diff-hunk: var(--gf-diff-hunk);
-  --color-gf-diff-gutter: var(--gf-diff-gutter);
+  --color-gf-sidebar-branch-active: var(--gf-sidebar-branch-active);
+  --color-gf-sidebar-item-selected: var(--gf-sidebar-item-selected);
+  --color-gf-sidebar-count: var(--gf-sidebar-count);
 }
 
 [data-theme='dark'] {
@@ -52,6 +54,9 @@
   --gf-graph-wip: #f59e0b;
   --gf-graph-wip-stroke: #fbbf24;
   --gf-graph-node-stroke: #52525b;
+  --gf-sidebar-branch-active: rgb(34 58 40 / 0.85);
+  --gf-sidebar-item-selected: rgb(28 45 65 / 0.85);
+  --gf-sidebar-count: #38bdf8;
 }
 
 [data-theme='freddo'] {
@@ -88,6 +93,9 @@
   --gf-graph-wip: #e8a87c;
   --gf-graph-wip-stroke: #f0c987;
   --gf-graph-node-stroke: #524336;
+  --gf-sidebar-branch-active: rgb(45 58 38 / 0.9);
+  --gf-sidebar-item-selected: rgb(58 48 38 / 0.85);
+  --gf-sidebar-count: #ddb892;
 }
 
 html,

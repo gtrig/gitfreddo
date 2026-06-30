@@ -53,12 +53,15 @@ async function branchAheadBehind(
 
 export async function branchList(cwd: string, gitBinaryPath: string): Promise<GitBranch[]> {
   const stdout = await runGitOrThrow(['branch', '-v', '--no-abbrev'], { cwd, gitBinaryPath })
-  const branches = stdout
+  const parsed = stdout
     .split('\n')
     .map(parseBranchLine)
-    .filter((b): b is GitBranch => b !== null && !b.isRemote)
+    .filter((b): b is GitBranch => b !== null)
 
-  for (const branch of branches) {
+  const localBranches = parsed.filter((b) => !b.isRemote)
+  const remoteBranches = parsed.filter((b) => b.isRemote && !b.name.endsWith('/HEAD'))
+
+  for (const branch of localBranches) {
     try {
       const upstream = (
         await runGit(['rev-parse', '--abbrev-ref', `${branch.name}@{upstream}`], {
@@ -77,7 +80,7 @@ export async function branchList(cwd: string, gitBinaryPath: string): Promise<Gi
     }
   }
 
-  return branches
+  return [...localBranches, ...remoteBranches]
 }
 
 export async function branchCheckout(
