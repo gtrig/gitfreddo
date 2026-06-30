@@ -7,6 +7,7 @@ import { statusColor, statusLabel, type GitFileChange } from '@/lib/types'
 import { buildFileTree, collectFolderPaths, countCommitFiles, type FileTreeNode } from '@/lib/fileTree'
 import type { CommitFileItem } from '@/lib/types'
 import { LoadingRow, Spinner } from '@/components/ui/Spinner'
+import { CommitPanel } from '@/components/WorkingTree/CommitPanel'
 
 function FileRow({
   file,
@@ -304,7 +305,7 @@ export function GitWorkingTree() {
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
         {renderSection(
-          'Unstaged',
+          'Unstage Files',
           [...(data?.unstaged ?? []), ...(data?.untracked ?? []), ...(data?.conflicted ?? [])],
           'working',
           true
@@ -312,16 +313,7 @@ export function GitWorkingTree() {
         <div className="my-4 border-t border-gf-border/70" />
         {renderSection('Staged Files', data?.staged ?? [], 'staged', false)}
       </div>
-      <div className="border-t border-gf-border px-3 py-2">
-        <p className="text-[10px] text-gf-fg-subtle">
-          {data && (data.ahead > 0 || data.behind > 0) && (
-            <span>
-              {data.ahead > 0 && `↑${data.ahead}`}
-              {data.behind > 0 && ` ↓${data.behind}`}
-            </span>
-          )}
-        </p>
-      </div>
+      {data && <CommitPanel working={data} />}
     </div>
   )
 }

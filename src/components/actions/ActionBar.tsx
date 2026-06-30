@@ -1,9 +1,7 @@
-import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useDefaultRemote } from '@/hooks/useAppSettings'
-import { CommitModal } from '@/components/actions/CommitModal'
 import { ConflictPanel } from '@/components/ConflictPanel/ConflictPanel'
 import { useMergeStatus } from '@/hooks/useGit'
 import { Spinner } from '@/components/ui/Spinner'
@@ -42,16 +40,12 @@ export function ActionBar() {
   const { fetch, pull, push, stashPush } = useGitMutations()
   const defaultRemote = useDefaultRemote()
   const { data: mergeStatus } = useMergeStatus(connected)
-  const [commitOpen, setCommitOpen] = useState(false)
 
   if (!connected) return null
 
   return (
     <>
       <div className="flex flex-wrap items-center gap-2">
-        <ActionBarButton variant="primary" onClick={() => setCommitOpen(true)}>
-          Commit
-        </ActionBarButton>
         <ActionBarButton
           loading={stashPush.isPending}
           onClick={() => void stashPush.mutateAsync({})}
@@ -77,7 +71,6 @@ export function ActionBar() {
           Push
         </ActionBarButton>
       </div>
-      <CommitModal open={commitOpen} onClose={() => setCommitOpen(false)} />
       {mergeStatus?.inProgress && <ConflictPanel />}
     </>
   )

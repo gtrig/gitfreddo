@@ -36,7 +36,7 @@ export function DetailPanel() {
 
   if (selection?.kind === 'working') {
     return (
-      <aside className="h-full overflow-y-auto border-l border-gf-border">
+      <aside className="flex h-full min-h-0 flex-col border-l border-gf-border">
         <GitWorkingTree />
       </aside>
     )
