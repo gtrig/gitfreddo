@@ -1,8 +1,11 @@
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
 import { useLogGraph } from '@/hooks/useGit'
 import { GitWorkingTree } from '@/components/WorkingTree/GitWorkingTree'
+import { CommitPreview } from '@/components/DetailPanel/CommitPreview'
+import { parseCommitNameStatus } from '@/lib/commitFiles'
 
 export function DetailPanel() {
   const connected = useWorkspaceStore((s) => s.connected)
@@ -17,6 +20,11 @@ export function DetailPanel() {
       window.gitfredo.invoke('log.show', { hash: selection?.id }) as Promise<string>,
     enabled: connected && selection?.kind === 'commit' && Boolean(selection.id)
   })
+
+  const changedFiles = useMemo(
+    () => (showOutput.data ? parseCommitNameStatus(showOutput.data) : []),
+    [showOutput.data]
+  )
 
   if (!connected) {
     return (
@@ -36,26 +44,11 @@ export function DetailPanel() {
 
   if (selection?.kind === 'commit' && commit) {
     return (
-      <aside className="h-full overflow-y-auto border-l border-gf-border p-4">
-        <h2 className="font-mono text-sm text-gf-accent-fg">{commit.shortHash}</h2>
-        <p className="mt-2 text-sm font-medium text-gf-fg">{commit.subject}</p>
-        <p className="mt-1 text-xs text-gf-fg-subtle">
-          {commit.author.name} &lt;{commit.author.email}&gt;
-        </p>
-        <p className="text-xs text-gf-fg-subtle">{new Date(commit.author.date).toLocaleString()}</p>
-        {commit.refs.length > 0 && (
-          <p className="mt-2 text-xs text-gf-fg-muted">Refs: {commit.refs.join(', ')}</p>
-        )}
-        <pre className="mt-4 whitespace-pre-wrap text-xs text-gf-fg-muted">{commit.message}</pre>
-        {showOutput.data && (
-          <div className="mt-4">
-            <h3 className="text-xs font-semibold uppercase text-gf-fg-subtle">Files changed</h3>
-            <pre className="mt-2 whitespace-pre-wrap font-mono text-xs text-gf-fg-muted">
-              {showOutput.data}
-            </pre>
-          </div>
-        )}
-      </aside>
+      <CommitPreview
+        commit={commit}
+        changedFiles={changedFiles}
+        loadingFiles={showOutput.isLoading}
+      />
     )
   }
 

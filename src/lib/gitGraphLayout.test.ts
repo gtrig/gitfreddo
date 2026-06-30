@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildGitGraphLayout } from './gitGraphLayout'
+import { buildGitGraphLayout, rowCenterY, visualRowIndex } from './gitGraphLayout'
 import type { GitCommit } from './types'
 
 function commit(hash: string, parents: string[], subject = hash): GitCommit {
@@ -74,5 +74,23 @@ describe('buildGitGraphLayout', () => {
     )
     expect(mergeEdge).toBeDefined()
     expect(mergeEdge?.fromColumn).not.toBe(mergeEdge?.toColumn)
+  })
+
+  it('uses zero-based row indices for the first commit', () => {
+    const layout = buildGitGraphLayout([commit('c2', ['c1']), commit('c1', [])], 'c2')
+    expect(layout.rows[0]?.rowIndex).toBe(0)
+    expect(layout.rows[1]?.rowIndex).toBe(1)
+  })
+})
+
+describe('visualRowIndex', () => {
+  it('offsets commits when the working row is visible', () => {
+    expect(visualRowIndex(0, true)).toBe(1)
+    expect(rowCenterY(visualRowIndex(0, true))).toBe(rowCenterY(1))
+  })
+
+  it('aligns commits to the top row when the working row is hidden', () => {
+    expect(visualRowIndex(0, false)).toBe(0)
+    expect(rowCenterY(visualRowIndex(0, false))).toBe(rowCenterY(0))
   })
 })

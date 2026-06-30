@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useSelectionStore } from '@/stores/selection'
-import { useDiffWorking, useDiffStaged } from '@/hooks/useGit'
+import { useDiffShow, useDiffStaged, useDiffWorking } from '@/hooks/useGit'
 import { UnifiedDiffView } from '@/components/DiffViewer/UnifiedDiffView'
 import { parseUnifiedDiffRows } from '@/lib/unifiedDiff'
 import type { GitDiffResult } from '@/lib/types'
@@ -11,25 +11,34 @@ interface DiffOverlayProps {
 
 export function DiffOverlay({ onClose }: DiffOverlayProps) {
   const selectedWorkingFile = useSelectionStore((s) => s.selectedWorkingFile)
+  const selectedCommitFile = useSelectionStore((s) => s.selectedCommitFile)
+  const selectedCommitHash = useSelectionStore((s) => s.selectedCommitHash)
   const diffMode = useSelectionStore((s) => s.diffMode)
   const selectedStashFile = useSelectionStore((s) => s.selectedStashFile)
 
   const workingDiff = useDiffWorking(
-    diffMode === 'working' ? selectedWorkingFile ?? undefined : undefined,
+    diffMode === 'working' ? (selectedWorkingFile ?? undefined) : undefined,
     Boolean(diffMode === 'working' && selectedWorkingFile)
   )
   const stagedDiff = useDiffStaged(
-    diffMode === 'staged' ? selectedWorkingFile ?? undefined : undefined,
+    diffMode === 'staged' ? (selectedWorkingFile ?? undefined) : undefined,
     Boolean(diffMode === 'staged' && selectedWorkingFile)
   )
-
-  const active = workingDiff.data ?? stagedDiff.data
-  const diff = active as GitDiffResult | undefined
-  const path = selectedWorkingFile ?? selectedStashFile
-  const rows = useMemo(
-    () => (diff?.unified ? parseUnifiedDiffRows(diff.unified) : []),
-    [diff?.unified]
+  const commitDiff = useDiffShow(
+    diffMode === 'commit' ? selectedCommitHash : null,
+    diffMode === 'commit' ? (selectedCommitFile ?? undefined) : undefined,
+    Boolean(diffMode === 'commit' && selectedCommitHash && selectedCommitFile)
   )
+
+  const active = (workingDiff.data ?? stagedDiff.data ?? commitDiff.data) as
+    | GitDiffResult
+    | undefined
+  const path = selectedWorkingFile ?? selectedCommitFile ?? selectedStashFile
+  const rows = useMemo(
+    () => (active?.unified ? parseUnifiedDiffRows(active.unified) : []),
+    [active?.unified]
+  )
+  const loading = workingDiff.isLoading || stagedDiff.isLoading || commitDiff.isLoading
 
   if (!path) return null
 
@@ -46,10 +55,10 @@ export function DiffOverlay({ onClose }: DiffOverlayProps) {
         </button>
       </header>
       <div className="min-h-0 flex-1 overflow-auto p-4">
-        {workingDiff.isLoading || stagedDiff.isLoading ? (
+        {loading ? (
           <p className="text-sm text-gf-fg-subtle">Loading diff…</p>
         ) : (
-          <UnifiedDiffView rows={rows} loading={workingDiff.isLoading || stagedDiff.isLoading} />
+          <UnifiedDiffView rows={rows} loading={loading} />
         )}
       </div>
     </div>

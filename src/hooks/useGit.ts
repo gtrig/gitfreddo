@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import type {
   GitBranch,
+  GitDiffResult,
   GitLogGraphResult,
   GitMergeStatus,
   GitRemote,
@@ -111,5 +112,15 @@ export function useDiffCommits(
     queryFn: async () =>
       window.gitfredo.invoke('diff.commits', { fromRef, toRef, path }),
     enabled: enabled && connected && Boolean(repoPath) && Boolean(fromRef && toRef)
+  })
+}
+
+export function useDiffShow(ref: string | null, path?: string, enabled = true) {
+  const { repoPath, connected } = useRepoScope()
+  return useQuery<GitDiffResult>({
+    queryKey: ['repo', repoPath, 'diff.show', ref, path],
+    queryFn: async () =>
+      (await window.gitfredo.invoke('diff.show', { ref, path })) as GitDiffResult,
+    enabled: enabled && connected && Boolean(repoPath) && Boolean(ref)
   })
 }

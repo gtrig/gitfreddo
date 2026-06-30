@@ -34,10 +34,11 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const refresh = useManualRefresh()
   const selectedWorkingFile = useSelectionStore((s) => s.selectedWorkingFile)
+  const selectedCommitFile = useSelectionStore((s) => s.selectedCommitFile)
   const selectedStashFile = useSelectionStore((s) => s.selectedStashFile)
   const closeDiffOverlay = useSelectionStore((s) => s.closeDiffOverlay)
 
-  const diffOverlayOpen = Boolean(selectedWorkingFile || selectedStashFile)
+  const diffOverlayOpen = Boolean(selectedWorkingFile || selectedCommitFile || selectedStashFile)
   const activeTab = tabs.find((tab) => tab.path === activePath)
   const connecting = Boolean(activeTab?.connecting)
 

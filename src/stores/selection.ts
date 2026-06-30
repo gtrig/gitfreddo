@@ -4,12 +4,14 @@ import type { TimelineNodeKind, TimelineSelection } from '@/lib/types'
 interface SelectionState {
   timelineSelection: TimelineSelection | null
   selectedCommitHash: string | null
+  selectedCommitFile: string | null
   selectedWorkingFile: string | null
   selectedStashIndex: number | null
   selectedStashFile: string | null
   diffMode: 'working' | 'staged' | 'commit' | 'stash' | null
   selectTimelineNode: (kind: TimelineNodeKind, id: string) => void
   setSelectedWorkingFile: (path: string | null, mode?: 'working' | 'staged') => void
+  setSelectedCommitFile: (path: string | null) => void
   selectStash: (index: number | null) => void
   setSelectedStashFile: (path: string | null) => void
   closeDiffOverlay: () => void
@@ -18,6 +20,7 @@ interface SelectionState {
 export const useSelectionStore = create<SelectionState>((set) => ({
   timelineSelection: null,
   selectedCommitHash: null,
+  selectedCommitFile: null,
   selectedWorkingFile: null,
   selectedStashIndex: null,
   selectedStashFile: null,
@@ -26,6 +29,7 @@ export const useSelectionStore = create<SelectionState>((set) => ({
     set({
       timelineSelection: { kind, id },
       selectedCommitHash: kind === 'commit' ? id : null,
+      selectedCommitFile: null,
       selectedWorkingFile: null,
       selectedStashIndex: null,
       selectedStashFile: null,
@@ -36,14 +40,21 @@ export const useSelectionStore = create<SelectionState>((set) => ({
       selectedWorkingFile: path,
       diffMode: path ? mode : null,
       selectedCommitHash: null,
+      selectedCommitFile: null,
       selectedStashIndex: null,
       selectedStashFile: null
+    }),
+  setSelectedCommitFile: (path) =>
+    set({
+      selectedCommitFile: path,
+      diffMode: path ? 'commit' : null
     }),
   selectStash: (index) =>
     set({
       selectedStashIndex: index,
       selectedStashFile: null,
       selectedWorkingFile: null,
+      selectedCommitFile: null,
       selectedCommitHash: null,
       diffMode: null,
       timelineSelection: null
@@ -51,12 +62,14 @@ export const useSelectionStore = create<SelectionState>((set) => ({
   setSelectedStashFile: (path) =>
     set({
       selectedStashFile: path,
-      diffMode: path ? 'stash' : null
+      diffMode: path ? 'stash' : null,
+      selectedCommitFile: null
     }),
   closeDiffOverlay: () =>
     set({
       selectedWorkingFile: null,
       selectedStashFile: null,
+      selectedCommitFile: null,
       diffMode: null
     })
 }))

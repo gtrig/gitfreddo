@@ -30,6 +30,11 @@ export function rowCenterY(rowIndex: number, rowHeight = GRAPH_ROW_HEIGHT): numb
   return rowIndex * rowHeight + rowHeight / 2
 }
 
+/** Map layout row index to the visual timeline row (0 = top). */
+export function visualRowIndex(layoutRowIndex: number, showWorkingRow: boolean): number {
+  return showWorkingRow ? layoutRowIndex + 1 : layoutRowIndex
+}
+
 export function graphHeight(rowCount: number, rowHeight = GRAPH_ROW_HEIGHT): number {
   return rowCount * rowHeight
 }
@@ -185,7 +190,7 @@ export function buildGitGraphLayout(commits: GitCommit[], head: string): GitGrap
   const rows: GitGraphRow[] = commits.map((commit, index) => ({
     key: commit.hash,
     commit,
-    rowIndex: index + 1,
+    rowIndex: index,
     column: columnByHash.get(commit.hash) ?? 0,
     isHead: commit.hash === head,
     isMerge: commit.parents.length > 1

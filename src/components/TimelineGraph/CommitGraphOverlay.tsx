@@ -3,6 +3,7 @@ import {
   graphHeight,
   GRAPH_ROW_HEIGHT,
   rowCenterY,
+  visualRowIndex,
   type GitGraphLayout
 } from '@/lib/gitGraphLayout'
 import {
@@ -35,7 +36,12 @@ export function CommitGraphOverlay({
 
   const wipX = columnCenterX(WORKING_TREE_COLUMN, DEFAULT_GRAPH_METRICS)
   const wipY = rowCenterY(0, rowHeight)
-  const headY = headRow ? rowCenterY(headRow.rowIndex, rowHeight) : wipY
+  const headY = headRow
+    ? rowCenterY(visualRowIndex(headRow.rowIndex, showWorkingRow), rowHeight)
+    : wipY
+
+  const rowCenter = (layoutRowIndex: number) =>
+    rowCenterY(visualRowIndex(layoutRowIndex, showWorkingRow), rowHeight)
 
   return (
     <svg
@@ -78,9 +84,9 @@ export function CommitGraphOverlay({
         if (!fromRow || !toRow) return null
 
         const x1 = columnCenterX(edge.fromColumn, DEFAULT_GRAPH_METRICS)
-        const y1 = rowCenterY(fromRow.rowIndex, rowHeight)
+        const y1 = rowCenter(fromRow.rowIndex)
         const x2 = columnCenterX(edge.toColumn, DEFAULT_GRAPH_METRICS)
-        const y2 = rowCenterY(toRow.rowIndex, rowHeight)
+        const y2 = rowCenter(toRow.rowIndex)
 
         return (
           <path
@@ -108,7 +114,7 @@ export function CommitGraphOverlay({
 
       {layout.rows.map((row) => {
         const x = columnCenterX(row.column, DEFAULT_GRAPH_METRICS)
-        const y = rowCenterY(row.rowIndex, rowHeight)
+        const y = rowCenter(row.rowIndex)
         const selected = selectedHash === row.key
 
         return (
