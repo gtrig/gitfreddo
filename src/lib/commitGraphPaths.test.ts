@@ -15,16 +15,18 @@ describe('buildGraphEdgePath', () => {
     expect(path).toContain('100')
   })
 
-  it('routes fork merges with a midpoint bend', () => {
-    const path = buildGraphEdgePath(60, 20, 30, 80, 'parent')
+  it('routes cross-lane edges with a top elbow like GitKraken', () => {
+    const path = buildGraphEdgePath(60, 20, 30, 80, 'merge')
     expect(path).toContain('M 60 20')
+    expect(path).toContain('30 20')
     expect(path).toContain('30 80')
     expect(path).not.toContain('C ')
   })
 
-  it('routes branch-out edges to the right', () => {
+  it('routes branch-out edges horizontally from the child row', () => {
     const path = buildGraphEdgePath(30, 20, 60, 80, 'parent')
     expect(path).toContain('M 30 20')
+    expect(path).toContain('60 20')
     expect(path).toContain('60 80')
   })
 })

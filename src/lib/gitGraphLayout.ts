@@ -34,46 +34,152 @@ export function graphHeight(rowCount: number, rowHeight = GRAPH_ROW_HEIGHT): num
   return rowCount * rowHeight
 }
 
-/** Assign commit lanes (newest-first log order) for a simple git graph. */
+function buildChildrenMap(commits: GitCommit[]): Map<string, string[]> {
+  const children = new Map<string, string[]>()
+  for (const commit of commits) {
+    for (const parent of commit.parents) {
+      const list = children.get(parent)
+      if (list) {
+        list.push(commit.hash)
+      } else {
+        children.set(parent, [commit.hash])
+      }
+    }
+  }
+  return children
+}
+
+function insertActiveBranch(
+  branches: (string | null)[],
+  nearColumn: number,
+  commitSha: string,
+  forbidden: Set<number>
+): number {
+  let offset = 1
+  while (nearColumn - offset >= 0 || nearColumn + offset < branches.length) {
+    const right = nearColumn + offset
+    if (right < branches.length && branches[right] === null && !forbidden.has(right)) {
+      branches[right] = commitSha
+      return right
+    }
+    const left = nearColumn - offset
+    if (left >= 0 && branches[left] === null && !forbidden.has(left)) {
+      branches[left] = commitSha
+      return left
+    }
+    offset += 1
+  }
+  branches.push(commitSha)
+  return branches.length - 1
+}
+
+/**
+ * Straight-branch lane assignment (GitKraken / gitamine style).
+ * Commits are processed newest-first so child columns are known before parents.
+ */
 export function buildGitGraphLayout(commits: GitCommit[], head: string): GitGraphLayout {
   if (commits.length === 0) {
     return { rows: [], edges: [], laneCount: 1, headKey: head || null }
   }
 
+  const parentsByHash = new Map(commits.map((commit) => [commit.hash, commit.parents]))
+  const childrenByHash = buildChildrenMap(commits)
   const columnByHash = new Map<string, number>()
-  const active = new Map<number, string>()
-  let maxColumn = 0
+  const rowByHash = new Map<string, number>()
 
+  const branches: (string | null)[] = []
+  const activeNodes = new Map<string, Set<number>>()
+  const activeNodesQueue: Array<[number, string]> = []
+
+  let row = 0
   for (const commit of commits) {
-    let column = [...active.entries()].find(([, hash]) => hash === commit.hash)?.[0]
-    if (column === undefined) {
-      column = 0
-      while (active.has(column)) {
-        column += 1
+    row += 1
+    const commitSha = commit.hash
+    const children = childrenByHash.get(commitSha) ?? []
+    const branchChildren = children.filter(
+      (child) => parentsByHash.get(child)?.[0] === commitSha
+    )
+    const mergeChildren = children.filter(
+      (child) => parentsByHash.get(child)?.[0] !== commitSha
+    )
+
+    let highestMergeChild: string | undefined
+    let highestMergeChildRow = Infinity
+    for (const childSha of mergeChildren) {
+      const childRow = rowByHash.get(childSha)
+      if (childRow !== undefined && childRow < highestMergeChildRow) {
+        highestMergeChildRow = childRow
+        highestMergeChild = childSha
       }
+    }
+    const forbiddenIndices = highestMergeChild
+      ? (activeNodes.get(highestMergeChild) ?? new Set<number>())
+      : new Set<number>()
+
+    let childToReplace: string | null = null
+    let replaceColumn = Infinity
+    if (commitSha === head) {
+      childToReplace = '__head__'
+      replaceColumn = 0
     } else {
-      active.delete(column)
-    }
-
-    columnByHash.set(commit.hash, column)
-    maxColumn = Math.max(maxColumn, column)
-
-    const parents = commit.parents
-    if (parents.length > 0) {
-      active.set(column, parents[0])
-      columnByHash.set(parents[0], column)
-    }
-
-    for (let index = 1; index < parents.length; index += 1) {
-      const parent = parents[index]
-      let parentColumn = [...active.entries()].find(([, hash]) => hash === parent)?.[0]
-      if (parentColumn === undefined) {
-        parentColumn = maxColumn + 1
-        maxColumn = parentColumn
+      for (const childSha of branchChildren) {
+        const childColumn = columnByHash.get(childSha)
+        if (childColumn === undefined) continue
+        if (!forbiddenIndices.has(childColumn) && childColumn < replaceColumn) {
+          childToReplace = childSha
+          replaceColumn = childColumn
+        }
       }
-      active.set(parentColumn, parent)
-      columnByHash.set(parent, parentColumn)
     }
+
+    let column: number
+    if (childToReplace) {
+      column = replaceColumn
+      branches[column] = commitSha
+    } else if (children.length > 0) {
+      const childColumn = columnByHash.get(children[0]) ?? 0
+      column = insertActiveBranch(branches, childColumn, commitSha, forbiddenIndices)
+    } else {
+      column = insertActiveBranch(branches, 0, commitSha, new Set())
+    }
+
+    activeNodesQueue.sort((left, right) => left[0] - right[0])
+    while (activeNodesQueue.length > 0 && activeNodesQueue[0][0] < row) {
+      const [, sha] = activeNodesQueue.shift()!
+      activeNodes.delete(sha)
+    }
+
+    const occupiedColumns = [column, ...branchChildren.map((child) => columnByHash.get(child)!)]
+    for (const occupied of activeNodes.values()) {
+      for (const col of occupiedColumns) {
+        occupied.add(col)
+      }
+    }
+    activeNodes.set(commitSha, new Set())
+
+    const parentRows = commit.parents
+      .map((parent) => rowByHash.get(parent))
+      .filter((parentRow): parentRow is number => parentRow !== undefined)
+    if (parentRows.length > 0) {
+      activeNodesQueue.push([Math.max(...parentRows), commitSha])
+      activeNodesQueue.sort((left, right) => left[0] - right[0])
+    }
+
+    for (const childSha of branchChildren) {
+      if (childSha !== childToReplace) {
+        const childColumn = columnByHash.get(childSha)
+        if (childColumn !== undefined) {
+          branches[childColumn] = null
+        }
+      }
+    }
+
+    if (commit.parents.length === 0) {
+      branches[column] = null
+    }
+
+    columnByHash.set(commitSha, column)
+    rowByHash.set(commitSha, row)
   }
 
   const rows: GitGraphRow[] = commits.map((commit, index) => ({
@@ -85,13 +191,13 @@ export function buildGitGraphLayout(commits: GitCommit[], head: string): GitGrap
     isMerge: commit.parents.length > 1
   }))
 
-  const rowByHash = new Map(rows.map((row) => [row.key, row]))
+  const rowByKey = new Map(rows.map((row) => [row.key, row]))
   const edges: GitGraphEdge[] = []
 
   for (const row of rows) {
     for (let index = 0; index < row.commit.parents.length; index += 1) {
       const parentHash = row.commit.parents[index]
-      const parentRow = rowByHash.get(parentHash)
+      const parentRow = rowByKey.get(parentHash)
       if (!parentRow) continue
 
       edges.push({
@@ -104,10 +210,12 @@ export function buildGitGraphLayout(commits: GitCommit[], head: string): GitGrap
     }
   }
 
+  const laneCount = Math.max(1, branches.length)
+
   return {
     rows,
     edges,
-    laneCount: maxColumn + 1,
+    laneCount,
     headKey: head || commits[0]?.hash || null
   }
 }

@@ -10,7 +10,10 @@ function effectiveRadius(cornerRadius: number, segmentLength: number): number {
   return Math.max(1.5, Math.min(boosted, maxBySegment, 10))
 }
 
-/** Orthogonal commit-graph edge with rounded corners. */
+/**
+ * GitKraken-style orthogonal edge: straight vertical on one lane, or a top elbow
+ * (horizontal at the child row, then vertical to the parent) when lanes differ.
+ */
 export function buildGraphEdgePath(
   x1: number,
   y1: number,
@@ -20,7 +23,6 @@ export function buildGraphEdgePath(
   cornerRadius = 4.2
 ): string {
   if (kind === 'pad') {
-    // Pad sits right of the anchor spine: horizontal from spine at pad Y, then down to anchor.
     const padX = x2
     const padY = y2
     const anchorX = x1
@@ -46,23 +48,18 @@ export function buildGraphEdgePath(
   const bottomY = Math.max(y1, y2)
   const topX = y1 <= y2 ? x1 : x2
   const bottomX = y1 <= y2 ? x2 : x1
-  const midY = topY + (bottomY - topY) / 2
-  const r = effectiveRadius(cornerRadius, bottomY - topY)
+  const verticalSpan = bottomY - topY
+  const r = effectiveRadius(cornerRadius, verticalSpan)
+  const hDir = bottomX > topX ? 1 : -1
 
-  const goingLeft = topX > bottomX
-  const hDir = goingLeft ? -1 : 1
-
-  const v1End = midY - r
-  const hStart = topX + hDir * r
-  const hEnd = bottomX - hDir * r
-  const v2Start = midY + r
+  if (verticalSpan <= r * 1.5) {
+    return `M ${topX} ${topY} L ${bottomX} ${topY} L ${bottomX} ${bottomY}`
+  }
 
   return [
     `M ${topX} ${topY}`,
-    `L ${topX} ${v1End}`,
-    `Q ${topX} ${midY} ${hStart} ${midY}`,
-    `L ${hEnd} ${midY}`,
-    `Q ${bottomX} ${midY} ${bottomX} ${v2Start}`,
+    `L ${bottomX - hDir * r} ${topY}`,
+    `Q ${bottomX} ${topY} ${bottomX} ${topY + r}`,
     `L ${bottomX} ${bottomY}`
   ].join(' ')
 }
