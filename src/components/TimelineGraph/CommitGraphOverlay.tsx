@@ -50,6 +50,17 @@ export function CommitGraphOverlay({
       className="pointer-events-none shrink-0"
       aria-hidden
     >
+      <line
+        x1={wipX}
+        y1={0}
+        x2={wipX}
+        y2={height}
+        stroke={colors.lane(WORKING_TREE_COLUMN)}
+        strokeWidth={1}
+        strokeDasharray="2 3"
+        opacity={0.45}
+      />
+
       {showWorkingRow && headRow && (
         <path
           d={buildWipToHeadPath(wipX, wipY, headY)}

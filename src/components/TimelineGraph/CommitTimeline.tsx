@@ -8,7 +8,8 @@ import { graphWidth, DEFAULT_GRAPH_METRICS } from '@/lib/graphMetrics'
 import { countWorkingChanges } from '@/lib/workingChanges'
 import { CommitGraphOverlay } from './CommitGraphOverlay'
 
-const COMPACT_ROW_HEIGHT = Math.max(34, GRAPH_ROW_HEIGHT - 16)
+const COMPACT_ROW_HEIGHT = 28
+const BRANCH_TAG_COLUMN_WIDTH = 116
 
 export function CommitTimeline() {
   const connected = useWorkspaceStore((s) => s.connected)
@@ -40,7 +41,58 @@ export function CommitTimeline() {
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
       <div className="flex min-w-max flex-col">
+        <div className="sticky top-0 z-20 flex border-b border-gf-border/70 bg-gf-bg-deep/95 px-2 py-1 text-[10px] uppercase tracking-wide text-gf-fg-subtle backdrop-blur">
+          <div className="shrink-0" style={{ width: BRANCH_TAG_COLUMN_WIDTH }}>
+            Branch / Tag
+          </div>
+          <div className="shrink-0" style={{ width: graphColumnWidth }}>
+            Graph
+          </div>
+          <div className="min-w-0 flex-1 pl-2">Commit message</div>
+        </div>
         <div className="flex">
+          <div
+            className="sticky left-0 z-10 shrink-0 border-r border-gf-border/60 bg-gf-bg-deep"
+            style={{ width: BRANCH_TAG_COLUMN_WIDTH }}
+          >
+            {showWorkingRow && (
+              <div
+                className="flex items-center px-2 text-[10px] text-gf-fg-subtle"
+                style={{ height: COMPACT_ROW_HEIGHT }}
+              >
+                {workingStatus?.branch ? (
+                  <span className="truncate rounded bg-gf-surface px-1 py-0.5">{workingStatus.branch}</span>
+                ) : null}
+              </div>
+            )}
+            {commits.map((commit) => {
+              const refs = commit.refs
+                .map((ref) => ref.replace(/^HEAD\s*->\s*/, '').trim())
+                .filter((ref, index, arr) => ref.length > 0 && arr.indexOf(ref) === index)
+
+              return (
+                <div
+                  key={`refs-${commit.hash}`}
+                  className="flex items-center gap-1 overflow-hidden border-b border-gf-border/30 px-2"
+                  style={{ height: COMPACT_ROW_HEIGHT }}
+                >
+                  {refs.slice(0, 2).map((ref) => (
+                    <span
+                      key={ref}
+                      className={`truncate rounded px-1 py-0.5 text-[10px] leading-none ${branchColor(ref)}`}
+                      title={ref}
+                    >
+                      {ref}
+                    </span>
+                  ))}
+                  {refs.length > 2 && (
+                    <span className="shrink-0 text-[10px] text-gf-fg-subtle">+{refs.length - 2}</span>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
           <div className="sticky left-0 z-10 shrink-0 bg-gf-bg-deep" style={{ width: graphColumnWidth }}>
             <CommitGraphOverlay
               layout={layout}
@@ -57,7 +109,7 @@ export function CommitTimeline() {
                 type="button"
                 onClick={() => selectTimelineNode('working', 'changes')}
                 style={{ height: COMPACT_ROW_HEIGHT }}
-                className={`flex w-full items-center justify-between gap-3 border-b border-gf-border/50 px-3 text-left text-xs hover:bg-gf-bg/50 ${
+                className={`flex w-full items-center justify-between gap-3 border-b border-gf-border/40 px-2.5 text-left text-[11px] hover:bg-gf-bg/50 ${
                   selection?.kind === 'working' ? 'bg-gf-accent/20' : ''
                 }`}
               >
@@ -82,7 +134,7 @@ export function CommitTimeline() {
                     </span>
                   )}
                 </span>
-                <span className="shrink-0 rounded border border-gf-border-strong px-2 py-0.5 text-[10px] text-gf-fg-subtle">
+                <span className="shrink-0 rounded border border-gf-border-strong px-1.5 py-0.5 text-[10px] text-gf-fg-subtle">
                   View Changes
                 </span>
               </button>
@@ -99,29 +151,19 @@ export function CommitTimeline() {
 
             {commits.map((commit) => {
               const selected = selection?.kind === 'commit' && selection.id === commit.hash
-              const branchRef = commit.refs.find((r) => !r.startsWith('HEAD'))
               return (
                 <button
                   key={commit.hash}
                   type="button"
                   onClick={() => selectTimelineNode('commit', commit.hash)}
                   style={{ height: COMPACT_ROW_HEIGHT }}
-                  className={`flex w-full items-center gap-2 overflow-hidden border-b border-gf-border/40 px-3 text-left hover:bg-gf-bg/50 ${
+                  className={`flex w-full items-center gap-2 overflow-hidden border-b border-gf-border/30 px-2.5 text-left hover:bg-gf-bg/50 ${
                     selected ? 'bg-gf-accent/20' : ''
                   }`}
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="shrink-0 font-mono text-[11px] text-gf-fg-subtle">{commit.shortHash}</span>
-                      {branchRef && (
-                        <span
-                          className={`shrink-0 rounded-sm border border-gf-border/70 px-1 py-0.5 text-[10px] leading-none ${branchColor(
-                            branchRef
-                          )}`}
-                        >
-                          {branchRef}
-                        </span>
-                      )}
                       {commit.hash === head && (
                         <span className="shrink-0 rounded-sm border border-emerald-500/40 px-1 py-0.5 text-[10px] leading-none text-emerald-400">
                           HEAD
@@ -130,7 +172,14 @@ export function CommitTimeline() {
                       {commit.parents.length > 1 && (
                         <span className="shrink-0 text-[10px] text-violet-400">merge</span>
                       )}
-                      <p className="min-w-0 truncate text-[12px] text-gf-fg">{commit.subject}</p>
+                      <p className="min-w-0 truncate text-[12px] text-gf-fg">
+                        {commit.subject}
+                        {commit.message && commit.message !== commit.subject && (
+                          <span className="ml-1 text-gf-fg-subtle">
+                            - {commit.message.replace(commit.subject, '').replace(/\s+/g, ' ').trim()}
+                          </span>
+                        )}
+                      </p>
                     </div>
                   </div>
                 </button>
