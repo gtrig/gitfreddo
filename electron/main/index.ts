@@ -10,6 +10,23 @@ import { onLog } from '../git/log-bus'
 import { cloneRepository } from '../git/clone'
 import { aiConfigFromSettings, aiFill } from '../llm/client'
 import { enrichAiContext } from '../llm/context'
+import {
+  connectGitHub,
+  connectGitHubPat,
+  createGitHubIssue,
+  createGitHubPullRequest,
+  createGitHubRepo,
+  disconnectGitHub,
+  forkGitHubRepo,
+  getGitHubStatus,
+  listGitHubIssues,
+  listGitHubPullRequests,
+  listGitHubRepos,
+  mergeGitHubPullRequest,
+  tryGetGitHubRepoContext,
+  updateGitHubIssue,
+  uploadGitHubSshKey
+} from '../github/service'
 import type { AiFillParams } from '../../shared/ai'
 import type { AppSettings, LogEntry } from '../../shared/ipc'
 
@@ -32,7 +49,9 @@ let settings: AppSettings = {
   aiProvider: 'local',
   aiBaseUrl: 'http://localhost:1234',
   aiApiKey: '',
-  aiModel: ''
+  aiModel: '',
+  githubLogin: '',
+  githubConnectedAt: null
 }
 
 function applyGitConfig(): void {
@@ -160,6 +179,76 @@ function registerIpc(): void {
     return aiFill(aiConfigFromSettings(settings), enriched)
   })
 
+  ipcMain.handle('gitfredo:github-get-status', async () => getGitHubStatus(settings))
+
+  ipcMain.handle('gitfredo:github-connect', async (event) => {
+    const result = await connectGitHub((progress) => {
+      if (!event.sender.isDestroyed()) {
+        event.sender.send('gitfredo:github-connect-progress', progress)
+      }
+    })
+    settings = result.settings
+    return result.status
+  })
+
+  ipcMain.handle('gitfredo:github-connect-pat', async (_event, token: string) => {
+    const result = await connectGitHubPat(token)
+    settings = result.settings
+    return result.status
+  })
+
+  ipcMain.handle('gitfredo:github-disconnect', async () => {
+    settings = await disconnectGitHub(settings)
+  })
+
+  ipcMain.handle('gitfredo:github-list-repos', async (_event, params) => listGitHubRepos(params))
+
+  ipcMain.handle('gitfredo:github-create-repo', async (_event, params) => createGitHubRepo(params))
+
+  ipcMain.handle('gitfredo:github-fork-repo', async (_event, owner: string, repo: string) =>
+    forkGitHubRepo(owner, repo)
+  )
+
+  ipcMain.handle('gitfredo:github-upload-ssh-key', async (_event, title: string) =>
+    uploadGitHubSshKey(title)
+  )
+
+  ipcMain.handle('gitfredo:github-get-repo-context', async (_event, repoPath: string) =>
+    tryGetGitHubRepoContext(repoPath, settings)
+  )
+
+  ipcMain.handle('gitfredo:github-list-pull-requests', async (_event, repoPath: string) =>
+    listGitHubPullRequests(repoPath, settings)
+  )
+
+  ipcMain.handle('gitfredo:github-create-pull-request', async (_event, repoPath: string, params) =>
+    createGitHubPullRequest(repoPath, settings, params)
+  )
+
+  ipcMain.handle('gitfredo:github-merge-pull-request', async (
+    _event,
+    repoPath: string,
+    number: number,
+    method
+  ) => mergeGitHubPullRequest(repoPath, settings, number, method))
+
+  ipcMain.handle(
+    'gitfredo:github-list-issues',
+    async (_event, repoPath: string, assigneeLogin?: string) =>
+      listGitHubIssues(repoPath, settings, assigneeLogin)
+  )
+
+  ipcMain.handle('gitfredo:github-create-issue', async (_event, repoPath: string, params) =>
+    createGitHubIssue(repoPath, settings, params)
+  )
+
+  ipcMain.handle('gitfredo:github-update-issue', async (
+    _event,
+    repoPath: string,
+    number: number,
+    params
+  ) => updateGitHubIssue(repoPath, settings, number, params))
+
   ipcMain.handle('gitfredo:pick-file', async () => {
     const repo = repoManager.getRepoPath()
     if (!repo) return null
@@ -199,6 +288,23 @@ function registerIpc(): void {
   })
 }
 
+function registerProtocolHandler(): void {
+  if (process.defaultApp) {
+    if (process.argv.length >= 2) {
+      app.setAsDefaultProtocolClient('gitfredo', process.execPath, [resolve(process.argv[1])])
+    }
+  } else {
+    app.setAsDefaultProtocolClient('gitfredo')
+  }
+
+  app.on('open-url', (event, url) => {
+    event.preventDefault()
+    if (url.startsWith('gitfredo://oauth/github')) {
+      shell.openExternal(url)
+    }
+  })
+}
+
 function broadcastLogEntry(entry: LogEntry): void {
   for (const window of BrowserWindow.getAllWindows()) {
     if (!window.isDestroyed()) {
@@ -211,6 +317,7 @@ app.whenReady().then(async () => {
   settings = await loadSettings()
   applyGitConfig()
   onLog(broadcastLogEntry)
+  registerProtocolHandler()
   buildAppMenu()
   registerIpc()
   createWindow()

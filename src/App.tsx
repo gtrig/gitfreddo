@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { BranchSidebar } from '@/components/BranchSidebar/BranchSidebar'
 import { StashSidebar } from '@/components/StashSidebar/StashSidebar'
 import { RemotePanel } from '@/components/RemotePanel/RemotePanel'
+import { PullRequestsPanel } from '@/components/GitHub/PullRequestsPanel'
+import { IssuesPanel } from '@/components/GitHub/IssuesPanel'
 import { TimelinePanel } from '@/components/TimelineGraph/TimelinePanel'
 import { DiffOverlay } from '@/components/DiffViewer/DiffOverlay'
 import { DetailPanel } from '@/components/DetailPanel/DetailPanel'
@@ -151,6 +153,8 @@ export default function App() {
           <>
             <BranchSidebar />
             <StashSidebar />
+            <PullRequestsPanel />
+            <IssuesPanel />
             <RemotePanel />
           </>
         }

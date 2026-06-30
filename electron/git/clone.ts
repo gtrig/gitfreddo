@@ -3,6 +3,7 @@ import { existsSync } from 'fs'
 import { join } from 'path'
 import { repoNameFromUrl } from '../../shared/git'
 import { emitLog } from './log-bus'
+import { buildGitEnv } from './credentials'
 
 export { repoNameFromUrl }
 
@@ -25,9 +26,11 @@ export async function cloneRepository(
 
   emitLog('app', 'info', `Cloning repository`, `${trimmedUrl}\n→ ${targetPath}`)
 
+  const env = await buildGitEnv()
+
   return new Promise((resolve, reject) => {
     const child = spawn(gitBinaryPath, ['clone', '--', trimmedUrl, targetPath], {
-      env: process.env,
+      env,
       stdio: ['ignore', 'pipe', 'pipe']
     })
 

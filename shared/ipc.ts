@@ -27,6 +27,14 @@ export interface AppSettings {
   aiBaseUrl: string
   aiApiKey: string
   aiModel: string
+  githubLogin: string
+  githubConnectedAt: number | null
+}
+
+export interface GitHubStatus {
+  connected: boolean
+  login: string | null
+  avatarUrl: string | null
 }
 
 export type MenuAction = 'open-workspace' | 'open-settings' | 'refresh' | 'quit'
@@ -63,7 +71,39 @@ export interface GitFreddoAPI {
   openInEditor: (relativePath: string) => Promise<void>
   getSettings: () => Promise<AppSettings>
   setSettings: (patch: Partial<AppSettings>) => Promise<AppSettings>
+  githubGetStatus: () => Promise<GitHubStatus>
+  githubConnect: () => Promise<GitHubStatus>
+  githubConnectPat: (token: string) => Promise<GitHubStatus>
+  githubDisconnect: () => Promise<void>
+  githubListRepos: (params?: import('./github').GitHubListReposParams) => Promise<import('./github').GitHubRepo[]>
+  githubCreateRepo: (params: import('./github').GitHubCreateRepoParams) => Promise<import('./github').GitHubRepo>
+  githubForkRepo: (owner: string, repo: string) => Promise<import('./github').GitHubRepo>
+  githubUploadSshKey: (title: string) => Promise<{ title: string; publicKey: string }>
+  githubGetRepoContext: (repoPath: string) => Promise<import('./github').GitHubRepoContext | null>
+  githubListPullRequests: (repoPath: string) => Promise<import('./github').GitHubPullRequest[]>
+  githubCreatePullRequest: (
+    repoPath: string,
+    params: import('./github').GitHubCreatePullRequestParams
+  ) => Promise<import('./github').GitHubPullRequest>
+  githubMergePullRequest: (
+    repoPath: string,
+    number: number,
+    method: import('./github').GitHubMergeMethod
+  ) => Promise<void>
+  githubListIssues: (repoPath: string, assigneeLogin?: string) => Promise<import('./github').GitHubIssue[]>
+  githubCreateIssue: (
+    repoPath: string,
+    params: { title: string; body?: string; labels?: string[] }
+  ) => Promise<import('./github').GitHubIssue>
+  githubUpdateIssue: (
+    repoPath: string,
+    number: number,
+    params: { title?: string; body?: string; state?: 'open' | 'closed' }
+  ) => Promise<import('./github').GitHubIssue>
   aiFill: (params: import('./ai').AiFillParams) => Promise<string>
+  onGitHubConnectProgress: (
+    callback: (progress: import('./github').GitHubConnectProgress) => void
+  ) => () => void
   onMenuAction: (callback: (action: MenuAction) => void) => () => void
   onLogEntry: (callback: (entry: LogEntry) => void) => () => void
 }

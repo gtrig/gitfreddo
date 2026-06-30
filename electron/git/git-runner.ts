@@ -1,5 +1,6 @@
 import { spawn } from 'child_process'
 import { emitLog } from './log-bus'
+import { buildGitEnv } from './credentials'
 
 export interface GitResult {
   stdout: string
@@ -23,10 +24,12 @@ export async function runGit(
   const cmd = `${gitBinaryPath} ${args.join(' ')}`
   emitLog('git', 'debug', `> ${cmd}`, cwd)
 
+  const env = await buildGitEnv()
+
   return new Promise((resolve, reject) => {
     const child = spawn(gitBinaryPath, args, {
       cwd,
-      env: process.env,
+      env,
       stdio: ['pipe', 'pipe', 'pipe']
     })
 
