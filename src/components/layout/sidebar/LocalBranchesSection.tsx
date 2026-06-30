@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import type { GitBranch } from '@/lib/types'
+import type { GitBranch, GitRemote } from '@/lib/types'
 import type { BranchTreeNode } from '@/lib/branchTree'
 import {
   buildLocalBranchTree,
@@ -168,6 +168,7 @@ export function LocalBranchesSection({
 
 interface RemoteBranchesSectionProps {
   branches: GitBranch[] | undefined
+  remotes: GitRemote[] | undefined
   filter: string
   isLoading: boolean
   error: Error | null
@@ -176,6 +177,7 @@ interface RemoteBranchesSectionProps {
 
 export function RemoteBranchesSection({
   branches,
+  remotes,
   filter,
   isLoading,
   error,
@@ -188,6 +190,13 @@ export function RemoteBranchesSection({
 
   const grouped = useMemo(() => {
     const map = new Map<string, GitBranch[]>()
+
+    for (const remote of remotes ?? []) {
+      if (matchesFilter(remote.name, filter)) {
+        map.set(remote.name, [])
+      }
+    }
+
     for (const branch of remoteBranches) {
       const match = /^remotes\/([^/]+)\/(.+)$/.exec(branch.name)
       if (!match) continue
@@ -198,13 +207,13 @@ export function RemoteBranchesSection({
       map.set(remote, list)
     }
     return [...map.entries()].sort(([a], [b]) => a.localeCompare(b))
-  }, [remoteBranches, filter])
+  }, [remoteBranches, remotes, filter])
 
   const count = grouped.reduce((sum, [, list]) => sum + list.length, 0)
-  const [openRemotes, setOpenRemotes] = useState<Set<string>>(() => new Set(['origin']))
+  const [collapsedRemotes, setCollapsedRemotes] = useState<Set<string>>(() => new Set())
 
   function toggleRemote(name: string) {
-    setOpenRemotes((prev) => {
+    setCollapsedRemotes((prev) => {
       const next = new Set(prev)
       if (next.has(name)) next.delete(name)
       else next.add(name)
@@ -217,16 +226,16 @@ export function RemoteBranchesSection({
       sectionId="sidebar.remote"
       title="Remote"
       icon={<SidebarIconRemote className="h-3.5 w-3.5" />}
-      count={count}
+      count={count || grouped.length}
     >
       {isLoading && <LoadingRow />}
       {error && <p className="px-2 text-xs text-red-400">{error.message}</p>}
-      {!isLoading && count === 0 && (
-        <p className="px-2 py-1 text-xs text-gf-fg-subtle">No remote branches.</p>
+      {!isLoading && grouped.length === 0 && (
+        <p className="px-2 py-1 text-xs text-gf-fg-subtle">No remotes configured.</p>
       )}
       <div className="space-y-0.5">
         {grouped.map(([remote, list]) => {
-          const open = openRemotes.has(remote) || Boolean(filter.trim())
+          const open = !collapsedRemotes.has(remote) || Boolean(filter.trim())
           return (
             <div key={remote}>
               <SidebarFolderRow
@@ -235,6 +244,14 @@ export function RemoteBranchesSection({
                 open={open}
                 onToggle={() => toggleRemote(remote)}
               />
+              {open && list.length === 0 && (
+                <p
+                  style={{ paddingLeft: '22px' }}
+                  className="py-1 pr-2 text-[10px] text-gf-fg-subtle"
+                >
+                  Fetch to load branches
+                </p>
+              )}
               {open &&
                 list.map((branch) => (
                   <SidebarTreeRow

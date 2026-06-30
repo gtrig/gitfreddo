@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
-import { useBranches, useStashList } from '@/hooks/useGit'
+import { useBranches, useRemotes, useStashList } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { CreateBranchModal } from '@/components/actions/CreateBranchModal'
 import { SidebarFilter } from '@/components/layout/sidebar/SidebarFilter'
@@ -22,6 +22,7 @@ import {
 export function RepoSidebar() {
   const connected = useWorkspaceStore((s) => s.connected)
   const { data: branches, isLoading, error } = useBranches(connected)
+  const { data: remotes } = useRemotes(connected)
   const { data: stashes, isLoading: stashesLoading, error: stashesError } = useStashList(connected)
   const { checkout } = useGitMutations()
   const selectTimelineNode = useSelectionStore((s) => s.selectTimelineNode)
@@ -77,6 +78,7 @@ export function RepoSidebar() {
         />
         <RemoteBranchesSection
           branches={branches}
+          remotes={remotes}
           filter={filter}
           isLoading={isLoading}
           error={error as Error | null}

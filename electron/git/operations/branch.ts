@@ -20,8 +20,10 @@ function parseBranchLine(line: string): GitBranch | null {
     isRemote = true
   }
 
+  if (rest.includes(' -> ')) return null
+
   const [name, head] = rest.split(/\s+/)
-  if (!name || !head) return null
+  if (!name || !head || !/^[0-9a-f]{40}$/i.test(head)) return null
 
   return {
     name,
@@ -52,7 +54,7 @@ async function branchAheadBehind(
 }
 
 export async function branchList(cwd: string, gitBinaryPath: string): Promise<GitBranch[]> {
-  const stdout = await runGitOrThrow(['branch', '-v', '--no-abbrev'], { cwd, gitBinaryPath })
+  const stdout = await runGitOrThrow(['branch', '-a', '-v', '--no-abbrev'], { cwd, gitBinaryPath })
   const parsed = stdout
     .split('\n')
     .map(parseBranchLine)
