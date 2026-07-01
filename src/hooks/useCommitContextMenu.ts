@@ -29,6 +29,7 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
   const [createBranchAt, setCreateBranchAt] = useState<string | null>(null)
 
   const selectTimelineNode = useSelectionStore((s) => s.selectTimelineNode)
+  const setPrimaryCommit = useSelectionStore((s) => s.setPrimaryCommit)
   const {
     checkout,
     cherryPick,
@@ -58,10 +59,15 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
   const openMenu = useCallback(
     (commit: GitCommit, event: React.MouseEvent) => {
       event.preventDefault()
-      selectTimelineNode('commit', commit.hash)
+      const { selectedCommitHashes } = useSelectionStore.getState()
+      if (!selectedCommitHashes.includes(commit.hash)) {
+        selectTimelineNode('commit', commit.hash)
+      } else {
+        setPrimaryCommit(commit.hash)
+      }
       setMenu({ commit, x: event.clientX, y: event.clientY })
     },
-    [selectTimelineNode]
+    [selectTimelineNode, setPrimaryCommit]
   )
 
   const closeMenu = useCallback(() => setMenu(null), [])
@@ -77,6 +83,7 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
       commits: options.commits,
       working,
       selectedCommitId: menu.commit.hash,
+      selectedCount: useSelectionStore.getState().selectedCommitHashes.length,
       actions: {
         selectCommit: (hash) => selectTimelineNode('commit', hash),
         copyHash: (hash) => {

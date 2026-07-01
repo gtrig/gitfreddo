@@ -28,11 +28,11 @@ const actions = {
   rebaseOnto: vi.fn(),
   cherryPick: vi.fn(),
   reset: vi.fn(),
-    rebaseContinue: vi.fn(),
-    rebaseAbort: vi.fn(),
-    mergeContinue: vi.fn(),
-    mergeAbort: vi.fn()
-  }
+  rebaseContinue: vi.fn(),
+  rebaseAbort: vi.fn(),
+  mergeContinue: vi.fn(),
+  mergeAbort: vi.fn()
+}
 
 const cleanWorking = {
   branch: 'feature',
@@ -64,6 +64,7 @@ describe('buildCommitContextMenuItems', () => {
       commits,
       working: cleanWorking,
       selectedCommitId: null,
+      selectedCount: 1,
       actions
     })
 
@@ -81,6 +82,7 @@ describe('buildCommitContextMenuItems', () => {
       commits,
       working: cleanWorking,
       selectedCommitId: null,
+      selectedCount: 1,
       actions
     })
 
@@ -96,6 +98,7 @@ describe('buildCommitContextMenuItems', () => {
       commits,
       working: { ...cleanWorking, rebaseInProgress: true },
       selectedCommitId: 'c3',
+      selectedCount: 1,
       actions
     })
 

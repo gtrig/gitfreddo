@@ -1,8 +1,11 @@
 import { create } from 'zustand'
-import type { TimelineNodeKind, TimelineSelection } from '@/lib/types'
+import { commitRangeInTimeline, toggleHashInList } from '@/lib/commitSelection'
+import type { GitCommit, TimelineNodeKind, TimelineSelection } from '@/lib/types'
 
 interface SelectionState {
   timelineSelection: TimelineSelection | null
+  selectedCommitHashes: string[]
+  selectionAnchorHash: string | null
   selectedCommitHash: string | null
   selectedCommitFile: string | null
   selectedWorkingFile: string | null
@@ -10,6 +13,9 @@ interface SelectionState {
   selectedStashFile: string | null
   diffMode: 'working' | 'staged' | 'commit' | 'stash' | null
   selectTimelineNode: (kind: TimelineNodeKind, id: string) => void
+  toggleCommitSelection: (hash: string) => void
+  selectCommitRange: (toHash: string, commits: GitCommit[]) => void
+  setPrimaryCommit: (hash: string) => void
   setSelectedWorkingFile: (path: string | null, mode?: 'working' | 'staged') => void
   setSelectedCommitFile: (path: string | null) => void
   selectStash: (index: number | null) => void
@@ -17,8 +23,27 @@ interface SelectionState {
   closeDiffOverlay: () => void
 }
 
+function clearNonTimelineSelection(): Pick<
+  SelectionState,
+  | 'selectedCommitFile'
+  | 'selectedWorkingFile'
+  | 'selectedStashIndex'
+  | 'selectedStashFile'
+  | 'diffMode'
+> {
+  return {
+    selectedCommitFile: null,
+    selectedWorkingFile: null,
+    selectedStashIndex: null,
+    selectedStashFile: null,
+    diffMode: null
+  }
+}
+
 export const useSelectionStore = create<SelectionState>((set) => ({
   timelineSelection: null,
+  selectedCommitHashes: [],
+  selectionAnchorHash: null,
   selectedCommitHash: null,
   selectedCommitFile: null,
   selectedWorkingFile: null,
@@ -28,12 +53,58 @@ export const useSelectionStore = create<SelectionState>((set) => ({
   selectTimelineNode: (kind, id) =>
     set({
       timelineSelection: { kind, id },
+      selectedCommitHashes: kind === 'commit' ? [id] : [],
+      selectionAnchorHash: kind === 'commit' ? id : null,
       selectedCommitHash: kind === 'commit' ? id : null,
-      selectedCommitFile: null,
-      selectedWorkingFile: null,
-      selectedStashIndex: null,
-      selectedStashFile: null,
-      diffMode: null
+      ...clearNonTimelineSelection()
+    }),
+  toggleCommitSelection: (hash) =>
+    set((state) => {
+      const nextHashes = toggleHashInList(state.selectedCommitHashes, hash)
+      if (nextHashes.length === 0) {
+        return {
+          timelineSelection: null,
+          selectedCommitHashes: [],
+          selectionAnchorHash: null,
+          selectedCommitHash: null,
+          ...clearNonTimelineSelection()
+        }
+      }
+
+      return {
+        timelineSelection: { kind: 'commit', id: hash },
+        selectedCommitHashes: nextHashes,
+        selectionAnchorHash: hash,
+        selectedCommitHash: hash,
+        ...clearNonTimelineSelection()
+      }
+    }),
+  selectCommitRange: (toHash, commits) =>
+    set((state) => {
+      const anchor =
+        state.selectionAnchorHash ??
+        (state.timelineSelection?.kind === 'commit' ? state.timelineSelection.id : null) ??
+        toHash
+      const nextHashes = commitRangeInTimeline(commits, anchor, toHash)
+
+      return {
+        timelineSelection: { kind: 'commit', id: toHash },
+        selectedCommitHashes: nextHashes,
+        selectionAnchorHash: anchor,
+        selectedCommitHash: toHash,
+        ...clearNonTimelineSelection()
+      }
+    }),
+  setPrimaryCommit: (hash) =>
+    set((state) => {
+      if (!state.selectedCommitHashes.includes(hash)) {
+        return state
+      }
+
+      return {
+        timelineSelection: { kind: 'commit', id: hash },
+        selectedCommitHash: hash
+      }
     }),
   setSelectedWorkingFile: (path, mode = 'working') =>
     set({
@@ -56,6 +127,8 @@ export const useSelectionStore = create<SelectionState>((set) => ({
       selectedWorkingFile: null,
       selectedCommitFile: null,
       selectedCommitHash: null,
+      selectedCommitHashes: [],
+      selectionAnchorHash: null,
       diffMode: null,
       timelineSelection: null
     }),

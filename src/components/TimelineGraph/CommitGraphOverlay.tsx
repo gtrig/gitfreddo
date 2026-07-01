@@ -20,6 +20,7 @@ export function CommitGraphOverlay({
   showWorkingRow,
   workingSelected,
   selectedHash,
+  selectedHashes,
   rowHeight = GRAPH_ROW_HEIGHT,
   metrics = DEFAULT_GRAPH_METRICS
 }: {
@@ -27,6 +28,7 @@ export function CommitGraphOverlay({
   showWorkingRow: boolean
   workingSelected: boolean
   selectedHash: string | null
+  selectedHashes?: ReadonlySet<string>
   rowHeight?: number
   metrics?: GraphMetrics
 }) {
@@ -113,17 +115,24 @@ export function CommitGraphOverlay({
       {layout.rows.map((row) => {
         const x = columnCenterX(row.column, metrics)
         const y = rowCenter(row.rowIndex)
-        const selected = selectedHash === row.key
+        const isPrimary = selectedHash === row.key
+        const isSelected = selectedHashes?.has(row.key) ?? isPrimary
 
         return (
           <circle
             key={row.key}
             cx={x}
             cy={y}
-            r={selected ? 4.7 : 4.2}
+            r={isPrimary ? 4.7 : isSelected ? 4.5 : 4.2}
             fill={row.isMerge ? colors.merge : row.isHead ? colors.head : colors.lane(row.column)}
-            stroke={selected ? colors.selected : row.isHead ? colors.headStroke : colors.nodeStroke}
-            strokeWidth={selected ? 2 : 1.5}
+            stroke={
+              isPrimary || isSelected
+                ? colors.selected
+                : row.isHead
+                  ? colors.headStroke
+                  : colors.nodeStroke
+            }
+            strokeWidth={isPrimary ? 2 : isSelected ? 1.75 : 1.5}
           />
         )
       })}

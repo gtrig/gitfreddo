@@ -5,14 +5,22 @@ import { useSelectionStore } from '@/stores/selection'
 import { useLogGraph } from '@/hooks/useGit'
 import { GitWorkingTree } from '@/components/WorkingTree/GitWorkingTree'
 import { CommitPreview } from '@/components/DetailPanel/CommitPreview'
+import { MultiCommitSelectionBar } from '@/components/DetailPanel/MultiCommitSelectionBar'
 import { parseCommitNameStatus } from '@/lib/commitFiles'
 
 export function DetailPanel() {
   const connected = useWorkspaceStore((s) => s.connected)
   const selection = useSelectionStore((s) => s.timelineSelection)
+  const selectedCommitHashes = useSelectionStore((s) => s.selectedCommitHashes)
+  const setPrimaryCommit = useSelectionStore((s) => s.setPrimaryCommit)
   const { data: graph } = useLogGraph(connected)
 
   const commit = graph?.commits.find((c) => c.hash === selection?.id)
+  const selectedCommits = useMemo(() => {
+    if (!graph) return []
+    const selected = new Set(selectedCommitHashes)
+    return graph.commits.filter((item) => selected.has(item.hash))
+  }, [graph, selectedCommitHashes])
 
   const showOutput = useQuery({
     queryKey: ['repo', 'log.show', selection?.id],
@@ -43,12 +51,25 @@ export function DetailPanel() {
   }
 
   if (selection?.kind === 'commit' && commit) {
+    const multiSelect = selectedCommitHashes.length > 1
+
     return (
-      <CommitPreview
-        commit={commit}
-        changedFiles={changedFiles}
-        loadingFiles={showOutput.isLoading}
-      />
+      <aside className="flex h-full min-h-0 flex-col border-l border-gf-border">
+        {multiSelect && (
+          <MultiCommitSelectionBar
+            commits={selectedCommits}
+            primaryHash={commit.hash}
+            onSelectPrimary={setPrimaryCommit}
+          />
+        )}
+        <div className={multiSelect ? 'min-h-0 flex-1' : 'h-full'}>
+          <CommitPreview
+            commit={commit}
+            changedFiles={changedFiles}
+            loadingFiles={showOutput.isLoading}
+          />
+        </div>
+      </aside>
     )
   }
 

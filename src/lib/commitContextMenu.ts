@@ -31,6 +31,7 @@ export interface CommitContextMenuContext {
   commits: GitCommit[]
   working: GitWorkingStatus | undefined
   selectedCommitId: string | null
+  selectedCount: number
   actions: CommitContextMenuActions
 }
 
@@ -46,6 +47,7 @@ export function buildCommitContextMenuItems({
   commits,
   working,
   selectedCommitId,
+  selectedCount,
   actions
 }: CommitContextMenuContext): ContextMenuItem[] {
   const items: ContextMenuItem[] = []
@@ -82,7 +84,12 @@ export function buildCommitContextMenuItems({
 
   items.push({
     id: 'view',
-    label: selectedCommitId === commit.hash ? 'View commit (selected)' : 'View commit',
+    label:
+      selectedCount > 1
+        ? `View commit (${selectedCount} selected)`
+        : selectedCommitId === commit.hash
+          ? 'View commit (selected)'
+          : 'View commit',
     onClick: () => actions.selectCommit(commit.hash)
   })
 

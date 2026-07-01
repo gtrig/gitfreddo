@@ -6,6 +6,7 @@ import { useTimelineColumnSizes } from '@/hooks/useTimelineColumnSizes'
 import { useCommitContextMenu } from '@/hooks/useCommitContextMenu'
 import { branchColor } from '@/lib/types'
 import { buildGitGraphLayout } from '@/lib/gitGraphLayout'
+import { commitRowHighlightClass } from '@/lib/commitSelection'
 import { countWorkingChanges } from '@/lib/workingChanges'
 import { timelineRefs } from '@/lib/timelineRefs'
 import { CommitGraphOverlay } from './CommitGraphOverlay'
@@ -30,10 +31,27 @@ export function CommitTimeline() {
     [workingStatus]
   )
   const selection = useSelectionStore((s) => s.timelineSelection)
+  const selectedCommitHashes = useSelectionStore((s) => s.selectedCommitHashes)
   const selectTimelineNode = useSelectionStore((s) => s.selectTimelineNode)
+  const toggleCommitSelection = useSelectionStore((s) => s.toggleCommitSelection)
+  const selectCommitRange = useSelectionStore((s) => s.selectCommitRange)
 
   const commits = graph?.commits ?? []
   const head = repoStatus?.head ?? ''
+  const selectedHashSet = useMemo(() => new Set(selectedCommitHashes), [selectedCommitHashes])
+  const primaryHash = selection?.kind === 'commit' ? selection.id : null
+
+  const handleCommitClick = (commit: GitCommit) => (event: React.MouseEvent) => {
+    if (event.shiftKey) {
+      selectCommitRange(commit.hash, commits)
+      return
+    }
+    if (event.metaKey || event.ctrlKey) {
+      toggleCommitSelection(commit.hash)
+      return
+    }
+    selectTimelineNode('commit', commit.hash)
+  }
 
   const {
     menu,
@@ -65,7 +83,12 @@ export function CommitTimeline() {
     onBranchTagResize,
     onGraphLaneResize
   } = useTimelineColumnSizes(layout.laneCount)
-  const selectedHash = selection?.kind === 'commit' ? selection.id : null
+  const selectedHash = primaryHash
+
+  const rowState = (hash: string) => ({
+    isSelected: selectedHashSet.has(hash),
+    isPrimary: primaryHash === hash
+  })
 
   if (!connected) {
     return <p className="p-4 text-sm text-gf-fg-subtle">Open a repository to view commits.</p>
@@ -106,12 +129,14 @@ export function CommitTimeline() {
             )}
             {commits.map((commit) => {
               const refs = timelineRefs(commit.refs)
+              const { isSelected, isPrimary } = rowState(commit.hash)
 
               return (
                 <div
                   key={`refs-${commit.hash}`}
                   onContextMenu={onCommitContextMenu(commit)}
-                  className="flex items-center gap-1 overflow-hidden border-b border-gf-border/30 px-2"
+                  onClick={handleCommitClick(commit)}
+                  className={`flex cursor-pointer items-center gap-1 overflow-hidden border-b border-gf-border/30 px-2 hover:bg-gf-bg/50 ${commitRowHighlightClass(isSelected, isPrimary)}`}
                   style={{ height: COMPACT_ROW_HEIGHT }}
                 >
                   {refs.slice(0, 2).map((ref) => (
@@ -144,20 +169,25 @@ export function CommitTimeline() {
                 showWorkingRow={showWorkingRow}
                 workingSelected={selection?.kind === 'working'}
                 selectedHash={selectedHash}
+                selectedHashes={selectedHashSet}
                 rowHeight={COMPACT_ROW_HEIGHT}
                 metrics={metrics}
               />
-              {commits.map((commit, index) => (
-                <div
-                  key={`graph-hit-${commit.hash}`}
-                  onContextMenu={onCommitContextMenu(commit)}
-                  className="absolute left-0 right-0"
-                  style={{
-                    top: (showWorkingRow ? COMPACT_ROW_HEIGHT : 0) + index * COMPACT_ROW_HEIGHT,
-                    height: COMPACT_ROW_HEIGHT
-                  }}
-                />
-              ))}
+              {commits.map((commit, index) => {
+                const { isSelected, isPrimary } = rowState(commit.hash)
+                return (
+                  <div
+                    key={`graph-hit-${commit.hash}`}
+                    onContextMenu={onCommitContextMenu(commit)}
+                    onClick={handleCommitClick(commit)}
+                    className={`absolute left-0 right-0 cursor-pointer hover:bg-gf-bg/50 ${commitRowHighlightClass(isSelected, isPrimary)}`}
+                    style={{
+                      top: (showWorkingRow ? COMPACT_ROW_HEIGHT : 0) + index * COMPACT_ROW_HEIGHT,
+                      height: COMPACT_ROW_HEIGHT
+                    }}
+                  />
+                )
+              })}
             </div>
           </div>
 
@@ -214,17 +244,15 @@ export function CommitTimeline() {
             )}
 
             {commits.map((commit) => {
-              const selected = selection?.kind === 'commit' && selection.id === commit.hash
+              const { isSelected, isPrimary } = rowState(commit.hash)
               return (
                 <button
                   key={commit.hash}
                   type="button"
-                  onClick={() => selectTimelineNode('commit', commit.hash)}
+                  onClick={handleCommitClick(commit)}
                   onContextMenu={onCommitContextMenu(commit)}
                   style={{ height: COMPACT_ROW_HEIGHT }}
-                  className={`flex w-full items-center gap-2 overflow-hidden border-b border-gf-border/30 px-2.5 text-left hover:bg-gf-bg/50 ${
-                    selected ? 'bg-gf-accent/20' : ''
-                  }`}
+                  className={`flex w-full items-center gap-2 overflow-hidden border-b border-gf-border/30 px-2.5 text-left hover:bg-gf-bg/50 ${commitRowHighlightClass(isSelected, isPrimary)}`}
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
