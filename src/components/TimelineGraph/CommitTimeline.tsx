@@ -21,7 +21,6 @@ import {
 } from '@/lib/formatTimeSince'
 import { SidebarIconStash } from '@/components/layout/sidebar/SidebarIcons'
 import { CommitGraphOverlay } from './CommitGraphOverlay'
-import { TimelineRefBadge } from './TimelineRefBadge'
 import { TimelineRefStack } from './TimelineRefStack'
 import { ColumnResizeHandle } from '@/components/ui/ColumnResizeHandle'
 import { ContextMenu } from '@/components/ui/ContextMenu'
@@ -65,6 +64,8 @@ export function CommitTimeline() {
     [commits, searchQuery]
   )
   const head = repoStatus?.head ?? ''
+  const isDetached = repoStatus?.isDetached ?? false
+  const currentBranch = isDetached ? '' : (repoStatus?.branch ?? workingStatus?.branch ?? '')
   const selectedHashSet = useMemo(() => new Set(selectedCommitHashes), [selectedCommitHashes])
   const primaryHash = selection?.kind === 'commit' ? selection.id : null
 
@@ -232,21 +233,7 @@ export function CommitTimeline() {
             style={{ width: branchTagWidth }}
           >
             {showWorkingRow && (
-              <div
-                className="flex items-center px-2 text-[10px] text-gf-fg-subtle"
-                style={{ height: COMPACT_ROW_HEIGHT }}
-              >
-                {workingStatus?.branch ? (
-                  <TimelineRefBadge
-                    timelineRef={{
-                      label: workingStatus.branch,
-                      kind: 'branch',
-                      fullRef: workingStatus.branch,
-                      sourceOrder: 0
-                    }}
-                  />
-                ) : null}
-              </div>
+              <div style={{ height: COMPACT_ROW_HEIGHT }} />
             )}
             {commits.map((commit) => {
               const refs = timelineRefs(commit.refs, tagNames)
@@ -267,7 +254,12 @@ export function CommitTimeline() {
                       stash
                     </span>
                   )}
-                  <TimelineRefStack refs={refs} />
+                  <TimelineRefStack
+                    refs={refs}
+                    isHeadCommit={commit.hash === head}
+                    currentBranch={currentBranch}
+                    isDetached={isDetached}
+                  />
                 </div>
               )
             })}
@@ -324,11 +316,6 @@ export function CommitTimeline() {
               >
                 <span className="flex min-w-0 items-center gap-2">
                   <span className="font-medium text-amber-300">Uncommitted changes</span>
-                  {workingStatus?.branch && (
-                    <span className="shrink-0 rounded bg-gf-surface px-1 py-0.5 text-[10px] text-gf-fg-muted">
-                      {workingStatus.branch}
-                    </span>
-                  )}
                   {changeCounts && (
                     <span className="flex flex-wrap items-center gap-2 text-[10px]">
                       {changeCounts.modified > 0 && (
@@ -380,11 +367,6 @@ export function CommitTimeline() {
                       {stash && (
                         <span className="shrink-0 rounded border border-sky-500/50 px-1 py-0.5 text-[10px] leading-none text-sky-300">
                           stash
-                        </span>
-                      )}
-                      {commit.hash === head && (
-                        <span className="shrink-0 rounded-sm border border-emerald-500/40 px-1 py-0.5 text-[10px] leading-none text-emerald-400">
-                          HEAD
                         </span>
                       )}
                       {commit.parents.length > 1 && !isStashCommit(commit) && (

@@ -1,10 +1,19 @@
 import { TagIcon } from '@heroicons/react/24/outline'
+import { CheckIcon } from '@heroicons/react/24/solid'
 import {
   SidebarIconBranch,
   SidebarIconOrigin
 } from '@/components/layout/sidebar/SidebarIcons'
 import { branchColor } from '@/lib/types'
 import type { TimelineRef, TimelineRefKind } from '@/lib/timelineRefs'
+
+export function TimelineHeadCheck() {
+  return (
+    <span className="flex shrink-0 items-center" title="Current HEAD">
+      <CheckIcon aria-hidden className="h-3 w-3 text-emerald-400" />
+    </span>
+  )
+}
 
 const BADGE_BASE =
   'inline-flex max-w-full shrink items-center gap-0.5 truncate rounded border px-1 py-0.5 text-[10px] leading-none'
@@ -31,16 +40,37 @@ function RefIcon({ kind }: { kind: TimelineRefKind }) {
   }
 }
 
-export function TimelineRefBadge({ timelineRef }: { timelineRef: TimelineRef }) {
+export function TimelineDetachedHeadBadge() {
+  return (
+    <span
+      className={`${BADGE_BASE} border-gf-border-strong/70 bg-gf-surface/90 text-emerald-400`}
+      title="Detached HEAD"
+    >
+      <SidebarIconBranch className="h-2.5 w-2.5 shrink-0 opacity-90" />
+      <span className="truncate">HEAD</span>
+    </span>
+  )
+}
+
+export function TimelineRefBadge({
+  timelineRef,
+  isCurrent = false
+}: {
+  timelineRef: TimelineRef
+  isCurrent?: boolean
+}) {
   const textColor = timelineRef.kind === 'branch' ? branchColor(timelineRef.label) : ''
 
   return (
-    <span
-      className={`${BADGE_BASE} ${KIND_STYLES[timelineRef.kind]} ${textColor}`}
-      title={timelineRef.fullRef}
-    >
-      <RefIcon kind={timelineRef.kind} />
-      <span className="truncate">{timelineRef.label}</span>
+    <span className="inline-flex min-w-0 max-w-full items-center gap-0.5">
+      {isCurrent ? <TimelineHeadCheck /> : null}
+      <span
+        className={`${BADGE_BASE} ${KIND_STYLES[timelineRef.kind]} ${textColor}`}
+        title={timelineRef.fullRef}
+      >
+        <RefIcon kind={timelineRef.kind} />
+        <span className="truncate">{timelineRef.label}</span>
+      </span>
     </span>
   )
 }
