@@ -22,6 +22,14 @@ git add README.md
 git commit -q -m "Feature commit"
 git checkout -q "$MAIN"
 
+# working tree ops smoke
+echo "untracked" > untracked.txt
+git clean -fdn | grep -q untracked.txt
+echo "tracked" > tracked.txt
+git add tracked.txt
+git commit -q -m "Add tracked"
+git rm -q tracked.txt
+
 echo "Smoke repo ready at $TMPDIR/smoke-repo"
 echo "Run GitFreddo and open that path, or use npm run dev after build."
 

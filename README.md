@@ -29,13 +29,19 @@ npm run dev
 
 - Open local repositories or clone from URL
 - Multi-tab repositories
-- Branch list with checkout, create, delete, merge
-- Commit timeline graph
-- Working tree (staged / unstaged / untracked)
-- Diff viewer
-- Stash management
-- Remotes with fetch, pull, push
-- Merge conflict panel
+- Branch list with checkout, create, rename, delete, merge
+- Commit timeline graph with history rewriting (rebase, squash, drop, cherry-pick, revert, reset)
+- Working tree: stage, unstage, commit, amend
+- Discard changes (per-file, per-folder, or bulk)
+- Remove tracked files (`git rm`) and delete untracked files
+- Clean untracked files with dry-run preview (`git clean`)
+- Diff viewer (working, staged, commit, stash)
+- Stash management with diff preview
+- Tags: create, delete, push
+- Remotes with fetch, pull, push, add, remove
+- Merge / rebase / cherry-pick conflict panel
+- Repository maintenance (unreachable commits, stale refs, prune)
+- GitHub integration (PRs, issues, repo browse)
 - AI assist for commit and stash messages (local LLM or cloud API)
 
 Settings are stored in `~/.config/gitfredo/settings.json`.

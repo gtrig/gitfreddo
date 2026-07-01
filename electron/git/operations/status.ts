@@ -178,6 +178,49 @@ export async function workingDiscard(
   await runGitOrThrow(checkoutArgs, { cwd, gitBinaryPath })
 }
 
+export async function workingRemove(
+  cwd: string,
+  gitBinaryPath: string,
+  paths: string[]
+): Promise<void> {
+  if (paths.length === 0) return
+
+  const result = await runGit(['rm', '--', ...paths], { cwd, gitBinaryPath })
+  if (result.code === 0) return
+
+  await runGitOrThrow(['rm', '-f', '--', ...paths], { cwd, gitBinaryPath })
+}
+
+/** Parse `git clean -n` output lines into relative paths. */
+export function parseCleanPreviewOutput(stdout: string): string[] {
+  return stdout
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => line.replace(/^Would remove\s+/, ''))
+}
+
+export async function workingCleanPreview(
+  cwd: string,
+  gitBinaryPath: string,
+  includeIgnored = false
+): Promise<string[]> {
+  const args = ['clean', '-fdn']
+  if (includeIgnored) args.push('-x')
+  const stdout = await runGitOrThrow(args, { cwd, gitBinaryPath })
+  return parseCleanPreviewOutput(stdout)
+}
+
+export async function workingClean(
+  cwd: string,
+  gitBinaryPath: string,
+  includeIgnored = false
+): Promise<void> {
+  const args = ['clean', '-fd']
+  if (includeIgnored) args.push('-x')
+  await runGitOrThrow(args, { cwd, gitBinaryPath })
+}
+
 export async function commitCreate(
   cwd: string,
   gitBinaryPath: string,

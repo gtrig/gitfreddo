@@ -92,6 +92,16 @@ export function useMergeStatus(enabled = true) {
   })
 }
 
+export function useCleanPreview(includeIgnored: boolean, enabled = true) {
+  const { repoPath, connected } = useRepoScope()
+  return useQuery<string[]>({
+    queryKey: ['repo', repoPath, 'working.cleanPreview', includeIgnored],
+    queryFn: async () =>
+      (await window.gitfredo.invoke('working.cleanPreview', { includeIgnored })) as string[],
+    enabled: enabled && connected && Boolean(repoPath)
+  })
+}
+
 export function useStashFiles(index: number | null, enabled = true) {
   const { repoPath, connected } = useRepoScope()
   return useQuery({

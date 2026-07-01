@@ -16,22 +16,24 @@ The renderer calls `window.gitfredo.invoke(method, params)` for git operations:
 
 | Read | Write |
 |------|-------|
-| `repo.status` | `branch.checkout`, `branch.create`, `branch.delete` |
-| `log.graph`, `log.show` | `stage.add`, `stage.reset`, `commit.create`, `commit.revert` |
-| `branch.list` | `merge.start`, `merge.abort`, `merge.continue` |
-| `remote.list` | `remote.add`, `remote.remove` |
-| `diff.working`, `diff.staged`, `diff.commits` | `fetch`, `push`, `pull` |
-| `stash.list`, `stash.show` | `stash.push`, `stash.pop`, `stash.apply`, `stash.drop` |
-| `merge.status` | `rebase.start`, `rebase.abort`, `rebase.continue`, `rebase.drop`, `cherry-pick`, `reset`, `reset.head` |
-| `maintenance.unreachable`, `maintenance.staleBranches` | `maintenance.prune`, `maintenance.removeStaleBranches` |
+| `repo.status` | `branch.checkout`, `branch.create`, `branch.delete`, `branch.rename` |
+| `log.graph`, `log.show`, `log.message` | `stage.add`, `stage.reset`, `commit.create`, `commit.reword`, `commit.revert` |
+| `branch.list`, `tag.list` | `tag.create`, `tag.delete`, `tag.push` |
+| `working.status`, `working.cleanPreview` | `working.discard`, `working.remove`, `working.clean` |
+| `remote.list` | `remote.add`, `remote.remove`, `fetch`, `push`, `pull` |
+| `diff.working`, `diff.staged`, `diff.commits`, `diff.show` | `stash.push`, `stash.pop`, `stash.apply`, `stash.drop` |
+| `stash.list`, `stash.show`, `stash.files` | `merge.start`, `merge.abort`, `merge.continue` |
+| `merge.status` (returns `kind`: merge \| rebase \| cherry-pick) | `rebase.start`, `rebase.abort`, `rebase.continue`, `rebase.skip`, `rebase.squash`, `rebase.drop` |
+| `maintenance.unreachable`, `maintenance.staleBranches` | `cherry-pick`, `cherry-pick.continue`, `cherry-pick.abort`, `cherry-pick.skip` |
+| `file.read` | `reset`, `reset.head`, `maintenance.prune`, `maintenance.removeStaleBranches` |
 
-Workspace helpers: `connect`, `switchWorkspace`, `cloneRepository`, `openWorkspace`, settings.
+Workspace helpers: `connect`, `switchWorkspace`, `cloneRepository`, `openWorkspace`, `deleteWorkspaceFile`, `openInEditor`, settings.
 
 ## UI layout
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│ Tabs · path · ActionBar (commit/stash/fetch/pull/push)  │
+│ Tabs · path · ActionBar (stash/fetch/pull/push)         │
 ├──────────┬──────────────────────────────┬───────────────┤
 │ Branches │ Commit graph + diff overlay  │ Detail panel  │
 │ Stash    │                              │ (commit/WIP)  │
@@ -43,6 +45,6 @@ Workspace helpers: `connect`, `switchWorkspace`, `cloneRepository`, `openWorkspa
 
 - `electron/git/git-runner.ts` — spawn `git` with `cwd = repo`
 - `electron/git/repo-manager.ts` — per-tab repo pool + `invoke` dispatch
-- `electron/git/operations/*` — domain modules (branch, log, diff, remote, stash, merge, rebase)
+- `electron/git/operations/*` — domain modules (branch, log, diff, remote, stash, merge, rebase, status)
 
 No third-party git libraries; output is parsed from porcelain/plumbing commands.

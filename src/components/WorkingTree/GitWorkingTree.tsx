@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
 import { useWorkingStatus } from '@/hooks/useGit'
@@ -9,9 +9,11 @@ import { buildFileTree, collectFolderPaths, countCommitFiles, type FileTreeNode 
 import type { CommitFileItem } from '@/lib/types'
 import { LoadingRow, Spinner } from '@/components/ui/Spinner'
 import { CommitPanel } from '@/components/WorkingTree/CommitPanel'
+import { CleanUntrackedModal } from '@/components/WorkingTree/CleanUntrackedModal'
 import { ConfirmDialog } from '@/components/ui/Modal'
 import { ContextMenu } from '@/components/ui/ContextMenu'
 import { useContextMenu, type OpenContextMenu } from '@/hooks/useContextMenu'
+import { discardablePaths, pathsUnderFolderPrefix } from '@/lib/workingTreePaths'
 import {
   workingTreeFileContextMenuItems,
   workingTreeFolderContextMenuItems
@@ -25,7 +27,8 @@ function FileRow({
   mode,
   openMenu,
   onDiscard,
-  onDelete
+  onDelete,
+  onRemove
 }: {
   file: GitFileChange
   onSelect: () => void
@@ -35,6 +38,7 @@ function FileRow({
   openMenu: OpenContextMenu
   onDiscard?: () => void
   onDelete?: () => void
+  onRemove?: () => void
 }) {
   return (
     <div className="flex items-center gap-1">
@@ -49,7 +53,8 @@ function FileRow({
               onStageToggle: onStage ?? (() => {}),
               onOpenInEditor: () => void window.gitfredo.openInEditor(file.path),
               onDiscard,
-              onDelete
+              onDelete,
+              onRemove
             })
           )
         }
@@ -129,7 +134,9 @@ function TreeNode({
   onStage,
   openMenu,
   onDiscard,
-  onDelete
+  onDelete,
+  onRemove,
+  onDiscardFolder
 }: {
   node: FileTreeNode
   depth: number
@@ -143,6 +150,8 @@ function TreeNode({
   openMenu: OpenContextMenu
   onDiscard?: (path: string, staged: boolean) => void
   onDelete?: (path: string) => void
+  onRemove?: (path: string) => void
+  onDiscardFolder?: (folderPath: string) => void
 }) {
   if (node.type === 'folder') {
     const open = expandedPaths.has(node.path)
@@ -154,7 +163,12 @@ function TreeNode({
           onContextMenu={(event) =>
             openMenu(
               event,
-              workingTreeFolderContextMenuItems(node.path, open, () => toggleExpanded(node.path))
+              workingTreeFolderContextMenuItems(node.path, open, {
+                onToggle: () => toggleExpanded(node.path),
+                onDiscardFolder: onDiscardFolder
+                  ? () => onDiscardFolder(node.path)
+                  : undefined
+              })
             )
           }
           className="flex w-full items-center gap-2 px-2 py-1 text-left text-xs text-gf-fg-muted hover:bg-gf-surface-hover"
@@ -180,6 +194,8 @@ function TreeNode({
               openMenu={openMenu}
               onDiscard={onDiscard}
               onDelete={onDelete}
+              onRemove={onRemove}
+              onDiscardFolder={onDiscardFolder}
             />
           ))}
       </>
@@ -203,7 +219,8 @@ function TreeNode({
               onStageToggle: stageToggle,
               onOpenInEditor: () => void window.gitfredo.openInEditor(file.path),
               onDiscard: onDiscard ? () => onDiscard(file.path, mode === 'staged') : undefined,
-              onDelete: onDelete ? () => onDelete(file.path) : undefined
+              onDelete: onDelete ? () => onDelete(file.path) : undefined,
+              onRemove: onRemove ? () => onRemove(file.path) : undefined
             })
           )
         }
@@ -232,26 +249,64 @@ function TreeNode({
 export function GitWorkingTree() {
   const connected = useWorkspaceStore((s) => s.connected)
   const { data, isLoading, error } = useWorkingStatus(connected)
-  const { stageAdd, stageReset, workingDiscard } = useGitMutations()
+  const { stageAdd, stageReset, workingDiscard, workingRemove } = useGitMutations()
   const invalidate = useInvalidateGit()
   const selectedFile = useSelectionStore((s) => s.selectedWorkingFile)
   const setSelectedWorkingFile = useSelectionStore((s) => s.setSelectedWorkingFile)
   const [viewMode, setViewMode] = useState<'path' | 'tree'>('tree')
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set())
-  const [pendingDiscard, setPendingDiscard] = useState<{ path: string; staged: boolean } | null>(
+  const [pendingDiscard, setPendingDiscard] = useState<{ paths: string[]; staged: boolean } | null>(
     null
   )
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
+  const [pendingRemove, setPendingRemove] = useState<string | null>(null)
   const [deleteBusy, setDeleteBusy] = useState(false)
+  const [cleanOpen, setCleanOpen] = useState(false)
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
 
+  const changesFiles = [
+    ...(data?.unstaged ?? []),
+    ...(data?.untracked ?? []),
+    ...(data?.conflicted ?? [])
+  ]
+  const stagedFiles = data?.staged ?? []
+  const unstagedDiscardable = discardablePaths(data?.unstaged ?? [])
+  const stagedDiscardable = discardablePaths(stagedFiles)
+  const totalChangeCount =
+    (data?.unstaged.length ?? 0) +
+    (data?.untracked.length ?? 0) +
+    (data?.conflicted.length ?? 0) +
+    (data?.staged.length ?? 0)
+
   function requestDiscard(path: string, staged: boolean) {
-    setPendingDiscard({ path, staged })
+    setPendingDiscard({ paths: [path], staged })
+  }
+
+  function requestBulkDiscard(paths: string[], staged: boolean) {
+    if (paths.length === 0) return
+    setPendingDiscard({ paths, staged })
+  }
+
+  function requestFolderDiscard(folderPath: string, files: GitFileChange[], staged: boolean) {
+    const inFolder = pathsUnderFolderPrefix(files, folderPath)
+    const paths = discardablePaths(files.filter((file) => inFolder.includes(file.path)))
+    requestBulkDiscard(paths, staged)
   }
 
   function requestDelete(path: string) {
     setPendingDelete(path)
   }
+
+  function requestRemove(path: string) {
+    setPendingRemove(path)
+  }
+
+  const busy =
+    stageAdd.isPending ||
+    stageReset.isPending ||
+    workingDiscard.isPending ||
+    workingRemove.isPending ||
+    deleteBusy
 
   if (!connected) {
     return <p className="p-4 text-sm text-gf-fg-subtle">Open a repository to view changes.</p>
@@ -264,16 +319,25 @@ export function GitWorkingTree() {
     title: string,
     files: GitFileChange[],
     mode: 'working' | 'staged',
-    canStage: boolean
+    canStage: boolean,
+    headerActions?: ReactNode
   ) => (
     <div className="mb-3">
-      <h3 className="mb-1 text-[11px] font-semibold text-gf-fg-subtle">
-        {title} ({files.length})
-      </h3>
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <h3 className="text-[11px] font-semibold text-gf-fg-subtle">
+          {title} ({files.length})
+        </h3>
+        {headerActions}
+      </div>
       {files.length === 0 ? (
         <p className="text-xs text-gf-fg-subtle">—</p>
       ) : (
         <>
+          {mode === 'working' && (data?.conflicted.length ?? 0) > 0 && (
+            <p className="mb-1 text-[10px] text-orange-400">
+              Conflicted files: resolve via the conflict panel.
+            </p>
+          )}
           {viewMode === 'path' ? (
             <div className="space-y-0.5">
               {files.map((file) => (
@@ -289,6 +353,11 @@ export function GitWorkingTree() {
                       : () => void stageReset.mutateAsync({ paths: [file.path] })
                   }
                   onDiscard={() => requestDiscard(file.path, mode === 'staged')}
+                  onRemove={
+                    file.status !== 'untracked' && file.status !== 'conflicted'
+                      ? () => requestRemove(file.path)
+                      : undefined
+                  }
                   onDelete={
                     file.status === 'untracked' ? () => requestDelete(file.path) : undefined
                   }
@@ -324,6 +393,10 @@ export function GitWorkingTree() {
                     }
                     onDiscard={requestDiscard}
                     onDelete={requestDelete}
+                    onRemove={requestRemove}
+                    onDiscardFolder={(folderPath) =>
+                      requestFolderDiscard(folderPath, files, mode === 'staged')
+                    }
                     openMenu={openMenu}
                   />
                 ))}
@@ -338,7 +411,7 @@ export function GitWorkingTree() {
     <div className="flex h-full flex-col bg-gf-bg-deep">
       <div className="flex items-center justify-between border-b border-gf-border px-3 py-2">
         <p className="text-xs text-gf-fg-muted">
-          {data?.staged.length ?? 0} file change{(data?.staged.length ?? 0) === 1 ? '' : 's'} in{' '}
+          {totalChangeCount} file change{totalChangeCount === 1 ? '' : 's'} on{' '}
           <span className="rounded bg-gf-surface px-1 py-0.5 text-[10px] text-gf-fg">{data?.branch}</span>
         </p>
         <button
@@ -350,49 +423,87 @@ export function GitWorkingTree() {
         </button>
       </div>
 
-      <div className="flex items-center justify-between border-b border-gf-border px-3 py-2">
-        <div className="flex items-center gap-2">
-          <p className="text-xs text-gf-fg-subtle">
-            {data && (data.unstaged.length > 0 || data.untracked.length > 0 || data.conflicted.length > 0)
-              ? 'Unstage Files'
-              : 'No unstaged files'}
-          </p>
-          <button
-            type="button"
-            onClick={() =>
-              setExpandedPaths(
-                new Set(
-                  collectFolderPaths(buildFileTree(toTreeItems([...(data?.unstaged ?? []), ...(data?.untracked ?? []), ...(data?.conflicted ?? [])])))
-                )
-              )
-            }
-            className="text-[10px] text-gf-accent-fg hover:text-gf-fg"
-          >
-            Expand all
-          </button>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gf-border px-3 py-2">
+        <button
+          type="button"
+          onClick={() =>
+            setExpandedPaths(new Set(collectFolderPaths(buildFileTree(toTreeItems(changesFiles)))))
+          }
+          className="text-[10px] text-gf-accent-fg hover:text-gf-fg"
+        >
+          Expand all
+        </button>
+        <div className="flex flex-wrap gap-1">
+          {(data?.untracked.length ?? 0) > 0 && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setCleanOpen(true)}
+              className="rounded border border-gf-border-strong px-2 py-0.5 text-[10px] text-gf-fg-muted hover:bg-gf-surface disabled:opacity-50"
+            >
+              Clean untracked…
+            </button>
+          )}
+          {data && !data.isClean && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void stageAdd.mutateAsync({ paths: [] })}
+              className="inline-flex items-center gap-1 rounded border border-gf-border-strong px-2 py-0.5 text-[10px] text-gf-fg-muted hover:bg-gf-surface disabled:opacity-50"
+            >
+              {stageAdd.isPending && <Spinner size="sm" />}
+              Stage all
+            </button>
+          )}
         </div>
-        {data && !data.isClean && (
-          <button
-            type="button"
-            disabled={stageAdd.isPending}
-            onClick={() => void stageAdd.mutateAsync({ paths: [] })}
-            className="inline-flex items-center gap-1 rounded border border-gf-border-strong px-2 py-0.5 text-[10px] text-gf-fg-muted hover:bg-gf-surface disabled:opacity-50"
-          >
-            {stageAdd.isPending && <Spinner size="sm" />}
-            Stage All Changes
-          </button>
-        )}
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
         {renderSection(
-          'Unstage Files',
-          [...(data?.unstaged ?? []), ...(data?.untracked ?? []), ...(data?.conflicted ?? [])],
+          'Changes',
+          changesFiles,
           'working',
-          true
+          true,
+          unstagedDiscardable.length > 0 ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => requestBulkDiscard(unstagedDiscardable, false)}
+              className="text-[10px] text-red-400 hover:text-red-300 disabled:opacity-50"
+            >
+              Discard all…
+            </button>
+          ) : undefined
         )}
         <div className="my-4 border-t border-gf-border/70" />
-        {renderSection('Staged Files', data?.staged ?? [], 'staged', false)}
+        {renderSection(
+          'Staged',
+          stagedFiles,
+          'staged',
+          false,
+          <div className="flex gap-2">
+            {stagedFiles.length > 0 && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void stageReset.mutateAsync({})}
+                className="text-[10px] text-gf-fg-subtle hover:text-gf-fg disabled:opacity-50"
+              >
+                Unstage all
+              </button>
+            )}
+            {stagedDiscardable.length > 0 && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => requestBulkDiscard(stagedDiscardable, true)}
+                className="text-[10px] text-red-400 hover:text-red-300 disabled:opacity-50"
+              >
+                Discard all…
+              </button>
+            )}
+          </div>
+        )}
       </div>
       {data && <CommitPanel working={data} />}
 
@@ -405,21 +516,42 @@ export function GitWorkingTree() {
         />
       )}
 
+      <CleanUntrackedModal open={cleanOpen} onClose={() => setCleanOpen(false)} />
+
       {pendingDiscard && (
         <ConfirmDialog
           open
           title="Discard changes"
-          message={`Discard local changes to "${pendingDiscard.path}"? This cannot be undone.`}
+          message={
+            pendingDiscard.paths.length === 1
+              ? `Discard local changes to "${pendingDiscard.paths[0]}"? This cannot be undone.`
+              : `Discard local changes to ${pendingDiscard.paths.length} files? This cannot be undone.`
+          }
           confirmLabel="Discard"
           busy={workingDiscard.isPending}
           onConfirm={async () => {
             await workingDiscard.mutateAsync({
-              paths: [pendingDiscard.path],
+              paths: pendingDiscard.paths,
               staged: pendingDiscard.staged
             })
             setPendingDiscard(null)
           }}
           onCancel={() => setPendingDiscard(null)}
+        />
+      )}
+
+      {pendingRemove && (
+        <ConfirmDialog
+          open
+          title="Remove from repository"
+          message={`Remove "${pendingRemove}" from the repository and stage the deletion?`}
+          confirmLabel="Remove"
+          busy={workingRemove.isPending}
+          onConfirm={async () => {
+            await workingRemove.mutateAsync({ paths: [pendingRemove] })
+            setPendingRemove(null)
+          }}
+          onCancel={() => setPendingRemove(null)}
         />
       )}
 

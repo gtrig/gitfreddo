@@ -46,6 +46,8 @@ export function useGitMutations() {
     stageAdd: wrap('stage.add', ['working.status']),
     stageReset: wrap('stage.reset', ['working.status']),
     workingDiscard: wrap('working.discard', ['working.status']),
+    workingRemove: wrap('working.remove', ['working.status']),
+    workingClean: wrap('working.clean', ['working.status']),
     commit: wrap('commit.create', ['working.status', 'log.graph', 'status']),
     rewordCommit: wrap('commit.reword', ['working.status', 'log.graph', 'status']),
     fetch: wrap('fetch', ['branch.list', 'log.graph', 'working.status', 'tag.list']),

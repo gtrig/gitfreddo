@@ -9,13 +9,16 @@ function separator(id: string): ContextMenuItem {
 export function workingTreeFolderContextMenuItems(
   path: string,
   open: boolean,
-  onToggle: () => void
+  handlers: {
+    onToggle: () => void
+    onDiscardFolder?: () => void
+  }
 ): ContextMenuItem[] {
-  return [
+  const items: ContextMenuItem[] = [
     {
       id: 'toggle',
       label: open ? 'Collapse' : 'Expand',
-      onClick: onToggle
+      onClick: handlers.onToggle
     },
     {
       id: 'copy',
@@ -23,6 +26,18 @@ export function workingTreeFolderContextMenuItems(
       onClick: () => void copyToClipboard(path)
     }
   ]
+
+  if (handlers.onDiscardFolder) {
+    items.push(separator('sep-discard'))
+    items.push({
+      id: 'discard-folder',
+      label: 'Discard changes in folder…',
+      danger: true,
+      onClick: handlers.onDiscardFolder
+    })
+  }
+
+  return items
 }
 
 export function workingTreeFileContextMenuItems(
@@ -34,6 +49,7 @@ export function workingTreeFileContextMenuItems(
     onStageToggle: () => void
     onOpenInEditor: () => void
     onDiscard?: () => void
+    onRemove?: () => void
     onDelete?: () => void
   }
 ): ContextMenuItem[] {
@@ -41,6 +57,8 @@ export function workingTreeFileContextMenuItems(
     status !== 'untracked' &&
     status !== 'conflicted' &&
     (status === 'modified' || status === 'deleted' || status === 'added' || mode === 'staged')
+
+  const canRemove = status !== 'untracked' && status !== 'conflicted'
 
   const items: ContextMenuItem[] = [
     {
@@ -61,6 +79,15 @@ export function workingTreeFileContextMenuItems(
       label: 'Discard changes…',
       danger: true,
       onClick: handlers.onDiscard
+    })
+  }
+
+  if (canRemove && handlers.onRemove) {
+    items.push({
+      id: 'remove',
+      label: 'Remove from repository…',
+      danger: true,
+      onClick: handlers.onRemove
     })
   }
 

@@ -142,6 +142,12 @@ export class RepoManager {
           (p.paths as string[]) ?? [],
           Boolean(p.staged)
         )
+      case 'working.remove':
+        return statusOps.workingRemove(cwd, git, (p.paths as string[]) ?? [])
+      case 'working.cleanPreview':
+        return statusOps.workingCleanPreview(cwd, git, Boolean(p.includeIgnored))
+      case 'working.clean':
+        return statusOps.workingClean(cwd, git, Boolean(p.includeIgnored))
       case 'commit.create':
         return statusOps.commitCreate(cwd, git, p.message as string, Boolean(p.amend))
       case 'commit.reword':
