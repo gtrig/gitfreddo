@@ -1,11 +1,12 @@
 import { unlink } from 'fs/promises'
-import { resolve } from 'path'
+import { relative, resolve } from 'path'
 import { normalizeRepoPath } from './repo-path'
 
 export function resolveRepoFile(repoPath: string, relativePath: string): string {
   const normalized = normalizeRepoPath(repoPath)
   const full = resolve(normalized, relativePath)
-  if (!full.startsWith(normalized)) {
+  const rel = relative(normalized, full)
+  if (rel.startsWith('..') || resolve(rel).startsWith('..')) {
     throw new Error('Path escapes repository root')
   }
   return full

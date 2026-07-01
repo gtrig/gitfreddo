@@ -94,7 +94,7 @@ export async function branchCheckout(
   gitBinaryPath: string,
   name: string
 ): Promise<void> {
-  await runGitOrThrow(['checkout', name], { cwd, gitBinaryPath })
+  await runGitOrThrow(['checkout', '--end-of-options', name], { cwd, gitBinaryPath })
 }
 
 export async function branchCreate(
@@ -103,7 +103,7 @@ export async function branchCreate(
   name: string,
   startPoint?: string
 ): Promise<void> {
-  const args = ['branch', name]
+  const args = ['branch', '--end-of-options', name]
   if (startPoint) args.push(startPoint)
   await runGitOrThrow(args, { cwd, gitBinaryPath })
 }
@@ -114,7 +114,10 @@ export async function branchDelete(
   name: string,
   force = false
 ): Promise<void> {
-  await runGitOrThrow(['branch', force ? '-D' : '-d', name], { cwd, gitBinaryPath })
+  await runGitOrThrow(['branch', force ? '-D' : '-d', '--end-of-options', name], {
+    cwd,
+    gitBinaryPath
+  })
 }
 
 export async function branchRename(
@@ -123,5 +126,8 @@ export async function branchRename(
   oldName: string,
   newName: string
 ): Promise<void> {
-  await runGitOrThrow(['branch', '-m', oldName, newName], { cwd, gitBinaryPath })
+  await runGitOrThrow(['branch', '-m', '--end-of-options', oldName, newName], {
+    cwd,
+    gitBinaryPath
+  })
 }

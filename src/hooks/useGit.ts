@@ -123,18 +123,20 @@ export function useStashDiff(index: number | null, path?: string, enabled = true
 
 export function useDiffWorking(path?: string, enabled = true) {
   const { repoPath, connected } = useRepoScope()
-  return useQuery({
+  return useQuery<GitDiffResult>({
     queryKey: ['repo', repoPath, 'diff.working', path],
-    queryFn: async () => window.gitfredo.invoke('diff.working', { path }),
+    queryFn: async () =>
+      (await window.gitfredo.invoke('diff.working', { path })) as GitDiffResult,
     enabled: enabled && connected && Boolean(repoPath)
   })
 }
 
 export function useDiffStaged(path?: string, enabled = true) {
   const { repoPath, connected } = useRepoScope()
-  return useQuery({
+  return useQuery<GitDiffResult>({
     queryKey: ['repo', repoPath, 'diff.staged', path],
-    queryFn: async () => window.gitfredo.invoke('diff.staged', { path }),
+    queryFn: async () =>
+      (await window.gitfredo.invoke('diff.staged', { path })) as GitDiffResult,
     enabled: enabled && connected && Boolean(repoPath)
   })
 }

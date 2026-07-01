@@ -108,7 +108,9 @@ export const useSelectionStore = create<SelectionState>((set) => ({
 
       return {
         timelineSelection: { kind: 'commit', id: hash },
-        selectedCommitHash: hash
+        selectedCommitHash: hash,
+        selectedCommitFile: null,
+        diffMode: null
       }
     }),
   showCompareCommitRange: (oldestHash, newestHash, label) =>
@@ -172,11 +174,57 @@ export const useSelectionStore = create<SelectionState>((set) => ({
     })
 }))
 
-// Session persistence stubs for workspace store compatibility
-const snapshots = new Map<string, unknown>()
+// Session persistence for workspace tab switches
+interface SelectionSnapshot {
+  timelineSelection: TimelineSelection | null
+  selectedCommitHashes: string[]
+  selectionAnchorHash: string | null
+  selectedCommitHash: string | null
+  selectedCommitFile: string | null
+  selectedWorkingFile: string | null
+  selectedStashIndex: number | null
+  selectedStashFile: string | null
+  diffMode: SelectionState['diffMode']
+  compareCommitRange: SelectionState['compareCommitRange']
+}
 
-export function captureSelectionForWorkspace(_path: string): void {}
-export function restoreSelectionForWorkspace(_path: string): void {}
+const EMPTY_SNAPSHOT: SelectionSnapshot = {
+  timelineSelection: null,
+  selectedCommitHashes: [],
+  selectionAnchorHash: null,
+  selectedCommitHash: null,
+  selectedCommitFile: null,
+  selectedWorkingFile: null,
+  selectedStashIndex: null,
+  selectedStashFile: null,
+  diffMode: null,
+  compareCommitRange: null
+}
+
+const snapshots = new Map<string, SelectionSnapshot>()
+
+function snapshotFromState(state: SelectionState): SelectionSnapshot {
+  return {
+    timelineSelection: state.timelineSelection,
+    selectedCommitHashes: state.selectedCommitHashes,
+    selectionAnchorHash: state.selectionAnchorHash,
+    selectedCommitHash: state.selectedCommitHash,
+    selectedCommitFile: state.selectedCommitFile,
+    selectedWorkingFile: state.selectedWorkingFile,
+    selectedStashIndex: state.selectedStashIndex,
+    selectedStashFile: state.selectedStashFile,
+    diffMode: state.diffMode,
+    compareCommitRange: state.compareCommitRange
+  }
+}
+
+export function captureSelectionForWorkspace(path: string): void {
+  snapshots.set(path, snapshotFromState(useSelectionStore.getState()))
+}
+
+export function restoreSelectionForWorkspace(path: string): void {
+  useSelectionStore.setState(snapshots.get(path) ?? EMPTY_SNAPSHOT)
+}
 export function clearSelectionSnapshot(path: string): void {
   snapshots.delete(path)
 }

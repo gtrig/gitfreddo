@@ -94,3 +94,12 @@ export async function runGitOrThrow(
   }
   return result.stdout
 }
+
+/** Resolves a user-supplied ref to a full object name (safe for argv). */
+export async function resolveGitRef(
+  cwd: string,
+  gitBinaryPath: string,
+  ref: string
+): Promise<string> {
+  return (await runGitOrThrow(['rev-parse', '--verify', ref], { cwd, gitBinaryPath })).trim()
+}

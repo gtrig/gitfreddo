@@ -1,4 +1,4 @@
-import { runGit, runGitOrThrow } from '../git-runner'
+import { resolveGitRef, runGit, runGitOrThrow } from '../git-runner'
 import type { GitDiffResult } from '../types'
 
 export async function diffWorking(
@@ -30,7 +30,9 @@ export async function diffCommits(
   toRef: string,
   path?: string
 ): Promise<GitDiffResult> {
-  const args = ['diff', fromRef, toRef, '--']
+  const from = await resolveGitRef(cwd, gitBinaryPath, fromRef)
+  const to = await resolveGitRef(cwd, gitBinaryPath, toRef)
+  const args = ['diff', from, to, '--']
   if (path) args.push(path)
   const unified = await runGitOrThrow(args, { cwd, gitBinaryPath })
   return { unified, path: path ?? '' }
@@ -42,13 +44,13 @@ export async function diffCommitRange(
   oldestHash: string,
   newestHash: string
 ): Promise<GitDiffResult> {
+  const oldest = await resolveGitRef(cwd, gitBinaryPath, oldestHash)
+  const newest = await resolveGitRef(cwd, gitBinaryPath, newestHash)
   const hasParent =
-    (await runGit(['rev-parse', '--verify', `${oldestHash}^`], { cwd, gitBinaryPath })).code === 0
-  const args = hasParent
-    ? ['diff', `${oldestHash}^`, newestHash]
-    : ['diff', '--root', newestHash]
+    (await runGit(['rev-parse', '--verify', `${oldest}^`], { cwd, gitBinaryPath })).code === 0
+  const args = hasParent ? ['diff', `${oldest}^`, newest] : ['diff', oldest, newest]
   const unified = await runGitOrThrow(args, { cwd, gitBinaryPath })
-  return { unified, path: `${oldestHash.slice(0, 7)}..${newestHash.slice(0, 7)}` }
+  return { unified, path: `${oldest.slice(0, 7)}..${newest.slice(0, 7)}` }
 }
 
 export async function diffShow(
@@ -57,7 +59,8 @@ export async function diffShow(
   ref: string,
   path?: string
 ): Promise<GitDiffResult> {
-  const args = ['show', '-m', '--first-parent', ref, '--']
+  const resolvedRef = await resolveGitRef(cwd, gitBinaryPath, ref)
+  const args = ['show', '-m', '--first-parent', resolvedRef, '--']
   if (path) args.push(path)
   const unified = await runGitOrThrow(args, { cwd, gitBinaryPath })
   return { unified, path: path ?? '' }

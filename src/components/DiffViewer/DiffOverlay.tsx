@@ -48,11 +48,29 @@ export function DiffOverlay({ onClose }: DiffOverlayProps) {
     Boolean(diffMode === 'stash' && selectedStashIndex !== null)
   )
 
-  const active = (workingDiff.data ??
-    stagedDiff.data ??
-    commitDiff.data ??
-    rangeDiff.data ??
-    stashDiff.data) as GitDiffResult | undefined
+  const active = useMemo((): GitDiffResult | undefined => {
+    switch (diffMode) {
+      case 'working':
+        return workingDiff.data
+      case 'staged':
+        return stagedDiff.data
+      case 'commit':
+        return commitDiff.data
+      case 'commit-range':
+        return rangeDiff.data
+      case 'stash':
+        return stashDiff.data
+      default:
+        return undefined
+    }
+  }, [
+    diffMode,
+    workingDiff.data,
+    stagedDiff.data,
+    commitDiff.data,
+    rangeDiff.data,
+    stashDiff.data
+  ])
   const path =
     diffMode === 'commit-range'
       ? compareCommitRange?.label
@@ -63,12 +81,29 @@ export function DiffOverlay({ onClose }: DiffOverlayProps) {
     () => (active?.unified ? parseUnifiedDiffRows(active.unified) : []),
     [active?.unified]
   )
-  const loading =
-    workingDiff.isLoading ||
-    stagedDiff.isLoading ||
-    commitDiff.isLoading ||
-    rangeDiff.isLoading ||
+  const loading = useMemo(() => {
+    switch (diffMode) {
+      case 'working':
+        return workingDiff.isLoading
+      case 'staged':
+        return stagedDiff.isLoading
+      case 'commit':
+        return commitDiff.isLoading
+      case 'commit-range':
+        return rangeDiff.isLoading
+      case 'stash':
+        return stashDiff.isLoading
+      default:
+        return false
+    }
+  }, [
+    diffMode,
+    workingDiff.isLoading,
+    stagedDiff.isLoading,
+    commitDiff.isLoading,
+    rangeDiff.isLoading,
     stashDiff.isLoading
+  ])
 
   if (!path) return null
 

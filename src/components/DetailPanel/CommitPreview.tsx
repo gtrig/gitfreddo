@@ -4,6 +4,7 @@ import { useAiEnabled } from '@/hooks/useAppSettings'
 import { useAiFill } from '@/hooks/useAiFill'
 import { useToastStore } from '@/stores/toast'
 import { useSelectionStore } from '@/stores/selection'
+import { useWorkspaceStore } from '@/stores/workspace'
 import { RewordCommitModal } from '@/components/DetailPanel/RewordCommitModal'
 import {
   buildFileTree,
@@ -302,12 +303,16 @@ function FileTreeList({
 export function CommitPreview({
   commit,
   changedFiles,
-  loadingFiles
+  loadingFiles,
+  filesError
 }: {
   commit: GitCommit
   changedFiles: CommitFileItem[]
   loadingFiles: boolean
+  filesError?: Error | null
 }) {
+  const connected = useWorkspaceStore((s) => s.connected)
+  const repoPath = useWorkspaceStore((s) => s.activePath)
   const selectTimelineNode = useSelectionStore((s) => s.selectTimelineNode)
   const selectedCommitFile = useSelectionStore((s) => s.selectedCommitFile)
   const setSelectedCommitFile = useSelectionStore((s) => s.setSelectedCommitFile)
@@ -319,10 +324,10 @@ export function CommitPreview({
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
 
   const fullMessageQuery = useQuery({
-    queryKey: ['repo', 'log.message', commit.hash],
+    queryKey: ['repo', repoPath, 'log.message', commit.hash],
     queryFn: async () =>
       window.gitfredo.invoke('log.message', { hash: commit.hash }) as Promise<string>,
-    enabled: Boolean(commit.hash)
+    enabled: connected && Boolean(repoPath) && Boolean(commit.hash)
   })
 
   const fullMessage = fullMessageQuery.data ?? commit.message
@@ -367,7 +372,9 @@ export function CommitPreview({
         <p className="text-sm text-gf-fg-muted">
           {loadingFiles
             ? 'Loading file changes…'
-            : `${totalChanges} file change${totalChanges === 1 ? '' : 's'} in commit`}
+            : filesError
+              ? 'Could not load file changes'
+              : `${totalChanges} file change${totalChanges === 1 ? '' : 's'} in commit`}
         </p>
         <button
           type="button"
@@ -483,10 +490,15 @@ export function CommitPreview({
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {loadingFiles && <p className="px-4 py-3 text-sm text-gf-fg-subtle">Loading files…</p>}
-        {!loadingFiles && changedFiles.length === 0 && (
+        {!loadingFiles && filesError && (
+          <p className="px-4 py-3 text-sm text-red-400">
+            {filesError instanceof Error ? filesError.message : 'Failed to load commit files.'}
+          </p>
+        )}
+        {!loadingFiles && !filesError && changedFiles.length === 0 && (
           <p className="px-4 py-3 text-sm text-gf-fg-subtle">No file changes.</p>
         )}
-        {!loadingFiles && viewMode === 'path' && (
+        {!loadingFiles && !filesError && viewMode === 'path' && (
           <div className="py-1">
             {sortedFiles.map((file) => (
               <PathFileRow
@@ -499,7 +511,7 @@ export function CommitPreview({
             ))}
           </div>
         )}
-        {!loadingFiles && viewMode === 'tree' && (
+        {!loadingFiles && !filesError && viewMode === 'tree' && (
           <FileTreeList
             root={fileTree}
             selectedPath={selectedCommitFile}

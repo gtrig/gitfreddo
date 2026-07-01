@@ -15,6 +15,7 @@ import { useToastStore } from '@/stores/toast'
 
 export function DetailPanel() {
   const connected = useWorkspaceStore((s) => s.connected)
+  const repoPath = useWorkspaceStore((s) => s.activePath)
   const selection = useSelectionStore((s) => s.timelineSelection)
   const selectedCommitHashes = useSelectionStore((s) => s.selectedCommitHashes)
   const setPrimaryCommit = useSelectionStore((s) => s.setPrimaryCommit)
@@ -34,10 +35,10 @@ export function DetailPanel() {
   }, [graph, selectedCommitHashes])
 
   const showOutput = useQuery({
-    queryKey: ['repo', 'log.show', selection?.id],
+    queryKey: ['repo', repoPath, 'log.show', selection?.id],
     queryFn: async () =>
       window.gitfredo.invoke('log.show', { hash: selection?.id }) as Promise<string>,
-    enabled: connected && selection?.kind === 'commit' && Boolean(selection.id)
+    enabled: connected && Boolean(repoPath) && selection?.kind === 'commit' && Boolean(selection.id)
   })
 
   const changedFiles = useMemo(
@@ -128,6 +129,7 @@ export function DetailPanel() {
             commit={commit}
             changedFiles={changedFiles}
             loadingFiles={showOutput.isLoading}
+            filesError={showOutput.error}
           />
         </div>
       </aside>
