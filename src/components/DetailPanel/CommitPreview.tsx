@@ -3,6 +3,7 @@ import { useAiEnabled } from '@/hooks/useAppSettings'
 import { useAiFill } from '@/hooks/useAiFill'
 import { useToastStore } from '@/stores/toast'
 import { useSelectionStore } from '@/stores/selection'
+import { RewordCommitModal } from '@/components/DetailPanel/RewordCommitModal'
 import {
   buildFileTree,
   collectFolderPaths,
@@ -287,6 +288,7 @@ export function CommitPreview({
   const [viewMode, setViewMode] = useState<'path' | 'tree'>('tree')
   const [sortAscending, setSortAscending] = useState(true)
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(() => new Set())
+  const [rewordOpen, setRewordOpen] = useState(false)
 
   const counts = useMemo(() => countCommitFiles(changedFiles), [changedFiles])
   const sortedFiles = useMemo(
@@ -345,8 +347,19 @@ export function CommitPreview({
         <p className="font-mono text-xs text-gf-fg-subtle">
           commit: <span className="text-gf-fg-muted">{commit.shortHash}</span>
         </p>
-        <CommitAiButton commit={commit} filePaths={changedFiles.map((file) => file.path)} />
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setRewordOpen(true)}
+            className="rounded border border-gf-border-strong px-3 py-1 text-xs text-gf-fg-muted hover:bg-gf-surface"
+          >
+            Reword
+          </button>
+          <CommitAiButton commit={commit} filePaths={changedFiles.map((file) => file.path)} />
+        </div>
       </div>
+
+      <RewordCommitModal commit={commit} open={rewordOpen} onClose={() => setRewordOpen(false)} />
 
       <div className="border-b border-gf-border px-4 py-4">
         <h2 className="text-lg font-semibold leading-snug text-gf-fg">{commit.subject}</h2>

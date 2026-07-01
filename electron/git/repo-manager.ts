@@ -114,6 +114,8 @@ export class RepoManager {
         return statusOps.stageReset(cwd, git, p.paths as string[] | undefined)
       case 'commit.create':
         return statusOps.commitCreate(cwd, git, p.message as string, Boolean(p.amend))
+      case 'commit.reword':
+        return rebaseOps.rebaseReword(cwd, git, p.hash as string, p.message as string)
       case 'diff.working':
         return diffOps.diffWorking(cwd, git, p.path as string | undefined)
       case 'diff.staged':

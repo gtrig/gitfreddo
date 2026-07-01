@@ -13,6 +13,7 @@ export interface RunGitOptions {
   gitBinaryPath?: string
   timeoutMs?: number
   input?: string
+  env?: NodeJS.ProcessEnv
 }
 
 const DEFAULT_TIMEOUT_MS = 120_000
@@ -20,13 +21,13 @@ const COLOR_OFF_ARGS = ['-c', 'color.ui=never'] as const
 
 export async function runGit(
   args: string[],
-  { cwd, gitBinaryPath = 'git', timeoutMs = DEFAULT_TIMEOUT_MS, input }: RunGitOptions
+  { cwd, gitBinaryPath = 'git', timeoutMs = DEFAULT_TIMEOUT_MS, input, env: envOverride }: RunGitOptions
 ): Promise<GitResult> {
   const gitArgs = [...COLOR_OFF_ARGS, ...args]
   const cmd = `${gitBinaryPath} ${gitArgs.join(' ')}`
   emitLog('git', 'debug', `> ${cmd}`, cwd)
 
-  const env = await buildGitEnv()
+  const env = { ...(await buildGitEnv()), ...envOverride }
 
   return new Promise((resolve, reject) => {
     const child = spawn(gitBinaryPath, gitArgs, {
