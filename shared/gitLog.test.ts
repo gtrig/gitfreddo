@@ -26,6 +26,12 @@ describe('parseLogGraphOutput', () => {
     expect(commits[1]?.parents).toEqual([])
   })
 
+  it('preserves tag decorations from git log', () => {
+    const stdout = `abc123\x1f\x1fRelease\x1fAuthor\x1fa@b.c\x1f2024-01-01T00:00:00+00:00\x1ftag: v1.0.0${LOG_RECORD_SEPARATOR}`
+
+    expect(parseLogGraphOutput(stdout)[0]?.refs).toEqual(['tag: v1.0.0'])
+  })
+
   it('does not split a single commit when subject text is long', () => {
     const stdout = `aaa111\x1f\x1f${'line '.repeat(40).trim()}\x1fAuthor\x1fa@b.c\x1f2024-01-01T00:00:00+00:00\x1f${LOG_RECORD_SEPARATOR}`
 

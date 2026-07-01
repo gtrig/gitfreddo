@@ -45,7 +45,6 @@ function parseLogRecord(block: string): ParsedGitCommit | null {
     .split(',')
     .map((r) => r.trim())
     .filter(Boolean)
-    .map((r) => r.replace(/^tag: /, ''))
 
   const trimmedSubject = subject.trim()
 
