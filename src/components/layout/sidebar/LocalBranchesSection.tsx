@@ -31,6 +31,7 @@ import { useToastStore } from '@/stores/toast'
 import { MergeBranchDialog } from '@/components/BranchSidebar/MergeBranchDialog'
 import { CreatePrModal } from '@/components/GitHub/CreatePrModal'
 import { RenameBranchModal } from '@/components/actions/RenameBranchModal'
+import { AddWorktreeModal } from '@/components/actions/AddWorktreeModal'
 import {
   folderContextMenuItems,
   localBranchContextMenuItems,
@@ -61,6 +62,7 @@ function BranchTree({
   onRename,
   onDelete,
   onCreatePr,
+  onCheckoutInWorktree,
   openMenu
 }: {
   nodes: BranchTreeNode[]
@@ -74,6 +76,7 @@ function BranchTree({
   onRename: (name: string) => void
   onDelete: (name: string) => void
   onCreatePr?: (name: string) => void
+  onCheckoutInWorktree?: (name: string) => void
   openMenu: ReturnType<typeof useContextMenu>['openMenu']
 }) {
   return (
@@ -109,6 +112,7 @@ function BranchTree({
                   onRename={onRename}
                   onDelete={onDelete}
                   onCreatePr={onCreatePr}
+                  onCheckoutInWorktree={onCheckoutInWorktree}
                   openMenu={openMenu}
                 />
               )}
@@ -147,7 +151,8 @@ function BranchTree({
                   onMerge,
                   onRename,
                   onDelete,
-                  onCreatePr
+                  onCreatePr,
+                  onCheckoutInWorktree
                 })
               )
             }
@@ -180,6 +185,7 @@ export function LocalBranchesSection({
   const [renameBranch, setRenameBranch] = useState<string | null>(null)
   const [mergeSource, setMergeSource] = useState<string | null>(null)
   const [prBranch, setPrBranch] = useState<string | null>(null)
+  const [worktreeBranch, setWorktreeBranch] = useState<string | null>(null)
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
   const { deleteBranch } = useGitMutations()
   const repoPath = useWorkspaceStore((s) => s.activePath)
@@ -234,6 +240,7 @@ export function LocalBranchesSection({
           onRename={setRenameBranch}
           onDelete={setPendingDelete}
           onCreatePr={canCreatePr ? setPrBranch : undefined}
+          onCheckoutInWorktree={setWorktreeBranch}
           openMenu={openMenu}
         />
       </div>
@@ -280,6 +287,13 @@ export function LocalBranchesSection({
             show('Pull request created', 'success')
             setPrBranch(null)
           }}
+        />
+      )}
+      {worktreeBranch && (
+        <AddWorktreeModal
+          open
+          initialBranch={worktreeBranch}
+          onClose={() => setWorktreeBranch(null)}
         />
       )}
     </SidebarSection>

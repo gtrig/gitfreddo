@@ -1,6 +1,5 @@
-import { existsSync } from 'fs'
-import { join } from 'path'
 import { runGit, runGitOrThrow } from '../git-runner'
+import { gitMetadataExists, rebaseInProgress } from '../git-dir'
 import type { GitFileChange, GitWorkingStatus } from '../types'
 
 function statusCharToKind(
@@ -83,9 +82,9 @@ export async function workingStatus(
     behind = ab.behind
   }
 
-  const mergeInProgress = existsMerge(cwd)
-  const rebaseInProgress = existsRebase(cwd)
-  const cherryPickInProgress = existsCherryPick(cwd)
+  const mergeInProgress = await gitMetadataExists(cwd, gitBinaryPath, 'MERGE_HEAD')
+  const rebaseInProgressFlag = await rebaseInProgress(cwd, gitBinaryPath)
+  const cherryPickInProgress = await gitMetadataExists(cwd, gitBinaryPath, 'CHERRY_PICK_HEAD')
 
   return {
     branch,
@@ -101,7 +100,7 @@ export async function workingStatus(
       untracked.length === 0 &&
       conflicted.length === 0,
     mergeInProgress,
-    rebaseInProgress,
+    rebaseInProgress: rebaseInProgressFlag,
     cherryPickInProgress
   }
 }
@@ -116,21 +115,6 @@ function parsePorcelainV2Line(line: string): GitFileChange | null {
   const status = statusCharToKind(indexStatus, workTreeStatus)
   if (!status) return null
   return { path, status }
-}
-
-function existsMerge(cwd: string): boolean {
-  return existsSync(join(cwd, '.git', 'MERGE_HEAD'))
-}
-
-function existsRebase(cwd: string): boolean {
-  return (
-    existsSync(join(cwd, '.git', 'rebase-merge')) ||
-    existsSync(join(cwd, '.git', 'rebase-apply'))
-  )
-}
-
-function existsCherryPick(cwd: string): boolean {
-  return existsSync(join(cwd, '.git', 'CHERRY_PICK_HEAD'))
 }
 
 export async function stageAdd(

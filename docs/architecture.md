@@ -23,6 +23,7 @@ The renderer calls `window.gitfredo.invoke(method, params)` for git operations:
 | `remote.list` | `remote.add`, `remote.remove`, `fetch`, `push`, `pull` |
 | `diff.working`, `diff.staged`, `diff.commits`, `diff.show` | `stash.push`, `stash.pop`, `stash.apply`, `stash.drop` |
 | `stash.list`, `stash.show`, `stash.files` | `merge.start`, `merge.abort`, `merge.continue` |
+| `worktree.list` | `worktree.add`, `worktree.remove`, `worktree.prune` |
 | `merge.status` (returns `kind`: merge \| rebase \| cherry-pick) | `rebase.start`, `rebase.abort`, `rebase.continue`, `rebase.skip`, `rebase.squash`, `rebase.drop` |
 | `maintenance.unreachable`, `maintenance.staleBranches` | `cherry-pick`, `cherry-pick.continue`, `cherry-pick.abort`, `cherry-pick.skip` |
 | `file.read` | `reset`, `reset.head`, `maintenance.prune`, `maintenance.removeStaleBranches` |
@@ -36,7 +37,8 @@ Workspace helpers: `connect`, `switchWorkspace`, `cloneRepository`, `openWorkspa
 │ Tabs · path · ActionBar (stash/fetch/pull/push)         │
 ├──────────┬──────────────────────────────┬───────────────┤
 │ Branches │ Commit graph + diff overlay  │ Detail panel  │
-│ Stash    │                              │ (commit/WIP)  │
+│ Worktrees│                              │ (commit/WIP)  │
+│ Stash    │                              │               │
 │ Remotes  │                              │               │
 └──────────┴──────────────────────────────┴───────────────┘
 ```
@@ -45,6 +47,7 @@ Workspace helpers: `connect`, `switchWorkspace`, `cloneRepository`, `openWorkspa
 
 - `electron/git/git-runner.ts` — spawn `git` with `cwd = repo`
 - `electron/git/repo-manager.ts` — per-tab repo pool + `invoke` dispatch
-- `electron/git/operations/*` — domain modules (branch, log, diff, remote, stash, merge, rebase, status)
+- `electron/git/operations/*` — domain modules (branch, log, diff, remote, stash, worktree, merge, rebase, status)
+- `electron/git/git-dir.ts` — resolve git metadata dir for linked worktrees
 
 No third-party git libraries; output is parsed from porcelain/plumbing commands.

@@ -135,7 +135,7 @@ function registerIpc(): void {
   ipcMain.handle('gitfredo:connect', async (_event, repoPath: string) => {
     const normalized = normalizeRepoPath(repoPath)
     if (!hasGitDir(normalized)) {
-      throw new Error('No .git directory found. Open a folder initialized as a git repository.')
+      throw new Error('No .git found. Open a folder initialized as a git repository.')
     }
     applyGitConfig()
     const connectedPath = await repoManager.connect(normalized)

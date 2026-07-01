@@ -22,6 +22,12 @@ git add README.md
 git commit -q -m "Feature commit"
 git checkout -q "$MAIN"
 
+# worktree smoke
+git worktree add -q "$TMPDIR/smoke-feature" feature
+git worktree list --porcelain | grep -q "worktree $TMPDIR/smoke-feature"
+test -f "$TMPDIR/smoke-feature/.git"
+git worktree remove -f "$TMPDIR/smoke-feature"
+
 # working tree ops smoke
 echo "untracked" > untracked.txt
 git clean -fdn | grep -q untracked.txt

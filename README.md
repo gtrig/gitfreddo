@@ -29,6 +29,7 @@ npm run dev
 
 - Open local repositories or clone from URL
 - Multi-tab repositories
+- Git worktrees: list, add, remove, prune; open in tab; checkout branch in new worktree
 - Branch list with checkout, create, rename, delete, merge
 - Commit timeline graph with history rewriting (rebase, squash, drop, cherry-pick, revert, reset)
 - Working tree: stage, unstage, commit, amend

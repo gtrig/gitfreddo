@@ -1,5 +1,5 @@
 import type { ContextMenuItem } from '@/components/ui/ContextMenu'
-import type { GitBranch, GitTag } from '@/lib/types'
+import type { GitBranch, GitTag, GitWorktreeEntry } from '@/lib/types'
 import type { GitHubIssue, GitHubMergeMethod, GitHubPullRequest } from '../../shared/github'
 import { copyToClipboard } from '@/lib/clipboard'
 import { remoteBranchShortName } from '@/lib/branchTree'
@@ -37,6 +37,7 @@ export function localBranchContextMenuItems(
     onRename: (name: string) => void
     onDelete: (name: string) => void
     onCreatePr?: (name: string) => void
+    onCheckoutInWorktree?: (name: string) => void
   }
 ): ContextMenuItem[] {
   const items: ContextMenuItem[] = [
@@ -46,6 +47,15 @@ export function localBranchContextMenuItems(
       disabled: branch.isCurrent,
       onClick: () => handlers.onCheckout(branch.name)
     },
+    ...(handlers.onCheckoutInWorktree
+      ? [
+          {
+            id: 'checkout-worktree',
+            label: 'Checkout in new worktree…',
+            onClick: () => handlers.onCheckoutInWorktree!(branch.name)
+          } as ContextMenuItem
+        ]
+      : []),
     {
       id: 'focus',
       label: 'Focus commit',
@@ -90,6 +100,41 @@ export function localBranchContextMenuItems(
       id: 'rename',
       label: 'Rename…',
       onClick: () => handlers.onRename(branch.name)
+    })
+  }
+
+  return items
+}
+
+export function worktreeContextMenuItems(
+  entry: GitWorktreeEntry,
+  handlers: {
+    onOpenInTab: (path: string) => void
+    onRemove: (entry: GitWorktreeEntry) => void
+    onCopyPath: (path: string) => void
+  }
+): ContextMenuItem[] {
+  const items: ContextMenuItem[] = [
+    {
+      id: 'open-tab',
+      label: 'Open in tab',
+      onClick: () => handlers.onOpenInTab(entry.path)
+    },
+    {
+      id: 'copy-path',
+      label: 'Copy path',
+      onClick: () => void copyToClipboard(entry.path)
+    }
+  ]
+
+  if (!entry.isMain) {
+    items.push(separator('sep-remove'))
+    items.push({
+      id: 'remove',
+      label: 'Remove worktree…',
+      danger: true,
+      disabled: Boolean(entry.locked),
+      onClick: () => handlers.onRemove(entry)
     })
   }
 

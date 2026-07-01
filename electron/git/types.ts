@@ -82,6 +82,19 @@ export interface GitRepoStatus {
   head: string
   branch: string
   isDetached: boolean
+  commonDir: string
+  isLinkedWorktree: boolean
+}
+
+export interface GitWorktreeEntry {
+  path: string
+  head: string
+  branch?: string
+  isDetached: boolean
+  isBare: boolean
+  isMain: boolean
+  locked?: string
+  prunable?: string
 }
 
 export interface GitDiffResult {

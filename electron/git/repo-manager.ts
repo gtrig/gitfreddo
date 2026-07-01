@@ -11,6 +11,7 @@ import * as mergeOps from './operations/merge'
 import * as rebaseOps from './operations/rebase'
 import * as maintenanceOps from './operations/maintenance'
 import * as tagOps from './operations/tag'
+import * as worktreeOps from './operations/worktree'
 
 const MAX_PARAM_CHARS = 240
 
@@ -50,7 +51,7 @@ export class RepoManager {
   async connect(repoPath: string): Promise<string> {
     const normalized = normalizeRepoPath(repoPath)
     if (!hasGitDir(normalized)) {
-      throw new Error('No .git directory found. Open a folder initialized as a git repository.')
+      throw new Error('No .git found. Open a folder initialized as a git repository.')
     }
     this.repos.add(normalized)
     this.activePath = normalized
@@ -213,6 +214,25 @@ export class RepoManager {
         return stashOps.stashApply(cwd, git, (p.index as number) ?? 0)
       case 'stash.drop':
         return stashOps.stashDrop(cwd, git, (p.index as number) ?? 0)
+      case 'worktree.list':
+        return worktreeOps.worktreeList(cwd, git)
+      case 'worktree.add':
+        return worktreeOps.worktreeAdd(cwd, git, {
+          path: p.path as string,
+          branch: p.branch as string | undefined,
+          newBranch: p.newBranch as string | undefined,
+          detach: Boolean(p.detach)
+        })
+      case 'worktree.remove': {
+        const removePath = normalizeRepoPath(p.path as string)
+        await worktreeOps.worktreeRemove(cwd, git, removePath, Boolean(p.force))
+        if (this.repos.has(removePath)) {
+          await this.disconnectRepo(removePath)
+        }
+        return
+      }
+      case 'worktree.prune':
+        return worktreeOps.worktreePrune(cwd, git)
       case 'merge.status':
         return mergeOps.mergeStatus(cwd, git)
       case 'merge.start':

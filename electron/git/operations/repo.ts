@@ -1,4 +1,6 @@
+import { resolve } from 'path'
 import { runGitOrThrow } from '../git-runner'
+import { resolveGitCommonDir, resolveGitDir } from '../git-dir'
 import type { GitRepoStatus } from '../types'
 
 export async function repoStatus(
@@ -10,11 +12,15 @@ export async function repoStatus(
   ).trim()
   const head = (await runGitOrThrow(['rev-parse', 'HEAD'], { cwd, gitBinaryPath })).trim()
   const root = (await runGitOrThrow(['rev-parse', '--show-toplevel'], { cwd, gitBinaryPath })).trim()
+  const gitDir = await resolveGitDir(cwd, gitBinaryPath)
+  const commonDir = await resolveGitCommonDir(cwd, gitBinaryPath)
   return {
     path: cwd,
     root,
     head,
     branch,
-    isDetached: branch === 'HEAD'
+    isDetached: branch === 'HEAD',
+    commonDir,
+    isLinkedWorktree: resolve(gitDir) !== resolve(commonDir)
   }
 }

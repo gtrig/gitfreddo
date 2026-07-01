@@ -8,6 +8,7 @@ import type {
   GitRepoStatus,
   GitStashEntry,
   GitTag,
+  GitWorktreeEntry,
   GitWorkingStatus
 } from '@/lib/types'
 import { useWorkspaceStore } from '@/stores/workspace'
@@ -79,6 +80,16 @@ export function useStashList(enabled = true) {
   return useQuery<GitStashEntry[]>({
     queryKey: ['repo', repoPath, 'stash.list'],
     queryFn: async () => (await window.gitfredo.invoke('stash.list')) as GitStashEntry[],
+    enabled: enabled && connected && Boolean(repoPath)
+  })
+}
+
+export function useWorktreeList(enabled = true) {
+  const { repoPath, connected } = useRepoScope()
+  return useQuery<GitWorktreeEntry[]>({
+    queryKey: ['repo', repoPath, 'worktree.list'],
+    queryFn: async () =>
+      (await window.gitfredo.invoke('worktree.list')) as GitWorktreeEntry[],
     enabled: enabled && connected && Boolean(repoPath)
   })
 }

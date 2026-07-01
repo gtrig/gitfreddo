@@ -46,6 +46,17 @@ export function SidebarIconStash(props: IconProps) {
   )
 }
 
+export function SidebarIconWorktree(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="2.5" y="2.5" width="5" height="5" rx="0.5" />
+      <rect x="8.5" y="2.5" width="5" height="5" rx="0.5" />
+      <rect x="2.5" y="8.5" width="5" height="5" rx="0.5" />
+      <path d="M8.5 11h5" strokeLinecap="round" />
+    </Icon>
+  )
+}
+
 export function SidebarIconTag(props: IconProps) {
   return (
     <Icon {...props}>
