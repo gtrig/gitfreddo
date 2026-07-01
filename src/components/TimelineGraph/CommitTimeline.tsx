@@ -3,13 +3,18 @@ import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
 import { useLogGraph, useRepoStatus, useWorkingStatus } from '@/hooks/useGit'
 import { useTimelineColumnSizes } from '@/hooks/useTimelineColumnSizes'
+import { useCommitContextMenu } from '@/hooks/useCommitContextMenu'
 import { branchColor } from '@/lib/types'
 import { buildGitGraphLayout } from '@/lib/gitGraphLayout'
 import { countWorkingChanges } from '@/lib/workingChanges'
 import { timelineRefs } from '@/lib/timelineRefs'
 import { CommitGraphOverlay } from './CommitGraphOverlay'
 import { ColumnResizeHandle } from '@/components/ui/ColumnResizeHandle'
+import { ContextMenu } from '@/components/ui/ContextMenu'
 import { LoadingRow } from '@/components/ui/Spinner'
+import { CreateBranchModal } from '@/components/actions/CreateBranchModal'
+import { RewordCommitModal } from '@/components/DetailPanel/RewordCommitModal'
+import type { GitCommit } from '@/lib/types'
 
 const COMPACT_ROW_HEIGHT = 28
 const RESIZE_HANDLE_WIDTH = 4
@@ -26,6 +31,20 @@ export function CommitTimeline() {
   )
   const selection = useSelectionStore((s) => s.timelineSelection)
   const selectTimelineNode = useSelectionStore((s) => s.selectTimelineNode)
+  const {
+    menu,
+    items,
+    openMenu,
+    closeMenu,
+    rewordCommit,
+    setRewordCommit,
+    createBranchAt,
+    setCreateBranchAt
+  } = useCommitContextMenu(connected)
+
+  const onCommitContextMenu = (commit: GitCommit) => (event: React.MouseEvent) => {
+    openMenu(commit, event)
+  }
 
   const commits = graph?.commits ?? []
   const head = repoStatus?.head ?? ''
@@ -85,6 +104,7 @@ export function CommitTimeline() {
               return (
                 <div
                   key={`refs-${commit.hash}`}
+                  onContextMenu={onCommitContextMenu(commit)}
                   className="flex items-center gap-1 overflow-hidden border-b border-gf-border/30 px-2"
                   style={{ height: COMPACT_ROW_HEIGHT }}
                 >
@@ -112,14 +132,27 @@ export function CommitTimeline() {
           />
 
           <div className="sticky left-0 z-10 shrink-0 bg-gf-bg-deep" style={{ width: graphColumnWidth }}>
-            <CommitGraphOverlay
-              layout={layout}
-              showWorkingRow={showWorkingRow}
-              workingSelected={selection?.kind === 'working'}
-              selectedHash={selectedHash}
-              rowHeight={COMPACT_ROW_HEIGHT}
-              metrics={metrics}
-            />
+            <div className="relative">
+              <CommitGraphOverlay
+                layout={layout}
+                showWorkingRow={showWorkingRow}
+                workingSelected={selection?.kind === 'working'}
+                selectedHash={selectedHash}
+                rowHeight={COMPACT_ROW_HEIGHT}
+                metrics={metrics}
+              />
+              {commits.map((commit, index) => (
+                <div
+                  key={`graph-hit-${commit.hash}`}
+                  onContextMenu={onCommitContextMenu(commit)}
+                  className="absolute left-0 right-0"
+                  style={{
+                    top: (showWorkingRow ? COMPACT_ROW_HEIGHT : 0) + index * COMPACT_ROW_HEIGHT,
+                    height: COMPACT_ROW_HEIGHT
+                  }}
+                />
+              ))}
+            </div>
           </div>
 
           <ColumnResizeHandle
@@ -181,6 +214,7 @@ export function CommitTimeline() {
                   key={commit.hash}
                   type="button"
                   onClick={() => selectTimelineNode('commit', commit.hash)}
+                  onContextMenu={onCommitContextMenu(commit)}
                   style={{ height: COMPACT_ROW_HEIGHT }}
                   className={`flex w-full items-center gap-2 overflow-hidden border-b border-gf-border/30 px-2.5 text-left hover:bg-gf-bg/50 ${
                     selected ? 'bg-gf-accent/20' : ''
@@ -213,6 +247,22 @@ export function CommitTimeline() {
           </div>
         </div>
       </div>
+
+      {menu && <ContextMenu x={menu.x} y={menu.y} items={items} onClose={closeMenu} />}
+
+      {rewordCommit && (
+        <RewordCommitModal
+          commit={rewordCommit}
+          open
+          onClose={() => setRewordCommit(null)}
+        />
+      )}
+
+      <CreateBranchModal
+        open={Boolean(createBranchAt)}
+        startPoint={createBranchAt ?? undefined}
+        onClose={() => setCreateBranchAt(null)}
+      />
     </div>
   )
 }

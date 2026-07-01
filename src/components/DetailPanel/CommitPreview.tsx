@@ -104,11 +104,9 @@ function Chevron({ open }: { open: boolean }) {
 }
 
 function CommitAiButton({
-  commit,
   filePaths,
   fullMessage
 }: {
-  commit: GitCommit
   filePaths: string[]
   fullMessage: string
 }) {
@@ -367,7 +365,6 @@ export function CommitPreview({
             Reword
           </button>
           <CommitAiButton
-            commit={commit}
             filePaths={changedFiles.map((file) => file.path)}
             fullMessage={fullMessage}
           />
