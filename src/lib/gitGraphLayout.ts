@@ -1,4 +1,4 @@
-import { isStashCommit } from './stashCommit'
+import { isStashCommit, stashBaseParentHash } from './stashCommit'
 import type { GitCommit } from './types'
 
 export const GRAPH_ROW_HEIGHT = 52
@@ -86,11 +86,11 @@ function applyStashPadLayout(layout: GitGraphLayout): GitGraphLayout {
 
   const rowByKey = new Map(layout.rows.map((row) => [row.key, row]))
   const stashKeys = new Set(stashRows.map((row) => row.key))
-  const anchorKey = layout.headKey
 
   const rows = layout.rows.map((row) => {
     if (!row.isStash) return row
 
+    const anchorKey = stashBaseParentHash(row.commit)
     const anchorRow = anchorKey ? rowByKey.get(anchorKey) : undefined
     const anchorColumn = anchorRow?.column ?? row.column
 
@@ -101,7 +101,10 @@ function applyStashPadLayout(layout: GitGraphLayout): GitGraphLayout {
   const edges = layout.edges.filter((edge) => !stashKeys.has(edge.fromKey))
 
   for (const row of rows) {
-    if (!row.isStash || !anchorKey) continue
+    if (!row.isStash) continue
+
+    const anchorKey = stashBaseParentHash(row.commit)
+    if (!anchorKey) continue
 
     const anchorRow = updatedRowByKey.get(anchorKey)
     if (!anchorRow) continue

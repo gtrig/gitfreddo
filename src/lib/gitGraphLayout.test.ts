@@ -108,7 +108,7 @@ describe('buildGitGraphLayout', () => {
     expect(stashParentEdge).toBeUndefined()
   })
 
-  it('anchors stash pad to HEAD when HEAD is ahead of the stash base', () => {
+  it('anchors stash pad to the stash base when HEAD is ahead of the stash base', () => {
     const stash = {
       ...commit('stash-tip', ['base', 'index-tip'], 'WIP on main'),
       refs: ['stash']
@@ -119,9 +119,12 @@ describe('buildGitGraphLayout', () => {
     )
 
     const padEdge = layout.edges.find(
-      (edge) => edge.fromKey === 'head' && edge.toKey === 'stash-tip' && edge.kind === 'pad'
+      (edge) => edge.fromKey === 'base' && edge.toKey === 'stash-tip' && edge.kind === 'pad'
     )
     expect(padEdge).toBeDefined()
+    expect(layout.edges.some((edge) => edge.fromKey === 'head' && edge.toKey === 'stash-tip')).toBe(
+      false
+    )
     expect(layout.edges.some((edge) => edge.fromKey === 'stash-tip')).toBe(false)
   })
 })

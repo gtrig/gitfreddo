@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { filterTimelineCommits, isInternalStashCommit, isStashCommit, isStashRef } from './stashCommit'
+import { filterTimelineCommits, isInternalStashCommit, isStashCommit, isStashRef, stashBaseParentHash } from './stashCommit'
 import type { GitCommit } from './types'
 
 function makeCommit(hash: string, subject: string, refs: string[] = []): GitCommit {
@@ -41,6 +41,13 @@ describe('isInternalStashCommit', () => {
     expect(isInternalStashCommit({ subject: 'index on main: abc123 WIP' })).toBe(true)
     expect(isInternalStashCommit({ subject: 'untracked on main: abc123 WIP' })).toBe(true)
     expect(isInternalStashCommit({ subject: 'WIP on main: abc123 WIP' })).toBe(false)
+  })
+})
+
+describe('stashBaseParentHash', () => {
+  it('returns the first parent of the stash commit', () => {
+    expect(stashBaseParentHash({ parents: ['base', 'index'] })).toBe('base')
+    expect(stashBaseParentHash({ parents: [] })).toBeNull()
   })
 })
 

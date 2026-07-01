@@ -23,3 +23,8 @@ export function isInternalStashCommit(commit: Pick<GitCommit, 'subject'>): boole
 export function filterTimelineCommits(commits: GitCommit[]): GitCommit[] {
   return commits.filter((commit) => !isInternalStashCommit(commit))
 }
+
+/** The branch tip commit that was checked out when the stash was created. */
+export function stashBaseParentHash(stash: Pick<GitCommit, 'parents'>): string | null {
+  return stash.parents[0] ?? null
+}
