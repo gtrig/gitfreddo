@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { SETTINGS_SECTIONS, type SettingsSection } from '@/components/settings/settingsSections'
 
 describe('settingsSections', () => {
-  it('includes integrations section', () => {
+  it('includes integrations and maintenance sections', () => {
     const ids = SETTINGS_SECTIONS.map((section) => section.id)
     expect(ids).toContain('integrations')
+    expect(ids).toContain('maintenance')
   })
 
   it('has unique section ids', () => {

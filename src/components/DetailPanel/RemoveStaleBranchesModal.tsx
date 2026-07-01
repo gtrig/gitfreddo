@@ -165,8 +165,8 @@ export function RemoveStaleBranchesModal({
 
           {summary.refs.length === 0 ? (
             <p className="rounded border border-gf-border-strong bg-gf-bg-deep px-3 py-2 text-xs text-gf-fg-muted">
-              No stale references found. If commits still appear in the graph, try Settings → Git →
-              Scan for stale commits to remove reflog-only objects.
+              No stale references found. If commits still appear in the graph, try Settings →
+              Maintenance → Scan for stale commits to remove reflog-only objects.
             </p>
           ) : (
             <ul className="max-h-56 space-y-2 overflow-y-auto rounded border border-gf-border-strong bg-gf-bg-deep p-2">
