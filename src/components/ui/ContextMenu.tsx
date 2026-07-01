@@ -6,6 +6,7 @@ export interface ContextMenuItem {
   onClick: () => void
   disabled?: boolean
   danger?: boolean
+  separator?: boolean
 }
 
 interface ContextMenuProps {
@@ -69,6 +70,10 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
     return null
   }
 
+  if (items.every((item) => item.separator)) {
+    return null
+  }
+
   return (
     <div
       ref={menuRef}
@@ -76,28 +81,32 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
       style={{ left: x, top: y }}
       role="menu"
     >
-      {items.map((item) => (
-        <button
-          key={item.id}
-          type="button"
-          role="menuitem"
-          disabled={item.disabled}
-          onClick={() => {
-            if (item.disabled) {
-              return
-            }
-            item.onClick()
-            onClose()
-          }}
-          className={`block w-full px-3 py-1.5 text-left text-xs disabled:cursor-default disabled:opacity-40 ${
-            item.danger
-              ? 'text-red-300 hover:bg-red-950/60'
-              : 'text-gf-fg hover:bg-gf-surface-hover'
-          }`}
-        >
-          {item.label}
-        </button>
-      ))}
+      {items.map((item) =>
+        item.separator ? (
+          <div key={item.id} className="my-1 border-t border-gf-border-strong" role="separator" />
+        ) : (
+          <button
+            key={item.id}
+            type="button"
+            role="menuitem"
+            disabled={item.disabled}
+            onClick={() => {
+              if (item.disabled) {
+                return
+              }
+              item.onClick()
+              onClose()
+            }}
+            className={`block w-full px-3 py-1.5 text-left text-xs disabled:cursor-default disabled:opacity-40 ${
+              item.danger
+                ? 'text-red-300 hover:bg-red-950/60'
+                : 'text-gf-fg hover:bg-gf-surface-hover'
+            }`}
+          >
+            {item.label}
+          </button>
+        )
+      )}
     </div>
   )
 }

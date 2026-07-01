@@ -55,6 +55,7 @@ export function useGitMutations() {
     rebaseAbort: wrap('rebase.abort', ['working.status']),
     rebaseContinue: wrap('rebase.continue', ['working.status', 'log.graph']),
     cherryPick: wrap('cherry-pick', ['working.status', 'log.graph']),
+    reset: wrap('reset', ['working.status', 'log.graph', 'status']),
     stashPush: wrap('stash.push', ['working.status', 'stash.list']),
     stashPop: wrap('stash.pop', ['working.status', 'stash.list']),
     stashApply: wrap('stash.apply', ['working.status']),

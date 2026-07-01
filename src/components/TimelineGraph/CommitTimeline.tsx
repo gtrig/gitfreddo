@@ -31,6 +31,10 @@ export function CommitTimeline() {
   )
   const selection = useSelectionStore((s) => s.timelineSelection)
   const selectTimelineNode = useSelectionStore((s) => s.selectTimelineNode)
+
+  const commits = graph?.commits ?? []
+  const head = repoStatus?.head ?? ''
+
   const {
     menu,
     items,
@@ -40,14 +44,16 @@ export function CommitTimeline() {
     setRewordCommit,
     createBranchAt,
     setCreateBranchAt
-  } = useCommitContextMenu(connected)
+  } = useCommitContextMenu(connected, {
+    head,
+    branch: repoStatus?.branch ?? workingStatus?.branch ?? '',
+    isDetached: repoStatus?.isDetached ?? false,
+    commits
+  })
 
   const onCommitContextMenu = (commit: GitCommit) => (event: React.MouseEvent) => {
     openMenu(commit, event)
   }
-
-  const commits = graph?.commits ?? []
-  const head = repoStatus?.head ?? ''
 
   const layout = useMemo(() => buildGitGraphLayout(commits, head), [commits, head])
   const {

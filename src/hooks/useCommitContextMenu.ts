@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import type { ContextMenuItem } from '@/components/ui/ContextMenu'
+import { buildCommitContextMenuItems } from '@/lib/commitContextMenu'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useWorkingStatus } from '@/hooks/useGit'
 import { useSelectionStore } from '@/stores/selection'
@@ -12,92 +12,117 @@ interface MenuState {
   y: number
 }
 
-export function useCommitContextMenu(connected: boolean) {
+export interface CommitContextMenuOptions {
+  head: string
+  branch: string
+  isDetached: boolean
+  commits: GitCommit[]
+}
+
+function mutationError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
+export function useCommitContextMenu(connected: boolean, options: CommitContextMenuOptions) {
   const [menu, setMenu] = useState<MenuState | null>(null)
   const [rewordCommit, setRewordCommit] = useState<GitCommit | null>(null)
   const [createBranchAt, setCreateBranchAt] = useState<string | null>(null)
 
   const selectTimelineNode = useSelectionStore((s) => s.selectTimelineNode)
-  const { checkout, cherryPick } = useGitMutations()
+  const {
+    checkout,
+    cherryPick,
+    rebaseStart,
+    rebaseContinue,
+    rebaseAbort,
+    mergeContinue,
+    mergeAbort,
+    reset
+  } = useGitMutations()
   const { data: working } = useWorkingStatus(connected)
   const showToast = useToastStore((s) => s.show)
 
-  const openMenu = useCallback((commit: GitCommit, event: React.MouseEvent) => {
-    event.preventDefault()
-    setMenu({ commit, x: event.clientX, y: event.clientY })
-  }, [])
+  const runMutation = useCallback(
+    (promise: Promise<unknown>, successMessage?: string) => {
+      void promise
+        .then(() => {
+          if (successMessage) showToast(successMessage, 'success')
+        })
+        .catch((error) => {
+          showToast(mutationError(error), 'error')
+        })
+    },
+    [showToast]
+  )
+
+  const openMenu = useCallback(
+    (commit: GitCommit, event: React.MouseEvent) => {
+      event.preventDefault()
+      selectTimelineNode('commit', commit.hash)
+      setMenu({ commit, x: event.clientX, y: event.clientY })
+    },
+    [selectTimelineNode]
+  )
 
   const closeMenu = useCallback(() => setMenu(null), [])
 
-  const items = useMemo((): ContextMenuItem[] => {
+  const items = useMemo(() => {
     if (!menu) return []
 
-    const { commit } = menu
-    const isMerge = commit.parents.length > 1
-    const workingTreeDirty = working ? !working.isClean : false
-    const gitBusy = Boolean(
-      working?.rebaseInProgress || working?.mergeInProgress || working?.cherryPickInProgress
-    )
-    const rewordBlocked = isMerge || workingTreeDirty || gitBusy
-
-    return [
-      {
-        id: 'view',
-        label: 'View commit',
-        onClick: () => selectTimelineNode('commit', commit.hash)
-      },
-      {
-        id: 'copy-hash',
-        label: 'Copy commit hash',
-        onClick: () => {
-          void navigator.clipboard.writeText(commit.hash)
+    return buildCommitContextMenuItems({
+      commit: menu.commit,
+      head: options.head,
+      branch: options.branch,
+      isDetached: options.isDetached,
+      commits: options.commits,
+      working,
+      selectedCommitId: menu.commit.hash,
+      actions: {
+        selectCommit: (hash) => selectTimelineNode('commit', hash),
+        copyHash: (hash) => {
+          void navigator.clipboard.writeText(hash)
           showToast('Commit hash copied.', 'info')
-        }
-      },
-      {
-        id: 'copy-short',
-        label: 'Copy short hash',
-        onClick: () => {
-          void navigator.clipboard.writeText(commit.shortHash)
+        },
+        copyShortHash: (shortHash) => {
+          void navigator.clipboard.writeText(shortHash)
           showToast('Short hash copied.', 'info')
-        }
-      },
-      {
-        id: 'checkout',
-        label: 'Checkout commit',
-        onClick: () => {
-          void checkout
-            .mutateAsync({ name: commit.hash })
-            .catch((error) => {
-              showToast(error instanceof Error ? error.message : String(error), 'error')
-            })
-        }
-      },
-      {
-        id: 'branch',
-        label: 'Create branch here…',
-        onClick: () => setCreateBranchAt(commit.hash)
-      },
-      {
-        id: 'reword',
-        label: 'Reword commit…',
-        disabled: rewordBlocked,
-        onClick: () => setRewordCommit(commit)
-      },
-      {
-        id: 'cherry-pick',
-        label: 'Cherry-pick commit',
-        disabled: gitBusy,
-        onClick: () => {
-          void cherryPick
-            .mutateAsync({ hash: commit.hash })
-            .catch((error) => {
-              showToast(error instanceof Error ? error.message : String(error), 'error')
-            })
-        }
+        },
+        checkout: (ref) => runMutation(checkout.mutateAsync({ name: ref }), 'Checked out.'),
+        createBranch: (hash) => setCreateBranchAt(hash),
+        reword: (commit) => setRewordCommit(commit),
+        rebaseOnto: (hash) =>
+          runMutation(rebaseStart.mutateAsync({ onto: hash }), 'Rebase started.'),
+        cherryPick: (hash) =>
+          runMutation(cherryPick.mutateAsync({ hash }), 'Cherry-pick complete.'),
+        reset: (mode, hash) =>
+          runMutation(reset.mutateAsync({ mode, ref: hash }), `Reset ${mode} complete.`),
+        rebaseContinue: () =>
+          runMutation(rebaseContinue.mutateAsync(undefined), 'Rebase continued.'),
+        rebaseAbort: () => runMutation(rebaseAbort.mutateAsync(undefined), 'Rebase aborted.'),
+        mergeContinue: () =>
+          runMutation(mergeContinue.mutateAsync(undefined), 'Merge continued.'),
+        mergeAbort: () => runMutation(mergeAbort.mutateAsync(undefined), 'Merge aborted.')
       }
-    ]
-  }, [menu, working, selectTimelineNode, checkout, cherryPick, showToast])
+    })
+  }, [
+    menu,
+    options.head,
+    options.branch,
+    options.isDetached,
+    options.commits,
+    working,
+    selectTimelineNode,
+    showToast,
+    runMutation,
+    checkout,
+    rebaseStart,
+    cherryPick,
+    reset,
+    rebaseContinue,
+    rebaseAbort,
+    mergeContinue,
+    mergeAbort
+  ])
 
   return {
     menu,
