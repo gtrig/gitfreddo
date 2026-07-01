@@ -77,6 +77,27 @@ function findOrCreateFolder(parent: FileTreeFolder, segment: string, folderPath:
   return folder
 }
 
+/** Split a repo path into parent folders and a leaf file or directory name. */
+export function parsePathForTree(path: string): {
+  parentFolders: string[]
+  leafName: string
+  isDirectory: boolean
+} {
+  const isDirectory = path.endsWith('/')
+  const trimmed = path.replace(/\/+$/, '')
+  if (!trimmed) {
+    return { parentFolders: [], leafName: '', isDirectory: true }
+  }
+
+  const segments = trimmed.split('/')
+  const leafName = segments[segments.length - 1] ?? ''
+  return {
+    parentFolders: segments.slice(0, -1),
+    leafName,
+    isDirectory
+  }
+}
+
 export function buildFileTree(files: CommitFileItem[], ascending = true): FileTreeFolder {
   const root: FileTreeFolder = {
     type: 'folder',
@@ -87,20 +108,19 @@ export function buildFileTree(files: CommitFileItem[], ascending = true): FileTr
   }
 
   for (const file of sortCommitFiles(files, ascending)) {
-    const segments = file.path.split('/')
-    const fileName = segments.pop()
-    if (!fileName) continue
+    const { parentFolders, leafName, isDirectory } = parsePathForTree(file.path)
+    if (!leafName) continue
 
     let current = root
     let currentPath = ''
-    for (const segment of segments) {
+    for (const segment of parentFolders) {
       currentPath = currentPath ? `${currentPath}/${segment}` : segment
       current = findOrCreateFolder(current, segment, currentPath)
     }
 
     current.children.push({
       type: 'file',
-      name: fileName,
+      name: isDirectory ? `${leafName}/` : leafName,
       path: file.path,
       kind: file.kind
     })

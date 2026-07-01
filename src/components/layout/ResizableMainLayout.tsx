@@ -95,7 +95,10 @@ export function ResizableMainLayout({ left, center, right, overlay }: ResizableM
         onResizeEnd={() => setResizing(false)}
       />
 
-      <div className="min-h-0 shrink-0 overflow-auto" style={{ width: rightWidth }}>
+      <div
+        className="flex min-h-0 shrink-0 flex-col overflow-hidden"
+        style={{ width: rightWidth }}
+      >
         {right}
       </div>
 

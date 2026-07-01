@@ -39,7 +39,10 @@ export async function workingStatus(
   cwd: string,
   gitBinaryPath: string
 ): Promise<GitWorkingStatus> {
-  const stdout = await runGitOrThrow(['status', '--porcelain=2', '-b'], { cwd, gitBinaryPath })
+  const stdout = await runGitOrThrow(
+    ['status', '--porcelain=2', '-b', '-uall'],
+    { cwd, gitBinaryPath }
+  )
   const lines = stdout.split('\n')
 
   let branch = 'HEAD'

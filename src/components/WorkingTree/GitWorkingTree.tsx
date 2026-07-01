@@ -100,8 +100,11 @@ function toTreeItems(files: GitFileChange[]): CommitFileItem[] {
 }
 
 function fileNameFromPath(path: string): string {
-  const parts = path.split('/')
-  return parts[parts.length - 1] || path
+  const trimmed = path.replace(/\/+$/, '')
+  const parts = trimmed.split('/')
+  const name = parts[parts.length - 1]
+  if (!name) return path
+  return path.endsWith('/') ? `${name}/` : name
 }
 
 function Chevron({ open }: { open: boolean }) {
@@ -288,6 +291,17 @@ export function GitWorkingTree() {
     (data?.conflicted.length ?? 0) +
     (data?.staged.length ?? 0)
 
+  function expandAllFolders() {
+    const paths = new Set<string>()
+    for (const path of collectFolderPaths(buildFileTree(toTreeItems(changesFiles)))) {
+      paths.add(path)
+    }
+    for (const path of collectFolderPaths(buildFileTree(toTreeItems(stagedFiles)))) {
+      paths.add(path)
+    }
+    setExpandedPaths(paths)
+  }
+
   function requestDiscard(path: string, staged: boolean) {
     setPendingDiscard({ paths: [path], staged })
   }
@@ -422,8 +436,8 @@ export function GitWorkingTree() {
   )
 
   return (
-    <div className="flex h-full flex-col bg-gf-bg-deep">
-      <div className="flex items-center justify-between border-b border-gf-border px-3 py-2">
+    <div className="flex h-full min-h-0 flex-col bg-gf-bg-deep">
+      <div className="flex shrink-0 items-center justify-between border-b border-gf-border px-3 py-2">
         <p className="text-xs text-gf-fg-muted">
           {totalChangeCount} file change{totalChangeCount === 1 ? '' : 's'} on{' '}
           <span className="rounded bg-gf-surface px-1 py-0.5 text-[10px] text-gf-fg">{data?.branch}</span>
@@ -437,16 +451,18 @@ export function GitWorkingTree() {
         </button>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gf-border px-3 py-2">
-        <button
-          type="button"
-          onClick={() =>
-            setExpandedPaths(new Set(collectFolderPaths(buildFileTree(toTreeItems(changesFiles)))))
-          }
-          className="text-[10px] text-gf-accent-fg hover:text-gf-fg"
-        >
-          Expand all
-        </button>
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-gf-border px-3 py-2">
+        <div>
+          {viewMode === 'tree' && totalChangeCount > 0 && (
+            <button
+              type="button"
+              onClick={expandAllFolders}
+              className="text-[10px] text-gf-accent-fg hover:text-gf-fg"
+            >
+              Expand all
+            </button>
+          )}
+        </div>
         <div className="flex flex-wrap gap-1">
           {(data?.untracked.length ?? 0) > 0 && (
             <button

@@ -190,7 +190,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
       </button>
 
       {expanded && (
-        <div className="space-y-2 px-3 pb-2">
+        <div className="max-h-[min(40vh,280px)] space-y-2 overflow-y-auto px-3 pb-2">
           <label className="flex items-center gap-2 text-xs text-gf-fg-muted">
             <input
               type="checkbox"
