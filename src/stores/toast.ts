@@ -14,12 +14,31 @@ function toastToneToLogLevel(tone: ToastState['tone']): LogLevel {
   return 'info'
 }
 
+const TOAST_AUTO_DISMISS_MS = 10_000
+
+let dismissTimer: ReturnType<typeof setTimeout> | undefined
+
+function cancelDismissTimer() {
+  if (dismissTimer !== undefined) {
+    clearTimeout(dismissTimer)
+    dismissTimer = undefined
+  }
+}
+
 export const useToastStore = create<ToastState>((set) => ({
   message: null,
   tone: 'info',
   show: (message, tone = 'info') => {
     appLog(toastToneToLogLevel(tone), message)
+    cancelDismissTimer()
     set({ message, tone })
+    dismissTimer = setTimeout(() => {
+      dismissTimer = undefined
+      set({ message: null })
+    }, TOAST_AUTO_DISMISS_MS)
   },
-  clear: () => set({ message: null })
+  clear: () => {
+    cancelDismissTimer()
+    set({ message: null })
+  }
 }))
