@@ -19,3 +19,11 @@ export async function showCommit(
 ): Promise<string> {
   return runGitOrThrow(['show', '--format=', '--name-status', hash], { cwd, gitBinaryPath })
 }
+
+export async function commitMessage(
+  cwd: string,
+  gitBinaryPath: string,
+  hash: string
+): Promise<string> {
+  return runGitOrThrow(['log', '-1', '--format=%B', hash], { cwd, gitBinaryPath })
+}

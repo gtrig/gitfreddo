@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useAiEnabled } from '@/hooks/useAppSettings'
 import { useAiFill } from '@/hooks/useAiFill'
 import { useToastStore } from '@/stores/toast'
@@ -104,10 +105,12 @@ function Chevron({ open }: { open: boolean }) {
 
 function CommitAiButton({
   commit,
-  filePaths
+  filePaths,
+  fullMessage
 }: {
   commit: GitCommit
   filePaths: string[]
+  fullMessage: string
 }) {
   const aiEnabled = useAiEnabled()
   const aiFill = useAiFill()
@@ -125,7 +128,7 @@ function CommitAiButton({
             purpose: 'commit_message',
             context: {
               filePaths,
-              currentText: commit.message
+              currentText: fullMessage
             }
           })
           .then((text) => {
@@ -290,6 +293,14 @@ export function CommitPreview({
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(() => new Set())
   const [rewordOpen, setRewordOpen] = useState(false)
 
+  const fullMessageQuery = useQuery({
+    queryKey: ['repo', 'log.message', commit.hash],
+    queryFn: async () =>
+      window.gitfredo.invoke('log.message', { hash: commit.hash }) as Promise<string>,
+    enabled: Boolean(commit.hash)
+  })
+
+  const fullMessage = fullMessageQuery.data ?? commit.message
   const counts = useMemo(() => countCommitFiles(changedFiles), [changedFiles])
   const sortedFiles = useMemo(
     () => sortCommitFiles(changedFiles, sortAscending),
@@ -300,8 +311,8 @@ export function CommitPreview({
     [changedFiles, sortAscending]
   )
   const body = useMemo(
-    () => commitMessageBody(commit.message, commit.subject),
-    [commit.message, commit.subject]
+    () => commitMessageBody(fullMessage, commit.subject),
+    [fullMessage, commit.subject]
   )
   const parentHash = commit.parents[0]
   const parentShort = parentHash?.slice(0, 7) ?? null
@@ -355,15 +366,26 @@ export function CommitPreview({
           >
             Reword
           </button>
-          <CommitAiButton commit={commit} filePaths={changedFiles.map((file) => file.path)} />
+          <CommitAiButton
+            commit={commit}
+            filePaths={changedFiles.map((file) => file.path)}
+            fullMessage={fullMessage}
+          />
         </div>
       </div>
 
-      <RewordCommitModal commit={commit} open={rewordOpen} onClose={() => setRewordOpen(false)} />
+      <RewordCommitModal
+        commit={commit}
+        fullMessage={fullMessage}
+        open={rewordOpen}
+        onClose={() => setRewordOpen(false)}
+      />
 
       <div className="border-b border-gf-border px-4 py-4">
         <h2 className="text-lg font-semibold leading-snug text-gf-fg">{commit.subject}</h2>
-        {body && <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-gf-fg-subtle">{body}</p>}
+        {body && (
+          <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-gf-fg-subtle">{body}</p>
+        )}
       </div>
 
       <div className="flex items-center justify-between gap-3 border-b border-gf-border px-4 py-3">
