@@ -220,16 +220,20 @@ export function LogToggleButton() {
     <button
       type="button"
       onClick={toggleOpen}
-      className={`inline-flex items-center justify-center gap-1.5 rounded border px-3 py-1 text-xs ${
+      className={`relative inline-flex h-7 w-7 items-center justify-center rounded border text-xs ${
         open
           ? 'border-gf-border-strong bg-gf-surface text-gf-fg'
           : 'border-gf-border-strong text-gf-fg-muted hover:bg-gf-bg'
       }`}
       title="Toggle log drawer (Ctrl+`)"
+      aria-label={total > 0 ? `Logs (${total})` : 'Logs'}
     >
       <HeaderIconLogs className="h-3.5 w-3.5 shrink-0" />
-      Logs
-      {total > 0 && <span className="text-gf-fg-subtle">({total})</span>}
+      {total > 0 && (
+        <span className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-gf-surface px-0.5 text-[9px] leading-none text-gf-fg-subtle ring-1 ring-gf-border-strong">
+          {total > 99 ? '99+' : total}
+        </span>
+      )}
     </button>
   )
 }

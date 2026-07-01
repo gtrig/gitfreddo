@@ -66,12 +66,17 @@ export function HeaderIconLogs(props: IconProps) {
 
 export function HeaderIconSettings(props: IconProps) {
   return (
-    <Icon {...props}>
+    <Icon {...props} strokeLinejoin="round">
       <circle cx="8" cy="8" r="2" />
       <path
-        d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4"
+        d="M8 2v1.1M8 12.9V14M2 8h1.1M12.9 8H14"
         strokeLinecap="round"
       />
+      <path
+        d="M4.1 4.1l.78.78M11.12 11.12l.78.78M4.1 11.9l.78-.78M11.12 4.88l.78-.78"
+        strokeLinecap="round"
+      />
+      <path d="M8 3.15l.55 1 .9.35.35.9 1 .55-1 .55-.35.9-.9.35-.55 1-.55-1-.9-.35-.35-.9-1-.55 1-.55.35-.9.9-.35.55-1" />
     </Icon>
   )
 }

@@ -8,10 +8,10 @@ import { WorkspaceHub } from '@/components/layout/WorkspaceHub'
 import { WorkspaceBanner } from '@/components/layout/WorkspaceBanner'
 import { WorkspaceTabs } from '@/components/layout/WorkspaceTabs'
 import { ToastBanner } from '@/components/layout/ToastBanner'
-import { LogDrawer, LogToggleButton, useLogSubscription } from '@/components/layout/LogDrawer'
+import { LogDrawer, useLogSubscription } from '@/components/layout/LogDrawer'
+import { HeaderToolsMenu } from '@/components/layout/HeaderToolsMenu'
 import { ResizableMainLayout } from '@/components/layout/ResizableMainLayout'
 import { SettingsModal } from '@/components/settings/SettingsModal'
-import { HeaderIconSettings } from '@/components/actions/HeaderIcons'
 import { Spinner } from '@/components/ui/Spinner'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useAutoRefresh, useManualRefresh } from '@/hooks/useAutoRefresh'
@@ -137,17 +137,8 @@ export default function App() {
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3">
           <ActionBar />
-          <LogToggleButton />
-          <button
-            type="button"
-            onClick={() => setSettingsOpen(true)}
-            className="inline-flex items-center justify-center gap-1.5 rounded border border-gf-border-strong px-3 py-1 text-xs text-gf-fg-muted hover:bg-gf-bg"
-          >
-            <HeaderIconSettings className="h-3.5 w-3.5 shrink-0" />
-            Settings
-          </button>
         </div>
-        <div aria-hidden />
+        <HeaderToolsMenu onOpenSettings={() => setSettingsOpen(true)} />
       </header>
 
       <ResizableMainLayout
