@@ -1,4 +1,10 @@
 import type { ReactNode } from 'react'
+import {
+  ArchiveBoxIcon,
+  ArrowDownTrayIcon,
+  ArrowPathIcon,
+  ArrowUpTrayIcon
+} from '@heroicons/react/24/outline'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { usePushRemote } from '@/hooks/usePushRemote'
@@ -7,12 +13,6 @@ import { ConflictPanel } from '@/components/ConflictPanel/ConflictPanel'
 import { useMergeStatus } from '@/hooks/useGit'
 import { Spinner } from '@/components/ui/Spinner'
 import { PushForceConfirm } from '@/components/actions/PushForceConfirm'
-import {
-  HeaderIconFetch,
-  HeaderIconPull,
-  HeaderIconPush,
-  HeaderIconStash
-} from '@/components/actions/HeaderIcons'
 
 const iconClass = 'h-3.5 w-3.5 shrink-0'
 
@@ -67,28 +67,28 @@ export function ActionBar() {
         <ActionBarButton
           loading={stashPush.isPending}
           onClick={() => void stashPush.mutateAsync({})}
-          icon={<HeaderIconStash className={iconClass} />}
+          icon={<ArchiveBoxIcon aria-hidden className={iconClass} />}
         >
           Stash
         </ActionBarButton>
         <ActionBarButton
           loading={fetch.isPending}
           onClick={() => void fetch.mutateAsync({ remote: defaultRemote })}
-          icon={<HeaderIconFetch className={iconClass} />}
+          icon={<ArrowPathIcon aria-hidden className={iconClass} />}
         >
           Fetch
         </ActionBarButton>
         <ActionBarButton
           loading={pull.isPending}
           onClick={() => void pull.mutateAsync({ remote: defaultRemote })}
-          icon={<HeaderIconPull className={iconClass} />}
+          icon={<ArrowDownTrayIcon aria-hidden className={iconClass} />}
         >
           Pull
         </ActionBarButton>
         <ActionBarButton
           loading={isPushPending}
           onClick={() => pushRemote({ remote: defaultRemote })}
-          icon={<HeaderIconPush className={iconClass} />}
+          icon={<ArrowUpTrayIcon aria-hidden className={iconClass} />}
         >
           Push
         </ActionBarButton>

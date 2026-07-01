@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { XMarkIcon } from '@heroicons/react/24/solid'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
 import { useBranches } from '@/hooks/useGit'
@@ -109,7 +110,7 @@ export function BranchSidebar() {
                     className="rounded px-1.5 py-1 text-[10px] text-gf-fg-subtle hover:bg-gf-surface-hover hover:text-red-400"
                     title="Delete branch"
                   >
-                    ×
+                    <XMarkIcon className="h-3.5 w-3.5" aria-hidden />
                   </button>
                 )}
               </li>

@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { SidebarIconChevron } from '@/components/layout/sidebar/SidebarIcons'
 
 const STORAGE_PREFIX = 'gitfredo:section:'
 
@@ -15,16 +16,7 @@ function readStoredOpen(sectionId: string, defaultOpen: boolean): boolean {
 }
 
 function Chevron({ open }: { open: boolean }) {
-  return (
-    <svg
-      aria-hidden
-      viewBox="0 0 16 16"
-      className={`h-3 w-3 shrink-0 text-gf-fg-subtle transition-transform ${open ? 'rotate-90' : ''}`}
-      fill="currentColor"
-    >
-      <path d="M6 4l4 4-4 4V4z" />
-    </svg>
-  )
+  return <SidebarIconChevron open={open} className="h-3 w-3 shrink-0 text-gf-fg-subtle" />
 }
 
 export interface CollapsibleSectionProps {

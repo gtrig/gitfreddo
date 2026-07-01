@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import { SparklesIcon } from '@heroicons/react/24/outline'
+import { ChevronDoubleRightIcon } from '@heroicons/react/24/solid'
 import { useAiEnabled } from '@/hooks/useAppSettings'
 import { useAiFill } from '@/hooks/useAiFill'
 import { useGitMutations } from '@/hooks/useGitMutations'
@@ -8,49 +10,14 @@ import { useToastStore } from '@/stores/toast'
 import { commitMessageBody } from '@/lib/fileTree'
 import type { GitWorkingStatus } from '@/lib/types'
 import { Spinner } from '@/components/ui/Spinner'
+import { SidebarIconChevron } from '@/components/layout/sidebar/SidebarIcons'
 import { ComposeCommitsModal } from '@/components/WorkingTree/ComposeCommitsModal'
 import { parseComposeCommitsResponse, type AiComposeCommitProposal } from '../../../shared/ai'
 
 const SUBJECT_MAX = 72
 
 function Chevron({ open }: { open: boolean }) {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      aria-hidden
-      className={`h-3 w-3 shrink-0 text-gf-fg-subtle transition-transform ${open ? 'rotate-90' : ''}`}
-      fill="currentColor"
-    >
-      <path d="M6 4l4 4-4 4V4z" />
-    </svg>
-  )
-}
-
-function FourRayStarIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      aria-hidden
-      className={className}
-    >
-      <line x1="8" y1="1.5" x2="8" y2="14.5" />
-      <line x1="1.5" y1="8" x2="14.5" y2="8" />
-      <line x1="3.1" y1="3.1" x2="12.9" y2="12.9" />
-      <line x1="12.9" y1="3.1" x2="3.1" y2="12.9" />
-    </svg>
-  )
-}
-
-function DoubleChevronIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden className={className}>
-      <path d="M5.5 3 10 8l-4.5 5V3zm4 0L14 8l-4.5 5V3z" />
-    </svg>
-  )
+  return <SidebarIconChevron open={open} className="h-3 w-3 shrink-0 text-gf-fg-subtle" />
 }
 
 function buildCommitMessage(summary: string, description: string): string {
@@ -235,7 +202,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
                   title="Fill with AI"
                   className="flex h-5 w-5 items-center justify-center rounded text-violet-400 hover:bg-gf-surface-hover disabled:opacity-40"
                 >
-                  <FourRayStarIcon className={`h-3 w-3 ${aiFill.isPending ? 'animate-pulse' : ''}`} />
+                  <SparklesIcon className={`h-3 w-3 ${aiFill.isPending ? 'animate-pulse' : ''}`} aria-hidden />
                 </button>
               )}
             </div>
@@ -270,7 +237,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
                 onClick={() => void handleComposeWithAi()}
                 className="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-gf-bg px-3 py-1 text-xs text-gf-fg-muted [background-image:linear-gradient(var(--gf-bg),var(--gf-bg)),linear-gradient(90deg,#a78bfa,#38bdf8)] [background-origin:border-box] [background-clip:padding-box,border-box] hover:text-gf-fg disabled:opacity-50"
               >
-                <FourRayStarIcon className="h-3 w-3 text-violet-400" />
+                <SparklesIcon className="h-3 w-3 text-violet-400" aria-hidden />
                 {aiFill.isPending ? 'Composing…' : 'Compose commits with AI'}
               </button>
             </div>
@@ -292,7 +259,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
           onClick={() => void handlePrimaryAction()}
           className="inline-flex w-full items-center justify-center gap-2 rounded border border-emerald-600/60 bg-emerald-950/40 px-3 py-2 text-sm font-medium text-emerald-300 hover:bg-emerald-950/70 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {busy ? <Spinner size="sm" className="border-emerald-400/30 border-t-emerald-300" /> : <DoubleChevronIcon className="h-4 w-4" />}
+          {busy ? <Spinner size="sm" className="border-emerald-400/30 border-t-emerald-300" /> : <ChevronDoubleRightIcon className="h-4 w-4" aria-hidden />}
           {busy ? 'Working…' : primaryLabel}
         </button>
       </div>

@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { DocumentDuplicateIcon, FolderIcon, FolderPlusIcon } from '@heroicons/react/24/outline'
+import { XMarkIcon } from '@heroicons/react/24/solid'
 import { workspaceTabLabel } from '@/stores/workspace'
 import { repoNameFromUrl } from '@/lib/git'
 import { Spinner } from '@/components/ui/Spinner'
@@ -16,30 +18,16 @@ interface WorkspaceHubProps {
   onOpen: (path: string) => Promise<void>
 }
 
-function FolderIcon() {
-  return (
-    <svg aria-hidden viewBox="0 0 24 24" className="h-6 w-6" fill="currentColor">
-      <path d="M10 4l2 2h8a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2h6z" />
-    </svg>
-  )
+function FolderIconCard() {
+  return <FolderIcon aria-hidden className="h-6 w-6" />
 }
 
 function CloneIcon() {
-  return (
-    <svg aria-hidden viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M8 8h8a3 3 0 013 3v7a3 3 0 01-3 3H8a3 3 0 01-3-3v-7a3 3 0 013-3z" />
-      <path d="M16 8V6a3 3 0 00-3-3H6a3 3 0 00-3 3v7a3 3 0 003 3h2" />
-    </svg>
-  )
+  return <DocumentDuplicateIcon aria-hidden className="h-6 w-6" />
 }
 
 function InitIcon() {
-  return (
-    <svg aria-hidden viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M4 6a2 2 0 012-2h5l2 2h7a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" />
-      <path d="M12 11v6M9 14h6" />
-    </svg>
-  )
+  return <FolderPlusIcon aria-hidden className="h-6 w-6" />
 }
 
 function ActionCard({
@@ -244,7 +232,7 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
               <ActionCard
                 title="Open a folder"
                 description="Browse for a local folder containing a .git directory."
-                icon={<FolderIcon />}
+                icon={<FolderIconCard />}
                 onClick={() => void handleOpenFolder()}
                 disabled={busy}
               />
@@ -481,7 +469,7 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
               className="rounded px-2 py-1 text-sm text-gf-fg-subtle hover:bg-gf-bg hover:text-gf-fg-muted"
               aria-label="Close"
             >
-              ×
+              <XMarkIcon className="h-5 w-5" aria-hidden />
             </button>
           </div>
           <div className="min-h-0 flex-1 overflow-auto">{content}</div>

@@ -1,4 +1,7 @@
 import { type ReactNode } from 'react'
+import { FolderIcon } from '@heroicons/react/24/outline'
+import { CheckIcon } from '@heroicons/react/24/solid'
+import { SidebarIconChevron } from '@/components/layout/sidebar/SidebarIcons'
 
 interface SidebarTreeRowProps {
   icon: ReactNode
@@ -44,9 +47,7 @@ export function SidebarTreeRow({
     >
       {isCurrent ? (
         <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-sm bg-emerald-500 text-white">
-          <svg aria-hidden viewBox="0 0 16 16" className="h-2.5 w-2.5" fill="currentColor">
-            <path d="M6.5 10.5L3.5 7.5l-.7.7 3.7 3.7 7.7-7.7-.7-.7-7 7z" />
-          </svg>
+          <CheckIcon aria-hidden className="h-2.5 w-2.5" />
         </span>
       ) : (
         <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center text-gf-fg-subtle">
@@ -84,9 +85,7 @@ export function SidebarFolderRow({
     >
       <Chevron open={open} />
       <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center text-gf-fg-subtle">
-        <svg aria-hidden viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.25" className="h-3.5 w-3.5">
-          <path d="M2.5 5.5l1.5-2h4l1 1.5H13a1 1 0 011 1v5a1 1 0 01-1 1H3.5a1 1 0 01-1-1v-5a1 1 0 011-1z" />
-        </svg>
+        <FolderIcon aria-hidden className="h-3.5 w-3.5" />
       </span>
       <span className="truncate">{name}</span>
     </button>
@@ -94,14 +93,5 @@ export function SidebarFolderRow({
 }
 
 function Chevron({ open }: { open: boolean }) {
-  return (
-    <svg
-      aria-hidden
-      viewBox="0 0 16 16"
-      fill="currentColor"
-      className={`h-2 w-2 shrink-0 text-gf-fg-subtle transition-transform ${open ? 'rotate-90' : ''}`}
-    >
-      <path d="M6 4l4 4-4 4V4z" />
-    </svg>
-  )
+  return <SidebarIconChevron open={open} className="h-2 w-2 shrink-0 text-gf-fg-subtle" />
 }

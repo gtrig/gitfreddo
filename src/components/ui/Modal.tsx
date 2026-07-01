@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react'
+import { XMarkIcon } from '@heroicons/react/24/solid'
 import { Spinner } from '@/components/ui/Spinner'
 
 interface ModalProps {
@@ -66,7 +67,7 @@ export function Modal({ title, open, onClose, children, size = 'md' }: ModalProp
             className="text-gf-fg-subtle hover:text-gf-fg-muted"
             aria-label="Close"
           >
-            ×
+            <XMarkIcon className="h-5 w-5" aria-hidden />
           </button>
         </div>
         <div className="p-4">{children}</div>

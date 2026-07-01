@@ -1,4 +1,4 @@
-import { HeaderIconSettings } from '@/components/actions/HeaderIcons'
+import { Cog6ToothIcon } from '@heroicons/react/24/outline'
 import { LogToggleButton } from '@/components/layout/LogDrawer'
 
 interface HeaderToolsMenuProps {
@@ -19,7 +19,7 @@ export function HeaderToolsMenu({ onOpenSettings }: HeaderToolsMenuProps) {
         title="Settings (Ctrl+,)"
         aria-label="Settings"
       >
-        <HeaderIconSettings className="h-3.5 w-3.5 shrink-0" />
+        <Cog6ToothIcon aria-hidden className="h-3.5 w-3.5 shrink-0" />
       </button>
     </nav>
   )

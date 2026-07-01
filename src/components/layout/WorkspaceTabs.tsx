@@ -1,5 +1,6 @@
 import { useWorkspaceStore, workspaceTabLabel } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
+import { PlusIcon, XMarkIcon } from '@heroicons/react/24/solid'
 
 export function WorkspaceTabs() {
   const tabs = useWorkspaceStore((s) => s.tabs)
@@ -70,7 +71,7 @@ export function WorkspaceTabs() {
                   active ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                 }`}
               >
-                ×
+                <XMarkIcon className="h-4 w-4" aria-hidden />
               </button>
             </div>
           )
@@ -83,7 +84,7 @@ export function WorkspaceTabs() {
         onClick={() => void openWorkspaceDialog()}
         className="mb-1 shrink-0 rounded border border-gf-border px-2.5 py-1.5 text-sm text-gf-fg-muted hover:border-gf-border-strong hover:bg-gf-bg hover:text-gf-fg"
       >
-        +
+        <PlusIcon className="h-4 w-4" aria-hidden />
       </button>
     </div>
   )

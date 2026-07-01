@@ -8,6 +8,7 @@ import { statusColor, statusLabel, type GitFileChange } from '@/lib/types'
 import { buildFileTree, collectFolderPaths, countCommitFiles, type FileTreeNode } from '@/lib/fileTree'
 import type { CommitFileItem } from '@/lib/types'
 import { LoadingRow, Spinner } from '@/components/ui/Spinner'
+import { SidebarIconChevron } from '@/components/layout/sidebar/SidebarIcons'
 import { CommitPanel } from '@/components/WorkingTree/CommitPanel'
 import { CleanUntrackedModal } from '@/components/WorkingTree/CleanUntrackedModal'
 import { ConfirmDialog } from '@/components/ui/Modal'
@@ -96,16 +97,7 @@ function fileNameFromPath(path: string): string {
 }
 
 function Chevron({ open }: { open: boolean }) {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      aria-hidden
-      className={`h-3 w-3 shrink-0 text-gf-fg-subtle transition-transform ${open ? 'rotate-90' : ''}`}
-      fill="currentColor"
-    >
-      <path d="M6 4l4 4-4 4V4z" />
-    </svg>
-  )
+  return <SidebarIconChevron open={open} className="h-3 w-3 shrink-0 text-gf-fg-subtle" />
 }
 
 function FolderCounts({

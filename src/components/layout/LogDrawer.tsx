@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { HeaderIconLogs } from '@/components/actions/HeaderIcons'
+import { DocumentTextIcon } from '@heroicons/react/24/outline'
 import { useLogStore, type LogTab } from '@/stores/logs'
 import type { LogEntry, LogLevel } from '../../../shared/ipc'
 
@@ -273,7 +273,7 @@ export function LogToggleButton() {
       title="Toggle log drawer (Ctrl+`)"
       aria-label={total > 0 ? `Logs (${total})` : 'Logs'}
     >
-      <HeaderIconLogs className="h-3.5 w-3.5 shrink-0" />
+      <DocumentTextIcon aria-hidden className="h-3.5 w-3.5 shrink-0" />
       {total > 0 && (
         <span className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-gf-surface px-0.5 text-[9px] leading-none text-gf-fg-subtle ring-1 ring-gf-border-strong">
           {total > 99 ? '99+' : total}

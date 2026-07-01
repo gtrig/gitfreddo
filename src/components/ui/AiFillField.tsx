@@ -1,4 +1,5 @@
 import { useEffect, useRef, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from 'react'
+import { SparklesIcon } from '@heroicons/react/24/outline'
 import { useAiEnabled } from '@/hooks/useAppSettings'
 import { useAiFill } from '@/hooks/useAiFill'
 import { useToastStore } from '@/stores/toast'
@@ -19,25 +20,6 @@ type AiFillTextAreaProps = AiFillFieldBaseProps &
 type AiFillTextInputProps = AiFillFieldBaseProps &
   Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange'>
 
-function FourRayStarIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      aria-hidden
-      className={className}
-    >
-      <line x1="8" y1="1.5" x2="8" y2="14.5" />
-      <line x1="1.5" y1="8" x2="14.5" y2="8" />
-      <line x1="3.1" y1="3.1" x2="12.9" y2="12.9" />
-      <line x1="12.9" y1="3.1" x2="3.1" y2="12.9" />
-    </svg>
-  )
-}
-
 function AiFillStarButton({
   pending,
   onClick,
@@ -56,7 +38,7 @@ function AiFillStarButton({
       title={pending ? 'Filling…' : 'Fill with AI (Ctrl+Shift+Space)'}
       className={`absolute right-2 flex h-6 w-6 items-center justify-center rounded text-gf-fg-subtle transition-colors hover:bg-gf-surface-hover hover:text-gf-accent-fg disabled:cursor-not-allowed disabled:opacity-40 ${positionClassName}`}
     >
-      <FourRayStarIcon className={`h-3.5 w-3.5 ${pending ? 'animate-pulse' : ''}`} />
+      <SparklesIcon className={`h-3.5 w-3.5 ${pending ? 'animate-pulse' : ''}`} aria-hidden />
     </button>
   )
 }

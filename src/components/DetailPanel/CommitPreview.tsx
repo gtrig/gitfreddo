@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { ArrowsUpDownIcon, MinusIcon, PencilSquareIcon, PlusIcon } from '@heroicons/react/24/solid'
 import { useAiEnabled } from '@/hooks/useAppSettings'
 import { useAiFill } from '@/hooks/useAiFill'
 import { useToastStore } from '@/stores/toast'
@@ -19,6 +20,7 @@ import {
 import { commitFileKindColor } from '@/lib/commitFiles'
 import type { CommitFileItem, GitCommit } from '@/lib/types'
 import { ContextMenu } from '@/components/ui/ContextMenu'
+import { SidebarIconChevron } from '@/components/layout/sidebar/SidebarIcons'
 import { useContextMenu, type OpenContextMenu } from '@/hooks/useContextMenu'
 import { commitFileContextMenuItems, commitFolderContextMenuItems } from '@/lib/detailPanelContextMenus'
 
@@ -45,27 +47,15 @@ function formatAuthoredDate(iso: string): string {
 }
 
 function ModifiedIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden className={className}>
-      <path d="M11.5 1.5 14.5 4.5 5.5 13.5 2.5 13.5 2.5 10.5 11.5 1.5zm1 1-1 1 2 2 1-1-2-2zM3.5 11l1.8 1.8H3.5V11z" />
-    </svg>
-  )
+  return <PencilSquareIcon aria-hidden className={className} />
 }
 
 function AddedIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden className={className}>
-      <path d="M8 2.5a.75.75 0 0 1 .75.75V7h3.75a.75.75 0 0 1 0 1.5H8.75v3.75a.75.75 0 0 1-1.5 0V8.5H3.5a.75.75 0 0 1 0-1.5h3.75V3.25A.75.75 0 0 1 8 2.5z" />
-    </svg>
-  )
+  return <PlusIcon aria-hidden className={className} />
 }
 
 function RemovedIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden className={className}>
-      <path d="M3.5 7.75a.75.75 0 0 0 0 1.5h9a.75.75 0 0 0 0-1.5h-9z" />
-    </svg>
-  )
+  return <MinusIcon aria-hidden className={className} />
 }
 
 function FileChangeBadges({ counts, compact = false }: { counts: CommitFileCounts; compact?: boolean }) {
@@ -95,16 +85,7 @@ function FileChangeBadges({ counts, compact = false }: { counts: CommitFileCount
 }
 
 function Chevron({ open }: { open: boolean }) {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      aria-hidden
-      className={`h-3 w-3 shrink-0 text-gf-fg-subtle transition-transform ${open ? 'rotate-90' : ''}`}
-      fill="currentColor"
-    >
-      <path d="M6 4l4 4-4 4V4z" />
-    </svg>
-  )
+  return <SidebarIconChevron open={open} className="h-3 w-3 shrink-0 text-gf-fg-subtle" />
 }
 
 function parseCommitMessage(text: string): { summary: string; description: string } {
@@ -476,9 +457,7 @@ export function CommitPreview({
             className="rounded p-1 text-gf-fg-subtle hover:bg-gf-surface-hover hover:text-gf-fg-muted"
             title={sortAscending ? 'Sorted A–Z' : 'Sorted Z–A'}
           >
-            <svg viewBox="0 0 16 16" className="h-4 w-4" fill="currentColor" aria-hidden>
-              <path d="M8 2.5 5.5 5h5L8 2.5zm0 11 2.5-2.5h-5L8 13.5z" />
-            </svg>
+            <ArrowsUpDownIcon className="h-4 w-4" aria-hidden />
           </button>
           <div className="flex rounded-md border border-gf-border-strong p-0.5 text-xs">
             <button
