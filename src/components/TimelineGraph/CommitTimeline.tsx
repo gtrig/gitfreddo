@@ -15,6 +15,7 @@ import { ContextMenu } from '@/components/ui/ContextMenu'
 import { LoadingRow } from '@/components/ui/Spinner'
 import { CreateBranchModal } from '@/components/actions/CreateBranchModal'
 import { DeleteCommitModal } from '@/components/DetailPanel/DeleteCommitModal'
+import { RemoveStaleBranchesModal } from '@/components/DetailPanel/RemoveStaleBranchesModal'
 import { RewordCommitModal } from '@/components/DetailPanel/RewordCommitModal'
 import type { GitCommit } from '@/lib/types'
 
@@ -64,7 +65,9 @@ export function CommitTimeline() {
     createBranchAt,
     setCreateBranchAt,
     deleteModal,
-    setDeleteModal
+    setDeleteModal,
+    removeStaleModal,
+    setRemoveStaleModal
   } = useCommitContextMenu(connected, {
     head,
     branch: repoStatus?.branch ?? workingStatus?.branch ?? '',
@@ -309,6 +312,15 @@ export function CommitTimeline() {
           open
           initialMode={deleteModal.initialMode}
           onClose={() => setDeleteModal(null)}
+        />
+      )}
+
+      {removeStaleModal && (
+        <RemoveStaleBranchesModal
+          open
+          seedHash={removeStaleModal.seedHash}
+          seedHashes={removeStaleModal.seedHashes}
+          onClose={() => setRemoveStaleModal(null)}
         />
       )}
     </div>

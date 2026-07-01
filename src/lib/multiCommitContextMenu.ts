@@ -14,6 +14,7 @@ export interface MultiCommitContextMenuActions {
   cherryPickAll: (hashes: string[]) => void
   squashSelected: (hashes: string[]) => void
   dropSelected: (commits: GitCommit[]) => void
+  removeStaleSelected: (commits: GitCommit[]) => void
   compareSelected: (oldestHash: string, newestHash: string, label: string) => void
 }
 
@@ -60,6 +61,7 @@ export function buildMultiCommitContextMenuItems({
   const onHeadLine = head
     ? areContiguousOnBranchHeadLine(selectedCommits, head, allCommits)
     : false
+  const allOffBranch = head ? !anyOnHistory : false
   const dropHardBlocked = gitBusy || !onHistory || !onHeadLine || hasMerge
   const compareBlocked = gitBusy
 
@@ -115,6 +117,15 @@ export function buildMultiCommitContextMenuItems({
       disabled: dropHardBlocked,
       danger: true,
       onClick: () => actions.dropSelected(chronological)
+    },
+    {
+      id: 'remove-stale-selected',
+      label: allOffBranch
+        ? `Remove stale branch history (${count} commits)…`
+        : `Remove stale branch history (selection spans branches)…`,
+      disabled: gitBusy || !allOffBranch,
+      danger: true,
+      onClick: () => actions.removeStaleSelected(selectedCommits)
     },
     { id: 'multi-sep-end', label: '', separator: true, onClick: () => {} }
   ]

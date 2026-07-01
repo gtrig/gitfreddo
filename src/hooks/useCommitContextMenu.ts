@@ -22,7 +22,12 @@ interface DeleteModalState {
   initialMode?: ResetMode
 }
 
-export type { DeleteModalState }
+interface RemoveStaleModalState {
+  seedHash?: string
+  seedHashes?: string[]
+}
+
+export type { RemoveStaleModalState }
 
 export interface CommitContextMenuOptions {
   head: string
@@ -40,6 +45,7 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
   const [rewordCommit, setRewordCommit] = useState<GitCommit | null>(null)
   const [createBranchAt, setCreateBranchAt] = useState<string | null>(null)
   const [deleteModal, setDeleteModal] = useState<DeleteModalState | null>(null)
+  const [removeStaleModal, setRemoveStaleModal] = useState<RemoveStaleModalState | null>(null)
 
   const selectTimelineNode = useSelectionStore((s) => s.selectTimelineNode)
   const setPrimaryCommit = useSelectionStore((s) => s.setPrimaryCommit)
@@ -95,6 +101,14 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
     [closeMenu]
   )
 
+  const openRemoveStaleModal = useCallback(
+    (state: RemoveStaleModalState) => {
+      closeMenu()
+      setRemoveStaleModal(state)
+    },
+    [closeMenu]
+  )
+
   const items = useMemo(() => {
     if (!menu) return []
 
@@ -139,6 +153,8 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
           ),
         dropSelected: (commits) =>
           openDeleteModal({ action: 'drop', commits }),
+        removeStaleSelected: (commits) =>
+          openRemoveStaleModal({ seedHashes: commits.map((commit) => commit.hash) }),
         checkout: (ref) => runMutation(checkout.mutateAsync({ name: ref }), 'Checked out.'),
         createBranch: (hash) => setCreateBranchAt(hash),
         reword: (commit) => setRewordCommit(commit),
@@ -152,6 +168,7 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
           openDeleteModal({ action: 'deleteHead', commits: [menu.commit], initialMode: mode }),
         dropCommits: (commits) => openDeleteModal({ action: 'drop', commits }),
         revertCommit: (commit) => openDeleteModal({ action: 'revert', commits: [commit] }),
+        removeStaleHistory: (commit) => openRemoveStaleModal({ seedHash: commit.hash }),
         rebaseContinue: () =>
           runMutation(rebaseContinue.mutateAsync(undefined), 'Rebase continued.'),
         rebaseAbort: () => runMutation(rebaseAbort.mutateAsync(undefined), 'Rebase aborted.'),
@@ -172,6 +189,7 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
     showToast,
     runMutation,
     openDeleteModal,
+    openRemoveStaleModal,
     checkout,
     rebaseStart,
     cherryPick,
@@ -193,6 +211,8 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
     createBranchAt,
     setCreateBranchAt,
     deleteModal,
-    setDeleteModal
+    setDeleteModal,
+    removeStaleModal,
+    setRemoveStaleModal
   }
 }

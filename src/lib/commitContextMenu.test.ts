@@ -45,6 +45,7 @@ const noopActions = {
   cherryPickAll: () => {},
   squashSelected: () => {},
   dropSelected: () => {},
+  removeStaleSelected: () => {},
   checkout: () => {},
   createBranch: () => {},
   reword: () => {},
@@ -54,6 +55,7 @@ const noopActions = {
   deleteHead: () => {},
   dropCommits: () => {},
   revertCommit: () => {},
+  removeStaleHistory: () => {},
   rebaseContinue: () => {},
   rebaseAbort: () => {},
   mergeContinue: () => {},
@@ -122,5 +124,32 @@ describe('buildCommitContextMenuItems', () => {
 
     const dropItem = items.find((item) => item.id === 'drop')
     expect(dropItem?.disabled).toBe(false)
+  })
+
+  it('shows remove stale history for commits not on the current branch', () => {
+    const offBranchCommit: GitCommit = {
+      ...parentCommit,
+      hash: 'ccc333333333333333333333333333333333333',
+      shortHash: 'ccc3333',
+      parents: [parentCommit.hash],
+      message: 'Stale branch commit',
+      subject: 'Stale branch commit'
+    }
+
+    const items = buildCommitContextMenuItems({
+      commit: offBranchCommit,
+      head: baseCommit.hash,
+      branch: 'main',
+      isDetached: false,
+      commits: [baseCommit, parentCommit, offBranchCommit],
+      working: cleanWorking,
+      selectedCommitId: offBranchCommit.hash,
+      selectedCount: 1,
+      selectedHashes: [offBranchCommit.hash],
+      actions: noopActions
+    })
+
+    expect(items.find((item) => item.id === 'remove-stale')?.disabled).toBe(false)
+    expect(items.find((item) => item.id === 'drop')).toBeUndefined()
   })
 })

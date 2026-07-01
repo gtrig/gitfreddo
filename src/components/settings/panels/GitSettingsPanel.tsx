@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ActionButton, ConfirmDialog, FieldLabel, TextInput } from '@/components/ui/Modal'
+import { RemoveStaleBranchesModal } from '@/components/DetailPanel/RemoveStaleBranchesModal'
 import type { AppSettings } from '@/hooks/useAppSettings'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
@@ -29,6 +30,7 @@ export function GitSettingsPanel({ form, onChange, onPickGit }: PanelProps) {
   const [pruning, setPruning] = useState(false)
   const [confirmPrune, setConfirmPrune] = useState(false)
   const [summary, setSummary] = useState<UnreachableSummary | null>(null)
+  const [removeStaleOpen, setRemoveStaleOpen] = useState(false)
 
   async function handleScan() {
     if (!repoPath) {
@@ -117,6 +119,9 @@ export function GitSettingsPanel({ form, onChange, onPickGit }: PanelProps) {
           <ActionButton onClick={() => void handleScan()} loading={scanning} disabled={!connected}>
             {scanning ? 'Scanning…' : 'Scan for stale commits'}
           </ActionButton>
+          <ActionButton disabled={!connected} onClick={() => setRemoveStaleOpen(true)}>
+            Remove stale branch history…
+          </ActionButton>
           <ActionButton
             variant="danger"
             disabled={!connected || totalCommits === 0}
@@ -176,6 +181,8 @@ export function GitSettingsPanel({ form, onChange, onPickGit }: PanelProps) {
         onConfirm={() => void handlePrune()}
         onCancel={() => setConfirmPrune(false)}
       />
+
+      <RemoveStaleBranchesModal open={removeStaleOpen} onClose={() => setRemoveStaleOpen(false)} />
     </div>
   )
 }

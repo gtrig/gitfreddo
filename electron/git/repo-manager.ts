@@ -208,6 +208,24 @@ export class RepoManager {
         return rebaseOps.resetToParent(cwd, git, p.mode as 'soft' | 'mixed' | 'hard')
       case 'maintenance.unreachable':
         return maintenanceOps.listUnreachableCommits(cwd, git)
+      case 'maintenance.staleBranches': {
+        const hashes = Array.isArray(p.hashes)
+          ? (p.hashes as string[])
+          : typeof p.hash === 'string' && p.hash
+            ? [p.hash]
+            : []
+        return maintenanceOps.listStaleLocalBranches(cwd, git, hashes)
+      }
+      case 'maintenance.removeStaleBranches':
+        return maintenanceOps.removeStaleRefs(
+          cwd,
+          git,
+          Array.isArray(p.refs) && p.refs.length > 0
+            ? (p.refs as string[])
+            : ((p.branchNames as string[]) ?? []).map((name) =>
+                name.startsWith('refs/') ? name : `refs/heads/${name}`
+              )
+        )
       case 'maintenance.prune':
         return maintenanceOps.pruneStaleObjects(cwd, git)
       default:

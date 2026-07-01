@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseFsckUnreachable } from './maintenance'
+import { classifyRef, formatRefLabel, parseFsckUnreachable } from './maintenance'
 
 describe('parseFsckUnreachable', () => {
   it('parses unreachable commits, blobs, and trees', () => {
@@ -25,5 +25,17 @@ describe('parseFsckUnreachable', () => {
       blobCount: 0,
       treeCount: 0
     })
+  })
+})
+
+describe('formatRefLabel', () => {
+  it('labels backup refs from rebases', () => {
+    expect(formatRefLabel('refs/original/refs/heads/main')).toBe('refs/heads/main (backup)')
+    expect(classifyRef('refs/original/refs/heads/main')).toBe('backup')
+  })
+
+  it('labels local branches without suffix', () => {
+    expect(formatRefLabel('refs/heads/feature/foo')).toBe('feature/foo')
+    expect(classifyRef('refs/heads/feature/foo')).toBe('branch')
   })
 })

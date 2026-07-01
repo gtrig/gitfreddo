@@ -19,6 +19,7 @@ const actions = {
   cherryPickAll: vi.fn(),
   squashSelected: vi.fn(),
   dropSelected: vi.fn(),
+  removeStaleSelected: vi.fn(),
   compareSelected: vi.fn()
 }
 

@@ -23,6 +23,7 @@ export interface CommitContextMenuActions extends MultiCommitContextMenuActions 
   deleteHead: (mode: ResetMode) => void
   dropCommits: (commits: GitCommit[]) => void
   revertCommit: (commit: GitCommit) => void
+  removeStaleHistory: (commit: GitCommit) => void
   rebaseContinue: () => void
   rebaseAbort: () => void
   mergeContinue: () => void
@@ -243,6 +244,14 @@ export function buildCommitContextMenuItems({
             : `Revert commit…`,
         disabled: revertBlocked,
         onClick: () => actions.revertCommit(commit)
+      })
+    } else {
+      items.push({
+        id: 'remove-stale',
+        label: 'Remove stale branch history…',
+        disabled: gitBusy,
+        danger: true,
+        onClick: () => actions.removeStaleHistory(commit)
       })
     }
   }

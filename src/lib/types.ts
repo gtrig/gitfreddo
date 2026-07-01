@@ -85,6 +85,33 @@ export interface MaintenancePruneResult {
   removedCommitCount: number
 }
 
+export interface StaleRetentionRef {
+  ref: string
+  label: string
+  kind: 'branch' | 'backup' | 'remote' | 'tag' | 'other'
+  head: string
+  shortHash: string
+  subject: string
+  commitsNotOnHead: number
+}
+
+/** @deprecated Use StaleRetentionRef */
+export type StaleLocalBranch = StaleRetentionRef & { name: string }
+
+export interface StaleBranchSummary {
+  refs: StaleRetentionRef[]
+  branches: StaleRetentionRef[]
+  totalCommitsNotOnHead: number
+  matchingRefs: string[]
+  matchingBranches: string[]
+}
+
+export interface RemoveStaleBranchesResult {
+  deletedRefs: string[]
+  deletedBranches: string[]
+  removedCommitCount: number
+}
+
 export interface GitMergeStatus {
   inProgress: boolean
   conflictedPaths: string[]

@@ -23,7 +23,7 @@ The renderer calls `window.gitfredo.invoke(method, params)` for git operations:
 | `diff.working`, `diff.staged`, `diff.commits` | `fetch`, `push`, `pull` |
 | `stash.list`, `stash.show` | `stash.push`, `stash.pop`, `stash.apply`, `stash.drop` |
 | `merge.status` | `rebase.start`, `rebase.abort`, `rebase.continue`, `rebase.drop`, `cherry-pick`, `reset`, `reset.head` |
-| `maintenance.unreachable` | `maintenance.prune` |
+| `maintenance.unreachable`, `maintenance.staleBranches` | `maintenance.prune`, `maintenance.removeStaleBranches` |
 
 Workspace helpers: `connect`, `switchWorkspace`, `cloneRepository`, `openWorkspace`, settings.
 
