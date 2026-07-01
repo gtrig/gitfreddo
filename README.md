@@ -4,7 +4,7 @@ Desktop git client with commit graph — an Electron + React app that talks to `
 
 ## Prerequisites
 
-- Node.js 20+
+- Node.js 24+
 - `git` installed and available on PATH
 
 ## Development
