@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import type { GitCommit } from '@/lib/types'
 import {
   areContiguousCommits,
+  areContiguousOnBranchHeadLine,
   commitRangeInTimeline,
+  firstParentChainFromHead,
   selectedCommitsChronological,
   toggleHashInList
 } from './commitSelection'
@@ -47,5 +49,22 @@ describe('commitSelection', () => {
     expect(c2.parents.includes(c1.hash)).toBe(true)
     expect(areContiguousCommits([c1, c2, c3])).toBe(true)
     expect(areContiguousCommits([c1, c3])).toBe(false)
+  })
+
+  it('detects contiguous selections on the first-parent line from HEAD', () => {
+    const c1 = makeCommit('c1', [])
+    const c2 = makeCommit('c2', ['c1'])
+    const c3 = makeCommit('c3', ['c2'])
+    const feature = makeCommit('feature', ['c1'])
+    const chain = [c3, c2, feature, c1]
+
+    expect(firstParentChainFromHead('c3', chain).map((commit) => commit.hash)).toEqual([
+      'c3',
+      'c2',
+      'c1'
+    ])
+    expect(areContiguousOnBranchHeadLine([c2, c3], 'c3', chain)).toBe(true)
+    expect(areContiguousOnBranchHeadLine([c1, c3], 'c3', chain)).toBe(false)
+    expect(areContiguousOnBranchHeadLine([feature], 'c3', chain)).toBe(false)
   })
 })

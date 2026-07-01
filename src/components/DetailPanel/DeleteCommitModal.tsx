@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ActionButton, Modal } from '@/components/ui/Modal'
 import { useGitMutations } from '@/hooks/useGitMutations'
+import { useWorkingStatus } from '@/hooks/useGit'
 import { useToastStore } from '@/stores/toast'
 import type { GitCommit } from '@/lib/types'
 
@@ -43,6 +44,7 @@ export function DeleteCommitModal({
   initialMode = 'mixed'
 }: DeleteCommitModalProps) {
   const { resetHead, dropCommits, revertCommit } = useGitMutations()
+  const { data: working } = useWorkingStatus(open)
   const showToast = useToastStore((s) => s.show)
   const [mode, setMode] = useState<ResetMode>(initialMode)
 
@@ -52,6 +54,16 @@ export function DeleteCommitModal({
 
   const busy = resetHead.isPending || dropCommits.isPending || revertCommit.isPending
   const showRemoteWarning = ahead > 0 && action !== 'revert'
+  const workingTreeDirty = working ? !working.isClean : false
+  const gitBusy = Boolean(
+    working?.rebaseInProgress || working?.mergeInProgress || working?.cherryPickInProgress
+  )
+  const rewriteBlocked =
+    action === 'revert'
+      ? gitBusy
+      : action === 'deleteHead'
+        ? gitBusy || (mode === 'hard' && workingTreeDirty)
+        : gitBusy || workingTreeDirty
 
   async function handleConfirm() {
     try {
@@ -102,6 +114,18 @@ export function DeleteCommitModal({
         <p className="mb-4 rounded border border-amber-800/50 bg-amber-950/30 px-3 py-2 text-xs text-amber-200">
           This branch is {ahead} commit{ahead === 1 ? '' : 's'} ahead of its remote. Rewriting
           history may require a force push. Prefer Revert when the commit is already on the remote.
+        </p>
+      )}
+
+      {workingTreeDirty && action !== 'revert' && (
+        <p className="mb-4 rounded border border-amber-800/50 bg-amber-950/30 px-3 py-2 text-xs text-amber-200">
+          Commit or stash your uncommitted changes before rewriting history.
+        </p>
+      )}
+
+      {gitBusy && (
+        <p className="mb-4 rounded border border-amber-800/50 bg-amber-950/30 px-3 py-2 text-xs text-amber-200">
+          Finish or abort the current merge, rebase, or cherry-pick first.
         </p>
       )}
 
@@ -163,6 +187,7 @@ export function DeleteCommitModal({
         <ActionButton
           variant={action === 'revert' ? 'primary' : 'danger'}
           loading={busy}
+          disabled={rewriteBlocked}
           onClick={() => void handleConfirm()}
         >
           {action === 'deleteHead' && 'Delete commit'}

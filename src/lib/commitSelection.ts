@@ -1,5 +1,5 @@
 import type { GitCommit } from '@/lib/types'
-import { isOnCurrentBranchHistory } from '@/lib/commitReachability'
+import { commitByHash, isOnCurrentBranchHistory } from '@/lib/commitReachability'
 
 /** Commits between two rows in timeline display order (inclusive). */
 export function commitRangeInTimeline(
@@ -53,6 +53,54 @@ export function areContiguousCommits(chronological: GitCommit[]): boolean {
 
 export function selectionHasMergeCommit(selected: GitCommit[]): boolean {
   return selected.some((commit) => commit.parents.length > 1)
+}
+
+/** First-parent chain from HEAD (newest to oldest). */
+export function firstParentChainFromHead(head: string, commits: GitCommit[]): GitCommit[] {
+  const byHash = commitByHash(commits)
+  const chain: GitCommit[] = []
+  let current: string | undefined = head
+  const visited = new Set<string>()
+
+  while (current && !visited.has(current)) {
+    visited.add(current)
+    const commit = byHash.get(current)
+    if (!commit) break
+    chain.push(commit)
+    current = commit.parents[0]
+  }
+
+  return chain
+}
+
+/**
+ * True when every selected commit lies on the first-parent line from HEAD
+ * and forms a consecutive segment of that line (required for rebase drop).
+ */
+export function areContiguousOnBranchHeadLine(
+  selected: GitCommit[],
+  head: string,
+  allCommits: GitCommit[]
+): boolean {
+  if (selected.length === 0) return false
+  if (selected.length === 1) {
+    return isOnCurrentBranchHistory(selected[0]!.hash, head, allCommits)
+  }
+
+  const chainHashes = firstParentChainFromHead(head, allCommits).map((commit) => commit.hash)
+  const selectedSet = new Set(selected.map((commit) => commit.hash))
+  const indices = chainHashes
+    .map((hash, index) => (selectedSet.has(hash) ? index : -1))
+    .filter((index) => index >= 0)
+
+  if (indices.length !== selected.length) return false
+
+  indices.sort((a, b) => a - b)
+  for (let index = 1; index < indices.length; index += 1) {
+    if (indices[index] !== indices[index - 1]! + 1) return false
+  }
+
+  return true
 }
 
 export function allSelectedOnBranchHistory(

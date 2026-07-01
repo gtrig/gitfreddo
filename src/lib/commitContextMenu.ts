@@ -220,13 +220,14 @@ export function buildCommitContextMenuItems({
       }
     )
   } else {
-    const dropBlocked =
-      isMerge || workingTreeDirty || gitBusy || !inHistory || isDetached || isHead
+    const dropHardBlocked = isMerge || gitBusy || !inHistory || isHead
     if (inHistory) {
       items.push({
         id: 'drop',
-        label: `Drop commit from history…`,
-        disabled: dropBlocked,
+        label: isMerge
+          ? 'Drop commit (merge commits not supported)…'
+          : 'Drop commit from history…',
+        disabled: dropHardBlocked,
         danger: true,
         onClick: () => actions.dropCommits([commit])
       })

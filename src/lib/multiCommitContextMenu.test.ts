@@ -68,4 +68,18 @@ describe('buildMultiCommitContextMenuItems', () => {
 
     expect(items.find((item) => item.id === 'squash-selected')?.disabled).toBe(true)
   })
+
+  it('enables drop for contiguous commits on the branch head line', () => {
+    const items = buildMultiCommitContextMenuItems({
+      selectedCommits: [allCommits[1]!, allCommits[0]!],
+      head: 'c3',
+      branch: 'feature',
+      isDetached: false,
+      allCommits,
+      working: cleanWorking,
+      actions
+    })
+
+    expect(items.find((item) => item.id === 'drop-selected')?.disabled).toBe(false)
+  })
 })

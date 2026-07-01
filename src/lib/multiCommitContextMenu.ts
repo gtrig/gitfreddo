@@ -3,6 +3,7 @@ import {
   allSelectedOnBranchHistory,
   anySelectedOnBranchHistory,
   areContiguousCommits,
+  areContiguousOnBranchHeadLine,
   selectedCommitsChronological,
   selectionHasMergeCommit
 } from '@/lib/commitSelection'
@@ -56,9 +57,18 @@ export function buildMultiCommitContextMenuItems({
     workingTreeDirty || gitBusy || anyOnHistory || hasMerge
   const squashBlocked =
     workingTreeDirty || gitBusy || isDetached || !onHistory || !contiguous || hasMerge
-  const dropBlocked =
-    workingTreeDirty || gitBusy || isDetached || !onHistory || !contiguous || hasMerge
+  const onHeadLine = head
+    ? areContiguousOnBranchHeadLine(selectedCommits, head, allCommits)
+    : false
+  const dropHardBlocked = gitBusy || !onHistory || !onHeadLine || hasMerge
   const compareBlocked = gitBusy
+
+  function dropLabel(): string {
+    if (hasMerge) return `Drop ${count} commits (merge commits not supported)`
+    if (!onHistory) return `Drop ${count} commits (not on current branch)`
+    if (!onHeadLine) return `Drop ${count} commits (not contiguous on branch)`
+    return `Drop ${count} commits from history…`
+  }
 
   return [
     {
@@ -101,10 +111,8 @@ export function buildMultiCommitContextMenuItems({
     },
     {
       id: 'drop-selected',
-      label: contiguous
-        ? `Drop ${count} commits from history…`
-        : `Drop ${count} commits (selection not contiguous)`,
-      disabled: dropBlocked,
+      label: dropLabel(),
+      disabled: dropHardBlocked,
       danger: true,
       onClick: () => actions.dropSelected(chronological)
     },

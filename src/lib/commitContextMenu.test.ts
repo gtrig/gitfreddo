@@ -99,4 +99,28 @@ describe('buildCommitContextMenuItems', () => {
     expect(labels.some((label) => label.includes('Revert commit'))).toBe(true)
     expect(labels.some((label) => label.includes('Reset soft'))).toBe(true)
   })
+
+  it('keeps drop enabled with a dirty working tree so the modal can explain why', () => {
+    const dirtyWorking: GitWorkingStatus = {
+      ...cleanWorking,
+      isClean: false,
+      unstaged: [{ path: 'file.txt', status: 'modified' }]
+    }
+
+    const items = buildCommitContextMenuItems({
+      commit: parentCommit,
+      head: baseCommit.hash,
+      branch: 'main',
+      isDetached: false,
+      commits: [baseCommit, parentCommit],
+      working: dirtyWorking,
+      selectedCommitId: parentCommit.hash,
+      selectedCount: 1,
+      selectedHashes: [parentCommit.hash],
+      actions: noopActions
+    })
+
+    const dropItem = items.find((item) => item.id === 'drop')
+    expect(dropItem?.disabled).toBe(false)
+  })
 })
