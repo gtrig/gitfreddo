@@ -10,6 +10,7 @@ import * as stashOps from './operations/stash'
 import * as mergeOps from './operations/merge'
 import * as rebaseOps from './operations/rebase'
 import * as maintenanceOps from './operations/maintenance'
+import * as tagOps from './operations/tag'
 
 const MAX_PARAM_CHARS = 240
 
@@ -109,6 +110,25 @@ export class RepoManager {
         return branchOps.branchDelete(cwd, git, p.name as string, Boolean(p.force))
       case 'branch.rename':
         return branchOps.branchRename(cwd, git, p.oldName as string, p.newName as string)
+      case 'tag.list':
+        return tagOps.tagList(cwd, git)
+      case 'tag.create':
+        return tagOps.tagCreate(
+          cwd,
+          git,
+          p.name as string,
+          p.target as string | undefined,
+          p.message as string | undefined
+        )
+      case 'tag.delete':
+        return tagOps.tagDelete(
+          cwd,
+          git,
+          p.name as string,
+          p.remote as string | undefined
+        )
+      case 'tag.push':
+        return tagOps.tagPush(cwd, git, p.name as string | undefined, p.remote as string | undefined)
       case 'working.status':
         return statusOps.workingStatus(cwd, git)
       case 'stage.add':

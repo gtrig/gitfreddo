@@ -1,8 +1,9 @@
 import type { ContextMenuItem } from '@/components/ui/ContextMenu'
-import type { GitBranch } from '@/lib/types'
+import type { GitBranch, GitTag } from '@/lib/types'
 import type { GitHubIssue, GitHubMergeMethod, GitHubPullRequest } from '../../shared/github'
 import { copyToClipboard } from '@/lib/clipboard'
 import { remoteBranchShortName } from '@/lib/branchTree'
+import { localTagName, tagCheckoutRef } from '@/lib/tagNames'
 
 function separator(id: string): ContextMenuItem {
   return { id, label: '', separator: true, onClick: () => {} }
@@ -180,6 +181,72 @@ export function stashContextMenuItems(
       onClick: () => void copyToClipboard(message || ref)
     }
   ]
+}
+
+export function tagContextMenuItems(
+  tag: GitTag,
+  handlers: {
+    defaultRemote?: string
+    onSelectCommit: (hash: string) => void
+    onCheckout: (ref: string) => void
+    onPush: (name: string, remote?: string) => void
+    onDelete: (tag: GitTag, remote?: string) => void
+  }
+): ContextMenuItem[] {
+  const shortName = localTagName(tag.name)
+  const items: ContextMenuItem[] = [
+    {
+      id: 'focus',
+      label: 'Focus commit',
+      onClick: () => handlers.onSelectCommit(tag.target)
+    }
+  ]
+
+  if (!tag.isRemote) {
+    items.push({
+      id: 'checkout',
+      label: `Checkout ${shortName}`,
+      onClick: () => handlers.onCheckout(tagCheckoutRef(tag.name))
+    })
+    items.push(separator('sep-push'))
+    items.push({
+      id: 'push',
+      label: handlers.defaultRemote
+        ? `Push to ${handlers.defaultRemote}`
+        : 'Push to remote',
+      disabled: !handlers.defaultRemote,
+      onClick: () => handlers.onPush(shortName, handlers.defaultRemote)
+    })
+    items.push(separator('sep-delete'))
+    items.push({
+      id: 'delete',
+      label: 'Delete tag…',
+      danger: true,
+      onClick: () => handlers.onDelete(tag)
+    })
+  } else if (tag.remote) {
+    items.push(separator('sep-delete'))
+    items.push({
+      id: 'delete-remote',
+      label: `Delete from ${tag.remote}…`,
+      danger: true,
+      onClick: () => handlers.onDelete(tag, tag.remote)
+    })
+  }
+
+  items.push(separator('sep-copy'))
+  items.push({
+    id: 'copy-name',
+    label: 'Copy tag name',
+    onClick: () => void copyToClipboard(shortName)
+  })
+  items.push({
+    id: 'copy-hash',
+    label: 'Copy commit hash',
+    onClick: () => void copyToClipboard(tag.target)
+  })
+
+  return items
 }
 
 export function pullRequestContextMenuItems(

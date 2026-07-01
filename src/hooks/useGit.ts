@@ -7,6 +7,7 @@ import type {
   GitRemote,
   GitRepoStatus,
   GitStashEntry,
+  GitTag,
   GitWorkingStatus
 } from '@/lib/types'
 import { useWorkspaceStore } from '@/stores/workspace'
@@ -50,6 +51,15 @@ export function useRemotes(enabled = true) {
   return useQuery<GitRemote[]>({
     queryKey: ['repo', repoPath, 'remote.list'],
     queryFn: async () => (await window.gitfredo.invoke('remote.list')) as GitRemote[],
+    enabled: enabled && connected && Boolean(repoPath)
+  })
+}
+
+export function useTags(enabled = true) {
+  const { repoPath, connected } = useRepoScope()
+  return useQuery<GitTag[]>({
+    queryKey: ['repo', repoPath, 'tag.list'],
+    queryFn: async () => (await window.gitfredo.invoke('tag.list')) as GitTag[],
     enabled: enabled && connected && Boolean(repoPath)
   })
 }

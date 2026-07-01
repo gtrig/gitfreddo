@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
-import { useBranches, useRemotes, useStashList } from '@/hooks/useGit'
+import { useBranches, useRemotes, useStashList, useTags } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { CreateBranchModal } from '@/components/actions/CreateBranchModal'
 import { SidebarFilter } from '@/components/layout/sidebar/SidebarFilter'
@@ -10,6 +10,7 @@ import {
   RemoteBranchesSection
 } from '@/components/layout/sidebar/LocalBranchesSection'
 import { StashesSection } from '@/components/layout/sidebar/StashesSection'
+import { TagsSection } from '@/components/layout/sidebar/TagsSection'
 import { SidebarPullRequestsSection } from '@/components/layout/sidebar/SidebarPullRequestsSection'
 import { SidebarIssuesSection } from '@/components/layout/sidebar/SidebarIssuesSection'
 import {
@@ -24,6 +25,7 @@ export function RepoSidebar() {
   const { data: branches, isLoading, error } = useBranches(connected)
   const { data: remotes } = useRemotes(connected)
   const { data: stashes, isLoading: stashesLoading, error: stashesError } = useStashList(connected)
+  const { data: tags, isLoading: tagsLoading, error: tagsError } = useTags(connected)
   const { checkout } = useGitMutations()
   const selectTimelineNode = useSelectionStore((s) => s.selectTimelineNode)
   const selectedStashIndex = useSelectionStore((s) => s.selectedStashIndex)
@@ -45,8 +47,9 @@ export function RepoSidebar() {
     const stashCount = (stashes ?? []).filter((s) =>
       matchesFilter(s.message || `stash@{${s.index}}`, filter)
     ).length
-    return localCount + remoteCount + stashCount
-  }, [branches, connected, filter, stashes])
+    const tagCount = (tags ?? []).filter((tag) => matchesFilter(tag.name, filter)).length
+    return localCount + remoteCount + stashCount + tagCount
+  }, [branches, connected, filter, stashes, tags])
 
   if (!connected) {
     return (
@@ -91,6 +94,14 @@ export function RepoSidebar() {
           error={stashesError as Error | null}
           selectedIndex={selectedStashIndex}
           onSelect={selectStash}
+        />
+        <TagsSection
+          tags={tags}
+          remotes={remotes}
+          filter={filter}
+          isLoading={tagsLoading}
+          error={tagsError as Error | null}
+          onSelectCommit={(hash) => selectTimelineNode('commit', hash)}
         />
       </div>
 

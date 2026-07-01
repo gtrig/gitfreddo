@@ -44,6 +44,7 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
   const [menu, setMenu] = useState<MenuState | null>(null)
   const [rewordCommit, setRewordCommit] = useState<GitCommit | null>(null)
   const [createBranchAt, setCreateBranchAt] = useState<string | null>(null)
+  const [createTagAt, setCreateTagAt] = useState<string | null>(null)
   const [deleteModal, setDeleteModal] = useState<DeleteModalState | null>(null)
   const [removeStaleModal, setRemoveStaleModal] = useState<RemoveStaleModalState | null>(null)
 
@@ -157,6 +158,7 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
           openRemoveStaleModal({ seedHashes: commits.map((commit) => commit.hash) }),
         checkout: (ref) => runMutation(checkout.mutateAsync({ name: ref }), 'Checked out.'),
         createBranch: (hash) => setCreateBranchAt(hash),
+        createTag: (hash) => setCreateTagAt(hash),
         reword: (commit) => setRewordCommit(commit),
         rebaseOnto: (hash) =>
           runMutation(rebaseStart.mutateAsync({ onto: hash }), 'Rebase started.'),
@@ -210,6 +212,8 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
     setRewordCommit,
     createBranchAt,
     setCreateBranchAt,
+    createTagAt,
+    setCreateTagAt,
     deleteModal,
     setDeleteModal,
     removeStaleModal,

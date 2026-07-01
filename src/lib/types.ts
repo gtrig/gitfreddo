@@ -31,6 +31,16 @@ export interface GitRemote {
   push: string
 }
 
+export interface GitTag {
+  name: string
+  target: string
+  message?: string
+  isAnnotated: boolean
+  isRemote: boolean
+  remote?: string
+  createdAt?: string
+}
+
 export type FileChangeStatus =
   | 'added'
   | 'modified'
