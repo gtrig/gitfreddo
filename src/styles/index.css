@@ -18,6 +18,7 @@
   --color-gf-sidebar-branch-active: var(--gf-sidebar-branch-active);
   --color-gf-sidebar-item-selected: var(--gf-sidebar-item-selected);
   --color-gf-sidebar-count: var(--gf-sidebar-count);
+  --color-gf-sidebar-section-header: var(--gf-sidebar-section-header);
 }
 
 [data-theme='dark'] {
@@ -59,6 +60,7 @@
   --gf-sidebar-branch-active: rgb(34 58 40 / 0.85);
   --gf-sidebar-item-selected: rgb(28 45 65 / 0.85);
   --gf-sidebar-count: #38bdf8;
+  --gf-sidebar-section-header: rgb(30 36 48 / 0.75);
 }
 
 [data-theme='freddo'] {
@@ -100,6 +102,7 @@
   --gf-sidebar-branch-active: rgb(45 58 38 / 0.9);
   --gf-sidebar-item-selected: rgb(58 48 38 / 0.85);
   --gf-sidebar-count: #ddb892;
+  --gf-sidebar-section-header: rgb(42 32 24 / 0.8);
 }
 
 html,

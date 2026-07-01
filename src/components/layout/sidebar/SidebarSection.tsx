@@ -57,7 +57,7 @@ export function SidebarSection({
   return (
     <section className={`border-b border-gf-border/60 ${sectionClass}`}>
       <div
-        className={`flex items-center gap-1 px-2 ${footer ? 'py-1.5' : 'py-1'} ${flexible ? 'shrink-0' : ''}`}
+        className={`flex items-center gap-1 bg-gf-sidebar-section-header px-2 ${footer ? 'py-1.5' : 'py-1'} ${flexible ? 'shrink-0' : ''}`}
       >
         <button
           type="button"
