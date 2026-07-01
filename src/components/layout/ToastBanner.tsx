@@ -17,11 +17,15 @@ export function ToastBanner() {
         : 'border-gf-accent/30 bg-gf-accent/10 text-gf-accent-fg'
 
   return (
-    <div className={`flex items-center justify-between border-b px-4 py-2 text-sm ${styles}`}>
-      <span>{message}</span>
-      <button type="button" onClick={clear} className="text-xs opacity-80 hover:opacity-100">
-        Dismiss
-      </button>
+    <div className="pointer-events-none fixed inset-x-0 top-4 z-50 flex justify-center px-4">
+      <div
+        className={`pointer-events-auto flex max-w-lg items-center justify-between gap-4 rounded-lg border px-4 py-2 text-sm shadow-xl ${styles}`}
+      >
+        <span>{message}</span>
+        <button type="button" onClick={clear} className="shrink-0 text-xs opacity-80 hover:opacity-100">
+          Dismiss
+        </button>
+      </div>
     </div>
   )
 }

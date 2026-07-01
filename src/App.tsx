@@ -129,7 +129,6 @@ export default function App() {
   return (
     <div className="flex h-screen flex-col bg-gf-bg text-gf-fg">
       <WorkspaceBanner onReconnect={reconnect} />
-      <ToastBanner />
       {error && (
         <div className="border-b border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-200">
           {error}
@@ -184,6 +183,7 @@ export default function App() {
         }}
       />
       <LogDrawer />
+      <ToastBanner />
     </div>
   )
 }
