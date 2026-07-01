@@ -16,18 +16,20 @@ export interface RunGitOptions {
 }
 
 const DEFAULT_TIMEOUT_MS = 120_000
+const COLOR_OFF_ARGS = ['-c', 'color.ui=never'] as const
 
 export async function runGit(
   args: string[],
   { cwd, gitBinaryPath = 'git', timeoutMs = DEFAULT_TIMEOUT_MS, input }: RunGitOptions
 ): Promise<GitResult> {
-  const cmd = `${gitBinaryPath} ${args.join(' ')}`
+  const gitArgs = [...COLOR_OFF_ARGS, ...args]
+  const cmd = `${gitBinaryPath} ${gitArgs.join(' ')}`
   emitLog('git', 'debug', `> ${cmd}`, cwd)
 
   const env = await buildGitEnv()
 
   return new Promise((resolve, reject) => {
-    const child = spawn(gitBinaryPath, args, {
+    const child = spawn(gitBinaryPath, gitArgs, {
       cwd,
       env,
       stdio: ['pipe', 'pipe', 'pipe']

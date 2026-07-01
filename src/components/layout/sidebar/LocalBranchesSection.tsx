@@ -3,9 +3,11 @@ import type { GitBranch, GitRemote } from '@/lib/types'
 import type { BranchTreeNode } from '@/lib/branchTree'
 import {
   buildLocalBranchTree,
+  buildRemoteBranchGroups,
   countBranchTreeNodes,
   filterBranchTree,
   matchesFilter,
+  parseRemoteBranchName,
   remoteBranchShortName
 } from '@/lib/branchTree'
 import { SidebarSection } from '@/components/layout/sidebar/SidebarSection'
@@ -184,28 +186,25 @@ export function RemoteBranchesSection({
   onSelectCommit
 }: RemoteBranchesSectionProps) {
   const remoteBranches = useMemo(
-    () => (branches ?? []).filter((b) => b.isRemote),
-    [branches]
+    () =>
+      (branches ?? []).filter((branch) => {
+        if (!branch.isRemote || branch.name.endsWith('/HEAD')) return false
+        const parsed = parseRemoteBranchName(branch.name)
+        if (!parsed) return false
+        return matchesFilter(`${parsed.remote}/${parsed.branch}`, filter)
+      }),
+    [branches, filter]
   )
 
   const grouped = useMemo(() => {
-    const map = new Map<string, GitBranch[]>()
+    const map = buildRemoteBranchGroups(remoteBranches)
 
     for (const remote of remotes ?? []) {
-      if (matchesFilter(remote.name, filter)) {
+      if (matchesFilter(remote.name, filter) && !map.has(remote.name)) {
         map.set(remote.name, [])
       }
     }
 
-    for (const branch of remoteBranches) {
-      const match = /^remotes\/([^/]+)\/(.+)$/.exec(branch.name)
-      if (!match) continue
-      const [, remote, branchName] = match
-      if (!matchesFilter(`${remote}/${branchName}`, filter)) continue
-      const list = map.get(remote) ?? []
-      list.push(branch)
-      map.set(remote, list)
-    }
     return [...map.entries()].sort(([a], [b]) => a.localeCompare(b))
   }, [remoteBranches, remotes, filter])
 

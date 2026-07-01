@@ -1,8 +1,12 @@
 import { runGit, runGitOrThrow } from '../git-runner'
 import type { GitBranch } from '../types'
 
-function parseBranchLine(line: string): GitBranch | null {
-  const trimmed = line.trim()
+export function stripAnsi(text: string): string {
+  return text.replace(/\x1B\[[0-9;]*m/g, '')
+}
+
+export function parseBranchLine(line: string): GitBranch | null {
+  const trimmed = stripAnsi(line).trim()
   if (!trimmed) return null
 
   let isCurrent = false
