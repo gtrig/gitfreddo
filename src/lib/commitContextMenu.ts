@@ -7,6 +7,7 @@ import {
 } from '@/lib/commitReachability'
 import { selectedCommitsInTimeline } from '@/lib/commitSelection'
 import { buildMultiCommitContextMenuItems, type MultiCommitContextMenuActions } from '@/lib/multiCommitContextMenu'
+import { isStashCommit } from '@/lib/stashCommit'
 import { timelineRefs } from '@/lib/timelineRefs'
 import type { GitCommit, GitWorkingStatus } from '@/lib/types'
 
@@ -60,6 +61,10 @@ export function buildCommitContextMenuItems({
   selectedHashes,
   actions
 }: CommitContextMenuContext): ContextMenuItem[] {
+  if (isStashCommit(commit)) {
+    return []
+  }
+
   const items: ContextMenuItem[] = []
   const short = commit.shortHash
   const isHead = commit.hash === head

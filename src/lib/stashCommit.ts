@@ -1,4 +1,4 @@
-import type { GitCommit } from './types'
+import type { GitCommit, GitStashEntry } from './types'
 
 const INTERNAL_STASH_SUBJECT = /^(index|untracked) on /i
 const STASH_BASE_SHORT_HASH = /^(?:WIP )?on [^:]+: ([0-9a-f]{7,40})\b/i
@@ -14,6 +14,30 @@ export function isStashRef(ref: string): boolean {
 
 export function isStashCommit(commit: Pick<GitCommit, 'refs'>): boolean {
   return commit.refs.some(isStashRef)
+}
+
+export function stashRefIndex(commit: Pick<GitCommit, 'refs'>): number | null {
+  for (const ref of commit.refs) {
+    const trimmed = ref.trim()
+    const match =
+      trimmed.match(/^refs\/stash@\{(\d+)\}$/i) ?? trimmed.match(/^stash@\{(\d+)\}$/i)
+    if (match) return Number(match[1])
+  }
+  return null
+}
+
+export function resolveStashEntry(
+  commit: GitCommit,
+  stashes: GitStashEntry[] | undefined
+): GitStashEntry | null {
+  if (!stashes?.length) return null
+
+  const byHash = stashes.find((stash) => stash.hash === commit.hash)
+  if (byHash) return byHash
+
+  const index = stashRefIndex(commit)
+  if (index === null) return null
+  return stashes.find((stash) => stash.index === index) ?? null
 }
 
 /** Git's internal stash commits (index/untracked trees) — hidden from the timeline. */

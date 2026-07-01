@@ -4,12 +4,15 @@ import { useSelectionStore } from '@/stores/selection'
 import { useLogGraph, useRepoStatus, useStashList, useWorkingStatus } from '@/hooks/useGit'
 import { useTimelineColumnSizes } from '@/hooks/useTimelineColumnSizes'
 import { useCommitContextMenu } from '@/hooks/useCommitContextMenu'
+import { useContextMenu } from '@/hooks/useContextMenu'
+import { useGitMutations } from '@/hooks/useGitMutations'
 import { branchColor } from '@/lib/types'
 import { buildGitGraphLayout } from '@/lib/gitGraphLayout'
 import { commitRowHighlightClass } from '@/lib/commitSelection'
 import { countWorkingChanges } from '@/lib/workingChanges'
 import { timelineRefs } from '@/lib/timelineRefs'
-import { filterTimelineCommits, isStashCommit } from '@/lib/stashCommit'
+import { filterTimelineCommits, isStashCommit, resolveStashEntry } from '@/lib/stashCommit'
+import { stashContextMenuItems } from '@/lib/sidebarContextMenus'
 import {
   formatAuthoredDateTooltip,
   formatTimeSince,
@@ -59,7 +62,7 @@ export function CommitTimeline() {
 
   const handleCommitClick = (commit: GitCommit) => (event: React.MouseEvent) => {
     if (isStashCommit(commit)) {
-      const stashEntry = stashes?.find((stash) => stash.hash === commit.hash)
+      const stashEntry = resolveStashEntry(commit, stashes)
       if (stashEntry) {
         selectStash(stashEntry.index, stashEntry.hash)
         return
@@ -76,6 +79,13 @@ export function CommitTimeline() {
     }
     selectTimelineNode('commit', commit.hash)
   }
+
+  const { stashApply, stashPop, stashDrop } = useGitMutations()
+  const {
+    state: stashMenuState,
+    openMenu: openStashMenu,
+    closeMenu: closeStashMenu
+  } = useContextMenu()
 
   const {
     menu,
@@ -99,7 +109,24 @@ export function CommitTimeline() {
     commits
   })
 
-  const onCommitContextMenu = (commit: GitCommit) => (event: React.MouseEvent) => {
+  const onRowContextMenu = (commit: GitCommit) => (event: React.MouseEvent) => {
+    if (isStashCommit(commit)) {
+      const stashEntry = resolveStashEntry(commit, stashes)
+      if (stashEntry) {
+        const label = stashEntry.message || `(stash@{${stashEntry.index}})`
+        openStashMenu(
+          event,
+          stashContextMenuItems(stashEntry.index, stashEntry.hash, label, {
+            onSelect: selectStash,
+            onApply: (index) => void stashApply.mutateAsync({ index }),
+            onPop: (index) => void stashPop.mutateAsync({ index }),
+            onDrop: (index) => void stashDrop.mutateAsync({ index })
+          })
+        )
+        return
+      }
+    }
+
     openMenu(commit, event)
   }
 
@@ -208,7 +235,7 @@ export function CommitTimeline() {
               return (
                 <div
                   key={`refs-${commit.hash}`}
-                  onContextMenu={onCommitContextMenu(commit)}
+                  onContextMenu={onRowContextMenu(commit)}
                   onClick={handleCommitClick(commit)}
                   className={`flex cursor-pointer items-center gap-1 overflow-hidden border-b border-gf-border/30 px-2 hover:bg-gf-bg/50 ${commitRowHighlightClass(isSelected, isPrimary)}`}
                   style={{ height: COMPACT_ROW_HEIGHT }}
@@ -255,7 +282,7 @@ export function CommitTimeline() {
               {commits.map((commit, index) => (
                   <div
                     key={`graph-hit-${commit.hash}`}
-                    onContextMenu={onCommitContextMenu(commit)}
+                    onContextMenu={onRowContextMenu(commit)}
                     onClick={handleCommitClick(commit)}
                     className="absolute left-0 right-0 cursor-pointer hover:bg-gf-bg/30"
                     style={{
@@ -327,7 +354,7 @@ export function CommitTimeline() {
                   key={commit.hash}
                   type="button"
                   onClick={handleCommitClick(commit)}
-                  onContextMenu={onCommitContextMenu(commit)}
+                  onContextMenu={onRowContextMenu(commit)}
                   style={{ height: COMPACT_ROW_HEIGHT }}
                   className={`flex w-full items-center gap-2 overflow-hidden border-b border-gf-border/30 px-2.5 text-left hover:bg-gf-bg/50 ${commitRowHighlightClass(isSelected, isPrimary)}`}
                 >
@@ -378,7 +405,7 @@ export function CommitTimeline() {
               return (
                 <div
                   key={`time-${commit.hash}`}
-                  onContextMenu={onCommitContextMenu(commit)}
+                  onContextMenu={onRowContextMenu(commit)}
                   onClick={handleCommitClick(commit)}
                   title={formatAuthoredDateTooltip(commit.author.date)}
                   className={`flex cursor-pointer items-center justify-end border-b border-gf-border/30 px-2 text-[11px] tabular-nums text-gf-fg-subtle hover:bg-gf-bg/50 ${commitRowHighlightClass(isSelected, isPrimary)}`}
@@ -395,6 +422,15 @@ export function CommitTimeline() {
       </div>
 
       {menu && <ContextMenu x={menu.x} y={menu.y} items={items} onClose={closeMenu} />}
+
+      {stashMenuState && (
+        <ContextMenu
+          x={stashMenuState.x}
+          y={stashMenuState.y}
+          items={stashMenuState.items}
+          onClose={closeStashMenu}
+        />
+      )}
 
       {rewordCommit && (
         <RewordCommitModal
