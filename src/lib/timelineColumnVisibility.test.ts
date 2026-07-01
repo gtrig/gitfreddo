@@ -8,13 +8,14 @@ import {
 } from './timelineColumnVisibility'
 
 describe('timelineColumnVisibility', () => {
-  it('defaults all columns to visible', () => {
-    expect(DEFAULT_TIMELINE_COLUMN_VISIBILITY).toEqual({
-      branchTag: true,
-      graph: true,
-      message: true,
-      timeSince: true
-    })
+  it('defaults core columns to visible and optional columns to hidden', () => {
+    expect(DEFAULT_TIMELINE_COLUMN_VISIBILITY.branchTag).toBe(true)
+    expect(DEFAULT_TIMELINE_COLUMN_VISIBILITY.graph).toBe(true)
+    expect(DEFAULT_TIMELINE_COLUMN_VISIBILITY.message).toBe(true)
+    expect(DEFAULT_TIMELINE_COLUMN_VISIBILITY.timeSince).toBe(true)
+    expect(DEFAULT_TIMELINE_COLUMN_VISIBILITY.author).toBe(false)
+    expect(DEFAULT_TIMELINE_COLUMN_VISIBILITY.hash).toBe(false)
+    expect(DEFAULT_TIMELINE_COLUMN_VISIBILITY.lineStats).toBe(false)
   })
 
   it('falls back when every column would be hidden', () => {
@@ -27,12 +28,9 @@ describe('timelineColumnVisibility', () => {
     })
     storage.set(
       'gitfredo.timeline.columnVisibility',
-      JSON.stringify({
-        branchTag: false,
-        graph: false,
-        message: false,
-        timeSince: false
-      })
+      JSON.stringify(Object.fromEntries(
+        ['branchTag', 'graph', 'message', 'timeSince', 'hash', 'author'].map((id) => [id, false])
+      ))
     )
 
     expect(loadTimelineColumnVisibility()).toEqual(DEFAULT_TIMELINE_COLUMN_VISIBILITY)
@@ -48,18 +46,17 @@ describe('timelineColumnVisibility', () => {
     })
 
     saveTimelineColumnVisibility({
+      ...DEFAULT_TIMELINE_COLUMN_VISIBILITY,
       branchTag: false,
-      graph: true,
-      message: true,
       timeSince: false
     })
 
-    expect(loadTimelineColumnVisibility()).toEqual({
-      branchTag: false,
-      graph: true,
-      message: true,
-      timeSince: false
-    })
+    const loaded = loadTimelineColumnVisibility()
+    expect(loaded.branchTag).toBe(false)
+    expect(loaded.graph).toBe(true)
+    expect(loaded.message).toBe(true)
+    expect(loaded.timeSince).toBe(false)
+    expect(loaded.author).toBe(false)
   })
 
   it('disables hiding the last visible column in the header menu', () => {

@@ -4,13 +4,24 @@ export interface GitAuthor {
   date: string
 }
 
+export interface GitCommitStats {
+  filesChanged: number
+  insertions: number
+  deletions: number
+}
+
 export interface GitCommit {
   hash: string
   shortHash: string
   parents: string[]
   message: string
   subject: string
+  body: string
   author: GitAuthor
+  committer: GitAuthor
+  signature: string | null
+  notes: string
+  stats: GitCommitStats | null
   refs: string[]
 }
 

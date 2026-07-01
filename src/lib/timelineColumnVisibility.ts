@@ -1,19 +1,85 @@
 import type { ContextMenuItem } from '@/components/ui/ContextMenu'
 
-export type TimelineColumnId = 'branchTag' | 'graph' | 'message' | 'timeSince'
+export type TimelineColumnId =
+  | 'branchTag'
+  | 'graph'
+  | 'hash'
+  | 'author'
+  | 'authorEmail'
+  | 'authoredDate'
+  | 'parents'
+  | 'refs'
+  | 'message'
+  | 'bodyPreview'
+  | 'issueLinks'
+  | 'committer'
+  | 'committedDate'
+  | 'signature'
+  | 'notes'
+  | 'filesChanged'
+  | 'lineStats'
+  | 'timeSince'
 
-export interface TimelineColumnVisibility {
-  branchTag: boolean
-  graph: boolean
-  message: boolean
-  timeSince: boolean
+export type TimelineColumnVisibility = Record<TimelineColumnId, boolean>
+
+export const TIMELINE_COLUMN_ORDER: TimelineColumnId[] = [
+  'branchTag',
+  'graph',
+  'hash',
+  'author',
+  'authorEmail',
+  'authoredDate',
+  'parents',
+  'refs',
+  'message',
+  'bodyPreview',
+  'issueLinks',
+  'committer',
+  'committedDate',
+  'signature',
+  'notes',
+  'filesChanged',
+  'lineStats',
+  'timeSince'
+]
+
+export const TIMELINE_COLUMN_WIDTHS: Partial<Record<TimelineColumnId, number>> = {
+  hash: 72,
+  author: 120,
+  authorEmail: 160,
+  authoredDate: 128,
+  parents: 72,
+  refs: 140,
+  bodyPreview: 200,
+  issueLinks: 112,
+  committer: 120,
+  committedDate: 128,
+  signature: 80,
+  notes: 120,
+  filesChanged: 56,
+  lineStats: 80,
+  timeSince: 88
 }
 
 export const DEFAULT_TIMELINE_COLUMN_VISIBILITY: TimelineColumnVisibility = {
   branchTag: true,
   graph: true,
   message: true,
-  timeSince: true
+  timeSince: true,
+  hash: false,
+  author: false,
+  authorEmail: false,
+  authoredDate: false,
+  parents: false,
+  refs: false,
+  bodyPreview: false,
+  issueLinks: false,
+  committer: false,
+  committedDate: false,
+  signature: false,
+  notes: false,
+  filesChanged: false,
+  lineStats: false
 }
 
 const STORAGE_KEY = 'gitfredo.timeline.columnVisibility'
@@ -21,11 +87,33 @@ const STORAGE_KEY = 'gitfredo.timeline.columnVisibility'
 const COLUMN_LABELS: Record<TimelineColumnId, string> = {
   branchTag: 'Branch / Tag',
   graph: 'Graph',
+  hash: 'Hash',
+  author: 'Author',
+  authorEmail: 'Author email',
+  authoredDate: 'Authored date',
+  parents: 'Parents',
+  refs: 'Refs',
   message: 'Commit message',
+  bodyPreview: 'Body preview',
+  issueLinks: 'Issue / PR links',
+  committer: 'Committer',
+  committedDate: 'Committed date',
+  signature: 'Signature',
+  notes: 'Notes',
+  filesChanged: 'Files changed',
+  lineStats: '+/- lines',
   timeSince: 'Time since'
 }
 
-export const TIMELINE_COLUMN_IDS = Object.keys(COLUMN_LABELS) as TimelineColumnId[]
+const MENU_GROUPS: TimelineColumnId[][] = [
+  ['branchTag', 'graph'],
+  ['hash', 'author', 'authorEmail', 'authoredDate', 'parents', 'refs'],
+  ['message', 'bodyPreview', 'issueLinks'],
+  ['committer', 'committedDate', 'signature', 'notes'],
+  ['filesChanged', 'lineStats', 'timeSince']
+]
+
+export const TIMELINE_COLUMN_IDS = TIMELINE_COLUMN_ORDER
 
 function normalizeVisibility(raw: unknown): TimelineColumnVisibility {
   if (!raw || typeof raw !== 'object') {
@@ -79,17 +167,40 @@ export function saveTimelineColumnVisibility(visibility: TimelineColumnVisibilit
   }
 }
 
+export function timelineColumnLabel(id: TimelineColumnId): string {
+  return COLUMN_LABELS[id]
+}
+
+export function hasVisibleColumnAfter(
+  visibility: TimelineColumnVisibility,
+  columnId: TimelineColumnId
+): boolean {
+  const index = TIMELINE_COLUMN_ORDER.indexOf(columnId)
+  return TIMELINE_COLUMN_ORDER.slice(index + 1).some((id) => visibility[id])
+}
+
 export function timelineHeaderContextMenuItems(
   visibility: TimelineColumnVisibility,
   onToggle: (column: TimelineColumnId) => void
 ): ContextMenuItem[] {
   const visibleCount = countVisibleColumns(visibility)
+  const items: ContextMenuItem[] = []
 
-  return TIMELINE_COLUMN_IDS.map((id) => ({
-    id,
-    label: COLUMN_LABELS[id],
-    checked: visibility[id],
-    disabled: visibility[id] && visibleCount <= 1,
-    onClick: () => onToggle(id)
-  }))
+  for (const [groupIndex, group] of MENU_GROUPS.entries()) {
+    if (groupIndex > 0) {
+      items.push({ id: `sep-${groupIndex}`, label: '', separator: true, onClick: () => {} })
+    }
+
+    for (const id of group) {
+      items.push({
+        id,
+        label: COLUMN_LABELS[id],
+        checked: visibility[id],
+        disabled: visibility[id] && visibleCount <= 1,
+        onClick: () => onToggle(id)
+      })
+    }
+  }
+
+  return items
 }

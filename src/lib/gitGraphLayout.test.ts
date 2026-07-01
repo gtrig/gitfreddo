@@ -9,7 +9,12 @@ function commit(hash: string, parents: string[], subject = hash): GitCommit {
     parents,
     subject,
     message: subject,
+    body: '',
     author: { name: 'Author', email: 'a@b.c', date: '2024-01-01T00:00:00+00:00' },
+    committer: { name: 'Author', email: 'a@b.c', date: '2024-01-01T00:00:00+00:00' },
+    signature: null,
+    notes: '',
+    stats: null,
     refs: []
   }
 }
