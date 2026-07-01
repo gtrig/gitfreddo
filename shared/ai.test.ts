@@ -3,6 +3,7 @@ import {
   buildAiMessages,
   extractChatCompletionContent,
   normalizeBaseUrl,
+  parseComposeCommitsResponse,
   pickChatModelId
 } from './ai'
 
@@ -54,6 +55,60 @@ describe('buildAiMessages', () => {
     expect(system).toContain('Always write in Spanish.')
     expect(user).toContain('Include the JIRA ticket')
     expect(user).toContain('fix bug')
+  })
+
+  it('asks for JSON commit groups when composing commits', () => {
+    const { system, user } = buildAiMessages('compose_commits', {
+      branch: 'main',
+      filePaths: ['src/a.ts', 'docs/b.md']
+    })
+    expect(system).toContain('valid JSON')
+    expect(user).toContain('JSON array')
+    expect(user).toContain('src/a.ts')
+    expect(user).toContain('docs/b.md')
+  })
+})
+
+describe('parseComposeCommitsResponse', () => {
+  const staged = ['src/auth.ts', 'src/login.tsx', 'README.md']
+
+  it('parses message and files from JSON', () => {
+    const proposals = parseComposeCommitsResponse(
+      JSON.stringify([
+        { message: 'feat: add auth\n\nLogin form and session.', files: ['src/auth.ts', 'src/login.tsx'] },
+        { message: 'docs: update readme', files: ['README.md'] }
+      ]),
+      staged
+    )
+
+    expect(proposals).toHaveLength(2)
+    expect(proposals[0]?.summary).toBe('feat: add auth')
+    expect(proposals[0]?.description).toContain('Login form')
+    expect(proposals[0]?.files).toEqual(['src/auth.ts', 'src/login.tsx'])
+    expect(proposals[1]?.files).toEqual(['README.md'])
+  })
+
+  it('strips markdown fences before parsing', () => {
+    const proposals = parseComposeCommitsResponse(
+      '```json\n[{"message":"fix bug","files":["src/auth.ts"]}]\n```',
+      ['src/auth.ts']
+    )
+    expect(proposals).toHaveLength(1)
+    expect(proposals[0]?.files).toEqual(['src/auth.ts'])
+  })
+
+  it('adds unassigned staged files to a fallback commit', () => {
+    const proposals = parseComposeCommitsResponse(
+      JSON.stringify([{ message: 'feat: auth', files: ['src/auth.ts'] }]),
+      staged
+    )
+
+    expect(proposals).toHaveLength(2)
+    expect(proposals[1]?.files).toEqual(['src/login.tsx', 'README.md'])
+  })
+
+  it('throws on invalid JSON', () => {
+    expect(() => parseComposeCommitsResponse('not json', staged)).toThrow('valid JSON')
   })
 })
 

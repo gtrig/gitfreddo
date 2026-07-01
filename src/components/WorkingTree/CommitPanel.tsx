@@ -8,6 +8,8 @@ import { useToastStore } from '@/stores/toast'
 import { commitMessageBody } from '@/lib/fileTree'
 import type { GitWorkingStatus } from '@/lib/types'
 import { Spinner } from '@/components/ui/Spinner'
+import { ComposeCommitsModal } from '@/components/WorkingTree/ComposeCommitsModal'
+import { parseComposeCommitsResponse, type AiComposeCommitProposal } from '../../../shared/ai'
 
 const SUBJECT_MAX = 72
 
@@ -83,6 +85,8 @@ export function CommitPanel({ working }: CommitPanelProps) {
   const [amend, setAmend] = useState(false)
   const [summary, setSummary] = useState('')
   const [description, setDescription] = useState('')
+  const [composeOpen, setComposeOpen] = useState(false)
+  const [composeProposals, setComposeProposals] = useState<AiComposeCommitProposal[]>([])
 
   const unstagedFiles = useMemo(
     () => [...working.unstaged, ...working.untracked, ...working.conflicted],
@@ -126,9 +130,31 @@ export function CommitPanel({ working }: CommitPanelProps) {
   }
 
   async function handleComposeWithAi() {
-    setSummary('')
-    setDescription('')
-    await handleAiFillSummary()
+    if (!hasStaged) {
+      showToast('Stage files before composing commits with AI.', 'error')
+      return
+    }
+
+    try {
+      const text = await aiFill.mutateAsync({
+        purpose: 'compose_commits',
+        context: {
+          filePaths: stagedPaths,
+          branch: working.branch
+        }
+      })
+      const proposals = parseComposeCommitsResponse(text, stagedPaths)
+      setComposeProposals(proposals)
+      setComposeOpen(true)
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : String(error), 'error')
+    }
+  }
+
+  function handleUseProposalInPanel(proposal: AiComposeCommitProposal) {
+    setSummary(proposal.summary)
+    setDescription(proposal.description)
+    setAmend(false)
   }
 
   async function handlePrimaryAction() {
@@ -236,7 +262,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
             <p className="pl-4 text-[11px] text-gf-fg-subtle">No additional options yet.</p>
           )}
 
-          {aiEnabled && (
+          {aiEnabled && hasStaged && (
             <div className="flex justify-end">
               <button
                 type="button"
@@ -251,6 +277,13 @@ export function CommitPanel({ working }: CommitPanelProps) {
           )}
         </div>
       )}
+
+      <ComposeCommitsModal
+        open={composeOpen}
+        proposals={composeProposals}
+        onClose={() => setComposeOpen(false)}
+        onUseInPanel={handleUseProposalInPanel}
+      />
 
       <div className="border-t border-gf-border px-3 py-2">
         <button

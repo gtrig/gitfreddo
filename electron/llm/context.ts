@@ -2,7 +2,11 @@ import type { RepoManager } from '../git/repo-manager'
 import type { AiFillParams } from '../../shared/ai'
 import type { GitDiffResult, GitWorkingStatus } from '../git/types'
 
-const DIFF_PURPOSES = new Set<AiFillParams['purpose']>(['commit_message', 'stash_message'])
+const DIFF_PURPOSES = new Set<AiFillParams['purpose']>([
+  'commit_message',
+  'stash_message',
+  'compose_commits'
+])
 const MAX_DIFF_CHARS = 8000
 
 function truncateDiff(text: string): string {
@@ -30,7 +34,7 @@ export async function enrichAiContext(
     let filePaths = params.context?.filePaths
     let diffText: string | undefined
 
-    if (params.purpose === 'commit_message') {
+    if (params.purpose === 'commit_message' || params.purpose === 'compose_commits') {
       filePaths = filePaths ?? status.staged.map((f) => f.path)
       if (filePaths.length > 0) {
         const diff = (await manager.invoke(repoPath, 'diff.staged')) as GitDiffResult
