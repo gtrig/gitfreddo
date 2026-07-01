@@ -22,6 +22,10 @@ const actions = {
   selectCommit: vi.fn(),
   copyHash: vi.fn(),
   copyShortHash: vi.fn(),
+  copyAllHashes: vi.fn(),
+  compareSelected: vi.fn(),
+  cherryPickAll: vi.fn(),
+  squashSelected: vi.fn(),
   checkout: vi.fn(),
   createBranch: vi.fn(),
   reword: vi.fn(),
@@ -65,6 +69,7 @@ describe('buildCommitContextMenuItems', () => {
       working: cleanWorking,
       selectedCommitId: null,
       selectedCount: 1,
+      selectedHashes: ['c2'],
       actions
     })
 
@@ -83,6 +88,7 @@ describe('buildCommitContextMenuItems', () => {
       working: cleanWorking,
       selectedCommitId: null,
       selectedCount: 1,
+      selectedHashes: ['c2'],
       actions
     })
 
@@ -99,6 +105,7 @@ describe('buildCommitContextMenuItems', () => {
       working: { ...cleanWorking, rebaseInProgress: true },
       selectedCommitId: 'c3',
       selectedCount: 1,
+      selectedHashes: ['c3'],
       actions
     })
 

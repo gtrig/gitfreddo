@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useSelectionStore } from '@/stores/selection'
-import { useDiffShow, useDiffStaged, useDiffWorking } from '@/hooks/useGit'
+import { useDiffCommitRange, useDiffShow, useDiffStaged, useDiffWorking } from '@/hooks/useGit'
 import { UnifiedDiffView } from '@/components/DiffViewer/UnifiedDiffView'
 import { parseUnifiedDiffRows } from '@/lib/unifiedDiff'
 import type { GitDiffResult } from '@/lib/types'
@@ -15,6 +15,7 @@ export function DiffOverlay({ onClose }: DiffOverlayProps) {
   const selectedCommitHash = useSelectionStore((s) => s.selectedCommitHash)
   const diffMode = useSelectionStore((s) => s.diffMode)
   const selectedStashFile = useSelectionStore((s) => s.selectedStashFile)
+  const compareCommitRange = useSelectionStore((s) => s.compareCommitRange)
 
   const workingDiff = useDiffWorking(
     diffMode === 'working' ? (selectedWorkingFile ?? undefined) : undefined,
@@ -29,16 +30,25 @@ export function DiffOverlay({ onClose }: DiffOverlayProps) {
     diffMode === 'commit' ? (selectedCommitFile ?? undefined) : undefined,
     Boolean(diffMode === 'commit' && selectedCommitHash && selectedCommitFile)
   )
+  const rangeDiff = useDiffCommitRange(
+    diffMode === 'commit-range' ? compareCommitRange?.oldestHash ?? null : null,
+    diffMode === 'commit-range' ? compareCommitRange?.newestHash ?? null : null,
+    Boolean(diffMode === 'commit-range' && compareCommitRange)
+  )
 
-  const active = (workingDiff.data ?? stagedDiff.data ?? commitDiff.data) as
+  const active = (workingDiff.data ?? stagedDiff.data ?? commitDiff.data ?? rangeDiff.data) as
     | GitDiffResult
     | undefined
-  const path = selectedWorkingFile ?? selectedCommitFile ?? selectedStashFile
+  const path =
+    diffMode === 'commit-range'
+      ? compareCommitRange?.label
+      : selectedWorkingFile ?? selectedCommitFile ?? selectedStashFile
   const rows = useMemo(
     () => (active?.unified ? parseUnifiedDiffRows(active.unified) : []),
     [active?.unified]
   )
-  const loading = workingDiff.isLoading || stagedDiff.isLoading || commitDiff.isLoading
+  const loading =
+    workingDiff.isLoading || stagedDiff.isLoading || commitDiff.isLoading || rangeDiff.isLoading
 
   if (!path) return null
 
@@ -57,6 +67,8 @@ export function DiffOverlay({ onClose }: DiffOverlayProps) {
       <div className="min-h-0 flex-1 overflow-auto p-4">
         {loading ? (
           <p className="text-sm text-gf-fg-subtle">Loading diff…</p>
+        ) : rows.length === 0 ? (
+          <p className="text-sm text-gf-fg-subtle">No changes in this range.</p>
         ) : (
           <UnifiedDiffView rows={rows} loading={loading} />
         )}

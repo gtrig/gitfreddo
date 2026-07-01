@@ -130,6 +130,13 @@ export class RepoManager {
           p.toRef as string,
           p.path as string | undefined
         )
+      case 'diff.commitRange':
+        return diffOps.diffCommitRange(
+          cwd,
+          git,
+          p.oldestHash as string,
+          p.newestHash as string
+        )
       case 'diff.show':
         return diffOps.diffShow(cwd, git, p.ref as string, p.path as string | undefined)
       case 'file.read':
@@ -184,7 +191,12 @@ export class RepoManager {
       case 'rebase.continue':
         return rebaseOps.rebaseContinue(cwd, git)
       case 'cherry-pick':
+        if (Array.isArray(p.hashes) && p.hashes.length > 0) {
+          return rebaseOps.cherryPickMultiple(cwd, git, p.hashes as string[])
+        }
         return rebaseOps.cherryPick(cwd, git, p.hash as string)
+      case 'rebase.squash':
+        return rebaseOps.rebaseSquash(cwd, git, p.hashes as string[])
       case 'reset':
         return rebaseOps.resetRepo(cwd, git, p.mode as 'soft' | 'mixed' | 'hard', p.ref as string | undefined)
       default:

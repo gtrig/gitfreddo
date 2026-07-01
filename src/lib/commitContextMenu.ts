@@ -4,10 +4,12 @@ import {
   isBehindHead,
   isOnCurrentBranchHistory
 } from '@/lib/commitReachability'
+import { selectedCommitsInTimeline } from '@/lib/commitSelection'
+import { buildMultiCommitContextMenuItems, type MultiCommitContextMenuActions } from '@/lib/multiCommitContextMenu'
 import { timelineRefs } from '@/lib/timelineRefs'
 import type { GitCommit, GitWorkingStatus } from '@/lib/types'
 
-export interface CommitContextMenuActions {
+export interface CommitContextMenuActions extends MultiCommitContextMenuActions {
   selectCommit: (hash: string) => void
   copyHash: (hash: string) => void
   copyShortHash: (shortHash: string) => void
@@ -32,6 +34,7 @@ export interface CommitContextMenuContext {
   working: GitWorkingStatus | undefined
   selectedCommitId: string | null
   selectedCount: number
+  selectedHashes: string[]
   actions: CommitContextMenuActions
 }
 
@@ -48,6 +51,7 @@ export function buildCommitContextMenuItems({
   working,
   selectedCommitId,
   selectedCount,
+  selectedHashes,
   actions
 }: CommitContextMenuContext): ContextMenuItem[] {
   const items: ContextMenuItem[] = []
@@ -102,6 +106,21 @@ export function buildCommitContextMenuItems({
     },
     { id: 'sep-copy', label: '', separator: true, onClick: () => {} }
   )
+
+  if (selectedCount > 1) {
+    const selectedCommits = selectedCommitsInTimeline(commits, selectedHashes)
+    items.push(
+      ...buildMultiCommitContextMenuItems({
+        selectedCommits,
+        head,
+        branch,
+        isDetached,
+        allCommits: commits,
+        working,
+        actions
+      })
+    )
+  }
 
   if (isHead) {
     items.push({

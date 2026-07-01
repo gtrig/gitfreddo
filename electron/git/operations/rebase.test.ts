@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { markCommitForReword } from './rebase'
+import { markCommitForReword, markCommitsForSquash } from './rebase'
 
 describe('markCommitForReword', () => {
   const hash = '125c15ed41cf1b761557e592b83bf2f856c1070e'
@@ -23,5 +23,27 @@ describe('markCommitForReword', () => {
   it('converts edit to reword for the target commit', () => {
     const todo = `edit ${hash} Subject`
     expect(markCommitForReword(todo, hash)).toBe(`reword ${hash} Subject`)
+  })
+})
+
+describe('markCommitsForSquash', () => {
+  const hashes = ['1111111', '2222222', '3333333']
+
+  it('keeps the oldest commit as pick and squashes the rest', () => {
+    const todo = [
+      'pick 1111111 First',
+      'pick 2222222 Second',
+      'pick 3333333 Third',
+      'pick abcdef0 Outside'
+    ].join('\n')
+
+    expect(markCommitsForSquash(todo, hashes)).toBe(
+      [
+        'pick 1111111 First',
+        'squash 2222222 Second',
+        'squash 3333333 Third',
+        'pick abcdef0 Outside'
+      ].join('\n')
+    )
   })
 })

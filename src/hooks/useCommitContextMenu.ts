@@ -30,9 +30,11 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
 
   const selectTimelineNode = useSelectionStore((s) => s.selectTimelineNode)
   const setPrimaryCommit = useSelectionStore((s) => s.setPrimaryCommit)
+  const showCompareCommitRange = useSelectionStore((s) => s.showCompareCommitRange)
   const {
     checkout,
     cherryPick,
+    squashCommits,
     rebaseStart,
     rebaseContinue,
     rebaseAbort,
@@ -75,6 +77,8 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
   const items = useMemo(() => {
     if (!menu) return []
 
+    const { selectedCommitHashes } = useSelectionStore.getState()
+
     return buildCommitContextMenuItems({
       commit: menu.commit,
       head: options.head,
@@ -83,7 +87,8 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
       commits: options.commits,
       working,
       selectedCommitId: menu.commit.hash,
-      selectedCount: useSelectionStore.getState().selectedCommitHashes.length,
+      selectedCount: selectedCommitHashes.length,
+      selectedHashes: selectedCommitHashes,
       actions: {
         selectCommit: (hash) => selectTimelineNode('commit', hash),
         copyHash: (hash) => {
@@ -94,6 +99,23 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
           void navigator.clipboard.writeText(shortHash)
           showToast('Short hash copied.', 'info')
         },
+        copyAllHashes: (hashes) => {
+          void navigator.clipboard.writeText(hashes.join('\n'))
+          showToast(`${hashes.length} commit hashes copied.`, 'info')
+        },
+        compareSelected: (oldestHash, newestHash, label) => {
+          showCompareCommitRange(oldestHash, newestHash, label)
+        },
+        cherryPickAll: (hashes) =>
+          runMutation(
+            cherryPick.mutateAsync({ hashes }),
+            `Cherry-picked ${hashes.length} commits.`
+          ),
+        squashSelected: (hashes) =>
+          runMutation(
+            squashCommits.mutateAsync({ hashes }),
+            `Squashed ${hashes.length} commits.`
+          ),
         checkout: (ref) => runMutation(checkout.mutateAsync({ name: ref }), 'Checked out.'),
         createBranch: (hash) => setCreateBranchAt(hash),
         reword: (commit) => setRewordCommit(commit),
@@ -119,11 +141,13 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
     options.commits,
     working,
     selectTimelineNode,
+    showCompareCommitRange,
     showToast,
     runMutation,
     checkout,
     rebaseStart,
     cherryPick,
+    squashCommits,
     reset,
     rebaseContinue,
     rebaseAbort,

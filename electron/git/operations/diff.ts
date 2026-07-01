@@ -1,4 +1,4 @@
-import { runGitOrThrow } from '../git-runner'
+import { runGit, runGitOrThrow } from '../git-runner'
 import type { GitDiffResult } from '../types'
 
 export async function diffWorking(
@@ -34,6 +34,21 @@ export async function diffCommits(
   if (path) args.push(path)
   const unified = await runGitOrThrow(args, { cwd, gitBinaryPath })
   return { unified, path: path ?? '' }
+}
+
+export async function diffCommitRange(
+  cwd: string,
+  gitBinaryPath: string,
+  oldestHash: string,
+  newestHash: string
+): Promise<GitDiffResult> {
+  const hasParent =
+    (await runGit(['rev-parse', '--verify', `${oldestHash}^`], { cwd, gitBinaryPath })).code === 0
+  const args = hasParent
+    ? ['diff', `${oldestHash}^`, newestHash]
+    : ['diff', '--root', newestHash]
+  const unified = await runGitOrThrow(args, { cwd, gitBinaryPath })
+  return { unified, path: `${oldestHash.slice(0, 7)}..${newestHash.slice(0, 7)}` }
 }
 
 export async function diffShow(

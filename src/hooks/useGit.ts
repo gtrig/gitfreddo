@@ -115,6 +115,23 @@ export function useDiffCommits(
   })
 }
 
+export function useDiffCommitRange(
+  oldestHash: string | null,
+  newestHash: string | null,
+  enabled = true
+) {
+  const { repoPath, connected } = useRepoScope()
+  return useQuery<GitDiffResult>({
+    queryKey: ['repo', repoPath, 'diff.commitRange', oldestHash, newestHash],
+    queryFn: async () =>
+      (await window.gitfredo.invoke('diff.commitRange', {
+        oldestHash,
+        newestHash
+      })) as GitDiffResult,
+    enabled: enabled && connected && Boolean(repoPath) && Boolean(oldestHash && newestHash)
+  })
+}
+
 export function useDiffShow(ref: string | null, path?: string, enabled = true) {
   const { repoPath, connected } = useRepoScope()
   return useQuery<GitDiffResult>({

@@ -11,11 +11,13 @@ interface SelectionState {
   selectedWorkingFile: string | null
   selectedStashIndex: number | null
   selectedStashFile: string | null
-  diffMode: 'working' | 'staged' | 'commit' | 'stash' | null
+  diffMode: 'working' | 'staged' | 'commit' | 'commit-range' | 'stash' | null
+  compareCommitRange: { oldestHash: string; newestHash: string; label: string } | null
   selectTimelineNode: (kind: TimelineNodeKind, id: string) => void
   toggleCommitSelection: (hash: string) => void
   selectCommitRange: (toHash: string, commits: GitCommit[]) => void
   setPrimaryCommit: (hash: string) => void
+  showCompareCommitRange: (oldestHash: string, newestHash: string, label: string) => void
   setSelectedWorkingFile: (path: string | null, mode?: 'working' | 'staged') => void
   setSelectedCommitFile: (path: string | null) => void
   selectStash: (index: number | null) => void
@@ -30,13 +32,15 @@ function clearNonTimelineSelection(): Pick<
   | 'selectedStashIndex'
   | 'selectedStashFile'
   | 'diffMode'
+  | 'compareCommitRange'
 > {
   return {
     selectedCommitFile: null,
     selectedWorkingFile: null,
     selectedStashIndex: null,
     selectedStashFile: null,
-    diffMode: null
+    diffMode: null,
+    compareCommitRange: null
   }
 }
 
@@ -50,6 +54,7 @@ export const useSelectionStore = create<SelectionState>((set) => ({
   selectedStashIndex: null,
   selectedStashFile: null,
   diffMode: null,
+  compareCommitRange: null,
   selectTimelineNode: (kind, id) =>
     set({
       timelineSelection: { kind, id },
@@ -106,6 +111,15 @@ export const useSelectionStore = create<SelectionState>((set) => ({
         selectedCommitHash: hash
       }
     }),
+  showCompareCommitRange: (oldestHash, newestHash, label) =>
+    set({
+      compareCommitRange: { oldestHash, newestHash, label },
+      diffMode: 'commit-range',
+      selectedWorkingFile: null,
+      selectedCommitFile: null,
+      selectedStashFile: null,
+      selectedStashIndex: null
+    }),
   setSelectedWorkingFile: (path, mode = 'working') =>
     set({
       selectedWorkingFile: path,
@@ -143,6 +157,7 @@ export const useSelectionStore = create<SelectionState>((set) => ({
       selectedWorkingFile: null,
       selectedStashFile: null,
       selectedCommitFile: null,
+      compareCommitRange: null,
       diffMode: null
     })
 }))

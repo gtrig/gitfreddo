@@ -36,9 +36,12 @@ export default function App() {
   const selectedWorkingFile = useSelectionStore((s) => s.selectedWorkingFile)
   const selectedCommitFile = useSelectionStore((s) => s.selectedCommitFile)
   const selectedStashFile = useSelectionStore((s) => s.selectedStashFile)
+  const diffMode = useSelectionStore((s) => s.diffMode)
   const closeDiffOverlay = useSelectionStore((s) => s.closeDiffOverlay)
 
-  const diffOverlayOpen = Boolean(selectedWorkingFile || selectedCommitFile || selectedStashFile)
+  const diffOverlayOpen = Boolean(
+    selectedWorkingFile || selectedCommitFile || selectedStashFile || diffMode === 'commit-range'
+  )
   const activeTab = tabs.find((tab) => tab.path === activePath)
   const connecting = Boolean(activeTab?.connecting)
 
