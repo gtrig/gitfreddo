@@ -7,6 +7,8 @@ export interface ContextMenuState {
   items: ContextMenuItem[]
 }
 
+export type OpenContextMenu = (event: React.MouseEvent, items: ContextMenuItem[]) => void
+
 export function useContextMenu() {
   const [state, setState] = useState<ContextMenuState | null>(null)
 

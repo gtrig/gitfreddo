@@ -17,6 +17,9 @@ import {
 } from '@/lib/fileTree'
 import { commitFileKindColor } from '@/lib/commitFiles'
 import type { CommitFileItem, GitCommit } from '@/lib/types'
+import { ContextMenu } from '@/components/ui/ContextMenu'
+import { useContextMenu, type OpenContextMenu } from '@/hooks/useContextMenu'
+import { commitFileContextMenuItems, commitFolderContextMenuItems } from '@/lib/detailPanelContextMenus'
 
 function authorInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean)
@@ -149,16 +152,21 @@ function CommitAiButton({
 function PathFileRow({
   file,
   selected,
-  onSelect
+  onSelect,
+  openMenu
 }: {
   file: CommitFileItem
   selected: boolean
   onSelect: () => void
+  openMenu: OpenContextMenu
 }) {
   return (
     <button
       type="button"
       onClick={onSelect}
+      onContextMenu={(event) =>
+        openMenu(event, commitFileContextMenuItems(file.path, file.path.split('/').pop() ?? file.path, onSelect))
+      }
       className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-gf-surface-hover ${
         selected ? 'bg-gf-surface text-gf-fg' : 'text-gf-fg-muted'
       }`}
@@ -180,7 +188,8 @@ function TreeNodeRow({
   selectedPath,
   onSelectFile,
   onToggleFolder,
-  isExpanded
+  isExpanded,
+  openMenu
 }: {
   node: FileTreeNode
   depth: number
@@ -189,6 +198,7 @@ function TreeNodeRow({
   onSelectFile: (path: string) => void
   onToggleFolder: (path: string) => void
   isExpanded: (path: string) => boolean
+  openMenu: OpenContextMenu
 }) {
   if (node.type === 'folder') {
     const open = isExpanded(node.path)
@@ -197,6 +207,12 @@ function TreeNodeRow({
         <button
           type="button"
           onClick={() => onToggleFolder(node.path)}
+          onContextMenu={(event) =>
+            openMenu(
+              event,
+              commitFolderContextMenuItems(node.path, open, () => onToggleFolder(node.path))
+            )
+          }
           className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-gf-fg-muted hover:bg-gf-surface-hover"
           style={{ paddingLeft: 12 + depth * 14 }}
         >
@@ -215,6 +231,7 @@ function TreeNodeRow({
               onSelectFile={onSelectFile}
               onToggleFolder={onToggleFolder}
               isExpanded={isExpanded}
+              openMenu={openMenu}
             />
           ))}
       </>
@@ -225,6 +242,12 @@ function TreeNodeRow({
     <button
       type="button"
       onClick={() => onSelectFile(node.path)}
+      onContextMenu={(event) =>
+        openMenu(
+          event,
+          commitFileContextMenuItems(node.path, node.name, () => onSelectFile(node.path))
+        )
+      }
       className={`flex w-full items-center gap-2 py-1.5 text-left text-sm hover:bg-gf-surface-hover ${
         selectedPath === node.path ? 'bg-gf-surface text-gf-fg' : 'text-gf-fg-muted'
       }`}
@@ -245,13 +268,15 @@ function FileTreeList({
   selectedPath,
   onSelectFile,
   expandedPaths,
-  onToggleFolder
+  onToggleFolder,
+  openMenu
 }: {
   root: FileTreeFolder
   selectedPath: string | null
   onSelectFile: (path: string) => void
   expandedPaths: Set<string>
   onToggleFolder: (path: string) => void
+  openMenu: OpenContextMenu
 }) {
   const isExpanded = (path: string) => expandedPaths.has(path)
 
@@ -267,6 +292,7 @@ function FileTreeList({
           onSelectFile={onSelectFile}
           onToggleFolder={onToggleFolder}
           isExpanded={isExpanded}
+          openMenu={openMenu}
         />
       ))}
     </div>
@@ -290,6 +316,7 @@ export function CommitPreview({
   const [sortAscending, setSortAscending] = useState(true)
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(() => new Set())
   const [rewordOpen, setRewordOpen] = useState(false)
+  const { state: menuState, openMenu, closeMenu } = useContextMenu()
 
   const fullMessageQuery = useQuery({
     queryKey: ['repo', 'log.message', commit.hash],
@@ -467,6 +494,7 @@ export function CommitPreview({
                 file={file}
                 selected={selectedCommitFile === file.path}
                 onSelect={() => setSelectedCommitFile(file.path)}
+                openMenu={openMenu}
               />
             ))}
           </div>
@@ -478,9 +506,19 @@ export function CommitPreview({
             onSelectFile={setSelectedCommitFile}
             expandedPaths={expandedPaths}
             onToggleFolder={toggleFolder}
+            openMenu={openMenu}
           />
         )}
       </div>
+
+      {menuState && (
+        <ContextMenu
+          x={menuState.x}
+          y={menuState.y}
+          items={menuState.items}
+          onClose={closeMenu}
+        />
+      )}
     </div>
   )
 }

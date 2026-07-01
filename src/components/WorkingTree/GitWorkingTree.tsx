@@ -8,23 +8,43 @@ import { buildFileTree, collectFolderPaths, countCommitFiles, type FileTreeNode 
 import type { CommitFileItem } from '@/lib/types'
 import { LoadingRow, Spinner } from '@/components/ui/Spinner'
 import { CommitPanel } from '@/components/WorkingTree/CommitPanel'
+import { ContextMenu } from '@/components/ui/ContextMenu'
+import { useContextMenu, type OpenContextMenu } from '@/hooks/useContextMenu'
+import {
+  workingTreeFileContextMenuItems,
+  workingTreeFolderContextMenuItems
+} from '@/lib/detailPanelContextMenus'
 
 function FileRow({
   file,
   onSelect,
   selected,
-  onStage
+  onStage,
+  mode,
+  openMenu
 }: {
   file: GitFileChange
   onSelect: () => void
   selected: boolean
   onStage?: () => void
+  mode: 'working' | 'staged'
+  openMenu: OpenContextMenu
 }) {
   return (
     <div className="flex items-center gap-1">
       <button
         type="button"
         onClick={onSelect}
+        onContextMenu={(event) =>
+          openMenu(
+            event,
+            workingTreeFileContextMenuItems(file.path, mode, {
+              onSelect,
+              onStageToggle: onStage ?? (() => {}),
+              onOpenInEditor: () => void window.gitfredo.openInEditor(file.path)
+            })
+          )
+        }
         className={`min-w-0 flex-1 rounded px-2 py-1 text-left text-xs hover:bg-gf-surface-hover ${
           selected ? 'bg-gf-surface text-white' : 'text-gf-fg-muted'
         }`}
@@ -98,7 +118,8 @@ function TreeNode({
   toggleExpanded,
   pathToFile,
   mode,
-  onStage
+  onStage,
+  openMenu
 }: {
   node: FileTreeNode
   depth: number
@@ -109,6 +130,7 @@ function TreeNode({
   pathToFile: Map<string, GitFileChange>
   mode: 'working' | 'staged'
   onStage?: (path: string) => void
+  openMenu: OpenContextMenu
 }) {
   if (node.type === 'folder') {
     const open = expandedPaths.has(node.path)
@@ -117,6 +139,12 @@ function TreeNode({
         <button
           type="button"
           onClick={() => toggleExpanded(node.path)}
+          onContextMenu={(event) =>
+            openMenu(
+              event,
+              workingTreeFolderContextMenuItems(node.path, open, () => toggleExpanded(node.path))
+            )
+          }
           className="flex w-full items-center gap-2 px-2 py-1 text-left text-xs text-gf-fg-muted hover:bg-gf-surface-hover"
           style={{ paddingLeft: 8 + depth * 12 }}
         >
@@ -137,6 +165,7 @@ function TreeNode({
               pathToFile={pathToFile}
               mode={mode}
               onStage={onStage}
+              openMenu={openMenu}
             />
           ))}
       </>
@@ -145,11 +174,23 @@ function TreeNode({
 
   const file = pathToFile.get(node.path)
   if (!file) return null
+  const selectFile = () => setSelectedFile(file.path, mode)
+  const stageToggle = () => onStage?.(file.path)
   return (
     <div className="flex items-center gap-1" style={{ paddingLeft: 22 + depth * 12 }}>
       <button
         type="button"
-        onClick={() => setSelectedFile(file.path, mode)}
+        onClick={selectFile}
+        onContextMenu={(event) =>
+          openMenu(
+            event,
+            workingTreeFileContextMenuItems(file.path, mode, {
+              onSelect: selectFile,
+              onStageToggle: stageToggle,
+              onOpenInEditor: () => void window.gitfredo.openInEditor(file.path)
+            })
+          )
+        }
         className={`min-w-0 flex-1 rounded px-2 py-1 text-left text-xs hover:bg-gf-surface-hover ${
           selectedFile === file.path ? 'bg-gf-surface text-white' : 'text-gf-fg-muted'
         }`}
@@ -180,6 +221,7 @@ export function GitWorkingTree() {
   const setSelectedWorkingFile = useSelectionStore((s) => s.setSelectedWorkingFile)
   const [viewMode, setViewMode] = useState<'path' | 'tree'>('tree')
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set())
+  const { state: menuState, openMenu, closeMenu } = useContextMenu()
 
   if (!connected) {
     return <p className="p-4 text-sm text-gf-fg-subtle">Open a repository to view changes.</p>
@@ -209,12 +251,14 @@ export function GitWorkingTree() {
                   key={file.path}
                   file={file}
                   selected={selectedFile === file.path}
+                  mode={mode}
                   onSelect={() => setSelectedWorkingFile(file.path, mode)}
                   onStage={
                     canStage
                       ? () => void stageAdd.mutateAsync({ paths: [file.path] })
                       : () => void stageReset.mutateAsync({ paths: [file.path] })
                   }
+                  openMenu={openMenu}
                 />
               ))}
             </div>
@@ -244,6 +288,7 @@ export function GitWorkingTree() {
                         ? (path) => void stageAdd.mutateAsync({ paths: [path] })
                         : (path) => void stageReset.mutateAsync({ paths: [path] })
                     }
+                    openMenu={openMenu}
                   />
                 ))}
             </div>
@@ -314,6 +359,15 @@ export function GitWorkingTree() {
         {renderSection('Staged Files', data?.staged ?? [], 'staged', false)}
       </div>
       {data && <CommitPanel working={data} />}
+
+      {menuState && (
+        <ContextMenu
+          x={menuState.x}
+          y={menuState.y}
+          items={menuState.items}
+          onClose={closeMenu}
+        />
+      )}
     </div>
   )
 }
