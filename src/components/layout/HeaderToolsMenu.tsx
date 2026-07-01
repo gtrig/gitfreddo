@@ -1,4 +1,5 @@
 import { Cog6ToothIcon } from '@heroicons/react/24/outline'
+import { CommitSearch } from '@/components/layout/CommitSearch'
 import { LogToggleButton } from '@/components/layout/LogDrawer'
 
 interface HeaderToolsMenuProps {
@@ -11,6 +12,7 @@ export function HeaderToolsMenu({ onOpenSettings }: HeaderToolsMenuProps) {
       className="flex items-center justify-end gap-2"
       aria-label="Tools"
     >
+      <CommitSearch />
       <LogToggleButton />
       <button
         type="button"

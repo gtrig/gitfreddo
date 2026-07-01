@@ -1,4 +1,5 @@
 import { buildGraphEdgePath, buildStashPadPath, buildWipToHeadPath } from '@/lib/commitGraphPaths'
+import { COMMIT_SEARCH_FADE_CLASS } from '@/lib/commitSearch'
 import {
   graphHeight,
   GRAPH_ROW_HEIGHT,
@@ -21,6 +22,7 @@ export function CommitGraphOverlay({
   workingSelected,
   selectedHash,
   selectedHashes,
+  dimmedHashes,
   rowHeight = GRAPH_ROW_HEIGHT,
   metrics = DEFAULT_GRAPH_METRICS
 }: {
@@ -29,6 +31,7 @@ export function CommitGraphOverlay({
   workingSelected: boolean
   selectedHash: string | null
   selectedHashes?: ReadonlySet<string>
+  dimmedHashes?: ReadonlySet<string> | null
   rowHeight?: number
   metrics?: GraphMetrics
 }) {
@@ -47,6 +50,14 @@ export function CommitGraphOverlay({
 
   const rowCenter = (layoutRowIndex: number) =>
     rowCenterY(visualRowIndex(layoutRowIndex, showWorkingRow), rowHeight)
+
+  const edgeDimmed = (fromKey: string, toKey: string) =>
+    Boolean(dimmedHashes?.has(fromKey) || dimmedHashes?.has(toKey))
+
+  const nodeDimmed = (key: string) => Boolean(dimmedHashes?.has(key))
+
+  const graphOpacityClass = (dimmed: boolean, brightClass = 'opacity-100') =>
+    `${COMMIT_SEARCH_FADE_CLASS} ${dimmed ? 'opacity-35' : brightClass}`
 
   return (
     <svg
@@ -98,7 +109,7 @@ export function CommitGraphOverlay({
               stroke={colors.lane(edge.kind === 'merge' ? edge.toColumn : edge.fromColumn)}
               strokeWidth={2.1}
               strokeLinecap="round"
-              opacity={0.96}
+              className={graphOpacityClass(edgeDimmed(edge.fromKey, edge.toKey), 'opacity-[0.96]')}
             />
           )
         })}
@@ -119,13 +130,14 @@ export function CommitGraphOverlay({
         const y = rowCenter(row.rowIndex)
         const isPrimary = selectedHash === row.key
         const isSelected = selectedHashes?.has(row.key) ?? isPrimary
+        const dimmed = nodeDimmed(row.key) && !isPrimary && !isSelected
 
         if (row.isStash) {
           const size = isPrimary ? 10 : isSelected ? 9.5 : 9
           const half = size / 2
           const highlighted = isPrimary || isSelected
           return (
-            <g key={row.key}>
+            <g key={row.key} className={graphOpacityClass(dimmed)}>
               <rect
                 x={x - half}
                 y={y - half}
@@ -163,6 +175,7 @@ export function CommitGraphOverlay({
                   : colors.nodeStroke
             }
             strokeWidth={isPrimary ? 2 : isSelected ? 1.75 : 1.5}
+            className={graphOpacityClass(dimmed)}
           />
         )
       })}
@@ -186,9 +199,13 @@ export function CommitGraphOverlay({
             selectedHashes?.has(edge.toKey)
           const stroke = colors.stash
           const strokeWidth = padActive ? 3.5 : 3
+          const dimmed = edgeDimmed(edge.fromKey, edge.toKey) && !padActive
 
           return (
-            <g key={`${edge.fromKey}-${edge.toKey}-pad`}>
+            <g
+              key={`${edge.fromKey}-${edge.toKey}-pad`}
+              className={graphOpacityClass(dimmed)}
+            >
               <path
                 d={padPath}
                 fill="none"

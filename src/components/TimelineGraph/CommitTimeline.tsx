@@ -11,6 +11,8 @@ import { buildGitGraphLayout } from '@/lib/gitGraphLayout'
 import { commitRowHighlightClass } from '@/lib/commitSelection'
 import { countWorkingChanges } from '@/lib/workingChanges'
 import { timelineRefs } from '@/lib/timelineRefs'
+import { commitSearchDimmedHashes, commitSearchRowDimClass } from '@/lib/commitSearch'
+import { useCommitSearchStore } from '@/stores/commitSearch'
 import { filterTimelineCommits, isStashCommit, resolveStashEntry } from '@/lib/stashCommit'
 import { stashContextMenuItems } from '@/lib/sidebarContextMenus'
 import {
@@ -52,9 +54,11 @@ export function CommitTimeline() {
   const toggleCommitSelection = useSelectionStore((s) => s.toggleCommitSelection)
   const selectCommitRange = useSelectionStore((s) => s.selectCommitRange)
 
-  const commits = useMemo(
-    () => filterTimelineCommits(graph?.commits ?? []),
-    [graph?.commits]
+  const searchQuery = useCommitSearchStore((s) => s.query)
+  const commits = useMemo(() => filterTimelineCommits(graph?.commits ?? []), [graph?.commits])
+  const searchDimmedHashes = useMemo(
+    () => commitSearchDimmedHashes(commits, searchQuery),
+    [commits, searchQuery]
   )
   const head = repoStatus?.head ?? ''
   const selectedHashSet = useMemo(() => new Set(selectedCommitHashes), [selectedCommitHashes])
@@ -181,7 +185,13 @@ export function CommitTimeline() {
 
   const rowState = (hash: string) => ({
     isSelected: selectedHashSet.has(hash),
-    isPrimary: primaryHash === hash
+    isPrimary: primaryHash === hash,
+    searchDimClass: commitSearchRowDimClass(
+      searchDimmedHashes,
+      hash,
+      selectedHashSet.has(hash),
+      primaryHash === hash
+    )
   })
 
   if (!connected) {
@@ -229,7 +239,7 @@ export function CommitTimeline() {
             )}
             {commits.map((commit) => {
               const refs = timelineRefs(commit.refs)
-              const { isSelected, isPrimary } = rowState(commit.hash)
+              const { isSelected, isPrimary, searchDimClass } = rowState(commit.hash)
               const stash = isStashCommit(commit)
 
               return (
@@ -237,7 +247,7 @@ export function CommitTimeline() {
                   key={`refs-${commit.hash}`}
                   onContextMenu={onRowContextMenu(commit)}
                   onClick={handleCommitClick(commit)}
-                  className={`flex cursor-pointer items-center gap-1 overflow-hidden border-b border-gf-border/30 px-2 hover:bg-gf-bg/50 ${commitRowHighlightClass(isSelected, isPrimary)}`}
+                  className={`flex cursor-pointer items-center gap-1 overflow-hidden border-b border-gf-border/30 px-2 hover:bg-gf-bg/50 ${commitRowHighlightClass(isSelected, isPrimary)} ${searchDimClass}`}
                   style={{ height: COMPACT_ROW_HEIGHT }}
                 >
                   {stash && (
@@ -276,6 +286,7 @@ export function CommitTimeline() {
                 workingSelected={selection?.kind === 'working'}
                 selectedHash={selectedHash}
                 selectedHashes={selectedHashSet}
+                dimmedHashes={searchDimmedHashes}
                 rowHeight={COMPACT_ROW_HEIGHT}
                 metrics={metrics}
               />
@@ -347,7 +358,7 @@ export function CommitTimeline() {
             )}
 
             {commits.map((commit) => {
-              const { isSelected, isPrimary } = rowState(commit.hash)
+              const { isSelected, isPrimary, searchDimClass } = rowState(commit.hash)
               const stash = isStashCommit(commit)
               return (
                 <button
@@ -356,7 +367,7 @@ export function CommitTimeline() {
                   onClick={handleCommitClick(commit)}
                   onContextMenu={onRowContextMenu(commit)}
                   style={{ height: COMPACT_ROW_HEIGHT }}
-                  className={`flex w-full items-center gap-2 overflow-hidden border-b border-gf-border/30 px-2.5 text-left hover:bg-gf-bg/50 ${commitRowHighlightClass(isSelected, isPrimary)}`}
+                  className={`flex w-full items-center gap-2 overflow-hidden border-b border-gf-border/30 px-2.5 text-left hover:bg-gf-bg/50 ${commitRowHighlightClass(isSelected, isPrimary)} ${searchDimClass}`}
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
@@ -401,14 +412,14 @@ export function CommitTimeline() {
               <div style={{ height: COMPACT_ROW_HEIGHT }} />
             )}
             {commits.map((commit) => {
-              const { isSelected, isPrimary } = rowState(commit.hash)
+              const { isSelected, isPrimary, searchDimClass } = rowState(commit.hash)
               return (
                 <div
                   key={`time-${commit.hash}`}
                   onContextMenu={onRowContextMenu(commit)}
                   onClick={handleCommitClick(commit)}
                   title={formatAuthoredDateTooltip(commit.author.date)}
-                  className={`flex cursor-pointer items-center justify-end border-b border-gf-border/30 px-2 text-[11px] tabular-nums text-gf-fg-subtle hover:bg-gf-bg/50 ${commitRowHighlightClass(isSelected, isPrimary)}`}
+                  className={`flex cursor-pointer items-center justify-end border-b border-gf-border/30 px-2 text-[11px] tabular-nums text-gf-fg-subtle hover:bg-gf-bg/50 ${commitRowHighlightClass(isSelected, isPrimary)} ${searchDimClass}`}
                   style={{ height: COMPACT_ROW_HEIGHT }}
                 >
                   <span className="truncate">
