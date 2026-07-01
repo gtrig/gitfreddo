@@ -4,6 +4,25 @@ import { tmpdir } from 'os'
 import { runGit, runGitOrThrow } from '../git-runner'
 import { workingStatus } from './status'
 
+/** Lets process.execPath run .mjs git editor scripts when the app is Electron. */
+function electronNodeEnv(): NodeJS.ProcessEnv {
+  return process.versions.electron ? { ELECTRON_RUN_AS_NODE: '1' } : {}
+}
+
+function gitRebaseEditorEnv(
+  sequenceEditorPath: string,
+  messageEditorPath?: string
+): NodeJS.ProcessEnv {
+  const nodeBin = process.execPath
+  const env: NodeJS.ProcessEnv = {
+    ...electronNodeEnv(),
+    GIT_SEQUENCE_EDITOR: `${nodeBin} ${sequenceEditorPath}`,
+    GIT_TERMINAL_PROMPT: '0'
+  }
+  env.GIT_EDITOR = messageEditorPath ? `${nodeBin} ${messageEditorPath}` : 'true'
+  return env
+}
+
 export function markCommitForReword(todoContent: string, fullHash: string): string {
   const normalized = fullHash.toLowerCase()
   return todoContent
@@ -92,15 +111,10 @@ async function runInteractiveRebaseWithSequenceEditor(
   rebaseArgs: string[],
   seqEditorPath: string
 ): Promise<void> {
-  const nodeBin = process.execPath
   await runGitOrThrow(rebaseArgs, {
     cwd,
     gitBinaryPath,
-    env: {
-      GIT_SEQUENCE_EDITOR: `${nodeBin} ${seqEditorPath}`,
-      GIT_EDITOR: 'true',
-      GIT_TERMINAL_PROMPT: '0'
-    }
+    env: gitRebaseEditorEnv(seqEditorPath)
   })
 }
 
@@ -200,17 +214,12 @@ copyFileSync(${JSON.stringify(messageFile)}, process.argv[2])
     await chmod(seqEditor, 0o755)
     await chmod(msgEditor, 0o755)
 
-    const nodeBin = process.execPath
     const rebaseArgs = isRoot ? ['rebase', '-i', '--root'] : ['rebase', '-i', `${fullHash}^`]
 
     await runGitOrThrow(rebaseArgs, {
       cwd,
       gitBinaryPath,
-      env: {
-        GIT_SEQUENCE_EDITOR: `${nodeBin} ${seqEditor}`,
-        GIT_EDITOR: `${nodeBin} ${msgEditor}`,
-        GIT_TERMINAL_PROMPT: '0'
-      }
+      env: gitRebaseEditorEnv(seqEditor, msgEditor)
     })
   } finally {
     await rm(tempDir, { recursive: true, force: true })
