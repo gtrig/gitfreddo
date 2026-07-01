@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { SidebarSection } from '@/components/layout/sidebar/SidebarSection'
-import { SidebarIconIssues, SidebarIconPullRequest } from '@/components/layout/sidebar/SidebarIcons'
+import { SidebarIconPullRequest } from '@/components/layout/sidebar/SidebarIcons'
 import { ActionButton } from '@/components/ui/Modal'
 import { CreatePrModal, MergePrButton } from '@/components/GitHub/CreatePrModal'
 import { useGitHubPullRequests, useInvalidateGitHubPullRequests } from '@/hooks/useGitHubPullRequests'

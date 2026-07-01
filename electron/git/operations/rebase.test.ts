@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { markCommitForReword, markCommitsForSquash } from './rebase'
+import { markCommitForReword, markCommitsForDrop, markCommitsForSquash } from './rebase'
 
 describe('markCommitForReword', () => {
   const hash = '125c15ed41cf1b761557e592b83bf2f856c1070e'
@@ -45,5 +45,32 @@ describe('markCommitsForSquash', () => {
         'pick abcdef0 Outside'
       ].join('\n')
     )
+  })
+})
+
+describe('markCommitsForDrop', () => {
+  const hashes = ['2222222', '3333333']
+
+  it('marks selected commits as drop', () => {
+    const todo = [
+      'pick 1111111 First',
+      'pick 2222222 Second',
+      'pick 3333333 Third',
+      'pick abcdef0 Outside'
+    ].join('\n')
+
+    expect(markCommitsForDrop(todo, hashes)).toBe(
+      [
+        'pick 1111111 First',
+        'drop 2222222 Second',
+        'drop 3333333 Third',
+        'pick abcdef0 Outside'
+      ].join('\n')
+    )
+  })
+
+  it('leaves unrelated commits unchanged when selection is empty', () => {
+    const todo = 'pick abcdef0 Only commit'
+    expect(markCommitsForDrop(todo, [])).toBe(todo)
   })
 })

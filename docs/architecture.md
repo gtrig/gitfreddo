@@ -17,12 +17,13 @@ The renderer calls `window.gitfredo.invoke(method, params)` for git operations:
 | Read | Write |
 |------|-------|
 | `repo.status` | `branch.checkout`, `branch.create`, `branch.delete` |
-| `log.graph`, `log.show` | `stage.add`, `stage.reset`, `commit.create` |
+| `log.graph`, `log.show` | `stage.add`, `stage.reset`, `commit.create`, `commit.revert` |
 | `branch.list` | `merge.start`, `merge.abort`, `merge.continue` |
 | `remote.list` | `remote.add`, `remote.remove` |
 | `diff.working`, `diff.staged`, `diff.commits` | `fetch`, `push`, `pull` |
 | `stash.list`, `stash.show` | `stash.push`, `stash.pop`, `stash.apply`, `stash.drop` |
-| `merge.status` | `rebase.start`, `rebase.abort`, `rebase.continue`, `cherry-pick`, `reset` |
+| `merge.status` | `rebase.start`, `rebase.abort`, `rebase.continue`, `rebase.drop`, `cherry-pick`, `reset`, `reset.head` |
+| `maintenance.unreachable` | `maintenance.prune` |
 
 Workspace helpers: `connect`, `switchWorkspace`, `cloneRepository`, `openWorkspace`, settings.
 

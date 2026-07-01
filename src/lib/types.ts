@@ -67,6 +67,24 @@ export interface GitStashEntry {
   hash: string
 }
 
+export interface UnreachableCommit {
+  hash: string
+  shortHash: string
+  subject: string
+  authorDate: string
+}
+
+export interface UnreachableSummary {
+  commits: UnreachableCommit[]
+  totalCommitCount: number
+  blobCount: number
+  treeCount: number
+}
+
+export interface MaintenancePruneResult {
+  removedCommitCount: number
+}
+
 export interface GitMergeStatus {
   inProgress: boolean
   conflictedPaths: string[]

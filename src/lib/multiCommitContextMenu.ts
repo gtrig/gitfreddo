@@ -12,6 +12,7 @@ export interface MultiCommitContextMenuActions {
   copyAllHashes: (hashes: string[]) => void
   cherryPickAll: (hashes: string[]) => void
   squashSelected: (hashes: string[]) => void
+  dropSelected: (commits: GitCommit[]) => void
   compareSelected: (oldestHash: string, newestHash: string, label: string) => void
 }
 
@@ -55,6 +56,8 @@ export function buildMultiCommitContextMenuItems({
     workingTreeDirty || gitBusy || anyOnHistory || hasMerge
   const squashBlocked =
     workingTreeDirty || gitBusy || isDetached || !onHistory || !contiguous || hasMerge
+  const dropBlocked =
+    workingTreeDirty || gitBusy || isDetached || !onHistory || !contiguous || hasMerge
   const compareBlocked = gitBusy
 
   return [
@@ -95,6 +98,15 @@ export function buildMultiCommitContextMenuItems({
         : `Squash ${count} commits (selection not contiguous)`,
       disabled: squashBlocked,
       onClick: () => actions.squashSelected(hashes)
+    },
+    {
+      id: 'drop-selected',
+      label: contiguous
+        ? `Drop ${count} commits from history…`
+        : `Drop ${count} commits (selection not contiguous)`,
+      disabled: dropBlocked,
+      danger: true,
+      onClick: () => actions.dropSelected(chronological)
     },
     { id: 'multi-sep-end', label: '', separator: true, onClick: () => {} }
   ]

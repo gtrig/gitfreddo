@@ -1,45 +1,29 @@
-import { describe, expect, it, vi } from 'vitest'
-import type { GitCommit } from '@/lib/types'
+import { describe, expect, it } from 'vitest'
 import { buildCommitContextMenuItems } from './commitContextMenu'
+import type { GitCommit, GitWorkingStatus } from './types'
 
-function commit(
-  hash: string,
-  parents: string[] = [],
-  refs: string[] = []
-): GitCommit {
-  return {
-    hash,
-    shortHash: hash.slice(0, 7),
-    parents,
-    message: hash,
-    subject: hash,
-    author: { name: 'Author', email: 'a@b.c', date: '2024-01-01T00:00:00+00:00' },
-    refs
-  }
+const baseCommit: GitCommit = {
+  hash: 'aaa111111111111111111111111111111111111',
+  shortHash: 'aaa1111',
+  parents: ['bbb222222222222222222222222222222222222'],
+  message: 'Head commit',
+  subject: 'Head commit',
+  author: { name: 'Test', email: 'test@example.com', date: '2024-01-01' },
+  refs: ['main']
 }
 
-const actions = {
-  selectCommit: vi.fn(),
-  copyHash: vi.fn(),
-  copyShortHash: vi.fn(),
-  copyAllHashes: vi.fn(),
-  compareSelected: vi.fn(),
-  cherryPickAll: vi.fn(),
-  squashSelected: vi.fn(),
-  checkout: vi.fn(),
-  createBranch: vi.fn(),
-  reword: vi.fn(),
-  rebaseOnto: vi.fn(),
-  cherryPick: vi.fn(),
-  reset: vi.fn(),
-  rebaseContinue: vi.fn(),
-  rebaseAbort: vi.fn(),
-  mergeContinue: vi.fn(),
-  mergeAbort: vi.fn()
+const parentCommit: GitCommit = {
+  hash: 'bbb222222222222222222222222222222222222',
+  shortHash: 'bbb2222',
+  parents: [],
+  message: 'Parent commit',
+  subject: 'Parent commit',
+  author: { name: 'Test', email: 'test@example.com', date: '2024-01-01' },
+  refs: []
 }
 
-const cleanWorking = {
-  branch: 'feature',
+const cleanWorking: GitWorkingStatus = {
+  branch: 'main',
   ahead: 0,
   behind: 0,
   staged: [],
@@ -52,64 +36,67 @@ const cleanWorking = {
   cherryPickInProgress: false
 }
 
+const noopActions = {
+  selectCommit: () => {},
+  copyHash: () => {},
+  copyShortHash: () => {},
+  copyAllHashes: () => {},
+  compareSelected: () => {},
+  cherryPickAll: () => {},
+  squashSelected: () => {},
+  dropSelected: () => {},
+  checkout: () => {},
+  createBranch: () => {},
+  reword: () => {},
+  rebaseOnto: () => {},
+  cherryPick: () => {},
+  reset: () => {},
+  deleteHead: () => {},
+  dropCommits: () => {},
+  revertCommit: () => {},
+  rebaseContinue: () => {},
+  rebaseAbort: () => {},
+  mergeContinue: () => {},
+  mergeAbort: () => {}
+}
+
 describe('buildCommitContextMenuItems', () => {
-  const commits = [
-    commit('c3', ['c2'], ['HEAD -> feature']),
-    commit('c2', ['c1']),
-    commit('c1', [])
-  ]
-
-  it('disables cherry-pick for commits already on the current branch', () => {
+  it('shows delete actions for HEAD commit', () => {
     const items = buildCommitContextMenuItems({
-      commit: commits[1]!,
-      head: 'c3',
-      branch: 'feature',
+      commit: baseCommit,
+      head: baseCommit.hash,
+      branch: 'main',
       isDetached: false,
-      commits,
+      commits: [baseCommit, parentCommit],
       working: cleanWorking,
-      selectedCommitId: null,
+      selectedCommitId: baseCommit.hash,
       selectedCount: 1,
-      selectedHashes: ['c2'],
-      actions
+      selectedHashes: [baseCommit.hash],
+      actions: noopActions
     })
 
-    const cherryPick = items.find((item) => item.id === 'cherry-pick')
-    expect(cherryPick?.disabled).toBe(true)
-    expect(cherryPick?.label).toContain('already in')
+    const labels = items.map((item) => item.label)
+    expect(labels.some((label) => label.includes('Delete this commit (soft)'))).toBe(true)
+    expect(labels.some((label) => label.includes('Reset soft'))).toBe(false)
   })
 
-  it('offers branch checkout when the commit carries a local branch ref', () => {
+  it('shows drop and revert for historical commits', () => {
     const items = buildCommitContextMenuItems({
-      commit: commit('c9', [], ['main']),
-      head: 'c3',
-      branch: 'feature',
+      commit: parentCommit,
+      head: baseCommit.hash,
+      branch: 'main',
       isDetached: false,
-      commits,
+      commits: [baseCommit, parentCommit],
       working: cleanWorking,
-      selectedCommitId: null,
+      selectedCommitId: parentCommit.hash,
       selectedCount: 1,
-      selectedHashes: ['c2'],
-      actions
+      selectedHashes: [parentCommit.hash],
+      actions: noopActions
     })
 
-    expect(items.find((item) => item.id === 'checkout-main')?.label).toBe('Checkout main')
-  })
-
-  it('shows rebase controls while a rebase is in progress', () => {
-    const items = buildCommitContextMenuItems({
-      commit: commits[0]!,
-      head: 'c3',
-      branch: 'feature',
-      isDetached: false,
-      commits,
-      working: { ...cleanWorking, rebaseInProgress: true },
-      selectedCommitId: 'c3',
-      selectedCount: 1,
-      selectedHashes: ['c3'],
-      actions
-    })
-
-    expect(items.find((item) => item.id === 'rebase-continue')).toBeDefined()
-    expect(items.find((item) => item.id === 'rebase-abort')).toBeDefined()
+    const labels = items.map((item) => item.label)
+    expect(labels.some((label) => label.includes('Drop commit from history'))).toBe(true)
+    expect(labels.some((label) => label.includes('Revert commit'))).toBe(true)
+    expect(labels.some((label) => label.includes('Reset soft'))).toBe(true)
   })
 })

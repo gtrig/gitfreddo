@@ -25,6 +25,27 @@ function hashMatchesLine(lineHash: string, targetHash: string): boolean {
   return normalized.startsWith(lineHash) || lineHash.startsWith(normalized.slice(0, lineHash.length))
 }
 
+/** Marks selected commits as drop in a rebase todo list. */
+export function markCommitsForDrop(todoContent: string, hashes: string[]): string {
+  if (hashes.length === 0) return todoContent
+
+  const selected = new Set(hashes.map((hash) => hash.toLowerCase()))
+
+  return todoContent
+    .split('\n')
+    .map((line) => {
+      const match = line.match(/^(pick|reword|edit|squash|fixup|drop)\s+([0-9a-f]+)/i)
+      if (!match) return line
+
+      const lineHash = match[2]!.toLowerCase()
+      const inSelection = [...selected].some((hash) => hashMatchesLine(lineHash, hash))
+      if (!inSelection) return line
+
+      return line.replace(/^(pick|reword|edit|squash|fixup)\s/i, 'drop ')
+    })
+    .join('\n')
+}
+
 /** Marks all but the oldest selected commit as squash in a rebase todo list. */
 export function markCommitsForSquash(todoContent: string, chronologicalHashes: string[]): string {
   if (chronologicalHashes.length < 2) return todoContent
@@ -297,4 +318,113 @@ export async function resetRepo(
   const args = ['reset', `--${mode}`]
   if (ref) args.push(ref)
   await runGitOrThrow(args, { cwd, gitBinaryPath })
+}
+
+export async function resetToParent(
+  cwd: string,
+  gitBinaryPath: string,
+  mode: 'soft' | 'mixed' | 'hard'
+): Promise<void> {
+  const hasParent = (await runGit(['rev-parse', '--verify', 'HEAD~1'], { cwd, gitBinaryPath })).code === 0
+  if (!hasParent) {
+    throw new Error('Cannot delete the root commit.')
+  }
+
+  if (mode === 'hard') {
+    await assertCanRewriteHistory(cwd, gitBinaryPath)
+  } else {
+    const ws = await workingStatus(cwd, gitBinaryPath)
+    if (ws.rebaseInProgress || ws.mergeInProgress || ws.cherryPickInProgress) {
+      throw new Error('Finish or abort the current git operation first.')
+    }
+  }
+
+  await runGitOrThrow(['reset', `--${mode}`, 'HEAD~1'], { cwd, gitBinaryPath })
+}
+
+export async function revertCommit(
+  cwd: string,
+  gitBinaryPath: string,
+  hash: string
+): Promise<void> {
+  const ws = await workingStatus(cwd, gitBinaryPath)
+  if (ws.rebaseInProgress || ws.mergeInProgress || ws.cherryPickInProgress) {
+    throw new Error('Finish or abort the current git operation before reverting a commit.')
+  }
+
+  const fullHash = await resolveFullHash(cwd, gitBinaryPath, hash)
+
+  const parentLine = (
+    await runGitOrThrow(['rev-list', '--parents', '-n', '1', fullHash], { cwd, gitBinaryPath })
+  ).trim()
+  if (parentLine.split(/\s+/).length - 1 > 1) {
+    throw new Error('Reverting merge commits is not supported.')
+  }
+
+  await runGitOrThrow(['revert', '--no-edit', fullHash], { cwd, gitBinaryPath })
+}
+
+export async function rebaseDrop(
+  cwd: string,
+  gitBinaryPath: string,
+  hashes: string[]
+): Promise<void> {
+  if (hashes.length === 0) {
+    throw new Error('Select at least one commit to drop.')
+  }
+
+  await assertCanRewriteHistory(cwd, gitBinaryPath)
+
+  const resolved = []
+  for (const hash of hashes) {
+    resolved.push(await resolveFullHash(cwd, gitBinaryPath, hash))
+  }
+
+  for (const fullHash of resolved) {
+    const parentLine = (
+      await runGitOrThrow(['rev-list', '--parents', '-n', '1', fullHash], { cwd, gitBinaryPath })
+    ).trim()
+    if (parentLine.split(/\s+/).length - 1 > 1) {
+      throw new Error('Dropping merge commits is not supported.')
+    }
+  }
+
+  const oldestHash = resolved[0]!
+  const isRoot =
+    (await runGit(['rev-parse', '--verify', `${oldestHash}^`], { cwd, gitBinaryPath })).code !== 0
+
+  const tempDir = await mkdtemp(join(tmpdir(), 'gitfredo-drop-'))
+  try {
+    const seqEditor = join(tempDir, 'seq-editor.mjs')
+    await writeFile(
+      seqEditor,
+      `import { readFileSync, writeFileSync } from 'fs'
+const todoPath = process.argv[2]
+const hashes = ${JSON.stringify(resolved.map((hash) => hash.toLowerCase()))}
+const hashMatches = (lineHash, targetHash) => {
+  const normalized = targetHash.toLowerCase()
+  return normalized.startsWith(lineHash) || lineHash.startsWith(normalized.slice(0, lineHash.length))
+}
+const updated = readFileSync(todoPath, 'utf8')
+  .split('\\n')
+  .map((line) => {
+    const match = line.match(/^(pick|reword|edit|squash|fixup|drop)\\s+([0-9a-f]+)/i)
+    if (!match) return line
+    const lineHash = match[2].toLowerCase()
+    const inSelection = hashes.some((hash) => hashMatches(lineHash, hash))
+    if (!inSelection) return line
+    return line.replace(/^(pick|reword|edit|squash|fixup)\\s/i, 'drop ')
+  })
+  .join('\\n')
+writeFileSync(todoPath, updated)
+`,
+      'utf8'
+    )
+    await chmod(seqEditor, 0o755)
+
+    const rebaseArgs = isRoot ? ['rebase', '-i', '--root'] : ['rebase', '-i', `${oldestHash}^`]
+    await runInteractiveRebaseWithSequenceEditor(cwd, gitBinaryPath, rebaseArgs, seqEditor)
+  } finally {
+    await rm(tempDir, { recursive: true, force: true })
+  }
 }

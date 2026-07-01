@@ -9,6 +9,7 @@ import * as remoteOps from './operations/remote'
 import * as stashOps from './operations/stash'
 import * as mergeOps from './operations/merge'
 import * as rebaseOps from './operations/rebase'
+import * as maintenanceOps from './operations/maintenance'
 
 const MAX_PARAM_CHARS = 240
 
@@ -197,8 +198,18 @@ export class RepoManager {
         return rebaseOps.cherryPick(cwd, git, p.hash as string)
       case 'rebase.squash':
         return rebaseOps.rebaseSquash(cwd, git, p.hashes as string[])
+      case 'rebase.drop':
+        return rebaseOps.rebaseDrop(cwd, git, p.hashes as string[])
+      case 'commit.revert':
+        return rebaseOps.revertCommit(cwd, git, p.hash as string)
       case 'reset':
         return rebaseOps.resetRepo(cwd, git, p.mode as 'soft' | 'mixed' | 'hard', p.ref as string | undefined)
+      case 'reset.head':
+        return rebaseOps.resetToParent(cwd, git, p.mode as 'soft' | 'mixed' | 'hard')
+      case 'maintenance.unreachable':
+        return maintenanceOps.listUnreachableCommits(cwd, git)
+      case 'maintenance.prune':
+        return maintenanceOps.pruneStaleObjects(cwd, git)
       default:
         throw new Error(`Unknown git method: ${method}`)
     }

@@ -1,3 +1,4 @@
+import type { ResetMode } from '@/components/DetailPanel/DeleteCommitModal'
 import type { ContextMenuItem } from '@/components/ui/ContextMenu'
 import {
   isAheadOfHead,
@@ -19,6 +20,9 @@ export interface CommitContextMenuActions extends MultiCommitContextMenuActions 
   rebaseOnto: (hash: string) => void
   cherryPick: (hash: string) => void
   reset: (mode: 'soft' | 'mixed' | 'hard', hash: string) => void
+  deleteHead: (mode: ResetMode) => void
+  dropCommits: (commits: GitCommit[]) => void
+  revertCommit: (commit: GitCommit) => void
   rebaseContinue: () => void
   rebaseAbort: () => void
   mergeContinue: () => void
@@ -191,34 +195,89 @@ export function buildCommitContextMenuItems({
 
   items.push({ id: 'sep-reset', label: '', separator: true, onClick: () => {} })
 
-  const resetBlocked = gitBusy || isHead
-  const resetTarget = behindHead
-    ? `move ${branchLabel} back to ${short}`
-    : aheadOfHead
-      ? `move ${branchLabel} forward to ${short}`
-      : `reset ${branchLabel} to ${short}`
-
-  items.push(
-    {
-      id: 'reset-soft',
-      label: `Reset soft — ${resetTarget}`,
-      disabled: resetBlocked || workingTreeDirty,
-      onClick: () => actions.reset('soft', commit.hash)
-    },
-    {
-      id: 'reset-mixed',
-      label: `Reset mixed — ${resetTarget}`,
-      disabled: resetBlocked || workingTreeDirty,
-      onClick: () => actions.reset('mixed', commit.hash)
-    },
-    {
-      id: 'reset-hard',
-      label: `Reset hard — ${resetTarget}`,
-      disabled: resetBlocked || workingTreeDirty,
-      danger: true,
-      onClick: () => actions.reset('hard', commit.hash)
+  if (isHead) {
+    const deleteHardBlocked = gitBusy || workingTreeDirty
+    const deleteSoftMixedBlocked = gitBusy
+    items.push(
+      {
+        id: 'delete-soft',
+        label: 'Delete this commit (soft)…',
+        disabled: deleteSoftMixedBlocked,
+        onClick: () => actions.deleteHead('soft')
+      },
+      {
+        id: 'delete-mixed',
+        label: 'Delete this commit (mixed)…',
+        disabled: deleteSoftMixedBlocked,
+        onClick: () => actions.deleteHead('mixed')
+      },
+      {
+        id: 'delete-hard',
+        label: 'Delete this commit (hard)…',
+        disabled: deleteHardBlocked,
+        danger: true,
+        onClick: () => actions.deleteHead('hard')
+      }
+    )
+  } else {
+    const dropBlocked =
+      isMerge || workingTreeDirty || gitBusy || !inHistory || isDetached || isHead
+    if (inHistory) {
+      items.push({
+        id: 'drop',
+        label: `Drop commit from history…`,
+        disabled: dropBlocked,
+        danger: true,
+        onClick: () => actions.dropCommits([commit])
+      })
     }
-  )
+
+    const revertBlocked = isMerge || gitBusy || !inHistory
+    if (inHistory) {
+      items.push({
+        id: 'revert',
+        label:
+          (working?.ahead ?? 0) > 0
+            ? `Revert commit (recommended for shared branches)…`
+            : `Revert commit…`,
+        disabled: revertBlocked,
+        onClick: () => actions.revertCommit(commit)
+      })
+    }
+  }
+
+  if (!isHead) {
+    const resetBlocked = gitBusy
+    const resetTarget = behindHead
+      ? `move ${branchLabel} back to ${short}`
+      : aheadOfHead
+        ? `move ${branchLabel} forward to ${short}`
+        : `reset ${branchLabel} to ${short}`
+
+    items.push({ id: 'sep-reset-to', label: '', separator: true, onClick: () => {} })
+
+    items.push(
+      {
+        id: 'reset-soft',
+        label: `Reset soft — ${resetTarget}`,
+        disabled: resetBlocked || workingTreeDirty,
+        onClick: () => actions.reset('soft', commit.hash)
+      },
+      {
+        id: 'reset-mixed',
+        label: `Reset mixed — ${resetTarget}`,
+        disabled: resetBlocked || workingTreeDirty,
+        onClick: () => actions.reset('mixed', commit.hash)
+      },
+      {
+        id: 'reset-hard',
+        label: `Reset hard — ${resetTarget}`,
+        disabled: resetBlocked || workingTreeDirty,
+        danger: true,
+        onClick: () => actions.reset('hard', commit.hash)
+      }
+    )
+  }
 
   return items
 }
