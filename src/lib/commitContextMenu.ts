@@ -50,7 +50,9 @@ export interface CommitContextMenuContext {
 }
 
 function localBranchRefs(commit: GitCommit): string[] {
-  return timelineRefs(commit.refs).filter((ref) => !ref.includes('/'))
+  return timelineRefs(commit.refs)
+    .filter((ref) => ref.kind === 'branch')
+    .map((ref) => ref.label)
 }
 
 export function buildCommitContextMenuItems({

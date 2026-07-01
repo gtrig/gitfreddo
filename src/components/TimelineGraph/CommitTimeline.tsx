@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
-import { useLogGraph, useRepoStatus, useStashList, useWorkingStatus } from '@/hooks/useGit'
+import { useLogGraph, useRepoStatus, useStashList, useTags, useWorkingStatus } from '@/hooks/useGit'
 import { useTimelineColumnSizes } from '@/hooks/useTimelineColumnSizes'
 import { useCommitContextMenu } from '@/hooks/useCommitContextMenu'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { useGitMutations } from '@/hooks/useGitMutations'
-import { branchColor } from '@/lib/types'
 import { buildGitGraphLayout } from '@/lib/gitGraphLayout'
 import { commitRowHighlightClass } from '@/lib/commitSelection'
 import { countWorkingChanges } from '@/lib/workingChanges'
@@ -20,7 +19,10 @@ import {
   formatTimeSince,
   useRelativeNow
 } from '@/lib/formatTimeSince'
+import { SidebarIconStash } from '@/components/layout/sidebar/SidebarIcons'
 import { CommitGraphOverlay } from './CommitGraphOverlay'
+import { TimelineRefBadge } from './TimelineRefBadge'
+import { TimelineRefStack } from './TimelineRefStack'
 import { ColumnResizeHandle } from '@/components/ui/ColumnResizeHandle'
 import { ContextMenu } from '@/components/ui/ContextMenu'
 import { LoadingRow } from '@/components/ui/Spinner'
@@ -41,6 +43,8 @@ export function CommitTimeline() {
   const { data: repoStatus } = useRepoStatus(connected)
   const { data: workingStatus } = useWorkingStatus(connected)
   const { data: stashes } = useStashList(connected)
+  const { data: tags } = useTags(connected)
+  const tagNames = useMemo(() => new Set((tags ?? []).map((tag) => tag.name)), [tags])
   const showWorkingRow = workingStatus ? !workingStatus.isClean : false
   const changeCounts = useMemo(
     () => (workingStatus ? countWorkingChanges(workingStatus) : null),
@@ -233,12 +237,19 @@ export function CommitTimeline() {
                 style={{ height: COMPACT_ROW_HEIGHT }}
               >
                 {workingStatus?.branch ? (
-                  <span className="truncate rounded bg-gf-surface px-1 py-0.5">{workingStatus.branch}</span>
+                  <TimelineRefBadge
+                    timelineRef={{
+                      label: workingStatus.branch,
+                      kind: 'branch',
+                      fullRef: workingStatus.branch,
+                      sourceOrder: 0
+                    }}
+                  />
                 ) : null}
               </div>
             )}
             {commits.map((commit) => {
-              const refs = timelineRefs(commit.refs)
+              const refs = timelineRefs(commit.refs, tagNames)
               const { isSelected, isPrimary, searchDimClass } = rowState(commit.hash)
               const stash = isStashCommit(commit)
 
@@ -247,26 +258,16 @@ export function CommitTimeline() {
                   key={`refs-${commit.hash}`}
                   onContextMenu={onRowContextMenu(commit)}
                   onClick={handleCommitClick(commit)}
-                  className={`flex cursor-pointer items-center gap-1 overflow-hidden border-b border-gf-border/30 px-2 hover:bg-gf-bg/50 ${commitRowHighlightClass(isSelected, isPrimary)} ${searchDimClass}`}
+                  className={`flex cursor-pointer items-center gap-1 overflow-visible border-b border-gf-border/30 px-2 hover:bg-gf-bg/50 ${commitRowHighlightClass(isSelected, isPrimary)} ${searchDimClass}`}
                   style={{ height: COMPACT_ROW_HEIGHT }}
                 >
                   {stash && (
-                    <span className="shrink-0 rounded border border-sky-500/50 bg-sky-500/15 px-1 py-0.5 text-[10px] leading-none text-sky-300">
+                    <span className="inline-flex shrink-0 items-center gap-0.5 rounded border border-sky-500/50 bg-sky-500/15 px-1 py-0.5 text-[10px] leading-none text-sky-300">
+                      <SidebarIconStash className="h-2.5 w-2.5 shrink-0 opacity-90" />
                       stash
                     </span>
                   )}
-                  {refs.slice(0, 2).map((ref) => (
-                    <span
-                      key={ref}
-                      className={`truncate rounded px-1 py-0.5 text-[10px] leading-none ${branchColor(ref)}`}
-                      title={ref}
-                    >
-                      {ref}
-                    </span>
-                  ))}
-                  {refs.length > 2 && (
-                    <span className="shrink-0 text-[10px] text-gf-fg-subtle">+{refs.length - 2}</span>
-                  )}
+                  <TimelineRefStack refs={refs} />
                 </div>
               )
             })}
