@@ -9,6 +9,7 @@ interface LogState {
   open: boolean
   height: number
   activeTab: LogTab
+  gitListening: boolean
   gitEntries: LogEntry[]
   appEntries: LogEntry[]
   append: (entry: LogEntry) => void
@@ -17,6 +18,7 @@ interface LogState {
   toggleOpen: () => void
   setHeight: (height: number) => void
   setActiveTab: (tab: LogTab) => void
+  setGitListening: (listening: boolean) => void
 }
 
 function trimEntries(entries: LogEntry[]): LogEntry[] {
@@ -27,7 +29,8 @@ function trimEntries(entries: LogEntry[]): LogEntry[] {
 export const useLogStore = create<LogState>((set, get) => ({
   open: false,
   height: 220,
-  activeTab: 'git',
+  activeTab: 'app',
+  gitListening: false,
   gitEntries: [],
   appEntries: [],
 
@@ -48,7 +51,8 @@ export const useLogStore = create<LogState>((set, get) => ({
   setOpen: (open) => set({ open }),
   toggleOpen: () => set({ open: !get().open }),
   setHeight: (height) => set({ height: Math.min(480, Math.max(120, height)) }),
-  setActiveTab: (tab) => set({ activeTab: tab })
+  setActiveTab: (tab) => set({ activeTab: tab }),
+  setGitListening: (gitListening) => set({ gitListening })
 }))
 
 export function appLog(level: LogLevel, message: string, details?: string): void {

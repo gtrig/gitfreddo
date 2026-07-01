@@ -30,7 +30,13 @@ function LogLine({ entry }: { entry: LogEntry }) {
   )
 }
 
-function LogList({ entries }: { entries: LogEntry[] }) {
+function LogList({
+  entries,
+  emptyMessage = 'No log entries yet.'
+}: {
+  entries: LogEntry[]
+  emptyMessage?: string
+}) {
   const containerRef = useRef<HTMLDivElement>(null)
   const pinnedRef = useRef(true)
 
@@ -52,7 +58,7 @@ function LogList({ entries }: { entries: LogEntry[] }) {
   }, [entries])
 
   if (entries.length === 0) {
-    return <p className="px-3 py-6 text-center text-xs text-gf-fg-subtle">No log entries yet.</p>
+    return <p className="px-3 py-6 text-center text-xs text-gf-fg-subtle">{emptyMessage}</p>
   }
 
   return (
@@ -61,6 +67,34 @@ function LogList({ entries }: { entries: LogEntry[] }) {
         <LogLine key={entry.id} entry={entry} />
       ))}
     </div>
+  )
+}
+
+function GitListenSwitch() {
+  const gitListening = useLogStore((s) => s.gitListening)
+  const setGitListening = useLogStore((s) => s.setGitListening)
+
+  return (
+    <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-gf-fg-subtle">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={gitListening}
+        aria-label="Listen to git commands"
+        title="Capture git command output in the Git log"
+        onClick={() => setGitListening(!gitListening)}
+        className={`relative h-4 w-7 shrink-0 rounded-full transition ${
+          gitListening ? 'bg-emerald-600' : 'bg-gf-surface-hover'
+        }`}
+      >
+        <span
+          className={`absolute top-0.5 h-3 w-3 rounded-full bg-white transition ${
+            gitListening ? 'left-3.5' : 'left-0.5'
+          }`}
+        />
+      </button>
+      Listen
+    </label>
   )
 }
 
@@ -105,6 +139,7 @@ export function LogDrawer() {
   const setOpen = useLogStore((s) => s.setOpen)
   const setHeight = useLogStore((s) => s.setHeight)
   const setActiveTab = useLogStore((s) => s.setActiveTab)
+  const gitListening = useLogStore((s) => s.gitListening)
   const clear = useLogStore((s) => s.clear)
 
   const [resizing, setResizing] = useState(false)
@@ -185,6 +220,7 @@ export function LogDrawer() {
               count={appEntries.length}
               onClick={() => setActiveTab('app' as LogTab)}
             />
+            {activeTab === 'git' && <GitListenSwitch />}
             <div className="flex-1" />
             <button
               type="button"
@@ -204,7 +240,16 @@ export function LogDrawer() {
         )}
       </div>
 
-      {open && <LogList entries={entries} />}
+      {open && (
+        <LogList
+          entries={entries}
+          emptyMessage={
+            activeTab === 'git' && !gitListening
+              ? 'Git logging is off. Turn on Listen to capture git command output.'
+              : 'No log entries yet.'
+          }
+        />
+      )}
     </div>
   )
 }
@@ -243,6 +288,9 @@ export function useLogSubscription(): void {
 
   useEffect(() => {
     const unsubscribe = window.gitfredo.onLogEntry((entry) => {
+      if (entry.stream === 'git' && !useLogStore.getState().gitListening) {
+        return
+      }
       append(entry)
     })
     return unsubscribe
