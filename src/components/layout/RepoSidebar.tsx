@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
-import { useBranches, useRemotes, useStashList, useTags, useWorktreeList } from '@/hooks/useGit'
+import { useBranches, useRemotes, useRepoStatus, useStashList, useTags, useWorktreeList } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { CreateBranchModal } from '@/components/actions/CreateBranchModal'
 import { SidebarFilter } from '@/components/layout/sidebar/SidebarFilter'
@@ -24,6 +24,7 @@ import {
 export function RepoSidebar() {
   const connected = useWorkspaceStore((s) => s.connected)
   const { data: branches, isLoading, error } = useBranches(connected)
+  const { data: repoStatus } = useRepoStatus(connected)
   const { data: remotes } = useRemotes(connected)
   const { data: stashes, isLoading: stashesLoading, error: stashesError } = useStashList(connected)
   const {
@@ -44,7 +45,7 @@ export function RepoSidebar() {
     if (!connected) return 0
     const local = branches?.filter((b) => !b.isRemote) ?? []
     const localTree = filterBranchTree(buildLocalBranchTree(local), filter)
-    const localCount = countBranchTreeNodes(localTree)
+    const localCount = countBranchTreeNodes(localTree) + (repoStatus?.isDetached && matchesFilter('HEAD', filter) ? 1 : 0)
     const remoteCount = (branches ?? []).filter(
       (b) =>
         b.isRemote &&
@@ -59,7 +60,7 @@ export function RepoSidebar() {
     }).length
     const tagCount = (tags ?? []).filter((tag) => matchesFilter(tag.name, filter)).length
     return localCount + remoteCount + stashCount + worktreeCount + tagCount
-  }, [branches, connected, filter, stashes, tags, worktrees])
+  }, [branches, connected, filter, repoStatus?.isDetached, stashes, tags, worktrees])
 
   if (!connected) {
     return (
@@ -85,6 +86,8 @@ export function RepoSidebar() {
           isLoading={isLoading}
           error={error as Error | null}
           checkoutPending={checkout.isPending}
+          isDetached={repoStatus?.isDetached ?? false}
+          head={repoStatus?.head}
           onSelectCommit={(hash) => selectTimelineNode('commit', hash)}
           onCheckout={(name) => void checkout.mutateAsync({ name })}
           onCreateBranch={() => setCreateOpen(true)}

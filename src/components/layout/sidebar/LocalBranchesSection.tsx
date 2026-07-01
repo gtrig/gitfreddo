@@ -45,6 +45,8 @@ interface LocalBranchesSectionProps {
   isLoading: boolean
   error: Error | null
   checkoutPending: boolean
+  isDetached?: boolean
+  head?: string
   onSelectCommit: (hash: string) => void
   onCheckout: (name: string) => void
   onCreateBranch: () => void
@@ -169,6 +171,8 @@ export function LocalBranchesSection({
   isLoading,
   error,
   checkoutPending,
+  isDetached = false,
+  head = '',
   onSelectCommit,
   onCheckout,
   onCreateBranch
@@ -179,7 +183,8 @@ export function LocalBranchesSection({
   )
   const tree = useMemo(() => buildLocalBranchTree(localBranches), [localBranches])
   const filteredTree = useMemo(() => filterBranchTree(tree, filter), [tree, filter])
-  const count = countBranchTreeNodes(filteredTree)
+  const showDetachedHead = isDetached && matchesFilter('HEAD', filter)
+  const count = countBranchTreeNodes(filteredTree) + (showDetachedHead ? 1 : 0)
   const [openFolders, setOpenFolders] = useState<Set<string>>(() => new Set())
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const [renameBranch, setRenameBranch] = useState<string | null>(null)
@@ -228,6 +233,15 @@ export function LocalBranchesSection({
         <p className="px-2 py-1 text-xs text-gf-fg-subtle">No local branches match filter.</p>
       )}
       <div className="space-y-0.5">
+        {showDetachedHead && head ? (
+          <SidebarTreeRow
+            icon={<SidebarIconBranch className="h-3.5 w-3.5" />}
+            label="HEAD"
+            labelClassName="text-emerald-400"
+            title="Detached HEAD"
+            onClick={() => onSelectCommit(head)}
+          />
+        ) : null}
         <BranchTree
           nodes={filteredTree}
           depth={0}

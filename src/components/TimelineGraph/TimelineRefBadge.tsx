@@ -1,18 +1,14 @@
 import { TagIcon } from '@heroicons/react/24/outline'
-import { CheckIcon } from '@heroicons/react/24/solid'
 import {
   SidebarIconBranch,
   SidebarIconOrigin
 } from '@/components/layout/sidebar/SidebarIcons'
+import { CurrentHeadCheck } from '@/components/ui/CurrentHeadCheck'
 import { branchColor } from '@/lib/types'
 import type { TimelineRef, TimelineRefKind } from '@/lib/timelineRefs'
 
 export function TimelineHeadCheck() {
-  return (
-    <span className="flex shrink-0 items-center" title="Current HEAD">
-      <CheckIcon aria-hidden className="h-3 w-3 text-emerald-400" />
-    </span>
-  )
+  return <CurrentHeadCheck />
 }
 
 const BADGE_BASE =
