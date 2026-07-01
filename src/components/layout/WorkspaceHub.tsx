@@ -33,6 +33,15 @@ function CloneIcon() {
   )
 }
 
+function InitIcon() {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M4 6a2 2 0 012-2h5l2 2h7a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V6z" />
+      <path d="M12 11v6M9 14h6" />
+    </svg>
+  )
+}
+
 function ActionCard({
   title,
   description,
@@ -134,6 +143,22 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
     }
   }
 
+  async function handleInitRepository() {
+    setError(null)
+    setBusy(true)
+    try {
+      const path = await window.gitfredo.initRepository()
+      if (path) {
+        await onOpen(path)
+        onClose?.()
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function handleOpenRecent(path: string) {
     setError(null)
     setBusy(true)
@@ -208,7 +233,7 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
       <div className="border-b border-gf-border px-6 py-5">
         <h1 className="text-xl font-semibold text-white">Open a repository</h1>
         <p className="mt-1 text-sm text-gf-fg-subtle">
-          Open an existing git repository or clone from a URL to get started.
+          Open an existing repository, initialize a new one, or clone from a URL to get started.
         </p>
       </div>
 
@@ -221,6 +246,13 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
                 description="Browse for a local folder containing a .git directory."
                 icon={<FolderIcon />}
                 onClick={() => void handleOpenFolder()}
+                disabled={busy}
+              />
+              <ActionCard
+                title="Initialize a new repository"
+                description="Create a new git repository in an empty or new folder."
+                icon={<InitIcon />}
+                onClick={() => void handleInitRepository()}
                 disabled={busy}
               />
               <ActionCard

@@ -7,6 +7,7 @@ const api: GitFreddoAPI = {
   pickDirectory: (defaultPath) => ipcRenderer.invoke('gitfredo:pick-directory', defaultPath),
   cloneRepository: (url, parentDir) =>
     ipcRenderer.invoke('gitfredo:clone-repository', url, parentDir),
+  initRepository: () => ipcRenderer.invoke('gitfredo:init-repository'),
   normalizeRepoPath: (repoPath) => ipcRenderer.invoke('gitfredo:normalize-repo-path', repoPath),
   getRecentRepos: () => ipcRenderer.invoke('gitfredo:get-recent-repos'),
   getWorkspacePath: () => ipcRenderer.invoke('gitfredo:get-workspace-path'),

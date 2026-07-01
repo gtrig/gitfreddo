@@ -58,6 +58,7 @@ export interface GitFreddoAPI {
   openWorkspace: () => Promise<string | null>
   pickDirectory: (defaultPath?: string) => Promise<string | null>
   cloneRepository: (url: string, parentDir: string) => Promise<string>
+  initRepository: () => Promise<string | null>
   normalizeRepoPath: (repoPath: string) => Promise<string>
   getRecentRepos: () => Promise<string[]>
   connect: (repoPath: string) => Promise<string>

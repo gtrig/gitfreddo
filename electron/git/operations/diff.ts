@@ -1,6 +1,39 @@
 import { resolveGitRef, runGit, runGitOrThrow } from '../git-runner'
 import type { GitDiffResult } from '../types'
 
+const NULL_DEVICE = process.platform === 'win32' ? 'NUL' : '/dev/null'
+
+async function isUntrackedPath(
+  cwd: string,
+  gitBinaryPath: string,
+  path: string
+): Promise<boolean> {
+  const result = await runGit(['ls-files', '--others', '--exclude-standard', '--', path], {
+    cwd,
+    gitBinaryPath
+  })
+  if (result.code !== 0) {
+    return false
+  }
+  return result.stdout.trim().length > 0
+}
+
+async function diffUntrackedPath(
+  cwd: string,
+  gitBinaryPath: string,
+  path: string
+): Promise<string> {
+  const result = await runGit(['diff', '--no-index', '--', NULL_DEVICE, path], {
+    cwd,
+    gitBinaryPath
+  })
+  // git diff --no-index exits 1 when files differ.
+  if (result.code !== 0 && result.code !== 1) {
+    throw new Error(result.stderr.trim() || `git diff exited with code ${result.code}`)
+  }
+  return result.stdout
+}
+
 export async function diffWorking(
   cwd: string,
   gitBinaryPath: string,
@@ -8,7 +41,16 @@ export async function diffWorking(
 ): Promise<GitDiffResult> {
   const args = ['diff', '--']
   if (path) args.push(path)
-  const unified = await runGitOrThrow(args, { cwd, gitBinaryPath })
+  const result = await runGit(args, { cwd, gitBinaryPath })
+  if (result.code !== 0) {
+    throw new Error(result.stderr.trim() || `git diff exited with code ${result.code}`)
+  }
+
+  let unified = result.stdout
+  if (path && !unified.trim() && (await isUntrackedPath(cwd, gitBinaryPath, path))) {
+    unified = await diffUntrackedPath(cwd, gitBinaryPath, path)
+  }
+
   return { unified, path: path ?? '' }
 }
 

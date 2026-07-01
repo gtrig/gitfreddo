@@ -9,6 +9,7 @@ import { buildAppMenu, pickGitBinary, setMainWindow } from '../menu'
 import { registerExternalLinkHandlers } from '../external-links'
 import { onLog } from '../git/log-bus'
 import { cloneRepository } from '../git/clone'
+import { initRepository } from '../git/init'
 import { aiConfigFromSettings, aiFill } from '../llm/client'
 import { enrichAiContext } from '../llm/context'
 import {
@@ -122,6 +123,15 @@ function registerIpc(): void {
 
   ipcMain.handle('gitfredo:clone-repository', async (_event, url: string, parentDir: string) => {
     return cloneRepository(url, parentDir, settings.gitBinaryPath)
+  })
+
+  ipcMain.handle('gitfredo:init-repository', async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ['openDirectory', 'createDirectory'],
+      title: 'Initialize new repository'
+    })
+    if (result.canceled || result.filePaths.length === 0) return null
+    return initRepository(resolve(result.filePaths[0]), settings.gitBinaryPath)
   })
 
   ipcMain.handle('gitfredo:normalize-repo-path', async (_event, repoPath: string) => {
