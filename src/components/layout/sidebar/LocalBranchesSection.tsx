@@ -30,6 +30,7 @@ import { useInvalidateGitHubPullRequests } from '@/hooks/useGitHubPullRequests'
 import { useToastStore } from '@/stores/toast'
 import { MergeBranchDialog } from '@/components/BranchSidebar/MergeBranchDialog'
 import { CreatePrModal } from '@/components/GitHub/CreatePrModal'
+import { RenameBranchModal } from '@/components/actions/RenameBranchModal'
 import {
   folderContextMenuItems,
   localBranchContextMenuItems,
@@ -57,6 +58,7 @@ function BranchTree({
   onSelectCommit,
   onCheckout,
   onMerge,
+  onRename,
   onDelete,
   onCreatePr,
   openMenu
@@ -69,6 +71,7 @@ function BranchTree({
   onSelectCommit: (hash: string) => void
   onCheckout: (name: string) => void
   onMerge: (name: string) => void
+  onRename: (name: string) => void
   onDelete: (name: string) => void
   onCreatePr?: (name: string) => void
   openMenu: ReturnType<typeof useContextMenu>['openMenu']
@@ -103,6 +106,7 @@ function BranchTree({
                   onSelectCommit={onSelectCommit}
                   onCheckout={onCheckout}
                   onMerge={onMerge}
+                  onRename={onRename}
                   onDelete={onDelete}
                   onCreatePr={onCreatePr}
                   openMenu={openMenu}
@@ -141,6 +145,7 @@ function BranchTree({
                   onCheckout,
                   onSelectCommit,
                   onMerge,
+                  onRename,
                   onDelete,
                   onCreatePr
                 })
@@ -172,6 +177,7 @@ export function LocalBranchesSection({
   const count = countBranchTreeNodes(filteredTree)
   const [openFolders, setOpenFolders] = useState<Set<string>>(() => new Set())
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
+  const [renameBranch, setRenameBranch] = useState<string | null>(null)
   const [mergeSource, setMergeSource] = useState<string | null>(null)
   const [prBranch, setPrBranch] = useState<string | null>(null)
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
@@ -225,6 +231,7 @@ export function LocalBranchesSection({
           onSelectCommit={onSelectCommit}
           onCheckout={onCheckout}
           onMerge={setMergeSource}
+          onRename={setRenameBranch}
           onDelete={setPendingDelete}
           onCreatePr={canCreatePr ? setPrBranch : undefined}
           openMenu={openMenu}
@@ -240,6 +247,13 @@ export function LocalBranchesSection({
         />
       )}
       {mergeSource && <MergeBranchDialog sourceBranch={mergeSource} onClose={() => setMergeSource(null)} />}
+      {renameBranch && (
+        <RenameBranchModal
+          open
+          currentName={renameBranch}
+          onClose={() => setRenameBranch(null)}
+        />
+      )}
       {pendingDelete && (
         <ConfirmDialog
           open

@@ -59,8 +59,12 @@ const noopActions = {
   removeStaleHistory: () => {},
   rebaseContinue: () => {},
   rebaseAbort: () => {},
+  rebaseSkip: () => {},
   mergeContinue: () => {},
-  mergeAbort: () => {}
+  mergeAbort: () => {},
+  cherryPickContinue: () => {},
+  cherryPickAbort: () => {},
+  cherryPickSkip: () => {}
 }
 
 describe('buildCommitContextMenuItems', () => {

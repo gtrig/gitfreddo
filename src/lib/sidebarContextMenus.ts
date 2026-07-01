@@ -34,6 +34,7 @@ export function localBranchContextMenuItems(
     onCheckout: (name: string) => void
     onSelectCommit: (hash: string) => void
     onMerge: (name: string) => void
+    onRename: (name: string) => void
     onDelete: (name: string) => void
     onCreatePr?: (name: string) => void
   }
@@ -71,12 +72,24 @@ export function localBranchContextMenuItems(
         onClick: () => handlers.onCreatePr!(branch.name)
       })
     }
+    items.push({
+      id: 'rename',
+      label: 'Rename…',
+      onClick: () => handlers.onRename(branch.name)
+    })
     items.push(separator('sep-delete'))
     items.push({
       id: 'delete',
       label: 'Delete branch…',
       danger: true,
       onClick: () => handlers.onDelete(branch.name)
+    })
+  } else {
+    items.push(separator('sep-rename'))
+    items.push({
+      id: 'rename',
+      label: 'Rename…',
+      onClick: () => handlers.onRename(branch.name)
     })
   }
 

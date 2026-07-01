@@ -124,6 +124,7 @@ export interface RemoveStaleBranchesResult {
 
 export interface GitMergeStatus {
   inProgress: boolean
+  kind: 'merge' | 'rebase' | 'cherry-pick' | null
   conflictedPaths: string[]
   ours?: string
   theirs?: string

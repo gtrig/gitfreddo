@@ -134,6 +134,22 @@ export async function rebaseContinue(cwd: string, gitBinaryPath: string): Promis
   await runGitOrThrow(['rebase', '--continue'], { cwd, gitBinaryPath })
 }
 
+export async function rebaseSkip(cwd: string, gitBinaryPath: string): Promise<void> {
+  await runGitOrThrow(['rebase', '--skip'], { cwd, gitBinaryPath })
+}
+
+export async function cherryPickContinue(cwd: string, gitBinaryPath: string): Promise<void> {
+  await runGitOrThrow(['cherry-pick', '--continue'], { cwd, gitBinaryPath })
+}
+
+export async function cherryPickAbort(cwd: string, gitBinaryPath: string): Promise<void> {
+  await runGitOrThrow(['cherry-pick', '--abort'], { cwd, gitBinaryPath })
+}
+
+export async function cherryPickSkip(cwd: string, gitBinaryPath: string): Promise<void> {
+  await runGitOrThrow(['cherry-pick', '--skip'], { cwd, gitBinaryPath })
+}
+
 export async function rebaseReword(
   cwd: string,
   gitBinaryPath: string,

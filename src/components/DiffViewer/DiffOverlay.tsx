@@ -1,6 +1,12 @@
 import { useMemo } from 'react'
 import { useSelectionStore } from '@/stores/selection'
-import { useDiffCommitRange, useDiffShow, useDiffStaged, useDiffWorking } from '@/hooks/useGit'
+import {
+  useDiffCommitRange,
+  useDiffShow,
+  useDiffStaged,
+  useDiffWorking,
+  useStashDiff
+} from '@/hooks/useGit'
 import { UnifiedDiffView } from '@/components/DiffViewer/UnifiedDiffView'
 import { parseUnifiedDiffRows } from '@/lib/unifiedDiff'
 import type { GitDiffResult } from '@/lib/types'
@@ -15,6 +21,7 @@ export function DiffOverlay({ onClose }: DiffOverlayProps) {
   const selectedCommitHash = useSelectionStore((s) => s.selectedCommitHash)
   const diffMode = useSelectionStore((s) => s.diffMode)
   const selectedStashFile = useSelectionStore((s) => s.selectedStashFile)
+  const selectedStashIndex = useSelectionStore((s) => s.selectedStashIndex)
   const compareCommitRange = useSelectionStore((s) => s.compareCommitRange)
 
   const workingDiff = useDiffWorking(
@@ -35,20 +42,33 @@ export function DiffOverlay({ onClose }: DiffOverlayProps) {
     diffMode === 'commit-range' ? compareCommitRange?.newestHash ?? null : null,
     Boolean(diffMode === 'commit-range' && compareCommitRange)
   )
+  const stashDiff = useStashDiff(
+    diffMode === 'stash' ? selectedStashIndex : null,
+    selectedStashFile ?? undefined,
+    Boolean(diffMode === 'stash' && selectedStashIndex !== null)
+  )
 
-  const active = (workingDiff.data ?? stagedDiff.data ?? commitDiff.data ?? rangeDiff.data) as
-    | GitDiffResult
-    | undefined
+  const active = (workingDiff.data ??
+    stagedDiff.data ??
+    commitDiff.data ??
+    rangeDiff.data ??
+    stashDiff.data) as GitDiffResult | undefined
   const path =
     diffMode === 'commit-range'
       ? compareCommitRange?.label
-      : selectedWorkingFile ?? selectedCommitFile ?? selectedStashFile
+      : diffMode === 'stash'
+        ? selectedStashFile ?? `stash@{${selectedStashIndex}}`
+        : selectedWorkingFile ?? selectedCommitFile ?? selectedStashFile
   const rows = useMemo(
     () => (active?.unified ? parseUnifiedDiffRows(active.unified) : []),
     [active?.unified]
   )
   const loading =
-    workingDiff.isLoading || stagedDiff.isLoading || commitDiff.isLoading || rangeDiff.isLoading
+    workingDiff.isLoading ||
+    stagedDiff.isLoading ||
+    commitDiff.isLoading ||
+    rangeDiff.isLoading ||
+    stashDiff.isLoading
 
   if (!path) return null
 

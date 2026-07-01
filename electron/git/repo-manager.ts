@@ -135,6 +135,13 @@ export class RepoManager {
         return statusOps.stageAdd(cwd, git, (p.paths as string[]) ?? [])
       case 'stage.reset':
         return statusOps.stageReset(cwd, git, p.paths as string[] | undefined)
+      case 'working.discard':
+        return statusOps.workingDiscard(
+          cwd,
+          git,
+          (p.paths as string[]) ?? [],
+          Boolean(p.staged)
+        )
       case 'commit.create':
         return statusOps.commitCreate(cwd, git, p.message as string, Boolean(p.amend))
       case 'commit.reword':
@@ -188,7 +195,9 @@ export class RepoManager {
       case 'stash.list':
         return stashOps.stashList(cwd, git)
       case 'stash.show':
-        return stashOps.stashShow(cwd, git, (p.index as number) ?? 0)
+        return stashOps.stashShow(cwd, git, (p.index as number) ?? 0, p.path as string | undefined)
+      case 'stash.files':
+        return stashOps.stashFiles(cwd, git, (p.index as number) ?? 0)
       case 'stash.push':
         return stashOps.stashPush(cwd, git, p.message as string | undefined)
       case 'stash.pop':
@@ -211,6 +220,14 @@ export class RepoManager {
         return rebaseOps.rebaseAbort(cwd, git)
       case 'rebase.continue':
         return rebaseOps.rebaseContinue(cwd, git)
+      case 'rebase.skip':
+        return rebaseOps.rebaseSkip(cwd, git)
+      case 'cherry-pick.continue':
+        return rebaseOps.cherryPickContinue(cwd, git)
+      case 'cherry-pick.abort':
+        return rebaseOps.cherryPickAbort(cwd, git)
+      case 'cherry-pick.skip':
+        return rebaseOps.cherryPickSkip(cwd, git)
       case 'cherry-pick':
         if (Array.isArray(p.hashes) && p.hashes.length > 0) {
           return rebaseOps.cherryPickMultiple(cwd, git, p.hashes as string[])

@@ -4,7 +4,7 @@ import { useRemotes } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useResolvedRemote } from '@/hooks/useAppSettings'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
-import { ActionButton, Modal } from '@/components/ui/Modal'
+import { ActionButton, ConfirmDialog, Modal } from '@/components/ui/Modal'
 import { LoadingRow } from '@/components/ui/Spinner'
 import { RepoPicker } from '@/components/GitHub/RepoPicker'
 import { CreateGitHubRepoModal } from '@/components/GitHub/CreateGitHubRepoModal'
@@ -13,12 +13,13 @@ import { useToastStore } from '@/stores/toast'
 export function RemotePanel() {
   const connected = useWorkspaceStore((s) => s.connected)
   const { data: remotes, isLoading, error } = useRemotes(connected)
-  const { fetch, push, pull, remoteAdd } = useGitMutations()
+  const { fetch, push, pull, remoteAdd, remoteRemove } = useGitMutations()
   const defaultRemote = useResolvedRemote()
   const show = useToastStore((s) => s.show)
   const [addOpen, setAddOpen] = useState(false)
   const [browseOpen, setBrowseOpen] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
+  const [pendingRemove, setPendingRemove] = useState<string | null>(null)
   const [newName, setNewName] = useState('')
   const [newUrl, setNewUrl] = useState('')
 
@@ -75,10 +76,20 @@ export function RemotePanel() {
         <ul className="space-y-2">
           {(remotes ?? []).map((remote) => (
             <li key={remote.name} className="rounded border border-gf-border p-2 text-sm">
-              <p className="font-medium text-gf-fg">{remote.name}</p>
-              <p className="truncate text-xs text-gf-fg-subtle" title={remote.url}>
-                {remote.url}
-              </p>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-medium text-gf-fg">{remote.name}</p>
+                  <p className="truncate text-xs text-gf-fg-subtle" title={remote.url}>
+                    {remote.url}
+                  </p>
+                </div>
+                <ActionButton
+                  className="shrink-0 px-2 py-0.5 text-[10px] text-red-400"
+                  onClick={() => setPendingRemove(remote.name)}
+                >
+                  Remove
+                </ActionButton>
+              </div>
             </li>
           ))}
         </ul>
@@ -157,6 +168,26 @@ export function RemotePanel() {
           await addRemoteFromRepo(repo)
         }}
       />
+
+      {pendingRemove && (
+        <ConfirmDialog
+          open
+          title="Remove remote"
+          message={
+            pendingRemove === defaultRemote
+              ? `Remove remote "${pendingRemove}"? This is your default remote in settings.`
+              : `Remove remote "${pendingRemove}"?`
+          }
+          confirmLabel="Remove"
+          busy={remoteRemove.isPending}
+          onConfirm={async () => {
+            await remoteRemove.mutateAsync({ name: pendingRemove })
+            show(`Removed remote "${pendingRemove}"`, 'success')
+            setPendingRemove(null)
+          }}
+          onCancel={() => setPendingRemove(null)}
+        />
+      )}
     </aside>
   )
 }

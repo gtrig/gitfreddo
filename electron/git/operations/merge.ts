@@ -1,7 +1,14 @@
-import { readFileSync } from 'fs'
+import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
 import { runGitOrThrow } from '../git-runner'
 import type { GitMergeStatus } from '../types'
+
+function existsRebase(cwd: string): boolean {
+  return (
+    existsSync(join(cwd, '.git', 'rebase-merge')) ||
+    existsSync(join(cwd, '.git', 'rebase-apply'))
+  )
+}
 
 function readHeadFile(cwd: string, name: string): string | undefined {
   try {
@@ -12,8 +19,10 @@ function readHeadFile(cwd: string, name: string): string | undefined {
 }
 
 export async function mergeStatus(cwd: string, gitBinaryPath: string): Promise<GitMergeStatus> {
-  const ours = readHeadFile(cwd, 'MERGE_HEAD')
-  const inProgress = Boolean(ours) || Boolean(readHeadFile(cwd, 'REBASE_HEAD'))
+  const mergeActive = Boolean(readHeadFile(cwd, 'MERGE_HEAD'))
+  const rebaseActive = existsRebase(cwd)
+  const cherryPickActive = Boolean(readHeadFile(cwd, 'CHERRY_PICK_HEAD'))
+  const inProgress = mergeActive || rebaseActive || cherryPickActive
 
   let conflictedPaths: string[] = []
   if (inProgress) {
@@ -24,10 +33,19 @@ export async function mergeStatus(cwd: string, gitBinaryPath: string): Promise<G
     conflictedPaths = stdout.split('\n').filter(Boolean)
   }
 
+  const kind = mergeActive
+    ? 'merge'
+    : rebaseActive
+      ? 'rebase'
+      : cherryPickActive
+        ? 'cherry-pick'
+        : null
+
   return {
     inProgress,
+    kind,
     conflictedPaths,
-    ours,
+    ours: readHeadFile(cwd, 'MERGE_HEAD'),
     theirs: readHeadFile(cwd, 'ORIG_HEAD')
   }
 }

@@ -28,8 +28,12 @@ export interface CommitContextMenuActions extends MultiCommitContextMenuActions 
   removeStaleHistory: (commit: GitCommit) => void
   rebaseContinue: () => void
   rebaseAbort: () => void
+  rebaseSkip: () => void
   mergeContinue: () => void
   mergeAbort: () => void
+  cherryPickContinue: () => void
+  cherryPickAbort: () => void
+  cherryPickSkip: () => void
 }
 
 export interface CommitContextMenuContext {
@@ -84,8 +88,27 @@ export function buildCommitContextMenuItems({
   if (working?.rebaseInProgress) {
     items.push(
       { id: 'rebase-continue', label: 'Continue rebase', onClick: actions.rebaseContinue },
+      { id: 'rebase-skip', label: 'Skip commit', onClick: actions.rebaseSkip },
       { id: 'rebase-abort', label: 'Abort rebase', danger: true, onClick: actions.rebaseAbort },
       { id: 'sep-rebase', label: '', separator: true, onClick: () => {} }
+    )
+  }
+
+  if (working?.cherryPickInProgress) {
+    items.push(
+      {
+        id: 'cherry-pick-continue',
+        label: 'Continue cherry-pick',
+        onClick: actions.cherryPickContinue
+      },
+      { id: 'cherry-pick-skip', label: 'Skip commit', onClick: actions.cherryPickSkip },
+      {
+        id: 'cherry-pick-abort',
+        label: 'Abort cherry-pick',
+        danger: true,
+        onClick: actions.cherryPickAbort
+      },
+      { id: 'sep-cherry-pick', label: '', separator: true, onClick: () => {} }
     )
   }
 

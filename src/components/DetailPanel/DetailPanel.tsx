@@ -6,8 +6,11 @@ import { useLogGraph, useRepoStatus, useWorkingStatus } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { GitWorkingTree } from '@/components/WorkingTree/GitWorkingTree'
 import { CommitPreview } from '@/components/DetailPanel/CommitPreview'
+import { StashPreview } from '@/components/DetailPanel/StashPreview'
 import { MultiCommitSelectionBar } from '@/components/DetailPanel/MultiCommitSelectionBar'
 import { parseCommitNameStatus } from '@/lib/commitFiles'
+import { isStashCommit, resolveStashEntry } from '@/lib/stashCommit'
+import { useStashList } from '@/hooks/useGit'
 import { useToastStore } from '@/stores/toast'
 
 export function DetailPanel() {
@@ -19,6 +22,7 @@ export function DetailPanel() {
   const { data: graph } = useLogGraph(connected)
   const { data: repoStatus } = useRepoStatus(connected)
   const { data: workingStatus } = useWorkingStatus(connected)
+  const { data: stashes } = useStashList(connected)
   const { cherryPick, squashCommits } = useGitMutations()
   const showToast = useToastStore((s) => s.show)
 
@@ -76,6 +80,15 @@ export function DetailPanel() {
   }
 
   if (selection?.kind === 'commit' && commit) {
+    const stashEntry = isStashCommit(commit) ? resolveStashEntry(commit, stashes) : null
+    if (stashEntry) {
+      return (
+        <aside className="flex h-full min-h-0 flex-col border-l border-gf-border">
+          <StashPreview stash={stashEntry} />
+        </aside>
+      )
+    }
+
     const multiSelect = selectedCommitHashes.length > 1
 
     return (

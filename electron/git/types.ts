@@ -70,6 +70,7 @@ export interface GitStashEntry {
 
 export interface GitMergeStatus {
   inProgress: boolean
+  kind: 'merge' | 'rebase' | 'cherry-pick' | null
   conflictedPaths: string[]
   ours?: string
   theirs?: string

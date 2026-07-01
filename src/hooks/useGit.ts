@@ -92,6 +92,25 @@ export function useMergeStatus(enabled = true) {
   })
 }
 
+export function useStashFiles(index: number | null, enabled = true) {
+  const { repoPath, connected } = useRepoScope()
+  return useQuery({
+    queryKey: ['repo', repoPath, 'stash.files', index],
+    queryFn: async () => window.gitfredo.invoke('stash.files', { index }) as Promise<string>,
+    enabled: enabled && connected && Boolean(repoPath) && index !== null
+  })
+}
+
+export function useStashDiff(index: number | null, path?: string, enabled = true) {
+  const { repoPath, connected } = useRepoScope()
+  return useQuery<GitDiffResult>({
+    queryKey: ['repo', repoPath, 'stash.show', index, path],
+    queryFn: async () =>
+      (await window.gitfredo.invoke('stash.show', { index, path })) as GitDiffResult,
+    enabled: enabled && connected && Boolean(repoPath) && index !== null
+  })
+}
+
 export function useDiffWorking(path?: string, enabled = true) {
   const { repoPath, connected } = useRepoScope()
   return useQuery({

@@ -1,5 +1,5 @@
 import { runGitOrThrow } from '../git-runner'
-import type { GitStashEntry } from '../types'
+import type { GitDiffResult, GitStashEntry } from '../types'
 
 export async function stashList(cwd: string, gitBinaryPath: string): Promise<GitStashEntry[]> {
   const stdout = await runGitOrThrow(
@@ -50,7 +50,22 @@ export async function stashDrop(cwd: string, gitBinaryPath: string, index = 0): 
 export async function stashShow(
   cwd: string,
   gitBinaryPath: string,
+  index = 0,
+  path?: string
+): Promise<GitDiffResult> {
+  const args = ['stash', 'show', '-p', `stash@{${index}}`]
+  if (path) args.push('--', path)
+  const unified = await runGitOrThrow(args, { cwd, gitBinaryPath })
+  return { unified, path: path ?? `stash@{${index}}` }
+}
+
+export async function stashFiles(
+  cwd: string,
+  gitBinaryPath: string,
   index = 0
 ): Promise<string> {
-  return runGitOrThrow(['stash', 'show', '-p', `stash@{${index}}`], { cwd, gitBinaryPath })
+  return runGitOrThrow(['stash', 'show', '--name-status', `stash@{${index}}`], {
+    cwd,
+    gitBinaryPath
+  })
 }

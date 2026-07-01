@@ -3,11 +3,13 @@ import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
 import { useWorkingStatus } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
+import { useInvalidateGit } from '@/hooks/useInvalidateGit'
 import { statusColor, statusLabel, type GitFileChange } from '@/lib/types'
 import { buildFileTree, collectFolderPaths, countCommitFiles, type FileTreeNode } from '@/lib/fileTree'
 import type { CommitFileItem } from '@/lib/types'
 import { LoadingRow, Spinner } from '@/components/ui/Spinner'
 import { CommitPanel } from '@/components/WorkingTree/CommitPanel'
+import { ConfirmDialog } from '@/components/ui/Modal'
 import { ContextMenu } from '@/components/ui/ContextMenu'
 import { useContextMenu, type OpenContextMenu } from '@/hooks/useContextMenu'
 import {
@@ -21,7 +23,9 @@ function FileRow({
   selected,
   onStage,
   mode,
-  openMenu
+  openMenu,
+  onDiscard,
+  onDelete
 }: {
   file: GitFileChange
   onSelect: () => void
@@ -29,6 +33,8 @@ function FileRow({
   onStage?: () => void
   mode: 'working' | 'staged'
   openMenu: OpenContextMenu
+  onDiscard?: () => void
+  onDelete?: () => void
 }) {
   return (
     <div className="flex items-center gap-1">
@@ -38,10 +44,12 @@ function FileRow({
         onContextMenu={(event) =>
           openMenu(
             event,
-            workingTreeFileContextMenuItems(file.path, mode, {
+            workingTreeFileContextMenuItems(file.path, mode, file.status, {
               onSelect,
               onStageToggle: onStage ?? (() => {}),
-              onOpenInEditor: () => void window.gitfredo.openInEditor(file.path)
+              onOpenInEditor: () => void window.gitfredo.openInEditor(file.path),
+              onDiscard,
+              onDelete
             })
           )
         }
@@ -119,7 +127,9 @@ function TreeNode({
   pathToFile,
   mode,
   onStage,
-  openMenu
+  openMenu,
+  onDiscard,
+  onDelete
 }: {
   node: FileTreeNode
   depth: number
@@ -131,6 +141,8 @@ function TreeNode({
   mode: 'working' | 'staged'
   onStage?: (path: string) => void
   openMenu: OpenContextMenu
+  onDiscard?: (path: string, staged: boolean) => void
+  onDelete?: (path: string) => void
 }) {
   if (node.type === 'folder') {
     const open = expandedPaths.has(node.path)
@@ -166,6 +178,8 @@ function TreeNode({
               mode={mode}
               onStage={onStage}
               openMenu={openMenu}
+              onDiscard={onDiscard}
+              onDelete={onDelete}
             />
           ))}
       </>
@@ -184,10 +198,12 @@ function TreeNode({
         onContextMenu={(event) =>
           openMenu(
             event,
-            workingTreeFileContextMenuItems(file.path, mode, {
+            workingTreeFileContextMenuItems(file.path, mode, file.status, {
               onSelect: selectFile,
               onStageToggle: stageToggle,
-              onOpenInEditor: () => void window.gitfredo.openInEditor(file.path)
+              onOpenInEditor: () => void window.gitfredo.openInEditor(file.path),
+              onDiscard: onDiscard ? () => onDiscard(file.path, mode === 'staged') : undefined,
+              onDelete: onDelete ? () => onDelete(file.path) : undefined
             })
           )
         }
@@ -216,12 +232,26 @@ function TreeNode({
 export function GitWorkingTree() {
   const connected = useWorkspaceStore((s) => s.connected)
   const { data, isLoading, error } = useWorkingStatus(connected)
-  const { stageAdd, stageReset } = useGitMutations()
+  const { stageAdd, stageReset, workingDiscard } = useGitMutations()
+  const invalidate = useInvalidateGit()
   const selectedFile = useSelectionStore((s) => s.selectedWorkingFile)
   const setSelectedWorkingFile = useSelectionStore((s) => s.setSelectedWorkingFile)
   const [viewMode, setViewMode] = useState<'path' | 'tree'>('tree')
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set())
+  const [pendingDiscard, setPendingDiscard] = useState<{ path: string; staged: boolean } | null>(
+    null
+  )
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null)
+  const [deleteBusy, setDeleteBusy] = useState(false)
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
+
+  function requestDiscard(path: string, staged: boolean) {
+    setPendingDiscard({ path, staged })
+  }
+
+  function requestDelete(path: string) {
+    setPendingDelete(path)
+  }
 
   if (!connected) {
     return <p className="p-4 text-sm text-gf-fg-subtle">Open a repository to view changes.</p>
@@ -258,6 +288,10 @@ export function GitWorkingTree() {
                       ? () => void stageAdd.mutateAsync({ paths: [file.path] })
                       : () => void stageReset.mutateAsync({ paths: [file.path] })
                   }
+                  onDiscard={() => requestDiscard(file.path, mode === 'staged')}
+                  onDelete={
+                    file.status === 'untracked' ? () => requestDelete(file.path) : undefined
+                  }
                   openMenu={openMenu}
                 />
               ))}
@@ -288,6 +322,8 @@ export function GitWorkingTree() {
                         ? (path) => void stageAdd.mutateAsync({ paths: [path] })
                         : (path) => void stageReset.mutateAsync({ paths: [path] })
                     }
+                    onDiscard={requestDiscard}
+                    onDelete={requestDelete}
                     openMenu={openMenu}
                   />
                 ))}
@@ -366,6 +402,45 @@ export function GitWorkingTree() {
           y={menuState.y}
           items={menuState.items}
           onClose={closeMenu}
+        />
+      )}
+
+      {pendingDiscard && (
+        <ConfirmDialog
+          open
+          title="Discard changes"
+          message={`Discard local changes to "${pendingDiscard.path}"? This cannot be undone.`}
+          confirmLabel="Discard"
+          busy={workingDiscard.isPending}
+          onConfirm={async () => {
+            await workingDiscard.mutateAsync({
+              paths: [pendingDiscard.path],
+              staged: pendingDiscard.staged
+            })
+            setPendingDiscard(null)
+          }}
+          onCancel={() => setPendingDiscard(null)}
+        />
+      )}
+
+      {pendingDelete && (
+        <ConfirmDialog
+          open
+          title="Delete file"
+          message={`Delete untracked file "${pendingDelete}"? This cannot be undone.`}
+          confirmLabel="Delete"
+          busy={deleteBusy}
+          onConfirm={async () => {
+            setDeleteBusy(true)
+            try {
+              await window.gitfredo.deleteWorkspaceFile(pendingDelete)
+              invalidate('working.status')
+              setPendingDelete(null)
+            } finally {
+              setDeleteBusy(false)
+            }
+          }}
+          onCancel={() => setPendingDelete(null)}
         />
       )}
     </div>

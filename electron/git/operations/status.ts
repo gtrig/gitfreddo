@@ -1,6 +1,6 @@
 import { existsSync } from 'fs'
 import { join } from 'path'
-import { runGitOrThrow } from '../git-runner'
+import { runGit, runGitOrThrow } from '../git-runner'
 import type { GitFileChange, GitWorkingStatus } from '../types'
 
 function statusCharToKind(
@@ -155,6 +155,27 @@ export async function stageReset(
   } else {
     await runGitOrThrow(['reset', 'HEAD', '--', ...paths], { cwd, gitBinaryPath })
   }
+}
+
+export async function workingDiscard(
+  cwd: string,
+  gitBinaryPath: string,
+  paths: string[],
+  staged = false
+): Promise<void> {
+  if (paths.length === 0) return
+
+  const restoreArgs = staged
+    ? ['restore', '--source=HEAD', '--staged', '--worktree', '--', ...paths]
+    : ['restore', '--worktree', '--', ...paths]
+
+  const result = await runGit(restoreArgs, { cwd, gitBinaryPath })
+  if (result.code === 0) return
+
+  const checkoutArgs = staged
+    ? ['checkout', 'HEAD', '--', ...paths]
+    : ['checkout', '--', ...paths]
+  await runGitOrThrow(checkoutArgs, { cwd, gitBinaryPath })
 }
 
 export async function commitCreate(

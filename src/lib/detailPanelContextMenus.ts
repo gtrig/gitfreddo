@@ -1,5 +1,6 @@
 import type { ContextMenuItem } from '@/components/ui/ContextMenu'
 import { copyToClipboard } from '@/lib/clipboard'
+import type { FileChangeStatus } from '@/lib/types'
 
 function separator(id: string): ContextMenuItem {
   return { id, label: '', separator: true, onClick: () => {} }
@@ -27,13 +28,21 @@ export function workingTreeFolderContextMenuItems(
 export function workingTreeFileContextMenuItems(
   path: string,
   mode: 'working' | 'staged',
+  status: FileChangeStatus,
   handlers: {
     onSelect: () => void
     onStageToggle: () => void
     onOpenInEditor: () => void
+    onDiscard?: () => void
+    onDelete?: () => void
   }
 ): ContextMenuItem[] {
-  return [
+  const canDiscard =
+    status !== 'untracked' &&
+    status !== 'conflicted' &&
+    (status === 'modified' || status === 'deleted' || status === 'added' || mode === 'staged')
+
+  const items: ContextMenuItem[] = [
     {
       id: 'view',
       label: 'View changes',
@@ -43,7 +52,28 @@ export function workingTreeFileContextMenuItems(
       id: 'stage',
       label: mode === 'working' ? 'Stage' : 'Unstage',
       onClick: handlers.onStageToggle
-    },
+    }
+  ]
+
+  if (canDiscard && handlers.onDiscard) {
+    items.push({
+      id: 'discard',
+      label: 'Discard changes…',
+      danger: true,
+      onClick: handlers.onDiscard
+    })
+  }
+
+  if (status === 'untracked' && handlers.onDelete) {
+    items.push({
+      id: 'delete',
+      label: 'Delete file…',
+      danger: true,
+      onClick: handlers.onDelete
+    })
+  }
+
+  items.push(
     separator('sep-editor'),
     {
       id: 'open',
@@ -55,7 +85,9 @@ export function workingTreeFileContextMenuItems(
       label: 'Copy path',
       onClick: () => void copyToClipboard(path)
     }
-  ]
+  )
+
+  return items
 }
 
 export function commitFolderContextMenuItems(

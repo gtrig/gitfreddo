@@ -58,8 +58,12 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
     rebaseStart,
     rebaseContinue,
     rebaseAbort,
+    rebaseSkip,
     mergeContinue,
     mergeAbort,
+    cherryPickContinue,
+    cherryPickAbort,
+    cherryPickSkip,
     reset
   } = useGitMutations()
   const { data: working } = useWorkingStatus(connected)
@@ -174,9 +178,16 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
         rebaseContinue: () =>
           runMutation(rebaseContinue.mutateAsync(undefined), 'Rebase continued.'),
         rebaseAbort: () => runMutation(rebaseAbort.mutateAsync(undefined), 'Rebase aborted.'),
+        rebaseSkip: () => runMutation(rebaseSkip.mutateAsync(undefined), 'Rebase skipped.'),
         mergeContinue: () =>
           runMutation(mergeContinue.mutateAsync(undefined), 'Merge continued.'),
-        mergeAbort: () => runMutation(mergeAbort.mutateAsync(undefined), 'Merge aborted.')
+        mergeAbort: () => runMutation(mergeAbort.mutateAsync(undefined), 'Merge aborted.'),
+        cherryPickContinue: () =>
+          runMutation(cherryPickContinue.mutateAsync(undefined), 'Cherry-pick continued.'),
+        cherryPickAbort: () =>
+          runMutation(cherryPickAbort.mutateAsync(undefined), 'Cherry-pick aborted.'),
+        cherryPickSkip: () =>
+          runMutation(cherryPickSkip.mutateAsync(undefined), 'Cherry-pick skipped.')
       }
     })
   }, [
@@ -199,8 +210,12 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
     reset,
     rebaseContinue,
     rebaseAbort,
+    rebaseSkip,
     mergeContinue,
-    mergeAbort
+    mergeAbort,
+    cherryPickContinue,
+    cherryPickAbort,
+    cherryPickSkip
   ])
 
   return {

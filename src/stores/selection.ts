@@ -140,7 +140,8 @@ export const useSelectionStore = create<SelectionState>((set) => ({
       selectedStashFile: null,
       selectedWorkingFile: null,
       selectedCommitFile: null,
-      diffMode: null,
+      diffMode: index !== null ? 'stash' : null,
+      compareCommitRange: null,
       ...(index !== null && hash
         ? {
             timelineSelection: { kind: 'commit' as const, id: hash },
