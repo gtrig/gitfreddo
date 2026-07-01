@@ -11,6 +11,8 @@ interface ModalProps {
 
 export function Modal({ title, open, onClose, children, size = 'md' }: ModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
 
   useEffect(() => {
     if (!open) {
@@ -22,7 +24,7 @@ export function Modal({ title, open, onClose, children, size = 'md' }: ModalProp
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         event.preventDefault()
-        onClose()
+        onCloseRef.current()
       }
     }
 
@@ -31,7 +33,7 @@ export function Modal({ title, open, onClose, children, size = 'md' }: ModalProp
       document.removeEventListener('keydown', onKeyDown)
       previous?.focus()
     }
-  }, [open, onClose])
+  }, [open])
 
   if (!open) {
     return null
