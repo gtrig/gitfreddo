@@ -15,6 +15,6 @@ describe('timeline graph column sizing', () => {
   })
 
   it('clamps graph column width to the minimum lane width', () => {
-    expect(minGraphColumnWidth(2, DEFAULT_GRAPH_METRICS)).toBe(56)
+    expect(minGraphColumnWidth(2, DEFAULT_GRAPH_METRICS)).toBe(72)
   })
 })

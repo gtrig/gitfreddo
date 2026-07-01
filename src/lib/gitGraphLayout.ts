@@ -1,4 +1,4 @@
-import { isStashCommit, stashBaseParentHash } from './stashCommit'
+import { isStashCommit, resolveStashAnchorHash } from './stashCommit'
 import type { GitCommit } from './types'
 
 export const GRAPH_ROW_HEIGHT = 52
@@ -80,7 +80,7 @@ function insertActiveBranch(
   return branches.length - 1
 }
 
-function applyStashPadLayout(layout: GitGraphLayout): GitGraphLayout {
+function applyStashPadLayout(layout: GitGraphLayout, commits: GitCommit[]): GitGraphLayout {
   const stashRows = layout.rows.filter((row) => row.isStash)
   if (stashRows.length === 0) return layout
 
@@ -90,7 +90,7 @@ function applyStashPadLayout(layout: GitGraphLayout): GitGraphLayout {
   const rows = layout.rows.map((row) => {
     if (!row.isStash) return row
 
-    const anchorKey = stashBaseParentHash(row.commit)
+    const anchorKey = resolveStashAnchorHash(row.commit, commits, layout.headKey)
     const anchorRow = anchorKey ? rowByKey.get(anchorKey) : undefined
     const anchorColumn = anchorRow?.column ?? row.column
 
@@ -103,7 +103,7 @@ function applyStashPadLayout(layout: GitGraphLayout): GitGraphLayout {
   for (const row of rows) {
     if (!row.isStash) continue
 
-    const anchorKey = stashBaseParentHash(row.commit)
+    const anchorKey = resolveStashAnchorHash(row.commit, commits, layout.headKey)
     if (!anchorKey) continue
 
     const anchorRow = updatedRowByKey.get(anchorKey)
@@ -263,10 +263,13 @@ export function buildGitGraphLayout(commits: GitCommit[], head: string): GitGrap
 
   const laneCount = Math.max(1, branches.length, ...rows.map((row) => row.column + 1))
 
-  return applyStashPadLayout({
-    rows,
-    edges,
-    laneCount,
-    headKey: head || commits[0]?.hash || null
-  })
+  return applyStashPadLayout(
+    {
+      rows,
+      edges,
+      laneCount,
+      headKey: head || commits[0]?.hash || null
+    },
+    commits
+  )
 }

@@ -1,4 +1,4 @@
-import { buildGraphEdgePath, buildWipToHeadPath } from '@/lib/commitGraphPaths'
+import { buildGraphEdgePath, buildStashPadPath, buildWipToHeadPath } from '@/lib/commitGraphPaths'
 import {
   graphHeight,
   GRAPH_ROW_HEIGHT,
@@ -52,7 +52,7 @@ export function CommitGraphOverlay({
     <svg
       width={width}
       height={height}
-      className="pointer-events-none shrink-0"
+      className="pointer-events-none shrink-0 overflow-visible"
       aria-hidden
     >
       <line
@@ -78,43 +78,30 @@ export function CommitGraphOverlay({
         />
       )}
 
-      {layout.edges.map((edge) => {
-        const fromRow = rowByKey.get(edge.fromKey)
-        const toRow = rowByKey.get(edge.toKey)
-        if (!fromRow || !toRow) return null
+      {layout.edges
+        .filter((edge) => edge.kind !== 'pad')
+        .map((edge) => {
+          const fromRow = rowByKey.get(edge.fromKey)
+          const toRow = rowByKey.get(edge.toKey)
+          if (!fromRow || !toRow) return null
 
-        const x1 = columnCenterX(edge.fromColumn, metrics)
-        const y1 = rowCenter(fromRow.rowIndex)
-        const x2 = columnCenterX(edge.toColumn, metrics)
-        const y2 = rowCenter(toRow.rowIndex)
+          const x1 = columnCenterX(edge.fromColumn, metrics)
+          const y1 = rowCenter(fromRow.rowIndex)
+          const x2 = columnCenterX(edge.toColumn, metrics)
+          const y2 = rowCenter(toRow.rowIndex)
 
-        if (edge.kind === 'pad') {
           return (
             <path
-              key={`${edge.fromKey}-${edge.toKey}-pad`}
-              d={buildGraphEdgePath(x1, y1, x2, y2, 'pad', metrics.cornerRadius)}
+              key={`${edge.fromKey}-${edge.toKey}-${edge.kind}`}
+              d={buildGraphEdgePath(x1, y1, x2, y2, edge.kind === 'merge' ? 'merge' : 'parent')}
               fill="none"
-              stroke={colors.stash}
-              strokeWidth={2}
-              strokeDasharray="4 3"
+              stroke={colors.lane(edge.kind === 'merge' ? edge.toColumn : edge.fromColumn)}
+              strokeWidth={2.1}
               strokeLinecap="round"
-              opacity={0.9}
+              opacity={0.96}
             />
           )
-        }
-
-        return (
-          <path
-            key={`${edge.fromKey}-${edge.toKey}-${edge.kind}`}
-            d={buildGraphEdgePath(x1, y1, x2, y2, edge.kind === 'merge' ? 'merge' : 'parent')}
-            fill="none"
-            stroke={colors.lane(edge.kind === 'merge' ? edge.toColumn : edge.fromColumn)}
-            strokeWidth={2.1}
-            strokeLinecap="round"
-            opacity={0.96}
-          />
-        )
-      })}
+        })}
 
       {showWorkingRow && (
         <circle
@@ -136,6 +123,7 @@ export function CommitGraphOverlay({
         if (row.isStash) {
           const size = isPrimary ? 10 : isSelected ? 9.5 : 9
           const half = size / 2
+          const highlighted = isPrimary || isSelected
           return (
             <g key={row.key}>
               <rect
@@ -145,16 +133,16 @@ export function CommitGraphOverlay({
                 height={size}
                 rx={2}
                 fill={colors.stash}
-                stroke={isPrimary || isSelected ? colors.selected : colors.stashStroke}
-                strokeWidth={isPrimary ? 2 : isSelected ? 1.75 : 1.5}
+                stroke={colors.stashStroke}
+                strokeWidth={highlighted ? 2.5 : 1.5}
               />
               <path
                 d={`M ${x - 2.5} ${y - 1.2} h 5 v 3.2 h -5 z M ${x - 2.5} ${y + 0.6} h 5`}
                 fill="none"
-                stroke={colors.stashStroke}
-                strokeWidth={0.9}
+                stroke={highlighted ? '#f0f9ff' : colors.stashStroke}
+                strokeWidth={1}
                 strokeLinecap="round"
-                opacity={0.95}
+                opacity={highlighted ? 1 : 0.95}
               />
             </g>
           )
@@ -178,6 +166,49 @@ export function CommitGraphOverlay({
           />
         )
       })}
+
+      {layout.edges
+        .filter((edge) => edge.kind === 'pad')
+        .map((edge) => {
+          const fromRow = rowByKey.get(edge.fromKey)
+          const toRow = rowByKey.get(edge.toKey)
+          if (!fromRow || !toRow) return null
+
+          const anchorX = columnCenterX(edge.fromColumn, metrics)
+          const anchorY = rowCenter(fromRow.rowIndex)
+          const padX = columnCenterX(edge.toColumn, metrics)
+          const padY = rowCenter(toRow.rowIndex)
+          const padPath = buildStashPadPath(anchorX, anchorY, padX, padY)
+          const padActive =
+            selectedHash === edge.fromKey ||
+            selectedHash === edge.toKey ||
+            selectedHashes?.has(edge.fromKey) ||
+            selectedHashes?.has(edge.toKey)
+          const stroke = colors.stash
+          const strokeWidth = padActive ? 3.5 : 3
+
+          return (
+            <g key={`${edge.fromKey}-${edge.toKey}-pad`}>
+              <path
+                d={padPath}
+                fill="none"
+                stroke={stroke}
+                strokeWidth={strokeWidth + 2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                opacity={0.28}
+              />
+              <path
+                d={padPath}
+                fill="none"
+                stroke={stroke}
+                strokeWidth={strokeWidth}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </g>
+          )
+        })}
     </svg>
   )
 }

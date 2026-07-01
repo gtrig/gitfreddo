@@ -135,9 +135,10 @@ export function remoteBranchContextMenuItems(
 
 export function stashContextMenuItems(
   index: number,
+  hash: string,
   message: string,
   handlers: {
-    onSelect: (index: number) => void
+    onSelect: (index: number, hash: string) => void
     onApply: (index: number) => void
     onPop: (index: number) => void
     onDrop: (index: number) => void
@@ -148,7 +149,7 @@ export function stashContextMenuItems(
     {
       id: 'view',
       label: 'View',
-      onClick: () => handlers.onSelect(index)
+      onClick: () => handlers.onSelect(index, hash)
     },
     separator('sep-ops'),
     {

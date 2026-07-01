@@ -65,7 +65,7 @@ export function StashSidebar() {
             <li key={stash.index} className="rounded border border-gf-border p-2">
               <button
                 type="button"
-                onClick={() => selectStash(stash.index)}
+                onClick={() => selectStash(stash.index, stash.hash)}
                 className="w-full text-left text-sm text-gf-fg-muted hover:text-white"
               >
                 <span className="text-xs text-gf-fg-subtle">stash@{'{'}{stash.index}{'}'}</span>

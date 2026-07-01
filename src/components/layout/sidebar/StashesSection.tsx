@@ -16,7 +16,7 @@ interface StashesSectionProps {
   isLoading: boolean
   error: Error | null
   selectedIndex: number | null
-  onSelect: (index: number) => void
+  onSelect: (index: number, hash: string) => void
 }
 
 export function StashesSection({
@@ -59,11 +59,11 @@ export function StashesSection({
               label={label}
               isSelected={selectedIndex === stash.index}
               title={label}
-              onClick={() => onSelect(stash.index)}
+              onClick={() => onSelect(stash.index, stash.hash)}
               onContextMenu={(event) =>
                 openMenu(
                   event,
-                  stashContextMenuItems(stash.index, label, {
+                  stashContextMenuItems(stash.index, stash.hash, label, {
                     onSelect,
                     onApply: (index) => void stashApply.mutateAsync({ index }),
                     onPop: (index) => void stashPop.mutateAsync({ index }),

@@ -1,7 +1,7 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
-import { useLogGraph, useRepoStatus, useWorkingStatus } from '@/hooks/useGit'
+import { useLogGraph, useRepoStatus, useStashList, useWorkingStatus } from '@/hooks/useGit'
 import { useTimelineColumnSizes } from '@/hooks/useTimelineColumnSizes'
 import { useCommitContextMenu } from '@/hooks/useCommitContextMenu'
 import { branchColor } from '@/lib/types'
@@ -34,6 +34,7 @@ export function CommitTimeline() {
   const { data: graph, isLoading, error } = useLogGraph(connected)
   const { data: repoStatus } = useRepoStatus(connected)
   const { data: workingStatus } = useWorkingStatus(connected)
+  const { data: stashes } = useStashList(connected)
   const showWorkingRow = workingStatus ? !workingStatus.isClean : false
   const changeCounts = useMemo(
     () => (workingStatus ? countWorkingChanges(workingStatus) : null),
@@ -41,6 +42,8 @@ export function CommitTimeline() {
   )
   const selection = useSelectionStore((s) => s.timelineSelection)
   const selectedCommitHashes = useSelectionStore((s) => s.selectedCommitHashes)
+  const selectedStashIndex = useSelectionStore((s) => s.selectedStashIndex)
+  const selectStash = useSelectionStore((s) => s.selectStash)
   const selectTimelineNode = useSelectionStore((s) => s.selectTimelineNode)
   const toggleCommitSelection = useSelectionStore((s) => s.toggleCommitSelection)
   const selectCommitRange = useSelectionStore((s) => s.selectCommitRange)
@@ -54,6 +57,14 @@ export function CommitTimeline() {
   const primaryHash = selection?.kind === 'commit' ? selection.id : null
 
   const handleCommitClick = (commit: GitCommit) => (event: React.MouseEvent) => {
+    if (isStashCommit(commit)) {
+      const stashEntry = stashes?.find((stash) => stash.hash === commit.hash)
+      if (stashEntry) {
+        selectStash(stashEntry.index, stashEntry.hash)
+        return
+      }
+    }
+
     if (event.shiftKey) {
       selectCommitRange(commit.hash, commits)
       return
@@ -101,6 +112,42 @@ export function CommitTimeline() {
   } = useTimelineColumnSizes(layout.laneCount)
   const selectedHash = primaryHash
   const relativeNow = useRelativeNow()
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!primaryHash) return
+
+    const index = commits.findIndex((commit) => commit.hash === primaryHash)
+    if (index < 0) return
+
+    let firstRow = index
+    let lastRow = index
+
+    const padEdge = layout.edges.find(
+      (edge) => edge.kind === 'pad' && (edge.toKey === primaryHash || edge.fromKey === primaryHash)
+    )
+    if (padEdge) {
+      const anchorIndex = commits.findIndex((commit) => commit.hash === padEdge.fromKey)
+      const stashIndex = commits.findIndex((commit) => commit.hash === padEdge.toKey)
+      if (anchorIndex >= 0) firstRow = Math.min(firstRow, anchorIndex)
+      if (stashIndex >= 0) lastRow = Math.max(lastRow, stashIndex)
+    }
+
+    const container = scrollRef.current
+    if (!container) return
+
+    const rowTop =
+      (showWorkingRow ? COMPACT_ROW_HEIGHT : 0) + firstRow * COMPACT_ROW_HEIGHT
+    const rowBottom =
+      (showWorkingRow ? COMPACT_ROW_HEIGHT : 0) + (lastRow + 1) * COMPACT_ROW_HEIGHT
+    const { scrollTop, clientHeight } = container
+
+    if (rowTop < scrollTop) {
+      container.scrollTop = rowTop
+    } else if (rowBottom > scrollTop + clientHeight) {
+      container.scrollTop = rowBottom - clientHeight
+    }
+  }, [primaryHash, selectedStashIndex, commits, layout.edges, showWorkingRow])
 
   const rowState = (hash: string) => ({
     isSelected: selectedHashSet.has(hash),
@@ -115,7 +162,7 @@ export function CommitTimeline() {
   if (error) return <p className="p-4 text-sm text-red-400">{(error as Error).message}</p>
 
   return (
-    <div className={`min-h-0 flex-1 overflow-y-auto ${resizing ? 'select-none' : ''}`}>
+    <div ref={scrollRef} className={`min-h-0 flex-1 overflow-y-auto ${resizing ? 'select-none' : ''}`}>
       <div className="flex min-w-max flex-col">
         <div className="sticky top-0 z-20 flex border-b border-gf-border/70 bg-gf-bg-deep/95 px-2 py-1 text-[10px] uppercase tracking-wide text-gf-fg-subtle backdrop-blur">
           <div className="shrink-0" style={{ width: branchTagWidth }}>
@@ -153,6 +200,7 @@ export function CommitTimeline() {
             {commits.map((commit) => {
               const refs = timelineRefs(commit.refs)
               const { isSelected, isPrimary } = rowState(commit.hash)
+              const stash = isStashCommit(commit)
 
               return (
                 <div
@@ -162,6 +210,11 @@ export function CommitTimeline() {
                   className={`flex cursor-pointer items-center gap-1 overflow-hidden border-b border-gf-border/30 px-2 hover:bg-gf-bg/50 ${commitRowHighlightClass(isSelected, isPrimary)}`}
                   style={{ height: COMPACT_ROW_HEIGHT }}
                 >
+                  {stash && (
+                    <span className="shrink-0 rounded border border-sky-500/50 bg-sky-500/15 px-1 py-0.5 text-[10px] leading-none text-sky-300">
+                      stash
+                    </span>
+                  )}
                   {refs.slice(0, 2).map((ref) => (
                     <span
                       key={ref}
@@ -185,8 +238,8 @@ export function CommitTimeline() {
             onResizeEnd={() => setResizing(false)}
           />
 
-          <div className="sticky left-0 z-10 shrink-0 bg-gf-bg-deep" style={{ width: graphColumnWidth }}>
-            <div className="relative">
+          <div className="sticky left-0 z-10 shrink-0 overflow-visible bg-gf-bg-deep" style={{ width: graphColumnWidth }}>
+            <div className="relative overflow-visible">
               <CommitGraphOverlay
                 layout={layout}
                 showWorkingRow={showWorkingRow}
@@ -196,21 +249,18 @@ export function CommitTimeline() {
                 rowHeight={COMPACT_ROW_HEIGHT}
                 metrics={metrics}
               />
-              {commits.map((commit, index) => {
-                const { isSelected, isPrimary } = rowState(commit.hash)
-                return (
+              {commits.map((commit, index) => (
                   <div
                     key={`graph-hit-${commit.hash}`}
                     onContextMenu={onCommitContextMenu(commit)}
                     onClick={handleCommitClick(commit)}
-                    className={`absolute left-0 right-0 cursor-pointer hover:bg-gf-bg/50 ${commitRowHighlightClass(isSelected, isPrimary)}`}
+                    className="absolute left-0 right-0 cursor-pointer hover:bg-gf-bg/30"
                     style={{
                       top: (showWorkingRow ? COMPACT_ROW_HEIGHT : 0) + index * COMPACT_ROW_HEIGHT,
                       height: COMPACT_ROW_HEIGHT
                     }}
                   />
-                )
-              })}
+              ))}
             </div>
           </div>
 
@@ -268,6 +318,7 @@ export function CommitTimeline() {
 
             {commits.map((commit) => {
               const { isSelected, isPrimary } = rowState(commit.hash)
+              const stash = isStashCommit(commit)
               return (
                 <button
                   key={commit.hash}
@@ -279,7 +330,16 @@ export function CommitTimeline() {
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="shrink-0 font-mono text-[11px] text-gf-fg-subtle">{commit.shortHash}</span>
+                      <span
+                        className={`shrink-0 font-mono text-[11px] ${stash ? 'text-sky-300' : 'text-gf-fg-subtle'}`}
+                      >
+                        {commit.shortHash}
+                      </span>
+                      {stash && (
+                        <span className="shrink-0 rounded border border-sky-500/50 px-1 py-0.5 text-[10px] leading-none text-sky-300">
+                          stash
+                        </span>
+                      )}
                       {commit.hash === head && (
                         <span className="shrink-0 rounded-sm border border-emerald-500/40 px-1 py-0.5 text-[10px] leading-none text-emerald-400">
                           HEAD
@@ -288,7 +348,7 @@ export function CommitTimeline() {
                       {commit.parents.length > 1 && !isStashCommit(commit) && (
                         <span className="shrink-0 text-[10px] text-violet-400">merge</span>
                       )}
-                      <p className="min-w-0 truncate text-[12px] text-gf-fg">
+                      <p className={`min-w-0 truncate text-[12px] ${stash ? 'text-sky-100' : 'text-gf-fg'}`}>
                         {commit.subject}
                         {commit.message && commit.message !== commit.subject && (
                           <span className="ml-1 text-gf-fg-subtle">

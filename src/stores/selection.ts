@@ -20,7 +20,7 @@ interface SelectionState {
   showCompareCommitRange: (oldestHash: string, newestHash: string, label: string) => void
   setSelectedWorkingFile: (path: string | null, mode?: 'working' | 'staged') => void
   setSelectedCommitFile: (path: string | null) => void
-  selectStash: (index: number | null) => void
+  selectStash: (index: number | null, hash?: string | null) => void
   setSelectedStashFile: (path: string | null) => void
   closeDiffOverlay: () => void
 }
@@ -134,17 +134,26 @@ export const useSelectionStore = create<SelectionState>((set) => ({
       selectedCommitFile: path,
       diffMode: path ? 'commit' : null
     }),
-  selectStash: (index) =>
+  selectStash: (index, hash) =>
     set({
       selectedStashIndex: index,
       selectedStashFile: null,
       selectedWorkingFile: null,
       selectedCommitFile: null,
-      selectedCommitHash: null,
-      selectedCommitHashes: [],
-      selectionAnchorHash: null,
       diffMode: null,
-      timelineSelection: null
+      ...(index !== null && hash
+        ? {
+            timelineSelection: { kind: 'commit' as const, id: hash },
+            selectedCommitHashes: [hash],
+            selectionAnchorHash: hash,
+            selectedCommitHash: hash
+          }
+        : {
+            timelineSelection: null,
+            selectedCommitHashes: [],
+            selectionAnchorHash: null,
+            selectedCommitHash: null
+          })
     }),
   setSelectedStashFile: (path) =>
     set({

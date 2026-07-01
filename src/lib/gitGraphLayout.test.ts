@@ -127,6 +127,31 @@ describe('buildGitGraphLayout', () => {
     )
     expect(layout.edges.some((edge) => edge.fromKey === 'stash-tip')).toBe(false)
   })
+
+  it('anchors stash pad after the base commit hash was rewritten', () => {
+    const stash = {
+      ...commit(
+        'stash-tip',
+        ['old-base'],
+        'WIP on main: deadbeef Reworded base subject'
+      ),
+      refs: ['stash']
+    }
+    const layout = buildGitGraphLayout(
+      [
+        commit('head', ['new-base']),
+        stash,
+        commit('new-base', [], 'Reworded base subject'),
+        commit('old-base', [], 'Reworded base subject')
+      ],
+      'head'
+    )
+
+    const padEdge = layout.edges.find(
+      (edge) => edge.toKey === 'stash-tip' && edge.kind === 'pad'
+    )
+    expect(padEdge?.fromKey).toBe('new-base')
+  })
 })
 
 describe('visualRowIndex', () => {

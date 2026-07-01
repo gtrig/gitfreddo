@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildGraphEdgePath, buildWipToHeadPath } from './commitGraphPaths'
+import { buildGraphEdgePath, buildStashPadPath, buildWipToHeadPath } from './commitGraphPaths'
 
 describe('buildGraphEdgePath', () => {
   it('draws a vertical line for same-column commits', () => {
@@ -8,13 +8,9 @@ describe('buildGraphEdgePath', () => {
     expect(path).toContain('40 80')
   })
 
-  it('routes pad stash edges right along the anchor row, then up to the pad', () => {
-    const path = buildGraphEdgePath(40, 100, 80, 40, 'pad')
-    expect(path).toMatch(/^M 40 100/)
-    expect(path).toContain('80')
-    expect(path).toContain('40')
-    expect(path).not.toMatch(/40 40/)
-    expect(path).not.toMatch(/80 100 L 40 100/)
+  it('routes pad stash edges down the pad lane, then across to the anchor', () => {
+    const path = buildStashPadPath(40, 100, 80, 40)
+    expect(path).toBe('M 80 40 L 80 100 L 40 100')
   })
 
   it('routes cross-lane edges with a top elbow like GitKraken', () => {

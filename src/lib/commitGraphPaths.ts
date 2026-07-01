@@ -58,6 +58,19 @@ function buildBottomElbowPath(
   ].join(' ')
 }
 
+/** Stash pad → base commit: vertical on the pad lane, then horizontal to the anchor. */
+export function buildStashPadPath(
+  anchorX: number,
+  anchorY: number,
+  padX: number,
+  padY: number
+): string {
+  if (Math.abs(padX - anchorX) < 0.5) {
+    return `M ${padX} ${padY} L ${anchorX} ${anchorY}`
+  }
+  return `M ${padX} ${padY} L ${padX} ${anchorY} L ${anchorX} ${anchorY}`
+}
+
 /**
  * GitKraken-style orthogonal edge: straight vertical on one lane, or a top elbow
  * (horizontal at the child row, then vertical to the parent) when lanes differ.
@@ -75,35 +88,7 @@ export function buildGraphEdgePath(
     const padY = y2
     const anchorX = x1
     const anchorY = y1
-    if (Math.abs(padX - anchorX) < 0.5) {
-      return `M ${padX} ${padY} L ${anchorX} ${anchorY}`
-    }
-    const verticalSpan = Math.abs(anchorY - padY)
-    const r = effectiveRadius(cornerRadius, verticalSpan)
-    const hDir = padX > anchorX ? 1 : -1
-    const padAboveAnchor = padY < anchorY
-
-    if (verticalSpan <= r * 1.5) {
-      return `M ${anchorX} ${anchorY} L ${padX} ${anchorY} L ${padX} ${padY}`
-    }
-
-    if (padAboveAnchor) {
-      // From anchor: branch right along the anchor row, then up to the stash pad.
-      return [
-        `M ${anchorX} ${anchorY}`,
-        `L ${padX - hDir * r} ${anchorY}`,
-        `Q ${padX} ${anchorY} ${padX} ${anchorY - r}`,
-        `L ${padX} ${padY}`
-      ].join(' ')
-    }
-
-    // Pad below anchor: branch right, then down to the stash pad.
-    return [
-      `M ${anchorX} ${anchorY}`,
-      `L ${padX - hDir * r} ${anchorY}`,
-      `Q ${padX} ${anchorY} ${padX} ${anchorY + r}`,
-      `L ${padX} ${padY}`
-    ].join(' ')
+    return buildStashPadPath(anchorX, anchorY, padX, padY)
   }
 
   if (Math.abs(x1 - x2) < 0.5) {

@@ -104,7 +104,9 @@ export function graphWidth(
   laneCount: number,
   metrics: GraphMetrics = DEFAULT_GRAPH_METRICS
 ): number {
-  return Math.max(metrics.minGraphWidth, laneCount * metrics.laneWidth + metrics.sidePadding * 2)
+  const lanes = Math.max(1, laneCount)
+  const minWidth = lanes >= 2 ? Math.max(metrics.minGraphWidth, 72) : metrics.minGraphWidth
+  return Math.max(minWidth, lanes * metrics.laneWidth + metrics.sidePadding * 2)
 }
 
 export function columnCenterX(

@@ -30,8 +30,8 @@ export function useGraphColors(): GraphColors {
       selected: cssVar('--gf-graph-selected'),
       wip: cssVar('--gf-graph-wip'),
       wipStroke: cssVar('--gf-graph-wip-stroke'),
-      stash: cssVar('--gf-graph-stash'),
-      stashStroke: cssVar('--gf-graph-stash-stroke'),
+      stash: cssVar('--gf-graph-stash') || '#38bdf8',
+      stashStroke: cssVar('--gf-graph-stash-stroke') || '#7dd3fc',
       nodeStroke: cssVar('--gf-graph-node-stroke')
     }),
     [theme]
