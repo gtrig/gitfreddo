@@ -48,6 +48,7 @@ const noopActions = {
   removeStaleSelected: () => {},
   checkout: () => {},
   createBranch: () => {},
+  createTag: () => {},
   reword: () => {},
   rebaseOnto: () => {},
   cherryPick: () => {},

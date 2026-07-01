@@ -46,6 +46,15 @@ export function SidebarIconStash(props: IconProps) {
   )
 }
 
+export function SidebarIconTag(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M3.5 3.5h5l4.5 4.5v5a1 1 0 01-1 1h-8.5a1 1 0 01-1-1v-8.5a1 1 0 011-1z" />
+      <circle cx="6" cy="6" r="1" fill="currentColor" stroke="none" />
+    </Icon>
+  )
+}
+
 export function SidebarIconBranch(props: IconProps) {
   return (
     <Icon {...props}>

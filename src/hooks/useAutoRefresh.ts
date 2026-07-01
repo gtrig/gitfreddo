@@ -10,6 +10,7 @@ const REFRESH_SUFFIXES = [
   'log.graph',
   'remote.list',
   'stash.list',
+  'tag.list',
   'merge.status'
 ] as const
 

@@ -16,6 +16,7 @@ export interface CommitContextMenuActions extends MultiCommitContextMenuActions 
   copyShortHash: (shortHash: string) => void
   checkout: (ref: string) => void
   createBranch: (hash: string) => void
+  createTag: (hash: string) => void
   reword: (commit: GitCommit) => void
   rebaseOnto: (hash: string) => void
   cherryPick: (hash: string) => void
@@ -157,6 +158,13 @@ export function buildCommitContextMenuItems({
     label: 'Create branch here…',
     disabled: gitBusy,
     onClick: () => actions.createBranch(commit.hash)
+  })
+
+  items.push({
+    id: 'tag',
+    label: 'Create tag here…',
+    disabled: gitBusy,
+    onClick: () => actions.createTag(commit.hash)
   })
 
   items.push({ id: 'sep-history', label: '', separator: true, onClick: () => {} })

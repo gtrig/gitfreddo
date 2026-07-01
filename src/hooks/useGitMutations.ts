@@ -6,7 +6,8 @@ import { useToastStore } from '@/stores/toast'
 const REMOTE_ACTION_LABELS: Record<string, { success: string; error: string }> = {
   fetch: { success: 'Fetched from remote', error: 'Fetch failed' },
   push: { success: 'Pushed to remote', error: 'Push failed' },
-  pull: { success: 'Pulled from remote', error: 'Pull failed' }
+  pull: { success: 'Pulled from remote', error: 'Pull failed' },
+  'tag.push': { success: 'Tag pushed to remote', error: 'Tag push failed' }
 }
 
 export function useGitMutations() {
@@ -45,7 +46,7 @@ export function useGitMutations() {
     stageReset: wrap('stage.reset', ['working.status']),
     commit: wrap('commit.create', ['working.status', 'log.graph', 'status']),
     rewordCommit: wrap('commit.reword', ['working.status', 'log.graph', 'status']),
-    fetch: wrap('fetch', ['branch.list', 'log.graph', 'working.status']),
+    fetch: wrap('fetch', ['branch.list', 'log.graph', 'working.status', 'tag.list']),
     push: wrap('push', ['branch.list', 'working.status']),
     pull: wrap('pull', ['branch.list', 'log.graph', 'working.status']),
     merge: wrap('merge.start', ['branch.list', 'working.status', 'log.graph', 'merge.status']),
@@ -65,6 +66,9 @@ export function useGitMutations() {
     stashApply: wrap('stash.apply', ['working.status']),
     stashDrop: wrap('stash.drop', ['stash.list']),
     remoteAdd: wrap('remote.add', ['remote.list']),
-    remoteRemove: wrap('remote.remove', ['remote.list'])
+    remoteRemove: wrap('remote.remove', ['remote.list']),
+    createTag: wrap('tag.create', ['tag.list', 'log.graph']),
+    deleteTag: wrap('tag.delete', ['tag.list', 'log.graph']),
+    pushTag: wrap('tag.push', ['tag.list'])
   }
 }

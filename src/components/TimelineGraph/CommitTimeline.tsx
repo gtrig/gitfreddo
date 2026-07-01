@@ -20,6 +20,7 @@ import { ColumnResizeHandle } from '@/components/ui/ColumnResizeHandle'
 import { ContextMenu } from '@/components/ui/ContextMenu'
 import { LoadingRow } from '@/components/ui/Spinner'
 import { CreateBranchModal } from '@/components/actions/CreateBranchModal'
+import { CreateTagModal } from '@/components/actions/CreateTagModal'
 import { DeleteCommitModal } from '@/components/DetailPanel/DeleteCommitModal'
 import { RemoveStaleBranchesModal } from '@/components/DetailPanel/RemoveStaleBranchesModal'
 import { RewordCommitModal } from '@/components/DetailPanel/RewordCommitModal'
@@ -85,6 +86,8 @@ export function CommitTimeline() {
     setRewordCommit,
     createBranchAt,
     setCreateBranchAt,
+    createTagAt,
+    setCreateTagAt,
     deleteModal,
     setDeleteModal,
     removeStaleModal,
@@ -405,6 +408,12 @@ export function CommitTimeline() {
         open={Boolean(createBranchAt)}
         startPoint={createBranchAt ?? undefined}
         onClose={() => setCreateBranchAt(null)}
+      />
+
+      <CreateTagModal
+        open={Boolean(createTagAt)}
+        target={createTagAt ?? undefined}
+        onClose={() => setCreateTagAt(null)}
       />
 
       {deleteModal && (
