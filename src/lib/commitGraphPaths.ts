@@ -78,13 +78,31 @@ export function buildGraphEdgePath(
     if (Math.abs(padX - anchorX) < 0.5) {
       return `M ${padX} ${padY} L ${anchorX} ${anchorY}`
     }
-    const r = effectiveRadius(cornerRadius, Math.abs(anchorY - padY))
-    const dir = padX > anchorX ? 1 : -1
+    const verticalSpan = Math.abs(anchorY - padY)
+    const r = effectiveRadius(cornerRadius, verticalSpan)
+    const hDir = padX > anchorX ? 1 : -1
+    const padAboveAnchor = padY < anchorY
+
+    if (verticalSpan <= r * 1.5) {
+      return `M ${anchorX} ${anchorY} L ${padX} ${anchorY} L ${padX} ${padY}`
+    }
+
+    if (padAboveAnchor) {
+      // From anchor: branch right along the anchor row, then up to the stash pad.
+      return [
+        `M ${anchorX} ${anchorY}`,
+        `L ${padX - hDir * r} ${anchorY}`,
+        `Q ${padX} ${anchorY} ${padX} ${anchorY - r}`,
+        `L ${padX} ${padY}`
+      ].join(' ')
+    }
+
+    // Pad below anchor: branch right, then down to the stash pad.
     return [
-      `M ${padX} ${padY}`,
-      `L ${anchorX + dir * r} ${padY}`,
-      `Q ${anchorX} ${padY} ${anchorX} ${padY + r}`,
-      `L ${anchorX} ${anchorY}`
+      `M ${anchorX} ${anchorY}`,
+      `L ${padX - hDir * r} ${anchorY}`,
+      `Q ${padX} ${anchorY} ${padX} ${anchorY + r}`,
+      `L ${padX} ${padY}`
     ].join(' ')
   }
 

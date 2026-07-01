@@ -9,6 +9,12 @@ import { buildGitGraphLayout } from '@/lib/gitGraphLayout'
 import { commitRowHighlightClass } from '@/lib/commitSelection'
 import { countWorkingChanges } from '@/lib/workingChanges'
 import { timelineRefs } from '@/lib/timelineRefs'
+import { filterTimelineCommits, isStashCommit } from '@/lib/stashCommit'
+import {
+  formatAuthoredDateTooltip,
+  formatTimeSince,
+  useRelativeNow
+} from '@/lib/formatTimeSince'
 import { CommitGraphOverlay } from './CommitGraphOverlay'
 import { ColumnResizeHandle } from '@/components/ui/ColumnResizeHandle'
 import { ContextMenu } from '@/components/ui/ContextMenu'
@@ -21,6 +27,7 @@ import type { GitCommit } from '@/lib/types'
 
 const COMPACT_ROW_HEIGHT = 28
 const RESIZE_HANDLE_WIDTH = 4
+const TIME_SINCE_COLUMN_WIDTH = 88
 
 export function CommitTimeline() {
   const connected = useWorkspaceStore((s) => s.connected)
@@ -38,7 +45,10 @@ export function CommitTimeline() {
   const toggleCommitSelection = useSelectionStore((s) => s.toggleCommitSelection)
   const selectCommitRange = useSelectionStore((s) => s.selectCommitRange)
 
-  const commits = graph?.commits ?? []
+  const commits = useMemo(
+    () => filterTimelineCommits(graph?.commits ?? []),
+    [graph?.commits]
+  )
   const head = repoStatus?.head ?? ''
   const selectedHashSet = useMemo(() => new Set(selectedCommitHashes), [selectedCommitHashes])
   const primaryHash = selection?.kind === 'commit' ? selection.id : null
@@ -90,6 +100,7 @@ export function CommitTimeline() {
     onGraphLaneResize
   } = useTimelineColumnSizes(layout.laneCount)
   const selectedHash = primaryHash
+  const relativeNow = useRelativeNow()
 
   const rowState = (hash: string) => ({
     isSelected: selectedHashSet.has(hash),
@@ -116,6 +127,12 @@ export function CommitTimeline() {
           </div>
           <div className="shrink-0" style={{ width: RESIZE_HANDLE_WIDTH }} />
           <div className="min-w-0 flex-1 pl-2">Commit message</div>
+          <div
+            className="shrink-0 px-2 text-right"
+            style={{ width: TIME_SINCE_COLUMN_WIDTH }}
+          >
+            Time since
+          </div>
         </div>
 
         <div className="flex">
@@ -268,7 +285,7 @@ export function CommitTimeline() {
                           HEAD
                         </span>
                       )}
-                      {commit.parents.length > 1 && (
+                      {commit.parents.length > 1 && !isStashCommit(commit) && (
                         <span className="shrink-0 text-[10px] text-violet-400">merge</span>
                       )}
                       <p className="min-w-0 truncate text-[12px] text-gf-fg">
@@ -282,6 +299,32 @@ export function CommitTimeline() {
                     </div>
                   </div>
                 </button>
+              )
+            })}
+          </div>
+
+          <div
+            className="shrink-0 border-l border-gf-border/40 bg-gf-bg-deep"
+            style={{ width: TIME_SINCE_COLUMN_WIDTH }}
+          >
+            {showWorkingRow && (
+              <div style={{ height: COMPACT_ROW_HEIGHT }} />
+            )}
+            {commits.map((commit) => {
+              const { isSelected, isPrimary } = rowState(commit.hash)
+              return (
+                <div
+                  key={`time-${commit.hash}`}
+                  onContextMenu={onCommitContextMenu(commit)}
+                  onClick={handleCommitClick(commit)}
+                  title={formatAuthoredDateTooltip(commit.author.date)}
+                  className={`flex cursor-pointer items-center justify-end border-b border-gf-border/30 px-2 text-[11px] tabular-nums text-gf-fg-subtle hover:bg-gf-bg/50 ${commitRowHighlightClass(isSelected, isPrimary)}`}
+                  style={{ height: COMPACT_ROW_HEIGHT }}
+                >
+                  <span className="truncate">
+                    {formatTimeSince(commit.author.date, relativeNow)}
+                  </span>
+                </div>
               )
             })}
           </div>

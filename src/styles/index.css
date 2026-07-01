@@ -53,6 +53,8 @@
   --gf-graph-selected: #38bdf8;
   --gf-graph-wip: #f59e0b;
   --gf-graph-wip-stroke: #fbbf24;
+  --gf-graph-stash: #38bdf8;
+  --gf-graph-stash-stroke: #7dd3fc;
   --gf-graph-node-stroke: #52525b;
   --gf-sidebar-branch-active: rgb(34 58 40 / 0.85);
   --gf-sidebar-item-selected: rgb(28 45 65 / 0.85);
@@ -92,6 +94,8 @@
   --gf-graph-selected: #ddb892;
   --gf-graph-wip: #e8a87c;
   --gf-graph-wip-stroke: #f0c987;
+  --gf-graph-stash: #7eb8e8;
+  --gf-graph-stash-stroke: #a8d4f5;
   --gf-graph-node-stroke: #524336;
   --gf-sidebar-branch-active: rgb(45 58 38 / 0.9);
   --gf-sidebar-item-selected: rgb(58 48 38 / 0.85);

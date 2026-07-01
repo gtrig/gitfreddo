@@ -11,6 +11,8 @@ export interface GraphColors {
   selected: string
   wip: string
   wipStroke: string
+  stash: string
+  stashStroke: string
   nodeStroke: string
 }
 
@@ -28,6 +30,8 @@ export function useGraphColors(): GraphColors {
       selected: cssVar('--gf-graph-selected'),
       wip: cssVar('--gf-graph-wip'),
       wipStroke: cssVar('--gf-graph-wip-stroke'),
+      stash: cssVar('--gf-graph-stash'),
+      stashStroke: cssVar('--gf-graph-stash-stroke'),
       nodeStroke: cssVar('--gf-graph-node-stroke')
     }),
     [theme]

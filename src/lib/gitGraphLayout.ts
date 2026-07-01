@@ -1,3 +1,4 @@
+import { isStashCommit } from './stashCommit'
 import type { GitCommit } from './types'
 
 export const GRAPH_ROW_HEIGHT = 52
@@ -9,6 +10,7 @@ export interface GitGraphRow {
   column: number
   isHead: boolean
   isMerge: boolean
+  isStash: boolean
 }
 
 export interface GitGraphEdge {
@@ -16,7 +18,7 @@ export interface GitGraphEdge {
   toKey: string
   fromColumn: number
   toColumn: number
-  kind: 'parent' | 'merge'
+  kind: 'parent' | 'merge' | 'pad'
 }
 
 export interface GitGraphLayout {
@@ -76,6 +78,46 @@ function insertActiveBranch(
   }
   branches.push(commitSha)
   return branches.length - 1
+}
+
+function applyStashPadLayout(layout: GitGraphLayout): GitGraphLayout {
+  const stashRows = layout.rows.filter((row) => row.isStash)
+  if (stashRows.length === 0) return layout
+
+  const rowByKey = new Map(layout.rows.map((row) => [row.key, row]))
+  const stashKeys = new Set(stashRows.map((row) => row.key))
+  const anchorKey = layout.headKey
+
+  const rows = layout.rows.map((row) => {
+    if (!row.isStash) return row
+
+    const anchorRow = anchorKey ? rowByKey.get(anchorKey) : undefined
+    const anchorColumn = anchorRow?.column ?? row.column
+
+    return { ...row, column: anchorColumn + 1, isMerge: false }
+  })
+
+  const updatedRowByKey = new Map(rows.map((row) => [row.key, row]))
+  const edges = layout.edges.filter((edge) => !stashKeys.has(edge.fromKey))
+
+  for (const row of rows) {
+    if (!row.isStash || !anchorKey) continue
+
+    const anchorRow = updatedRowByKey.get(anchorKey)
+    if (!anchorRow) continue
+
+    edges.push({
+      fromKey: anchorKey,
+      toKey: row.key,
+      fromColumn: anchorRow.column,
+      toColumn: row.column,
+      kind: 'pad'
+    })
+  }
+
+  const laneCount = Math.max(layout.laneCount, ...rows.map((row) => row.column + 1))
+
+  return { ...layout, rows, edges, laneCount }
 }
 
 /**
@@ -193,7 +235,8 @@ export function buildGitGraphLayout(commits: GitCommit[], head: string): GitGrap
     rowIndex: index,
     column: columnByHash.get(commit.hash) ?? 0,
     isHead: commit.hash === head,
-    isMerge: commit.parents.length > 1
+    isMerge: commit.parents.length > 1 && !isStashCommit(commit),
+    isStash: isStashCommit(commit)
   }))
 
   const rowByKey = new Map(rows.map((row) => [row.key, row]))
@@ -217,10 +260,10 @@ export function buildGitGraphLayout(commits: GitCommit[], head: string): GitGrap
 
   const laneCount = Math.max(1, branches.length, ...rows.map((row) => row.column + 1))
 
-  return {
+  return applyStashPadLayout({
     rows,
     edges,
     laneCount,
     headKey: head || commits[0]?.hash || null
-  }
+  })
 }

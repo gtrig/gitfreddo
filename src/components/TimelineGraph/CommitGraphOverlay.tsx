@@ -88,6 +88,21 @@ export function CommitGraphOverlay({
         const x2 = columnCenterX(edge.toColumn, metrics)
         const y2 = rowCenter(toRow.rowIndex)
 
+        if (edge.kind === 'pad') {
+          return (
+            <path
+              key={`${edge.fromKey}-${edge.toKey}-pad`}
+              d={buildGraphEdgePath(x1, y1, x2, y2, 'pad', metrics.cornerRadius)}
+              fill="none"
+              stroke={colors.stash}
+              strokeWidth={2}
+              strokeDasharray="4 3"
+              strokeLinecap="round"
+              opacity={0.9}
+            />
+          )
+        }
+
         return (
           <path
             key={`${edge.fromKey}-${edge.toKey}-${edge.kind}`}
@@ -117,6 +132,33 @@ export function CommitGraphOverlay({
         const y = rowCenter(row.rowIndex)
         const isPrimary = selectedHash === row.key
         const isSelected = selectedHashes?.has(row.key) ?? isPrimary
+
+        if (row.isStash) {
+          const size = isPrimary ? 10 : isSelected ? 9.5 : 9
+          const half = size / 2
+          return (
+            <g key={row.key}>
+              <rect
+                x={x - half}
+                y={y - half}
+                width={size}
+                height={size}
+                rx={2}
+                fill={colors.stash}
+                stroke={isPrimary || isSelected ? colors.selected : colors.stashStroke}
+                strokeWidth={isPrimary ? 2 : isSelected ? 1.75 : 1.5}
+              />
+              <path
+                d={`M ${x - 2.5} ${y - 1.2} h 5 v 3.2 h -5 z M ${x - 2.5} ${y + 0.6} h 5`}
+                fill="none"
+                stroke={colors.stashStroke}
+                strokeWidth={0.9}
+                strokeLinecap="round"
+                opacity={0.95}
+              />
+            </g>
+          )
+        }
 
         return (
           <circle

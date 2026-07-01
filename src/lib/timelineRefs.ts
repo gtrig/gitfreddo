@@ -1,3 +1,5 @@
+import { isStashRef } from './stashCommit'
+
 function isHeadRef(ref: string): boolean {
   const trimmed = ref.trim()
   return trimmed === 'HEAD' || /\/HEAD$/i.test(trimmed)
@@ -5,7 +7,7 @@ function isHeadRef(ref: string): boolean {
 
 export function timelineRefs(rawRefs: string[]): string[] {
   const refs = rawRefs
-    .filter((ref) => !isHeadRef(ref))
+    .filter((ref) => !isHeadRef(ref) && !isStashRef(ref))
     .map((ref) => ref.replace(/^HEAD\s*->\s*/, '').trim())
     .filter((ref) => Boolean(ref) && !isHeadRef(ref))
 

@@ -81,6 +81,49 @@ describe('buildGitGraphLayout', () => {
     expect(layout.rows[0]?.rowIndex).toBe(0)
     expect(layout.rows[1]?.rowIndex).toBe(1)
   })
+
+  it('places stash commits on a pad lane with a dashed connector edge', () => {
+    const stash = {
+      ...commit('stash-tip', ['main-tip'], 'WIP on main'),
+      refs: ['stash']
+    }
+    const layout = buildGitGraphLayout(
+      [stash, commit('main-tip', ['base']), commit('base', [])],
+      'main-tip'
+    )
+
+    const stashRow = layout.rows.find((row) => row.key === 'stash-tip')
+    const mainRow = layout.rows.find((row) => row.key === 'main-tip')
+
+    expect(stashRow?.isStash).toBe(true)
+    expect(stashRow?.isMerge).toBe(false)
+    expect(stashRow?.column).toBe((mainRow?.column ?? 0) + 1)
+
+    const padEdge = layout.edges.find(
+      (edge) => edge.fromKey === 'main-tip' && edge.toKey === 'stash-tip' && edge.kind === 'pad'
+    )
+    expect(padEdge).toBeDefined()
+
+    const stashParentEdge = layout.edges.find((edge) => edge.fromKey === 'stash-tip')
+    expect(stashParentEdge).toBeUndefined()
+  })
+
+  it('anchors stash pad to HEAD when HEAD is ahead of the stash base', () => {
+    const stash = {
+      ...commit('stash-tip', ['base', 'index-tip'], 'WIP on main'),
+      refs: ['stash']
+    }
+    const layout = buildGitGraphLayout(
+      [commit('head', ['base']), stash, commit('base', [])],
+      'head'
+    )
+
+    const padEdge = layout.edges.find(
+      (edge) => edge.fromKey === 'head' && edge.toKey === 'stash-tip' && edge.kind === 'pad'
+    )
+    expect(padEdge).toBeDefined()
+    expect(layout.edges.some((edge) => edge.fromKey === 'stash-tip')).toBe(false)
+  })
 })
 
 describe('visualRowIndex', () => {
