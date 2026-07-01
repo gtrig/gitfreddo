@@ -7,6 +7,7 @@ export interface ContextMenuItem {
   disabled?: boolean
   danger?: boolean
   separator?: boolean
+  checked?: boolean
 }
 
 interface ContextMenuProps {
@@ -97,13 +98,16 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
               item.onClick()
               onClose()
             }}
-            className={`block w-full px-3 py-1.5 text-left text-xs disabled:cursor-default disabled:opacity-40 ${
+            className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs disabled:cursor-default disabled:opacity-40 ${
               item.danger
                 ? 'text-red-300 hover:bg-red-950/60'
                 : 'text-gf-fg hover:bg-gf-surface-hover'
             }`}
           >
-            {item.label}
+            <span className="inline-flex w-3 shrink-0 justify-center text-[10px] text-gf-accent">
+              {item.checked ? '✓' : ''}
+            </span>
+            <span>{item.label}</span>
           </button>
         )
       )}

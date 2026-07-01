@@ -3,6 +3,7 @@ import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
 import { useLogGraph, useRepoStatus, useStashList, useTags, useWorkingStatus } from '@/hooks/useGit'
 import { useTimelineColumnSizes } from '@/hooks/useTimelineColumnSizes'
+import { useTimelineColumnVisibility } from '@/hooks/useTimelineColumnVisibility'
 import { useCommitContextMenu } from '@/hooks/useCommitContextMenu'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { useGitMutations } from '@/hooks/useGitMutations'
@@ -14,6 +15,7 @@ import { commitSearchDimmedHashes, commitSearchRowDimClass } from '@/lib/commitS
 import { useCommitSearchStore } from '@/stores/commitSearch'
 import { filterTimelineCommits, isStashCommit, resolveStashEntry } from '@/lib/stashCommit'
 import { stashContextMenuItems } from '@/lib/sidebarContextMenus'
+import { timelineHeaderContextMenuItems } from '@/lib/timelineColumnVisibility'
 import {
   formatAuthoredDateTooltip,
   formatTimeSince,
@@ -95,6 +97,11 @@ export function CommitTimeline() {
     openMenu: openStashMenu,
     closeMenu: closeStashMenu
   } = useContextMenu()
+  const {
+    state: headerMenuState,
+    openMenu: openHeaderMenu,
+    closeMenu: closeHeaderMenu
+  } = useContextMenu()
 
   const {
     menu,
@@ -149,6 +156,11 @@ export function CommitTimeline() {
     onBranchTagResize,
     onGraphLaneResize
   } = useTimelineColumnSizes(layout.laneCount)
+  const { visibility, toggleColumn } = useTimelineColumnVisibility()
+  const { branchTag: showBranchTag, graph: showGraph, message: showMessage, timeSince: showTimeSince } =
+    visibility
+  const showBranchTagResize = showBranchTag && showGraph
+  const showGraphResize = showGraph && (showMessage || showTimeSince)
   const selectedHash = primaryHash
   const relativeNow = useRelativeNow()
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -209,25 +221,37 @@ export function CommitTimeline() {
   return (
     <div ref={scrollRef} className={`min-h-0 flex-1 overflow-y-auto ${resizing ? 'select-none' : ''}`}>
       <div className="flex min-w-max flex-col">
-        <div className="sticky top-0 z-20 flex border-b border-gf-border/70 bg-gf-bg-deep/95 px-2 py-1 text-[10px] uppercase tracking-wide text-gf-fg-subtle backdrop-blur">
-          <div className="shrink-0" style={{ width: branchTagWidth }}>
-            Branch / Tag
-          </div>
-          <div className="shrink-0" style={{ width: RESIZE_HANDLE_WIDTH }} />
-          <div className="shrink-0" style={{ width: graphColumnWidth }}>
-            Graph
-          </div>
-          <div className="shrink-0" style={{ width: RESIZE_HANDLE_WIDTH }} />
-          <div className="min-w-0 flex-1 pl-2">Commit message</div>
-          <div
-            className="shrink-0 px-2 text-right"
-            style={{ width: TIME_SINCE_COLUMN_WIDTH }}
-          >
-            Time since
-          </div>
+        <div
+          className="sticky top-0 z-20 flex border-b border-gf-border/70 bg-gf-bg-deep/95 px-2 py-1 text-[10px] uppercase tracking-wide text-gf-fg-subtle backdrop-blur"
+          onContextMenu={(event) =>
+            openHeaderMenu(event, timelineHeaderContextMenuItems(visibility, toggleColumn))
+          }
+        >
+          {showBranchTag && (
+            <div className="shrink-0" style={{ width: branchTagWidth }}>
+              Branch / Tag
+            </div>
+          )}
+          {showBranchTagResize && <div className="shrink-0" style={{ width: RESIZE_HANDLE_WIDTH }} />}
+          {showGraph && (
+            <div className="shrink-0" style={{ width: graphColumnWidth }}>
+              Graph
+            </div>
+          )}
+          {showGraphResize && <div className="shrink-0" style={{ width: RESIZE_HANDLE_WIDTH }} />}
+          {showMessage && <div className="min-w-0 flex-1 pl-2">Commit message</div>}
+          {showTimeSince && (
+            <div
+              className="shrink-0 px-2 text-right"
+              style={{ width: TIME_SINCE_COLUMN_WIDTH }}
+            >
+              Time since
+            </div>
+          )}
         </div>
 
         <div className="flex">
+          {showBranchTag && (
           <div
             className="sticky left-0 z-10 shrink-0 border-r border-gf-border/60 bg-gf-bg-deep"
             style={{ width: branchTagWidth }}
@@ -264,13 +288,17 @@ export function CommitTimeline() {
               )
             })}
           </div>
+          )}
 
+          {showBranchTagResize && (
           <ColumnResizeHandle
             onDrag={onBranchTagResize}
             onResizeStart={() => setResizing(true)}
             onResizeEnd={() => setResizing(false)}
           />
+          )}
 
+          {showGraph && (
           <div className="sticky left-0 z-10 shrink-0 overflow-visible bg-gf-bg-deep" style={{ width: graphColumnWidth }}>
             <div className="relative overflow-visible">
               <CommitGraphOverlay
@@ -297,13 +325,17 @@ export function CommitTimeline() {
               ))}
             </div>
           </div>
+          )}
 
+          {showGraphResize && (
           <ColumnResizeHandle
             onDrag={onGraphLaneResize}
             onResizeStart={() => setResizing(true)}
             onResizeEnd={() => setResizing(false)}
           />
+          )}
 
+          {showMessage && (
           <div className="min-w-0 flex-1">
             {showWorkingRow && (
               <button
@@ -386,7 +418,9 @@ export function CommitTimeline() {
               )
             })}
           </div>
+          )}
 
+          {showTimeSince && (
           <div
             className="shrink-0 border-l border-gf-border/40 bg-gf-bg-deep"
             style={{ width: TIME_SINCE_COLUMN_WIDTH }}
@@ -412,10 +446,20 @@ export function CommitTimeline() {
               )
             })}
           </div>
+          )}
         </div>
       </div>
 
       {menu && <ContextMenu x={menu.x} y={menu.y} items={items} onClose={closeMenu} />}
+
+      {headerMenuState && (
+        <ContextMenu
+          x={headerMenuState.x}
+          y={headerMenuState.y}
+          items={headerMenuState.items}
+          onClose={closeHeaderMenu}
+        />
+      )}
 
       {stashMenuState && (
         <ContextMenu
