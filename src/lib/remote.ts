@@ -3,6 +3,11 @@ export function remoteNameFromUpstream(upstream: string): string {
   return slash > 0 ? upstream.slice(0, slash) : upstream
 }
 
+export function isNonFastForwardPushError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  return /non-fast-forward|\(rejected\)/i.test(message)
+}
+
 export function resolveDefaultRemote(
   settingsRemote: string,
   remotes: { name: string }[],

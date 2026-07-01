@@ -189,7 +189,8 @@ export class RepoManager {
           git,
           p.remote as string | undefined,
           p.branch as string | undefined,
-          Boolean(p.setUpstream)
+          Boolean(p.setUpstream),
+          Boolean(p.force)
         )
       case 'pull':
         return remoteOps.pullRemote(

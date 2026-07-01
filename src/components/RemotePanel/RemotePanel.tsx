@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useRemotes } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
+import { usePushRemote } from '@/hooks/usePushRemote'
 import { useResolvedRemote } from '@/hooks/useAppSettings'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { ActionButton, ConfirmDialog, Modal } from '@/components/ui/Modal'
+import { PushForceConfirm } from '@/components/actions/PushForceConfirm'
 import { LoadingRow } from '@/components/ui/Spinner'
 import { RepoPicker } from '@/components/GitHub/RepoPicker'
 import { CreateGitHubRepoModal } from '@/components/GitHub/CreateGitHubRepoModal'
@@ -13,7 +15,9 @@ import { useToastStore } from '@/stores/toast'
 export function RemotePanel() {
   const connected = useWorkspaceStore((s) => s.connected)
   const { data: remotes, isLoading, error } = useRemotes(connected)
-  const { fetch, push, pull, remoteAdd, remoteRemove } = useGitMutations()
+  const { fetch, pull, remoteAdd, remoteRemove } = useGitMutations()
+  const { pushRemote, isPushPending, forceConfirm, confirmForcePush, cancelForcePush } =
+    usePushRemote()
   const defaultRemote = useResolvedRemote()
   const show = useToastStore((s) => s.show)
   const [addOpen, setAddOpen] = useState(false)
@@ -65,8 +69,8 @@ export function RemotePanel() {
             Pull
           </ActionButton>
           <ActionButton
-            loading={push.isPending}
-            onClick={() => void push.mutateAsync({ remote: defaultRemote })}
+            loading={isPushPending}
+            onClick={() => pushRemote({ remote: defaultRemote })}
           >
             Push
           </ActionButton>
@@ -167,6 +171,13 @@ export function RemotePanel() {
           }
           await addRemoteFromRepo(repo)
         }}
+      />
+
+      <PushForceConfirm
+        params={forceConfirm}
+        busy={isPushPending}
+        onConfirm={confirmForcePush}
+        onCancel={cancelForcePush}
       />
 
       {pendingRemove && (

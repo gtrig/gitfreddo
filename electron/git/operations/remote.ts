@@ -102,7 +102,8 @@ export async function pushRemote(
   gitBinaryPath: string,
   remote?: string,
   branch?: string,
-  setUpstream = false
+  setUpstream = false,
+  force = false
 ): Promise<void> {
   const currentBranch = (
     await runGitOrThrow(['rev-parse', '--abbrev-ref', 'HEAD'], { cwd, gitBinaryPath })
@@ -117,6 +118,7 @@ export async function pushRemote(
   const useUpstream = setUpstream || !(await branchHasUpstream(cwd, gitBinaryPath))
 
   const args = ['push']
+  if (force) args.push('--force-with-lease')
   if (useUpstream) args.push('-u')
   args.push(pushRemoteName, pushBranch)
   await runGitOrThrow(args, { cwd, gitBinaryPath })

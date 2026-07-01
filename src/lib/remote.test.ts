@@ -1,9 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { remoteNameFromUpstream, resolveDefaultRemote } from './remote'
+import { isNonFastForwardPushError, remoteNameFromUpstream, resolveDefaultRemote } from './remote'
 
 describe('remoteNameFromUpstream', () => {
   it('extracts the remote name before the first slash', () => {
     expect(remoteNameFromUpstream('gitfreddo/main')).toBe('gitfreddo')
+  })
+})
+
+describe('isNonFastForwardPushError', () => {
+  it('detects non-fast-forward rejections', () => {
+    const message =
+      '! [rejected] main -> main (non-fast-forward)\nerror: failed to push some refs'
+    expect(isNonFastForwardPushError(new Error(message))).toBe(true)
+  })
+
+  it('ignores other push errors', () => {
+    expect(isNonFastForwardPushError(new Error('authentication failed'))).toBe(false)
   })
 })
 

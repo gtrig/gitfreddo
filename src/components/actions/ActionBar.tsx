@@ -1,10 +1,12 @@
 import type { ReactNode } from 'react'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useGitMutations } from '@/hooks/useGitMutations'
+import { usePushRemote } from '@/hooks/usePushRemote'
 import { useResolvedRemote } from '@/hooks/useAppSettings'
 import { ConflictPanel } from '@/components/ConflictPanel/ConflictPanel'
 import { useMergeStatus } from '@/hooks/useGit'
 import { Spinner } from '@/components/ui/Spinner'
+import { PushForceConfirm } from '@/components/actions/PushForceConfirm'
 import {
   HeaderIconFetch,
   HeaderIconPull,
@@ -51,7 +53,9 @@ function ActionBarButton({
 
 export function ActionBar() {
   const connected = useWorkspaceStore((s) => s.connected)
-  const { fetch, pull, push, stashPush } = useGitMutations()
+  const { fetch, pull, stashPush } = useGitMutations()
+  const { pushRemote, isPushPending, forceConfirm, confirmForcePush, cancelForcePush } =
+    usePushRemote()
   const defaultRemote = useResolvedRemote()
   const { data: mergeStatus } = useMergeStatus(connected)
 
@@ -82,13 +86,19 @@ export function ActionBar() {
           Pull
         </ActionBarButton>
         <ActionBarButton
-          loading={push.isPending}
-          onClick={() => void push.mutateAsync({ remote: defaultRemote })}
+          loading={isPushPending}
+          onClick={() => pushRemote({ remote: defaultRemote })}
           icon={<HeaderIconPush className={iconClass} />}
         >
           Push
         </ActionBarButton>
       </div>
+      <PushForceConfirm
+        params={forceConfirm}
+        busy={isPushPending}
+        onConfirm={confirmForcePush}
+        onCancel={cancelForcePush}
+      />
       {mergeStatus?.inProgress && <ConflictPanel />}
     </>
   )
