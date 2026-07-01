@@ -22,16 +22,16 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
           cache: npm
 
       - name: Cache Electron (Linux)
         if: matrix.platform == 'linux'
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/electron
@@ -41,7 +41,7 @@ jobs:
 
       - name: Cache Electron (Windows)
         if: matrix.platform == 'win'
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~\AppData\Local\electron\Cache
@@ -58,7 +58,7 @@ jobs:
       - run: npm ci
       - run: npm run dist:${{ matrix.platform }} -- --publish never
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: gitfredo-${{ matrix.artifact }}
           path: |
