@@ -15,4 +15,12 @@ describe('parseCommitNameStatus', () => {
     const files = parseCommitNameStatus('R100\told-name.ts\tnew-name.ts')
     expect(files).toEqual([{ path: 'new-name.ts', kind: 'changed' }])
   })
+
+  it('parses combined-diff status codes from merge commits', () => {
+    const files = parseCommitNameStatus('MM\tsrc/App.tsx\nAM\tsrc/new.ts')
+    expect(files).toEqual([
+      { path: 'src/App.tsx', kind: 'changed' },
+      { path: 'src/new.ts', kind: 'added' }
+    ])
+  })
 })

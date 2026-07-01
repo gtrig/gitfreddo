@@ -25,7 +25,7 @@ export function parseCommitNameStatus(output: string): CommitFileItem[] {
     const path = parts[1]
     if (!path) continue
 
-    switch (status) {
+    switch (status[0]) {
       case 'A':
         items.push({ path, kind: 'added' })
         break

@@ -57,7 +57,7 @@ export async function diffShow(
   ref: string,
   path?: string
 ): Promise<GitDiffResult> {
-  const args = ['show', ref, '--']
+  const args = ['show', '-m', '--first-parent', ref, '--']
   if (path) args.push(path)
   const unified = await runGitOrThrow(args, { cwd, gitBinaryPath })
   return { unified, path: path ?? '' }

@@ -78,13 +78,13 @@ function FileChangeBadges({ counts, compact = false }: { counts: CommitFileCount
     counts.added > 0 ? (
       <span key="added" className="inline-flex items-center gap-1 text-emerald-400">
         <AddedIcon className="h-3.5 w-3.5" />
-        {compact ? `+${counts.added}` : `+ ${counts.added} added`}
+        {compact ? counts.added : `${counts.added} added`}
       </span>
     ) : null,
     counts.removed > 0 ? (
       <span key="removed" className="inline-flex items-center gap-1 text-rose-400">
         <RemovedIcon className="h-3.5 w-3.5" />
-        {compact ? `-${counts.removed}` : `${counts.removed} deleted`}
+        {compact ? counts.removed : `${counts.removed} deleted`}
       </span>
     ) : null
   ].filter(Boolean)

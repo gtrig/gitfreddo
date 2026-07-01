@@ -17,7 +17,11 @@ export async function showCommit(
   gitBinaryPath: string,
   hash: string
 ): Promise<string> {
-  return runGitOrThrow(['show', '--format=', '--name-status', hash], { cwd, gitBinaryPath })
+  // Merge commits default to a combined diff that omits most changed files.
+  return runGitOrThrow(
+    ['show', '-m', '--first-parent', '--format=', '--name-status', hash],
+    { cwd, gitBinaryPath }
+  )
 }
 
 export async function commitMessage(
