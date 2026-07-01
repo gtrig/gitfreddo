@@ -10,6 +10,7 @@ interface SidebarTreeRowProps {
   title?: string
   onClick?: () => void
   onDoubleClick?: () => void
+  onContextMenu?: (event: React.MouseEvent<HTMLButtonElement>) => void
 }
 
 export function SidebarTreeRow({
@@ -21,7 +22,8 @@ export function SidebarTreeRow({
   suffix,
   title,
   onClick,
-  onDoubleClick
+  onDoubleClick,
+  onContextMenu
 }: SidebarTreeRowProps) {
   let rowClass = 'text-gf-fg-muted hover:bg-gf-surface-hover/60 hover:text-gf-fg'
   if (isCurrent) {
@@ -35,6 +37,7 @@ export function SidebarTreeRow({
       type="button"
       onClick={onClick}
       onDoubleClick={onDoubleClick}
+      onContextMenu={onContextMenu}
       title={title}
       style={{ paddingLeft: `${8 + depth * 14}px` }}
       className={`flex w-full items-center gap-1.5 rounded py-1 pr-2 text-left text-xs ${rowClass}`}
@@ -61,13 +64,21 @@ interface SidebarFolderRowProps {
   depth?: number
   open: boolean
   onToggle: () => void
+  onContextMenu?: (event: React.MouseEvent<HTMLButtonElement>) => void
 }
 
-export function SidebarFolderRow({ name, depth = 0, open, onToggle }: SidebarFolderRowProps) {
+export function SidebarFolderRow({
+  name,
+  depth = 0,
+  open,
+  onToggle,
+  onContextMenu
+}: SidebarFolderRowProps) {
   return (
     <button
       type="button"
       onClick={onToggle}
+      onContextMenu={onContextMenu}
       style={{ paddingLeft: `${8 + depth * 14}px` }}
       className="flex w-full items-center gap-1 rounded py-1 pr-2 text-left text-xs text-gf-fg-muted hover:bg-gf-surface-hover/40 hover:text-gf-fg"
     >

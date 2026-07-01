@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { SidebarSection } from '@/components/layout/sidebar/SidebarSection'
 import { SidebarIconIssues } from '@/components/layout/sidebar/SidebarIcons'
 import { ActionButton, Modal } from '@/components/ui/Modal'
+import { ContextMenu } from '@/components/ui/ContextMenu'
 import { useGitHubIssues, useInvalidateGitHubIssues } from '@/hooks/useGitHubIssues'
 import { useGitHubRepoContext } from '@/hooks/useGitHubRepos'
 import { useGitHubStatus } from '@/hooks/useGitHubStatus'
@@ -9,6 +10,8 @@ import { useGitMutations } from '@/hooks/useGitMutations'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
 import { slugifyIssueBranch } from '@/lib/github'
+import { useContextMenu } from '@/hooks/useContextMenu'
+import { issueContextMenuItems } from '@/lib/sidebarContextMenus'
 
 const FILTERS = [
   { id: 'all', label: 'All open' },
@@ -32,6 +35,7 @@ export function SidebarIssuesSection() {
   const [createOpen, setCreateOpen] = useState(false)
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
+  const { state: menuState, openMenu, closeMenu } = useContextMenu()
 
   const canUseGitHub = connected && ghStatus?.connected && ctx
   const count = canUseGitHub ? (issues ?? []).length : 0
@@ -100,7 +104,18 @@ export function SidebarIssuesSection() {
             {error && <p className="px-2 text-xs text-red-400">{(error as Error).message}</p>}
             <ul className="space-y-1">
               {(issues ?? []).map((issue) => (
-                <li key={issue.number} className="rounded px-2 py-1.5 text-xs hover:bg-gf-surface-hover/40">
+                <li
+                  key={issue.number}
+                  className="rounded px-2 py-1.5 text-xs hover:bg-gf-surface-hover/40"
+                  onContextMenu={(event) =>
+                    openMenu(
+                      event,
+                      issueContextMenuItems(issue, (issueNumber, issueTitle) =>
+                        void branchFromIssue(issueNumber, issueTitle)
+                      )
+                    )
+                  }
+                >
                   <p className="truncate font-medium text-gf-fg">
                     #{issue.number} {issue.title}
                   </p>
@@ -130,6 +145,15 @@ export function SidebarIssuesSection() {
           </>
         )}
       </SidebarSection>
+
+      {menuState && (
+        <ContextMenu
+          x={menuState.x}
+          y={menuState.y}
+          items={menuState.items}
+          onClose={closeMenu}
+        />
+      )}
 
       {canUseGitHub && (
         <Modal open={createOpen} title="Create issue" onClose={() => setCreateOpen(false)}>

@@ -19,7 +19,23 @@ import {
 } from '@/components/layout/sidebar/SidebarIcons'
 import { SidebarFolderRow, SidebarTreeRow } from '@/components/layout/sidebar/SidebarTreeRow'
 import { LoadingRow } from '@/components/ui/Spinner'
-import { ActionButton } from '@/components/ui/Modal'
+import { ActionButton, ConfirmDialog } from '@/components/ui/Modal'
+import { ContextMenu } from '@/components/ui/ContextMenu'
+import { useContextMenu } from '@/hooks/useContextMenu'
+import { useGitMutations } from '@/hooks/useGitMutations'
+import { useGitHubRepoContext } from '@/hooks/useGitHubRepos'
+import { useGitHubStatus } from '@/hooks/useGitHubStatus'
+import { useWorkspaceStore } from '@/stores/workspace'
+import { useInvalidateGitHubPullRequests } from '@/hooks/useGitHubPullRequests'
+import { useToastStore } from '@/stores/toast'
+import { MergeBranchDialog } from '@/components/BranchSidebar/MergeBranchDialog'
+import { CreatePrModal } from '@/components/GitHub/CreatePrModal'
+import {
+  folderContextMenuItems,
+  localBranchContextMenuItems,
+  remoteBranchContextMenuItems,
+  remoteFolderContextMenuItems
+} from '@/lib/sidebarContextMenus'
 
 interface LocalBranchesSectionProps {
   branches: GitBranch[] | undefined
@@ -39,7 +55,11 @@ function BranchTree({
   openFolders,
   toggleFolder,
   onSelectCommit,
-  onCheckout
+  onCheckout,
+  onMerge,
+  onDelete,
+  onCreatePr,
+  openMenu
 }: {
   nodes: BranchTreeNode[]
   depth: number
@@ -48,6 +68,10 @@ function BranchTree({
   toggleFolder: (path: string) => void
   onSelectCommit: (hash: string) => void
   onCheckout: (name: string) => void
+  onMerge: (name: string) => void
+  onDelete: (name: string) => void
+  onCreatePr?: (name: string) => void
+  openMenu: ReturnType<typeof useContextMenu>['openMenu']
 }) {
   return (
     <>
@@ -62,6 +86,12 @@ function BranchTree({
                 depth={depth}
                 open={open}
                 onToggle={() => toggleFolder(path)}
+                onContextMenu={(event) =>
+                  openMenu(
+                    event,
+                    folderContextMenuItems(node.name, open, () => toggleFolder(path))
+                  )
+                }
               />
               {open && node.children && (
                 <BranchTree
@@ -72,6 +102,10 @@ function BranchTree({
                   toggleFolder={toggleFolder}
                   onSelectCommit={onSelectCommit}
                   onCheckout={onCheckout}
+                  onMerge={onMerge}
+                  onDelete={onDelete}
+                  onCreatePr={onCreatePr}
+                  openMenu={openMenu}
                 />
               )}
             </div>
@@ -100,6 +134,18 @@ function BranchTree({
             onDoubleClick={() => {
               if (!branch.isCurrent) onCheckout(branch.name)
             }}
+            onContextMenu={(event) =>
+              openMenu(
+                event,
+                localBranchContextMenuItems(branch, {
+                  onCheckout,
+                  onSelectCommit,
+                  onMerge,
+                  onDelete,
+                  onCreatePr
+                })
+              )
+            }
           />
         )
       })}
@@ -125,6 +171,22 @@ export function LocalBranchesSection({
   const filteredTree = useMemo(() => filterBranchTree(tree, filter), [tree, filter])
   const count = countBranchTreeNodes(filteredTree)
   const [openFolders, setOpenFolders] = useState<Set<string>>(() => new Set())
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null)
+  const [mergeSource, setMergeSource] = useState<string | null>(null)
+  const [prBranch, setPrBranch] = useState<string | null>(null)
+  const { state: menuState, openMenu, closeMenu } = useContextMenu()
+  const { deleteBranch } = useGitMutations()
+  const repoPath = useWorkspaceStore((s) => s.activePath)
+  const { data: ghStatus } = useGitHubStatus()
+  const { data: ghCtx } = useGitHubRepoContext(repoPath, true)
+  const invalidatePrs = useInvalidateGitHubPullRequests()
+  const show = useToastStore((s) => s.show)
+
+  const defaultBase =
+    localBranches.find((b) => b.name === 'main')?.name ??
+    localBranches[0]?.name ??
+    'main'
+  const canCreatePr = Boolean(ghStatus?.connected && ghCtx)
 
   function toggleFolder(path: string) {
     setOpenFolders((prev) => {
@@ -162,8 +224,50 @@ export function LocalBranchesSection({
           toggleFolder={toggleFolder}
           onSelectCommit={onSelectCommit}
           onCheckout={onCheckout}
+          onMerge={setMergeSource}
+          onDelete={setPendingDelete}
+          onCreatePr={canCreatePr ? setPrBranch : undefined}
+          openMenu={openMenu}
         />
       </div>
+
+      {menuState && (
+        <ContextMenu
+          x={menuState.x}
+          y={menuState.y}
+          items={menuState.items}
+          onClose={closeMenu}
+        />
+      )}
+      {mergeSource && <MergeBranchDialog sourceBranch={mergeSource} onClose={() => setMergeSource(null)} />}
+      {pendingDelete && (
+        <ConfirmDialog
+          open
+          title="Delete branch"
+          message={`Delete branch "${pendingDelete}"?`}
+          confirmLabel="Delete"
+          busy={deleteBranch.isPending}
+          onConfirm={async () => {
+            await deleteBranch.mutateAsync({ name: pendingDelete, force: true })
+            setPendingDelete(null)
+          }}
+          onCancel={() => setPendingDelete(null)}
+        />
+      )}
+      {prBranch && repoPath && (
+        <CreatePrModal
+          open
+          onClose={() => setPrBranch(null)}
+          defaultHead={prBranch}
+          defaultBase={defaultBase}
+          onSubmit={async (params) => {
+            await window.gitfredo.githubCreatePullRequest(repoPath, params)
+            await invalidatePrs(repoPath)
+            show('Pull request created', 'success')
+            setPrBranch(null)
+          }}
+        />
+      )}
     </SidebarSection>
   )
 }
@@ -210,6 +314,8 @@ export function RemoteBranchesSection({
 
   const count = grouped.reduce((sum, [, list]) => sum + list.length, 0)
   const [collapsedRemotes, setCollapsedRemotes] = useState<Set<string>>(() => new Set())
+  const { state: menuState, openMenu, closeMenu } = useContextMenu()
+  const { fetch } = useGitMutations()
 
   function toggleRemote(name: string) {
     setCollapsedRemotes((prev) => {
@@ -242,6 +348,15 @@ export function RemoteBranchesSection({
                 depth={0}
                 open={open}
                 onToggle={() => toggleRemote(remote)}
+                onContextMenu={(event) =>
+                  openMenu(
+                    event,
+                    remoteFolderContextMenuItems(remote, open, {
+                      onToggle: () => toggleRemote(remote),
+                      onFetch: (remoteName) => void fetch.mutateAsync({ remote: remoteName })
+                    })
+                  )
+                }
               />
               {open && list.length === 0 && (
                 <p
@@ -260,12 +375,24 @@ export function RemoteBranchesSection({
                     depth={1}
                     title="Click to focus commit"
                     onClick={() => onSelectCommit(branch.head)}
+                    onContextMenu={(event) =>
+                      openMenu(event, remoteBranchContextMenuItems(branch, onSelectCommit))
+                    }
                   />
                 ))}
             </div>
           )
         })}
       </div>
+
+      {menuState && (
+        <ContextMenu
+          x={menuState.x}
+          y={menuState.y}
+          items={menuState.items}
+          onClose={closeMenu}
+        />
+      )}
     </SidebarSection>
   )
 }

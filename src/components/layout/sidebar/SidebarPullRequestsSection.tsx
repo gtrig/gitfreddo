@@ -2,13 +2,16 @@ import { useState } from 'react'
 import { SidebarSection } from '@/components/layout/sidebar/SidebarSection'
 import { SidebarIconPullRequest } from '@/components/layout/sidebar/SidebarIcons'
 import { ActionButton } from '@/components/ui/Modal'
-import { CreatePrModal, MergePrButton } from '@/components/GitHub/CreatePrModal'
+import { ContextMenu } from '@/components/ui/ContextMenu'
+import { CreatePrModal } from '@/components/GitHub/CreatePrModal'
 import { useGitHubPullRequests, useInvalidateGitHubPullRequests } from '@/hooks/useGitHubPullRequests'
 import { useGitHubRepoContext } from '@/hooks/useGitHubRepos'
 import { useGitHubStatus } from '@/hooks/useGitHubStatus'
 import { useBranches } from '@/hooks/useGit'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
+import { useContextMenu } from '@/hooks/useContextMenu'
+import { pullRequestContextMenuItems } from '@/lib/sidebarContextMenus'
 
 export function SidebarPullRequestsSection() {
   const connected = useWorkspaceStore((s) => s.connected)
@@ -21,6 +24,7 @@ export function SidebarPullRequestsSection() {
   const show = useToastStore((s) => s.show)
   const [createOpen, setCreateOpen] = useState(false)
   const [expandedPr, setExpandedPr] = useState<number | null>(null)
+  const { state: menuState, openMenu, closeMenu } = useContextMenu()
 
   const currentBranch = branches?.find((b) => b.isCurrent && !b.isRemote)?.name ?? 'main'
   const defaultBase =
@@ -30,6 +34,13 @@ export function SidebarPullRequestsSection() {
 
   const canUseGitHub = connected && ghStatus?.connected && ctx
   const count = canUseGitHub ? (prs ?? []).length : 0
+
+  async function mergePullRequest(prNumber: number, method: 'merge' | 'squash' | 'rebase') {
+    if (!repoPath) return
+    await window.gitfredo.githubMergePullRequest(repoPath, prNumber, method)
+    await invalidate(repoPath)
+    show(`PR #${prNumber} merged`, 'success')
+  }
 
   return (
     <>
@@ -68,6 +79,14 @@ export function SidebarPullRequestsSection() {
                     type="button"
                     className="w-full text-left"
                     onClick={() => setExpandedPr(expandedPr === pr.number ? null : pr.number)}
+                    onContextMenu={(event) =>
+                      openMenu(
+                        event,
+                        pullRequestContextMenuItems(pr, {
+                          onMerge: (method) => void mergePullRequest(pr.number, method)
+                        })
+                      )
+                    }
                   >
                     <p className="truncate font-medium text-gf-fg">
                       #{pr.number} {pr.title}
@@ -86,14 +105,6 @@ export function SidebarPullRequestsSection() {
                       >
                         Open on GitHub
                       </a>
-                      <MergePrButton
-                        onMerge={async (method) => {
-                          if (!repoPath) return
-                          await window.gitfredo.githubMergePullRequest(repoPath, pr.number, method)
-                          await invalidate(repoPath)
-                          show(`PR #${pr.number} merged`, 'success')
-                        }}
-                      />
                     </div>
                   )}
                 </li>
@@ -105,6 +116,15 @@ export function SidebarPullRequestsSection() {
           </>
         )}
       </SidebarSection>
+
+      {menuState && (
+        <ContextMenu
+          x={menuState.x}
+          y={menuState.y}
+          items={menuState.items}
+          onClose={closeMenu}
+        />
+      )}
 
       {canUseGitHub && (
         <CreatePrModal
