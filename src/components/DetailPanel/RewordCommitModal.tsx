@@ -11,11 +11,18 @@ const SUBJECT_MAX = 72
 interface RewordCommitModalProps {
   commit: GitCommit
   fullMessage?: string
+  initialDraft?: { summary: string; description: string } | null
   open: boolean
   onClose: () => void
 }
 
-export function RewordCommitModal({ commit, fullMessage, open, onClose }: RewordCommitModalProps) {
+export function RewordCommitModal({
+  commit,
+  fullMessage,
+  initialDraft,
+  open,
+  onClose
+}: RewordCommitModalProps) {
   const { rewordCommit } = useGitMutations()
   const { data: working } = useWorkingStatus(open)
   const showToast = useToastStore((s) => s.show)
@@ -25,10 +32,15 @@ export function RewordCommitModal({ commit, fullMessage, open, onClose }: Reword
 
   useEffect(() => {
     if (!open) return
+    if (initialDraft) {
+      setSummary(initialDraft.summary)
+      setDescription(initialDraft.description)
+      return
+    }
     const message = fullMessage ?? commit.message
     setSummary(commit.subject)
     setDescription(commitMessageBody(message, commit.subject))
-  }, [open, commit, fullMessage])
+  }, [open, commit, fullMessage, initialDraft])
 
   const isMergeCommit = commit.parents.length > 1
   const workingTreeDirty = working ? !working.isClean : false

@@ -107,12 +107,22 @@ function Chevron({ open }: { open: boolean }) {
   )
 }
 
+function parseCommitMessage(text: string): { summary: string; description: string } {
+  const trimmed = text.trim()
+  const split = trimmed.split(/\n\n/)
+  const summary = split[0]?.trim() ?? ''
+  const description = split.slice(1).join('\n\n').trim()
+  return { summary, description }
+}
+
 function CommitAiButton({
   filePaths,
-  fullMessage
+  fullMessage,
+  onSuggestion
 }: {
   filePaths: string[]
   fullMessage: string
+  onSuggestion: (summary: string, description: string) => void
 }) {
   const aiEnabled = useAiEnabled()
   const aiFill = useAiFill()
@@ -135,8 +145,8 @@ function CommitAiButton({
           })
           .then((text) => {
             if (text.trim()) {
-              pushToast('AI suggestion copied to clipboard.', 'info')
-              void navigator.clipboard.writeText(text.trim())
+              const parsed = parseCommitMessage(text)
+              onSuggestion(parsed.summary, parsed.description)
             }
           })
           .catch((error) => {
@@ -321,6 +331,9 @@ export function CommitPreview({
   const [sortAscending, setSortAscending] = useState(true)
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(() => new Set())
   const [rewordOpen, setRewordOpen] = useState(false)
+  const [rewordDraft, setRewordDraft] = useState<{ summary: string; description: string } | null>(
+    null
+  )
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
 
   const fullMessageQuery = useQuery({
@@ -393,7 +406,10 @@ export function CommitPreview({
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setRewordOpen(true)}
+            onClick={() => {
+              setRewordDraft(null)
+              setRewordOpen(true)
+            }}
             className="rounded border border-gf-border-strong px-3 py-1 text-xs text-gf-fg-muted hover:bg-gf-surface"
           >
             Reword
@@ -401,6 +417,10 @@ export function CommitPreview({
           <CommitAiButton
             filePaths={changedFiles.map((file) => file.path)}
             fullMessage={fullMessage}
+            onSuggestion={(summary, description) => {
+              setRewordDraft({ summary, description })
+              setRewordOpen(true)
+            }}
           />
         </div>
       </div>
@@ -408,8 +428,12 @@ export function CommitPreview({
       <RewordCommitModal
         commit={commit}
         fullMessage={fullMessage}
+        initialDraft={rewordDraft}
         open={rewordOpen}
-        onClose={() => setRewordOpen(false)}
+        onClose={() => {
+          setRewordOpen(false)
+          setRewordDraft(null)
+        }}
       />
 
       <div className="border-b border-gf-border px-4 py-4">
