@@ -6,6 +6,7 @@ import { deleteRepoFile, resolveRepoFile } from '../git/workspace-files'
 import { normalizeRepoPath } from '../git/repo-path'
 import { addRecentRepo, loadSettings, saveSettings } from '../settings'
 import { buildAppMenu, pickGitBinary, setMainWindow } from '../menu'
+import { registerExternalLinkHandlers } from '../external-links'
 import { onLog } from '../git/log-bus'
 import { cloneRepository } from '../git/clone'
 import { aiConfigFromSettings, aiFill } from '../llm/client'
@@ -88,6 +89,7 @@ function createWindow(): void {
   })
 
   setMainWindow(mainWindow)
+  registerExternalLinkHandlers(mainWindow.webContents)
   mainWindow.once('ready-to-show', () => mainWindow.show())
   mainWindow.on('closed', () => setMainWindow(null))
 

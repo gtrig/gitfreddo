@@ -94,7 +94,7 @@ export function RepoSidebar() {
         />
       </div>
 
-      <div className="mt-auto shrink-0 border-t border-gf-border/60">
+      <div className="mt-auto max-h-[45%] shrink-0 overflow-y-auto border-t border-gf-border/60">
         <SidebarPullRequestsSection />
         <SidebarIssuesSection />
       </div>

@@ -30,12 +30,11 @@ export async function listIssues(
   assigneeLogin?: string
 ): Promise<GitHubIssue[]> {
   const params = new URLSearchParams({ state: 'open', per_page: '100' })
-  const raw = await githubJson<GitHubApiIssue[]>(`/repos/${owner}/${repo}/issues?${params}`)
-  let issues = raw.filter((item) => !item.pull_request).map(mapIssue)
   if (assigneeLogin) {
-    issues = issues.filter((issue) => issue.user === assigneeLogin)
+    params.set('assignee', assigneeLogin)
   }
-  return issues
+  const raw = await githubJson<GitHubApiIssue[]>(`/repos/${owner}/${repo}/issues?${params}`)
+  return raw.filter((item) => !item.pull_request).map(mapIssue)
 }
 
 export async function createIssue(

@@ -6,7 +6,7 @@ export function remoteNameFromUpstream(upstream: string): string {
   return slash > 0 ? upstream.slice(0, slash) : upstream
 }
 
-async function resolveRemoteName(
+export async function resolveRemoteName(
   cwd: string,
   gitBinaryPath: string,
   remote?: string
