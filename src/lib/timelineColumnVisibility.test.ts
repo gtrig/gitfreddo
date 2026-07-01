@@ -61,6 +61,7 @@ describe('timelineColumnVisibility', () => {
 
   it('disables hiding the last visible column in the header menu', () => {
     const visibility = {
+      ...DEFAULT_TIMELINE_COLUMN_VISIBILITY,
       branchTag: false,
       graph: false,
       message: true,

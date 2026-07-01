@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { useMergeStatus } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useResolvedRemote } from '@/hooks/useAppSettings'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { Spinner } from '@/components/ui/Spinner'
+import { ConflictResolverModal } from '@/components/DiffViewer/ConflictResolverModal'
 import type { GitMergeStatus } from '@/lib/types'
 
 const OPERATION_LABELS: Record<NonNullable<GitMergeStatus['kind']>, string> = {
@@ -26,6 +28,7 @@ export function ConflictPanel() {
     cherryPickSkip,
     stageAdd
   } = useGitMutations()
+  const [resolvePath, setResolvePath] = useState<string | null>(null)
 
   if (!operationStatus?.inProgress || !operationStatus.kind) return null
 
@@ -91,10 +94,17 @@ export function ConflictPanel() {
               <span className="truncate">{path}</span>
               <button
                 type="button"
-                onClick={() => void window.gitfredo.openInEditor(path)}
+                onClick={() => setResolvePath(path)}
                 className="shrink-0 text-gf-accent-fg hover:text-gf-accent-fg"
               >
-                Open
+                Resolve
+              </button>
+              <button
+                type="button"
+                onClick={() => void window.gitfredo.openInEditor(path)}
+                className="shrink-0 text-gf-fg-subtle hover:text-gf-fg"
+              >
+                Editor
               </button>
             </li>
           ))}
@@ -138,6 +148,13 @@ export function ConflictPanel() {
           Abort
         </button>
       </div>
+      {resolvePath && (
+        <ConflictResolverModal
+          open
+          path={resolvePath}
+          onClose={() => setResolvePath(null)}
+        />
+      )}
     </div>
   )
 }

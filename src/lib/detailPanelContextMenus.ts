@@ -48,6 +48,8 @@ export function workingTreeFileContextMenuItems(
     onSelect: () => void
     onStageToggle: () => void
     onOpenInEditor: () => void
+    onFileHistory?: () => void
+    onRename?: () => void
     onDiscard?: () => void
     onRemove?: () => void
     onDelete?: () => void
@@ -100,6 +102,22 @@ export function workingTreeFileContextMenuItems(
     })
   }
 
+  if (handlers.onRename && status !== 'deleted') {
+    items.push({
+      id: 'rename',
+      label: 'Rename…',
+      onClick: handlers.onRename
+    })
+  }
+
+  if (handlers.onFileHistory) {
+    items.push({
+      id: 'history',
+      label: 'File history…',
+      onClick: handlers.onFileHistory
+    })
+  }
+
   items.push(
     separator('sep-editor'),
     {
@@ -139,7 +157,8 @@ export function commitFolderContextMenuItems(
 export function commitFileContextMenuItems(
   path: string,
   fileName: string,
-  onSelect: () => void
+  onSelect: () => void,
+  onFileHistory?: () => void
 ): ContextMenuItem[] {
   return [
     {
@@ -147,6 +166,15 @@ export function commitFileContextMenuItems(
       label: 'View changes',
       onClick: onSelect
     },
+    ...(onFileHistory
+      ? [
+          {
+            id: 'history',
+            label: 'File history…',
+            onClick: onFileHistory
+          } as ContextMenuItem
+        ]
+      : []),
     separator('sep-copy'),
     {
       id: 'copy-path',

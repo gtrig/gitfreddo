@@ -26,13 +26,29 @@ export async function stashList(cwd: string, gitBinaryPath: string): Promise<Git
 export async function stashPush(
   cwd: string,
   gitBinaryPath: string,
-  message?: string
+  message?: string,
+  options: { includeUntracked?: boolean; includeIgnored?: boolean; paths?: string[] } = {}
 ): Promise<void> {
   const args = ['stash', 'push']
-  if (message) {
-    args.push('-m', message)
+  if (options.includeIgnored) args.push('-a')
+  else if (options.includeUntracked) args.push('-u')
+  if (message) args.push('-m', message)
+  if (options.paths && options.paths.length > 0) {
+    args.push('--', ...options.paths)
   }
   await runGitOrThrow(args, { cwd, gitBinaryPath })
+}
+
+export async function stashBranch(
+  cwd: string,
+  gitBinaryPath: string,
+  branchName: string,
+  index = 0
+): Promise<void> {
+  await runGitOrThrow(['stash', 'branch', branchName, `stash@{${index}}`], {
+    cwd,
+    gitBinaryPath
+  })
 }
 
 export async function stashPop(cwd: string, gitBinaryPath: string, index = 0): Promise<void> {

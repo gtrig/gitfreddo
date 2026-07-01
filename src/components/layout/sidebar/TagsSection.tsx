@@ -12,6 +12,7 @@ import { matchesFilter } from '@/lib/branchTree'
 import { localTagName, tagCheckoutRef } from '@/lib/tagNames'
 import { tagContextMenuItems } from '@/lib/sidebarContextMenus'
 import { CreateTagModal } from '@/components/actions/CreateTagModal'
+import { RenameTagModal } from '@/components/actions/RenameTagModal'
 
 interface TagsSectionProps {
   tags: GitTag[] | undefined
@@ -43,6 +44,7 @@ export function TagsSection({
   const { checkout, deleteTag, pushTag } = useGitMutations()
   const [createOpen, setCreateOpen] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
+  const [renameTag, setRenameTag] = useState<GitTag | null>(null)
 
   const defaultRemote = remotes?.[0]?.name
 
@@ -93,6 +95,7 @@ export function TagsSection({
                       onSelectCommit,
                       onCheckout: (name) => void checkout.mutateAsync({ name }),
                       onPush: (name, remote) => void pushTag.mutateAsync({ name, remote }),
+                      onRename: (tag) => setRenameTag(tag),
                       onDelete: (tag, remote) => setPendingDelete({ tag, remote })
                     })
                   )
@@ -113,6 +116,14 @@ export function TagsSection({
       </SidebarSection>
 
       <CreateTagModal open={createOpen} onClose={() => setCreateOpen(false)} />
+
+      {renameTag && !renameTag.isRemote && (
+        <RenameTagModal
+          open
+          currentName={renameTag.name}
+          onClose={() => setRenameTag(null)}
+        />
+      )}
 
       {pendingDelete && (
         <ConfirmDialog

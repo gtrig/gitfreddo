@@ -253,6 +253,22 @@ export function rowsToSplitDisplay(rows: DiffRow[]): SplitDiffRow[] {
   return split
 }
 
+export function buildHunkPatch(path: string, rows: DiffRow[]): string {
+  const lines: string[] = [`--- a/${path}`, `+++ b/${path}`]
+  for (const row of rows) {
+    if (row.kind === 'hunk') {
+      lines.push(row.content)
+    } else if (row.kind === 'add') {
+      lines.push(`+${row.content}`)
+    } else if (row.kind === 'remove') {
+      lines.push(`-${row.content}`)
+    } else if (row.kind === 'context') {
+      lines.push(` ${row.content}`)
+    }
+  }
+  return lines.join('\n')
+}
+
 export function groupRowsByHunk(rows: DiffRow[]): DiffRow[][] {
   const groups: DiffRow[][] = []
   let current: DiffRow[] = []

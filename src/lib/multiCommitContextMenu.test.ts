@@ -3,13 +3,19 @@ import type { GitCommit } from '@/lib/types'
 import { buildMultiCommitContextMenuItems } from './multiCommitContextMenu'
 
 function commit(hash: string, parents: string[] = []): GitCommit {
+  const author = { name: 'Author', email: 'a@b.c', date: '2024-01-01T00:00:00+00:00' }
   return {
     hash,
     shortHash: hash.slice(0, 7),
     parents,
     message: hash,
     subject: hash,
-    author: { name: 'Author', email: 'a@b.c', date: '2024-01-01T00:00:00+00:00' },
+    body: '',
+    author,
+    committer: author,
+    signature: null,
+    notes: '',
+    stats: null,
     refs: []
   }
 }
@@ -17,6 +23,8 @@ function commit(hash: string, parents: string[] = []): GitCommit {
 const actions = {
   copyAllHashes: vi.fn(),
   cherryPickAll: vi.fn(),
+  cherryPickAllNoCommit: vi.fn(),
+  interactiveRebase: vi.fn(),
   squashSelected: vi.fn(),
   dropSelected: vi.fn(),
   removeStaleSelected: vi.fn(),

@@ -27,6 +27,10 @@ interface RemoveStaleModalState {
   seedHashes?: string[]
 }
 
+interface InteractiveRebaseModalState {
+  commits: GitCommit[]
+}
+
 export type { RemoveStaleModalState }
 
 export interface CommitContextMenuOptions {
@@ -47,6 +51,8 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
   const [createTagAt, setCreateTagAt] = useState<string | null>(null)
   const [deleteModal, setDeleteModal] = useState<DeleteModalState | null>(null)
   const [removeStaleModal, setRemoveStaleModal] = useState<RemoveStaleModalState | null>(null)
+  const [interactiveRebaseModal, setInteractiveRebaseModal] =
+    useState<InteractiveRebaseModalState | null>(null)
 
   const selectTimelineNode = useSelectionStore((s) => s.selectTimelineNode)
   const setPrimaryCommit = useSelectionStore((s) => s.setPrimaryCommit)
@@ -151,6 +157,15 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
             cherryPick.mutateAsync({ hashes }),
             `Cherry-picked ${hashes.length} commits.`
           ),
+        cherryPickAllNoCommit: (hashes) =>
+          runMutation(
+            cherryPick.mutateAsync({ hashes, noCommit: true }),
+            `Cherry-picked ${hashes.length} commits without committing.`
+          ),
+        interactiveRebase: (commits) => {
+          closeMenu()
+          setInteractiveRebaseModal({ commits })
+        },
         squashSelected: (hashes) =>
           runMutation(
             squashCommits.mutateAsync({ hashes }),
@@ -168,6 +183,11 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
           runMutation(rebaseStart.mutateAsync({ onto: hash }), 'Rebase started.'),
         cherryPick: (hash) =>
           runMutation(cherryPick.mutateAsync({ hash }), 'Cherry-pick complete.'),
+        cherryPickNoCommit: (hash) =>
+          runMutation(
+            cherryPick.mutateAsync({ hash, noCommit: true }),
+            'Cherry-pick applied without commit.'
+          ),
         reset: (mode, hash) =>
           runMutation(reset.mutateAsync({ mode, ref: hash }), `Reset ${mode} complete.`),
         deleteHead: (mode) =>
@@ -232,6 +252,8 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
     deleteModal,
     setDeleteModal,
     removeStaleModal,
-    setRemoveStaleModal
+    setRemoveStaleModal,
+    interactiveRebaseModal,
+    setInteractiveRebaseModal
   }
 }

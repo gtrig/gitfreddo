@@ -25,7 +25,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   aiCommitInstructions: '',
   aiStashInstructions: '',
   githubLogin: '',
-  githubConnectedAt: null
+  githubConnectedAt: null,
+  pullRebase: false,
+  diffViewMode: 'unified'
 }
 
 export async function loadSettings(): Promise<AppSettings> {
@@ -50,6 +52,11 @@ export async function loadSettings(): Promise<AppSettings> {
       aiStashInstructions: parsed.aiStashInstructions ?? '',
       githubLogin: parsed.githubLogin ?? '',
       githubConnectedAt: parsed.githubConnectedAt ?? null,
+      pullRebase: Boolean(parsed.pullRebase),
+      diffViewMode:
+        parsed.diffViewMode === 'split' || parsed.diffViewMode === 'word'
+          ? parsed.diffViewMode
+          : 'unified',
       theme: normalizeAppTheme(parsed.theme)
     }
   } catch {

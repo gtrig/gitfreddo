@@ -21,6 +21,7 @@ export interface CommitContextMenuActions extends MultiCommitContextMenuActions 
   reword: (commit: GitCommit) => void
   rebaseOnto: (hash: string) => void
   cherryPick: (hash: string) => void
+  cherryPickNoCommit: (hash: string) => void
   reset: (mode: 'soft' | 'mixed' | 'hard', hash: string) => void
   deleteHead: (mode: ResetMode) => void
   dropCommits: (commits: GitCommit[]) => void
@@ -230,6 +231,15 @@ export function buildCommitContextMenuItems({
       : `Cherry-pick ${short} onto ${branchLabel}`,
     disabled: cherryPickBlocked,
     onClick: () => actions.cherryPick(commit.hash)
+  })
+
+  items.push({
+    id: 'cherry-pick-no-commit',
+    label: inHistory
+      ? `Cherry-pick ${short} without commit (already in ${branchLabel})`
+      : `Cherry-pick ${short} without commit onto ${branchLabel}`,
+    disabled: cherryPickBlocked,
+    onClick: () => actions.cherryPickNoCommit(commit.hash)
   })
 
   items.push({ id: 'sep-reset', label: '', separator: true, onClick: () => {} })

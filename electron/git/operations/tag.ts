@@ -152,3 +152,13 @@ export async function tagPush(
 
   await runGitOrThrow(['push', remoteName, '--tags'], { cwd, gitBinaryPath })
 }
+
+export async function tagRename(
+  cwd: string,
+  gitBinaryPath: string,
+  oldName: string,
+  newName: string
+): Promise<void> {
+  const localOld = oldName.includes('/') ? oldName.slice(oldName.indexOf('/') + 1) : oldName
+  await runGitOrThrow(['tag', localOld, newName.trim()], { cwd, gitBinaryPath })
+}

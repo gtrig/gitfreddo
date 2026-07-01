@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { GitStashEntry } from '@/lib/types'
 import { SidebarSection } from '@/components/layout/sidebar/SidebarSection'
 import { SidebarIconStash } from '@/components/layout/sidebar/SidebarIcons'
@@ -9,6 +9,7 @@ import { useContextMenu } from '@/hooks/useContextMenu'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { matchesFilter } from '@/lib/branchTree'
 import { stashContextMenuItems } from '@/lib/sidebarContextMenus'
+import { StashBranchModal } from '@/components/actions/StashBranchModal'
 
 interface StashesSectionProps {
   stashes: GitStashEntry[] | undefined
@@ -36,6 +37,7 @@ export function StashesSection({
   )
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
   const { stashApply, stashPop, stashDrop } = useGitMutations()
+  const [branchStashIndex, setBranchStashIndex] = useState<number | null>(null)
 
   return (
     <SidebarSection
@@ -67,7 +69,8 @@ export function StashesSection({
                     onSelect,
                     onApply: (index) => void stashApply.mutateAsync({ index }),
                     onPop: (index) => void stashPop.mutateAsync({ index }),
-                    onDrop: (index) => void stashDrop.mutateAsync({ index })
+                    onDrop: (index) => void stashDrop.mutateAsync({ index }),
+                    onBranch: (index) => setBranchStashIndex(index)
                   })
                 )
               }
@@ -82,6 +85,14 @@ export function StashesSection({
           y={menuState.y}
           items={menuState.items}
           onClose={closeMenu}
+        />
+      )}
+
+      {branchStashIndex !== null && (
+        <StashBranchModal
+          open
+          stashIndex={branchStashIndex}
+          onClose={() => setBranchStashIndex(null)}
         />
       )}
     </SidebarSection>

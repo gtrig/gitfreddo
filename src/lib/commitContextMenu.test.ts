@@ -8,7 +8,12 @@ const baseCommit: GitCommit = {
   parents: ['bbb222222222222222222222222222222222222'],
   message: 'Head commit',
   subject: 'Head commit',
+  body: '',
   author: { name: 'Test', email: 'test@example.com', date: '2024-01-01' },
+  committer: { name: 'Test', email: 'test@example.com', date: '2024-01-01' },
+  signature: null,
+  notes: '',
+  stats: null,
   refs: ['main']
 }
 
@@ -18,7 +23,12 @@ const parentCommit: GitCommit = {
   parents: [],
   message: 'Parent commit',
   subject: 'Parent commit',
+  body: '',
   author: { name: 'Test', email: 'test@example.com', date: '2024-01-01' },
+  committer: { name: 'Test', email: 'test@example.com', date: '2024-01-01' },
+  signature: null,
+  notes: '',
+  stats: null,
   refs: []
 }
 
@@ -43,6 +53,8 @@ const noopActions = {
   copyAllHashes: () => {},
   compareSelected: () => {},
   cherryPickAll: () => {},
+  cherryPickAllNoCommit: () => {},
+  interactiveRebase: () => {},
   squashSelected: () => {},
   dropSelected: () => {},
   removeStaleSelected: () => {},
@@ -52,6 +64,7 @@ const noopActions = {
   reword: () => {},
   rebaseOnto: () => {},
   cherryPick: () => {},
+  cherryPickNoCommit: () => {},
   reset: () => {},
   deleteHead: () => {},
   dropCommits: () => {},

@@ -36,6 +36,8 @@ export function localBranchContextMenuItems(
     onMerge: (name: string) => void
     onRename: (name: string) => void
     onDelete: (name: string) => void
+    onSetUpstream?: (name: string) => void
+    onUnsetUpstream?: (name: string) => void
     onCreatePr?: (name: string) => void
     onCheckoutInWorktree?: (name: string) => void
   }
@@ -101,6 +103,24 @@ export function localBranchContextMenuItems(
       label: 'Rename…',
       onClick: () => handlers.onRename(branch.name)
     })
+  }
+
+  if (handlers.onSetUpstream || handlers.onUnsetUpstream) {
+    items.push(separator('sep-upstream'))
+    if (branch.upstream && handlers.onUnsetUpstream) {
+      items.push({
+        id: 'unset-upstream',
+        label: 'Unset upstream',
+        onClick: () => handlers.onUnsetUpstream!(branch.name)
+      })
+    }
+    if (handlers.onSetUpstream) {
+      items.push({
+        id: 'set-upstream',
+        label: branch.upstream ? 'Change upstream…' : 'Set upstream…',
+        onClick: () => handlers.onSetUpstream!(branch.name)
+      })
+    }
   }
 
   return items
@@ -170,14 +190,23 @@ export function remoteFolderContextMenuItems(
 
 export function remoteBranchContextMenuItems(
   branch: GitBranch,
-  onSelectCommit: (hash: string) => void
+  handlers: {
+    onSelectCommit: (hash: string) => void
+    onCheckout?: (remoteBranch: string) => void
+    onDeleteRemote?: (remoteBranch: string) => void
+  }
 ): ContextMenuItem[] {
   const shortName = remoteBranchShortName(branch.name)
-  return [
+  const items: ContextMenuItem[] = [
+    {
+      id: 'checkout',
+      label: 'Checkout as local branch…',
+      onClick: () => handlers.onCheckout?.(branch.name)
+    },
     {
       id: 'focus',
       label: 'Focus commit',
-      onClick: () => onSelectCommit(branch.head)
+      onClick: () => handlers.onSelectCommit(branch.head)
     },
     {
       id: 'copy-short',
@@ -190,6 +219,18 @@ export function remoteBranchContextMenuItems(
       onClick: () => void copyToClipboard(branch.name.replace(/^remotes\//, ''))
     }
   ]
+
+  if (handlers.onDeleteRemote) {
+    items.push(separator('sep-delete-remote'))
+    items.push({
+      id: 'delete-remote',
+      label: 'Delete remote branch…',
+      danger: true,
+      onClick: () => handlers.onDeleteRemote!(branch.name)
+    })
+  }
+
+  return items
 }
 
 export function stashContextMenuItems(
@@ -201,6 +242,7 @@ export function stashContextMenuItems(
     onApply: (index: number) => void
     onPop: (index: number) => void
     onDrop: (index: number) => void
+    onBranch?: (index: number) => void
   }
 ): ContextMenuItem[] {
   const ref = `stash@{${index}}`
@@ -221,6 +263,15 @@ export function stashContextMenuItems(
       label: 'Pop',
       onClick: () => handlers.onPop(index)
     },
+    ...(handlers.onBranch
+      ? [
+          {
+            id: 'branch',
+            label: 'Create branch from stash…',
+            onClick: () => handlers.onBranch!(index)
+          } as ContextMenuItem
+        ]
+      : []),
     separator('sep-drop'),
     {
       id: 'drop',
@@ -248,6 +299,7 @@ export function tagContextMenuItems(
     onSelectCommit: (hash: string) => void
     onCheckout: (ref: string) => void
     onPush: (name: string, remote?: string) => void
+    onRename?: (tag: GitTag) => void
     onDelete: (tag: GitTag, remote?: string) => void
   }
 ): ContextMenuItem[] {
@@ -275,6 +327,13 @@ export function tagContextMenuItems(
       disabled: !handlers.defaultRemote,
       onClick: () => handlers.onPush(shortName, handlers.defaultRemote)
     })
+    if (handlers.onRename) {
+      items.push({
+        id: 'rename',
+        label: 'Rename…',
+        onClick: () => handlers.onRename!(tag)
+      })
+    }
     items.push(separator('sep-delete'))
     items.push({
       id: 'delete',

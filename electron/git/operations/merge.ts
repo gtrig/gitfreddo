@@ -39,9 +39,14 @@ export async function mergeStatus(cwd: string, gitBinaryPath: string): Promise<G
 export async function mergeStart(
   cwd: string,
   gitBinaryPath: string,
-  branch: string
+  branch: string,
+  options: { noFf?: boolean; squash?: boolean } = {}
 ): Promise<void> {
-  await runGitOrThrow(['merge', branch], { cwd, gitBinaryPath })
+  const args = ['merge']
+  if (options.noFf) args.push('--no-ff')
+  if (options.squash) args.push('--squash')
+  args.push(branch)
+  await runGitOrThrow(args, { cwd, gitBinaryPath })
 }
 
 export async function mergeAbort(cwd: string, gitBinaryPath: string): Promise<void> {

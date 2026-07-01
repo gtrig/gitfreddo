@@ -12,6 +12,13 @@ import * as rebaseOps from './operations/rebase'
 import * as maintenanceOps from './operations/maintenance'
 import * as tagOps from './operations/tag'
 import * as worktreeOps from './operations/worktree'
+import * as blameOps from './operations/blame'
+import * as reflogOps from './operations/reflog'
+import * as logSearchOps from './operations/log-search'
+import * as bisectOps from './operations/bisect'
+import * as notesOps from './operations/notes'
+import * as workingOps from './operations/working'
+import * as configOps from './operations/config'
 
 const MAX_PARAM_CHARS = 240
 
@@ -111,6 +118,29 @@ export class RepoManager {
         return branchOps.branchDelete(cwd, git, p.name as string, Boolean(p.force))
       case 'branch.rename':
         return branchOps.branchRename(cwd, git, p.oldName as string, p.newName as string)
+      case 'branch.checkoutRemote':
+        return branchOps.branchCheckoutRemote(
+          cwd,
+          git,
+          p.remoteBranch as string,
+          p.localName as string | undefined
+        )
+      case 'branch.setUpstream':
+        return branchOps.branchSetUpstream(
+          cwd,
+          git,
+          p.branch as string,
+          p.upstream as string
+        )
+      case 'branch.unsetUpstream':
+        return branchOps.branchUnsetUpstream(cwd, git, p.branch as string | undefined)
+      case 'branch.deleteRemote':
+        return branchOps.branchDeleteRemote(
+          cwd,
+          git,
+          p.remote as string,
+          p.branch as string
+        )
       case 'tag.list':
         return tagOps.tagList(cwd, git)
       case 'tag.create':
@@ -130,6 +160,8 @@ export class RepoManager {
         )
       case 'tag.push':
         return tagOps.tagPush(cwd, git, p.name as string | undefined, p.remote as string | undefined)
+      case 'tag.rename':
+        return tagOps.tagRename(cwd, git, p.oldName as string, p.newName as string)
       case 'working.status':
         return statusOps.workingStatus(cwd, git)
       case 'stage.add':
@@ -150,13 +182,29 @@ export class RepoManager {
       case 'working.clean':
         return statusOps.workingClean(cwd, git, Boolean(p.includeIgnored))
       case 'commit.create':
-        return statusOps.commitCreate(cwd, git, p.message as string, Boolean(p.amend))
+        return statusOps.commitCreate(
+          cwd,
+          git,
+          p.message as string,
+          Boolean(p.amend),
+          Boolean(p.sign)
+        )
       case 'commit.reword':
         return rebaseOps.rebaseReword(cwd, git, p.hash as string, p.message as string)
       case 'diff.working':
-        return diffOps.diffWorking(cwd, git, p.path as string | undefined)
+        return diffOps.diffWorking(
+          cwd,
+          git,
+          p.path as string | undefined,
+          Boolean(p.wordDiff)
+        )
       case 'diff.staged':
-        return diffOps.diffStaged(cwd, git, p.path as string | undefined)
+        return diffOps.diffStaged(
+          cwd,
+          git,
+          p.path as string | undefined,
+          Boolean(p.wordDiff)
+        )
       case 'diff.commits':
         return diffOps.diffCommits(
           cwd,
@@ -176,14 +224,117 @@ export class RepoManager {
         return diffOps.diffShow(cwd, git, p.ref as string, p.path as string | undefined)
       case 'file.read':
         return diffOps.fileRead(cwd, git, p.ref as string, p.path as string)
+      case 'file.blame':
+        return blameOps.fileBlame(
+          cwd,
+          git,
+          p.path as string,
+          p.ref as string | undefined
+        )
+      case 'file.readStage':
+        return workingOps.fileReadStage(
+          cwd,
+          git,
+          (p.stage as 1 | 2 | 3) ?? 2,
+          p.path as string
+        )
+      case 'log.file':
+        return logSearchOps.logFile(
+          cwd,
+          git,
+          p.path as string,
+          (p.maxCount as number) ?? 100
+        )
+      case 'log.pickaxe':
+        return logSearchOps.logPickaxe(
+          cwd,
+          git,
+          p.query as string,
+          (p.mode as 'pickaxe' | 'regex') ?? 'pickaxe',
+          (p.maxCount as number) ?? 100
+        )
+      case 'log.search':
+        return logSearchOps.logSearch(cwd, git, {
+          author: p.author as string | undefined,
+          grep: p.grep as string | undefined,
+          since: p.since as string | undefined,
+          until: p.until as string | undefined,
+          maxCount: p.maxCount as number | undefined
+        })
+      case 'reflog.list':
+        return reflogOps.reflogList(cwd, git, (p.maxCount as number) ?? 200)
+      case 'notes.list':
+        return notesOps.notesList(cwd, git, p.hash as string | undefined)
+      case 'notes.add':
+        return notesOps.notesAdd(cwd, git, p.hash as string, p.message as string)
+      case 'bisect.status':
+        return bisectOps.bisectStatus(cwd, git)
+      case 'bisect.start':
+        return bisectOps.bisectStart(
+          cwd,
+          git,
+          p.badRef as string,
+          p.goodRef as string | undefined
+        )
+      case 'bisect.good':
+        return bisectOps.bisectGood(cwd, git, p.ref as string | undefined)
+      case 'bisect.bad':
+        return bisectOps.bisectBad(cwd, git, p.ref as string | undefined)
+      case 'bisect.reset':
+        return bisectOps.bisectReset(cwd, git)
+      case 'working.write':
+        return workingOps.workingWrite(cwd, git, p.path as string, p.content as string)
+      case 'working.read':
+        return workingOps.workingRead(cwd, git, p.path as string)
+      case 'working.rename':
+        return workingOps.workingRename(cwd, git, p.oldPath as string, p.newPath as string)
+      case 'stage.applyPatch':
+        return workingOps.stageApplyPatch(
+          cwd,
+          git,
+          p.patch as string,
+          Boolean(p.reverse)
+        )
+      case 'config.get':
+        return configOps.configGet(
+          cwd,
+          git,
+          p.key as string,
+          (p.scope as 'local' | 'global') ?? 'local'
+        )
+      case 'config.set':
+        return configOps.configSet(
+          cwd,
+          git,
+          p.key as string,
+          p.value as string,
+          (p.scope as 'local' | 'global') ?? 'local'
+        )
+      case 'config.list':
+        return configOps.configList(cwd, git, (p.scope as 'local' | 'global') ?? 'local')
       case 'remote.list':
         return remoteOps.remoteList(cwd, git)
       case 'remote.add':
         return remoteOps.remoteAdd(cwd, git, p.name as string, p.url as string)
       case 'remote.remove':
         return remoteOps.remoteRemove(cwd, git, p.name as string)
+      case 'remote.rename':
+        return remoteOps.remoteRename(cwd, git, p.oldName as string, p.newName as string)
+      case 'remote.setUrl':
+        return remoteOps.remoteSetUrl(
+          cwd,
+          git,
+          p.name as string,
+          p.url as string,
+          Boolean(p.push)
+        )
       case 'fetch':
-        return remoteOps.fetchRemote(cwd, git, p.remote as string | undefined)
+        return remoteOps.fetchRemote(cwd, git, {
+          remote: p.remote as string | undefined,
+          tags: Boolean(p.tags),
+          tagsOnly: Boolean(p.tagsOnly),
+          refspec: p.refspec as string | undefined
+        })
       case 'push':
         return remoteOps.pushRemote(
           cwd,
@@ -191,14 +342,16 @@ export class RepoManager {
           p.remote as string | undefined,
           p.branch as string | undefined,
           Boolean(p.setUpstream),
-          Boolean(p.force)
+          Boolean(p.force),
+          Boolean(p.pushAll)
         )
       case 'pull':
         return remoteOps.pullRemote(
           cwd,
           git,
           p.remote as string | undefined,
-          p.branch as string | undefined
+          p.branch as string | undefined,
+          Boolean(p.rebase)
         )
       case 'stash.list':
         return stashOps.stashList(cwd, git)
@@ -207,7 +360,18 @@ export class RepoManager {
       case 'stash.files':
         return stashOps.stashFiles(cwd, git, (p.index as number) ?? 0)
       case 'stash.push':
-        return stashOps.stashPush(cwd, git, p.message as string | undefined)
+        return stashOps.stashPush(cwd, git, p.message as string | undefined, {
+          includeUntracked: Boolean(p.includeUntracked),
+          includeIgnored: Boolean(p.includeIgnored),
+          paths: p.paths as string[] | undefined
+        })
+      case 'stash.branch':
+        return stashOps.stashBranch(
+          cwd,
+          git,
+          p.branchName as string,
+          (p.index as number) ?? 0
+        )
       case 'stash.pop':
         return stashOps.stashPop(cwd, git, (p.index as number) ?? 0)
       case 'stash.apply':
@@ -236,13 +400,28 @@ export class RepoManager {
       case 'merge.status':
         return mergeOps.mergeStatus(cwd, git)
       case 'merge.start':
-        return mergeOps.mergeStart(cwd, git, p.branch as string)
+        return mergeOps.mergeStart(cwd, git, p.branch as string, {
+          noFf: Boolean(p.noFf),
+          squash: Boolean(p.squash)
+        })
       case 'merge.abort':
         return mergeOps.mergeAbort(cwd, git)
       case 'merge.continue':
         return mergeOps.mergeContinue(cwd, git)
       case 'rebase.start':
-        return rebaseOps.rebaseStart(cwd, git, p.onto as string)
+        return rebaseOps.rebaseStart(
+          cwd,
+          git,
+          p.onto as string,
+          p.from as string | undefined
+        )
+      case 'rebase.interactive':
+        return rebaseOps.rebaseInteractive(
+          cwd,
+          git,
+          p.baseHash as string,
+          p.todoLines as string[]
+        )
       case 'rebase.abort':
         return rebaseOps.rebaseAbort(cwd, git)
       case 'rebase.continue':
@@ -257,9 +436,14 @@ export class RepoManager {
         return rebaseOps.cherryPickSkip(cwd, git)
       case 'cherry-pick':
         if (Array.isArray(p.hashes) && p.hashes.length > 0) {
-          return rebaseOps.cherryPickMultiple(cwd, git, p.hashes as string[])
+          return rebaseOps.cherryPickMultiple(
+            cwd,
+            git,
+            p.hashes as string[],
+            Boolean(p.noCommit)
+          )
         }
-        return rebaseOps.cherryPick(cwd, git, p.hash as string)
+        return rebaseOps.cherryPick(cwd, git, p.hash as string, Boolean(p.noCommit))
       case 'rebase.squash':
         return rebaseOps.rebaseSquash(cwd, git, p.hashes as string[])
       case 'rebase.drop':

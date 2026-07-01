@@ -56,7 +56,9 @@ let settings: AppSettings = {
   aiCommitInstructions: '',
   aiStashInstructions: '',
   githubLogin: '',
-  githubConnectedAt: null
+  githubConnectedAt: null,
+  pullRebase: false,
+  diffViewMode: 'unified'
 }
 
 function applyGitConfig(): void {

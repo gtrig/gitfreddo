@@ -121,8 +121,13 @@ async function runInteractiveRebaseWithSequenceEditor(
 export async function rebaseStart(
   cwd: string,
   gitBinaryPath: string,
-  onto: string
+  onto: string,
+  from?: string
 ): Promise<void> {
+  if (from?.trim()) {
+    await runGitOrThrow(['rebase', '--onto', onto, from.trim()], { cwd, gitBinaryPath })
+    return
+  }
   await runGitOrThrow(['rebase', onto], { cwd, gitBinaryPath })
 }
 
@@ -245,22 +250,30 @@ copyFileSync(${JSON.stringify(messageFile)}, process.argv[2])
 export async function cherryPick(
   cwd: string,
   gitBinaryPath: string,
-  hash: string
+  hash: string,
+  noCommit = false
 ): Promise<void> {
-  await runGitOrThrow(['cherry-pick', hash], { cwd, gitBinaryPath })
+  const args = ['cherry-pick']
+  if (noCommit) args.push('-n')
+  args.push(hash)
+  await runGitOrThrow(args, { cwd, gitBinaryPath })
 }
 
 export async function cherryPickMultiple(
   cwd: string,
   gitBinaryPath: string,
-  hashes: string[]
+  hashes: string[],
+  noCommit = false
 ): Promise<void> {
   if (hashes.length === 0) return
 
   await assertCanRewriteHistory(cwd, gitBinaryPath)
 
   for (const hash of hashes) {
-    await runGitOrThrow(['cherry-pick', hash], { cwd, gitBinaryPath })
+    const args = ['cherry-pick']
+    if (noCommit) args.push('-n')
+    args.push(hash)
+    await runGitOrThrow(args, { cwd, gitBinaryPath })
   }
 }
 
@@ -328,6 +341,41 @@ writeFileSync(todoPath, updated)
     await chmod(seqEditor, 0o755)
 
     const rebaseArgs = isRoot ? ['rebase', '-i', '--root'] : ['rebase', '-i', `${oldestHash}^`]
+    await runInteractiveRebaseWithSequenceEditor(cwd, gitBinaryPath, rebaseArgs, seqEditor)
+  } finally {
+    await rm(tempDir, { recursive: true, force: true })
+  }
+}
+
+export async function rebaseInteractive(
+  cwd: string,
+  gitBinaryPath: string,
+  baseHash: string,
+  todoLines: string[]
+): Promise<void> {
+  if (todoLines.length === 0) {
+    throw new Error('Rebase todo list cannot be empty.')
+  }
+
+  await assertCanRewriteHistory(cwd, gitBinaryPath)
+
+  const fullHash = await resolveFullHash(cwd, gitBinaryPath, baseHash)
+  const isRoot =
+    (await runGit(['rev-parse', '--verify', `${fullHash}^`], { cwd, gitBinaryPath })).code !== 0
+
+  const tempDir = await mkdtemp(join(tmpdir(), 'gitfredo-interactive-'))
+  try {
+    const seqEditor = join(tempDir, 'seq-editor.mjs')
+    await writeFile(
+      seqEditor,
+      `import { writeFileSync } from 'fs'
+writeFileSync(process.argv[2], ${JSON.stringify(todoLines.join('\n'))})
+`,
+      'utf8'
+    )
+    await chmod(seqEditor, 0o755)
+
+    const rebaseArgs = isRoot ? ['rebase', '-i', '--root'] : ['rebase', '-i', `${fullHash}^`]
     await runInteractiveRebaseWithSequenceEditor(cwd, gitBinaryPath, rebaseArgs, seqEditor)
   } finally {
     await rm(tempDir, { recursive: true, force: true })

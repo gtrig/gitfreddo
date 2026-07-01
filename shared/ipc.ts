@@ -32,6 +32,8 @@ export interface AppSettings {
   aiStashInstructions: string
   githubLogin: string
   githubConnectedAt: number | null
+  pullRebase: boolean
+  diffViewMode: 'unified' | 'split' | 'word'
 }
 
 export interface GitHubStatus {

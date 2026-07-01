@@ -35,6 +35,7 @@ import { ColumnResizeHandle } from '@/components/ui/ColumnResizeHandle'
 import { ContextMenu } from '@/components/ui/ContextMenu'
 import { LoadingRow } from '@/components/ui/Spinner'
 import { CreateBranchModal } from '@/components/actions/CreateBranchModal'
+import { RebaseSequenceModal } from '@/components/actions/RebaseSequenceModal'
 import { CreateTagModal } from '@/components/actions/CreateTagModal'
 import { DeleteCommitModal } from '@/components/DetailPanel/DeleteCommitModal'
 import { RemoveStaleBranchesModal } from '@/components/DetailPanel/RemoveStaleBranchesModal'
@@ -72,10 +73,24 @@ export function CommitTimeline() {
   const selectCommitRange = useSelectionStore((s) => s.selectCommitRange)
 
   const searchQuery = useCommitSearchStore((s) => s.query)
+  const searchAuthor = useCommitSearchStore((s) => s.author)
+  const searchHashPrefix = useCommitSearchStore((s) => s.hashPrefix)
+  const searchDateFrom = useCommitSearchStore((s) => s.dateFrom)
+  const searchDateTo = useCommitSearchStore((s) => s.dateTo)
+  const searchFilters = useMemo(
+    () => ({
+      query: searchQuery,
+      author: searchAuthor,
+      hashPrefix: searchHashPrefix,
+      dateFrom: searchDateFrom,
+      dateTo: searchDateTo
+    }),
+    [searchQuery, searchAuthor, searchHashPrefix, searchDateFrom, searchDateTo]
+  )
   const commits = useMemo(() => filterTimelineCommits(graph?.commits ?? []), [graph?.commits])
   const searchDimmedHashes = useMemo(
-    () => commitSearchDimmedHashes(commits, searchQuery),
-    [commits, searchQuery]
+    () => commitSearchDimmedHashes(commits, searchFilters),
+    [commits, searchFilters]
   )
   const head = repoStatus?.head ?? ''
   const isDetached = repoStatus?.isDetached ?? false
@@ -129,7 +144,9 @@ export function CommitTimeline() {
     deleteModal,
     setDeleteModal,
     removeStaleModal,
-    setRemoveStaleModal
+    setRemoveStaleModal,
+    interactiveRebaseModal,
+    setInteractiveRebaseModal
   } = useCommitContextMenu(connected, {
     head,
     branch: repoStatus?.branch ?? workingStatus?.branch ?? '',
@@ -171,7 +188,6 @@ export function CommitTimeline() {
   const { visibility, toggleColumn } = useTimelineColumnVisibility()
   const showBranchTag = visibility.branchTag
   const showGraph = visibility.graph
-  const showMessage = visibility.message
   const showBranchTagResize = showBranchTag && showGraph
   const showGraphResize = showGraph && hasVisibleColumnAfter(visibility, 'graph')
   const selectedHash = primaryHash
@@ -554,6 +570,14 @@ export function CommitTimeline() {
           seedHash={removeStaleModal.seedHash}
           seedHashes={removeStaleModal.seedHashes}
           onClose={() => setRemoveStaleModal(null)}
+        />
+      )}
+
+      {interactiveRebaseModal && (
+        <RebaseSequenceModal
+          open
+          commits={interactiveRebaseModal.commits}
+          onClose={() => setInteractiveRebaseModal(null)}
         />
       )}
     </div>

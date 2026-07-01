@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { SparklesIcon } from '@heroicons/react/24/outline'
 import { ChevronDoubleRightIcon } from '@heroicons/react/24/solid'
 import { useAiEnabled } from '@/hooks/useAppSettings'
@@ -41,6 +42,7 @@ interface CommitPanelProps {
 
 export function CommitPanel({ working }: CommitPanelProps) {
   const connected = useWorkspaceStore((s) => s.connected)
+  const repoPath = useWorkspaceStore((s) => s.activePath)
   const { data: graph } = useLogGraph(connected)
   const { commit, stageAdd } = useGitMutations()
   const aiEnabled = useAiEnabled()
@@ -54,6 +56,24 @@ export function CommitPanel({ working }: CommitPanelProps) {
   const [description, setDescription] = useState('')
   const [composeOpen, setComposeOpen] = useState(false)
   const [composeProposals, setComposeProposals] = useState<AiComposeCommitProposal[]>([])
+  const [sign, setSign] = useState(false)
+
+  const gpgSignQuery = useQuery({
+    queryKey: ['repo', repoPath, 'config.get', 'commit.gpgsign'],
+    queryFn: async () =>
+      (await window.gitfredo.invoke('config.get', {
+        key: 'commit.gpgsign',
+        scope: 'local'
+      })) as string | null,
+    enabled: connected && Boolean(repoPath)
+  })
+
+  useEffect(() => {
+    const value = gpgSignQuery.data?.trim().toLowerCase()
+    if (value === 'true' || value === '1' || value === 'yes' || value === 'on') {
+      setSign(true)
+    }
+  }, [gpgSignQuery.data])
 
   const unstagedFiles = useMemo(
     () => [...working.unstaged, ...working.untracked, ...working.conflicted],
@@ -137,7 +157,8 @@ export function CommitPanel({ working }: CommitPanelProps) {
 
     await commit.mutateAsync({
       message: buildCommitMessage(summary, description),
-      amend
+      amend,
+      ...(sign ? { sign: true } : {})
     })
     setSummary('')
     setDescription('')
@@ -226,7 +247,15 @@ export function CommitPanel({ working }: CommitPanelProps) {
           </button>
 
           {optionsOpen && (
-            <p className="pl-4 text-[11px] text-gf-fg-subtle">No additional options yet.</p>
+            <label className="flex items-center gap-2 pl-4 text-[11px] text-gf-fg-muted">
+              <input
+                type="checkbox"
+                checked={sign}
+                onChange={(event) => setSign(event.target.checked)}
+                className="rounded border-gf-border-strong bg-gf-bg"
+              />
+              Sign commit (GPG)
+            </label>
           )}
 
           {aiEnabled && hasStaged && (

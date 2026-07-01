@@ -30,17 +30,26 @@ npm run dev
 - Open local repositories or clone from URL
 - Multi-tab repositories
 - Git worktrees: list, add, remove, prune; open in tab; checkout branch in new worktree
-- Branch list with checkout, create, rename, delete, merge
-- Commit timeline graph with history rewriting (rebase, squash, drop, cherry-pick, revert, reset)
-- Working tree: stage, unstage, commit, amend
+- Branch list with checkout, create, rename, delete, merge (no-ff / squash)
+- Remote branches: checkout as local tracking branch, delete on remote
+- Branch upstream: set, unset; pull with rebase option
+- Remotes: fetch (with tags), push all, rename, edit URL
+- Commit timeline graph with history rewriting (rebase, interactive rebase, squash, drop, cherry-pick, revert, reset)
+- Working tree: stage, unstage, hunk staging, commit (with GPG sign), amend, rename files
+- Diff viewer: unified, side-by-side, word diff, blame annotations
+- File history, pickaxe search, reflog browser, bisect wizard, git notes
+- Built-in conflict resolver (ours/theirs/both per hunk)
+- Stash: push with untracked/ignored/path options, stash branch
+- Tags: create, rename, delete, push
+- Git config editor and `.gitignore` / `.gitattributes` editor (when repo open)
 - Discard changes (per-file, per-folder, or bulk)
 - Remove tracked files (`git rm`) and delete untracked files
 - Clean untracked files with dry-run preview (`git clean`)
-- Diff viewer (working, staged, commit, stash)
+- Diff viewer (working, staged, commit, stash) with side-by-side and word diff modes
 - Stash management with diff preview
 - Tags: create, delete, push
 - Remotes with fetch, pull, push, add, remove
-- Merge / rebase / cherry-pick conflict panel
+- Merge / rebase / cherry-pick conflict panel with in-app resolver
 - Repository maintenance (unreachable commits, stale refs, prune)
 - GitHub integration (PRs, issues, repo browse)
 - AI assist for commit and stash messages (local LLM or cloud API)

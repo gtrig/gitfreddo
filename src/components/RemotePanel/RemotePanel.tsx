@@ -3,7 +3,7 @@ import { useWorkspaceStore } from '@/stores/workspace'
 import { useRemotes } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { usePushRemote } from '@/hooks/usePushRemote'
-import { useResolvedRemote } from '@/hooks/useAppSettings'
+import { useResolvedRemote, useAppSettings } from '@/hooks/useAppSettings'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { ActionButton, ConfirmDialog, Modal } from '@/components/ui/Modal'
 import { PushForceConfirm } from '@/components/actions/PushForceConfirm'
@@ -15,15 +15,19 @@ import { useToastStore } from '@/stores/toast'
 export function RemotePanel() {
   const connected = useWorkspaceStore((s) => s.connected)
   const { data: remotes, isLoading, error } = useRemotes(connected)
-  const { fetch, pull, remoteAdd, remoteRemove } = useGitMutations()
+  const { fetch, pull, remoteAdd, remoteRemove, remoteRename, remoteSetUrl } = useGitMutations()
   const { pushRemote, isPushPending, forceConfirm, confirmForcePush, cancelForcePush } =
     usePushRemote()
   const defaultRemote = useResolvedRemote()
+  const { data: settings } = useAppSettings()
   const show = useToastStore((s) => s.show)
   const [addOpen, setAddOpen] = useState(false)
   const [browseOpen, setBrowseOpen] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
   const [pendingRemove, setPendingRemove] = useState<string | null>(null)
+  const [editRemote, setEditRemote] = useState<{ name: string; url: string } | null>(null)
+  const [renameRemote, setRenameRemote] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState('')
   const [newName, setNewName] = useState('')
   const [newUrl, setNewUrl] = useState('')
 
@@ -63,8 +67,16 @@ export function RemotePanel() {
             Fetch
           </ActionButton>
           <ActionButton
+            loading={fetch.isPending}
+            onClick={() => void fetch.mutateAsync({ remote: defaultRemote, tags: true })}
+          >
+            Fetch tags
+          </ActionButton>
+          <ActionButton
             loading={pull.isPending}
-            onClick={() => void pull.mutateAsync({ remote: defaultRemote })}
+            onClick={() =>
+              void pull.mutateAsync({ remote: defaultRemote, rebase: settings?.pullRebase })
+            }
           >
             Pull
           </ActionButton>
@@ -73,6 +85,12 @@ export function RemotePanel() {
             onClick={() => pushRemote({ remote: defaultRemote })}
           >
             Push
+          </ActionButton>
+          <ActionButton
+            loading={isPushPending}
+            onClick={() => pushRemote({ remote: defaultRemote, pushAll: true })}
+          >
+            Push all
           </ActionButton>
         </div>
         {isLoading && <LoadingRow />}
@@ -87,12 +105,29 @@ export function RemotePanel() {
                     {remote.url}
                   </p>
                 </div>
-                <ActionButton
-                  className="shrink-0 px-2 py-0.5 text-[10px] text-red-400"
-                  onClick={() => setPendingRemove(remote.name)}
-                >
-                  Remove
-                </ActionButton>
+                <div className="flex shrink-0 flex-col gap-1">
+                  <ActionButton
+                    className="px-2 py-0.5 text-[10px]"
+                    onClick={() => setEditRemote({ name: remote.name, url: remote.url })}
+                  >
+                    Edit URL
+                  </ActionButton>
+                  <ActionButton
+                    className="px-2 py-0.5 text-[10px]"
+                    onClick={() => {
+                      setRenameRemote(remote.name)
+                      setRenameValue(remote.name)
+                    }}
+                  >
+                    Rename
+                  </ActionButton>
+                  <ActionButton
+                    className="px-2 py-0.5 text-[10px] text-red-400"
+                    onClick={() => setPendingRemove(remote.name)}
+                  >
+                    Remove
+                  </ActionButton>
+                </div>
               </div>
             </li>
           ))}
@@ -198,6 +233,62 @@ export function RemotePanel() {
           }}
           onCancel={() => setPendingRemove(null)}
         />
+      )}
+
+      {editRemote && (
+        <Modal open title={`Edit URL — ${editRemote.name}`} onClose={() => setEditRemote(null)}>
+          <div className="space-y-3 p-4">
+            <label className="block text-sm">
+              <span className="text-gf-fg-muted">URL</span>
+              <input
+                value={editRemote.url}
+                onChange={(e) => setEditRemote({ ...editRemote, url: e.target.value })}
+                className="mt-1 w-full rounded border border-gf-border-strong bg-gf-bg px-2 py-1.5"
+              />
+            </label>
+            <div className="flex justify-end gap-2">
+              <ActionButton onClick={() => setEditRemote(null)}>Cancel</ActionButton>
+              <ActionButton
+                loading={remoteSetUrl.isPending}
+                onClick={async () => {
+                  await remoteSetUrl.mutateAsync({ name: editRemote.name, url: editRemote.url })
+                  show(`Updated URL for "${editRemote.name}"`, 'success')
+                  setEditRemote(null)
+                }}
+              >
+                Save
+              </ActionButton>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {renameRemote && (
+        <Modal open title="Rename remote" onClose={() => setRenameRemote(null)}>
+          <div className="space-y-3 p-4">
+            <label className="block text-sm">
+              <span className="text-gf-fg-muted">New name</span>
+              <input
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                className="mt-1 w-full rounded border border-gf-border-strong bg-gf-bg px-2 py-1.5"
+              />
+            </label>
+            <div className="flex justify-end gap-2">
+              <ActionButton onClick={() => setRenameRemote(null)}>Cancel</ActionButton>
+              <ActionButton
+                loading={remoteRename.isPending}
+                onClick={async () => {
+                  await remoteRename.mutateAsync({ oldName: renameRemote, newName: renameValue })
+                  show(`Renamed remote to "${renameValue}"`, 'success')
+                  setRenameRemote(null)
+                }}
+              >
+                Rename
+              </ActionButton>
+            </div>
+          </div>
+        </Modal>
       )}
     </aside>
   )

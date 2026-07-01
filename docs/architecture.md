@@ -16,17 +16,17 @@ The renderer calls `window.gitfredo.invoke(method, params)` for git operations:
 
 | Read | Write |
 |------|-------|
-| `repo.status` | `branch.checkout`, `branch.create`, `branch.delete`, `branch.rename` |
-| `log.graph`, `log.show`, `log.message` | `stage.add`, `stage.reset`, `commit.create`, `commit.reword`, `commit.revert` |
-| `branch.list`, `tag.list` | `tag.create`, `tag.delete`, `tag.push` |
-| `working.status`, `working.cleanPreview` | `working.discard`, `working.remove`, `working.clean` |
-| `remote.list` | `remote.add`, `remote.remove`, `fetch`, `push`, `pull` |
-| `diff.working`, `diff.staged`, `diff.commits`, `diff.show` | `stash.push`, `stash.pop`, `stash.apply`, `stash.drop` |
-| `stash.list`, `stash.show`, `stash.files` | `merge.start`, `merge.abort`, `merge.continue` |
-| `worktree.list` | `worktree.add`, `worktree.remove`, `worktree.prune` |
-| `merge.status` (returns `kind`: merge \| rebase \| cherry-pick) | `rebase.start`, `rebase.abort`, `rebase.continue`, `rebase.skip`, `rebase.squash`, `rebase.drop` |
-| `maintenance.unreachable`, `maintenance.staleBranches` | `cherry-pick`, `cherry-pick.continue`, `cherry-pick.abort`, `cherry-pick.skip` |
-| `file.read` | `reset`, `reset.head`, `maintenance.prune`, `maintenance.removeStaleBranches` |
+| `repo.status` | `branch.checkout`, `branch.checkoutRemote`, `branch.create`, `branch.delete`, `branch.rename`, `branch.setUpstream`, `branch.unsetUpstream`, `branch.deleteRemote` |
+| `log.graph`, `log.show`, `log.message`, `log.file`, `log.pickaxe`, `log.search` | `stage.add`, `stage.reset`, `stage.applyPatch`, `commit.create`, `commit.reword`, `commit.revert` |
+| `branch.list`, `tag.list`, `reflog.list` | `tag.create`, `tag.delete`, `tag.push`, `tag.rename` |
+| `working.status`, `working.cleanPreview`, `working.read` | `working.discard`, `working.remove`, `working.clean`, `working.write`, `working.rename` |
+| `remote.list` | `remote.add`, `remote.remove`, `remote.rename`, `remote.setUrl`, `fetch`, `push`, `pull` |
+| `diff.working`, `diff.staged`, `diff.commits`, `diff.show` | `stash.push`, `stash.pop`, `stash.apply`, `stash.drop`, `stash.branch` |
+| `stash.list`, `stash.show`, `stash.files` | `merge.start` (no-ff/squash), `merge.abort`, `merge.continue` |
+| `worktree.list`, `file.read`, `file.blame`, `file.readStage` | `worktree.add`, `worktree.remove`, `worktree.prune` |
+| `merge.status`, `bisect.status`, `notes.list` | `rebase.start` (--onto), `rebase.interactive`, `rebase.abort`, `rebase.continue`, `rebase.skip`, `rebase.squash`, `rebase.drop` |
+| `maintenance.unreachable`, `maintenance.staleBranches`, `config.get`, `config.list` | `cherry-pick` (-n), `cherry-pick.continue`, `cherry-pick.abort`, `cherry-pick.skip`, `config.set` |
+| | `reset`, `reset.head`, `maintenance.prune`, `maintenance.removeStaleBranches`, `bisect.start`, `bisect.good`, `bisect.bad`, `bisect.reset`, `notes.add` |
 
 Workspace helpers: `connect`, `switchWorkspace`, `cloneRepository`, `openWorkspace`, `deleteWorkspaceFile`, `openInEditor`, settings.
 

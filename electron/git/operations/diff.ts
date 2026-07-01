@@ -3,6 +3,12 @@ import type { GitDiffResult } from '../types'
 
 const NULL_DEVICE = process.platform === 'win32' ? 'NUL' : '/dev/null'
 
+function withWordDiff(args: string[], wordDiff?: boolean): string[] {
+  if (!wordDiff) return args
+  const insertAt = args[0] === 'diff' || args[0] === 'show' ? 1 : 0
+  return [...args.slice(0, insertAt), '--word-diff=plain', ...args.slice(insertAt)]
+}
+
 async function isUntrackedPath(
   cwd: string,
   gitBinaryPath: string,
@@ -37,9 +43,10 @@ async function diffUntrackedPath(
 export async function diffWorking(
   cwd: string,
   gitBinaryPath: string,
-  path?: string
+  path?: string,
+  wordDiff = false
 ): Promise<GitDiffResult> {
-  const args = ['diff', '--']
+  const args = withWordDiff(['diff', '--'], wordDiff)
   if (path) args.push(path)
   const result = await runGit(args, { cwd, gitBinaryPath })
   if (result.code !== 0) {
@@ -57,9 +64,10 @@ export async function diffWorking(
 export async function diffStaged(
   cwd: string,
   gitBinaryPath: string,
-  path?: string
+  path?: string,
+  wordDiff = false
 ): Promise<GitDiffResult> {
-  const args = ['diff', '--cached', '--']
+  const args = withWordDiff(['diff', '--cached', '--'], wordDiff)
   if (path) args.push(path)
   const unified = await runGitOrThrow(args, { cwd, gitBinaryPath })
   return { unified, path: path ?? '' }

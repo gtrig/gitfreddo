@@ -31,6 +31,8 @@ import { useToastStore } from '@/stores/toast'
 import { MergeBranchDialog } from '@/components/BranchSidebar/MergeBranchDialog'
 import { CreatePrModal } from '@/components/GitHub/CreatePrModal'
 import { RenameBranchModal } from '@/components/actions/RenameBranchModal'
+import { SetUpstreamModal } from '@/components/actions/SetUpstreamModal'
+import { CheckoutRemoteModal } from '@/components/actions/CheckoutRemoteModal'
 import { AddWorktreeModal } from '@/components/actions/AddWorktreeModal'
 import {
   folderContextMenuItems,
@@ -65,6 +67,8 @@ function BranchTree({
   onDelete,
   onCreatePr,
   onCheckoutInWorktree,
+  onSetUpstream,
+  onUnsetUpstream,
   openMenu
 }: {
   nodes: BranchTreeNode[]
@@ -79,6 +83,8 @@ function BranchTree({
   onDelete: (name: string) => void
   onCreatePr?: (name: string) => void
   onCheckoutInWorktree?: (name: string) => void
+  onSetUpstream?: (name: string) => void
+  onUnsetUpstream?: (name: string) => void
   openMenu: ReturnType<typeof useContextMenu>['openMenu']
 }) {
   return (
@@ -115,6 +121,8 @@ function BranchTree({
                   onDelete={onDelete}
                   onCreatePr={onCreatePr}
                   onCheckoutInWorktree={onCheckoutInWorktree}
+                  onSetUpstream={onSetUpstream}
+                  onUnsetUpstream={onUnsetUpstream}
                   openMenu={openMenu}
                 />
               )}
@@ -154,7 +162,9 @@ function BranchTree({
                   onRename,
                   onDelete,
                   onCreatePr,
-                  onCheckoutInWorktree
+                  onCheckoutInWorktree,
+                  onSetUpstream,
+                  onUnsetUpstream
                 })
               )
             }
@@ -191,8 +201,9 @@ export function LocalBranchesSection({
   const [mergeSource, setMergeSource] = useState<string | null>(null)
   const [prBranch, setPrBranch] = useState<string | null>(null)
   const [worktreeBranch, setWorktreeBranch] = useState<string | null>(null)
+  const [upstreamBranch, setUpstreamBranch] = useState<string | null>(null)
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
-  const { deleteBranch } = useGitMutations()
+  const { deleteBranch, unsetUpstream } = useGitMutations()
   const repoPath = useWorkspaceStore((s) => s.activePath)
   const { data: ghStatus } = useGitHubStatus()
   const { data: ghCtx } = useGitHubRepoContext(repoPath, true)
@@ -255,6 +266,8 @@ export function LocalBranchesSection({
           onDelete={setPendingDelete}
           onCreatePr={canCreatePr ? setPrBranch : undefined}
           onCheckoutInWorktree={setWorktreeBranch}
+          onSetUpstream={setUpstreamBranch}
+          onUnsetUpstream={(name) => void unsetUpstream.mutateAsync({ branch: name })}
           openMenu={openMenu}
         />
       </div>
@@ -310,6 +323,14 @@ export function LocalBranchesSection({
           onClose={() => setWorktreeBranch(null)}
         />
       )}
+      {upstreamBranch && (
+        <SetUpstreamModal
+          open
+          branchName={upstreamBranch}
+          currentUpstream={localBranches.find((b) => b.name === upstreamBranch)?.upstream}
+          onClose={() => setUpstreamBranch(null)}
+        />
+      )}
     </SidebarSection>
   )
 }
@@ -356,8 +377,10 @@ export function RemoteBranchesSection({
 
   const count = grouped.reduce((sum, [, list]) => sum + list.length, 0)
   const [collapsedRemotes, setCollapsedRemotes] = useState<Set<string>>(() => new Set())
+  const [checkoutRemote, setCheckoutRemote] = useState<string | null>(null)
+  const [pendingDeleteRemote, setPendingDeleteRemote] = useState<GitBranch | null>(null)
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
-  const { fetch } = useGitMutations()
+  const { fetch, deleteRemoteBranch } = useGitMutations()
 
   function toggleRemote(name: string) {
     setCollapsedRemotes((prev) => {
@@ -418,7 +441,17 @@ export function RemoteBranchesSection({
                     title="Click to focus commit"
                     onClick={() => onSelectCommit(branch.head)}
                     onContextMenu={(event) =>
-                      openMenu(event, remoteBranchContextMenuItems(branch, onSelectCommit))
+                      openMenu(
+                        event,
+                        remoteBranchContextMenuItems(branch, {
+                          onSelectCommit,
+                          onCheckout: setCheckoutRemote,
+                          onDeleteRemote: (remoteBranch) => {
+                            const match = remoteBranches.find((item) => item.name === remoteBranch)
+                            if (match) setPendingDeleteRemote(match)
+                          }
+                        })
+                      )
                     }
                   />
                 ))}
@@ -433,6 +466,35 @@ export function RemoteBranchesSection({
           y={menuState.y}
           items={menuState.items}
           onClose={closeMenu}
+        />
+      )}
+
+      {checkoutRemote && (
+        <CheckoutRemoteModal
+          open
+          remoteBranch={checkoutRemote}
+          onClose={() => setCheckoutRemote(null)}
+        />
+      )}
+
+      {pendingDeleteRemote && (
+        <ConfirmDialog
+          open
+          title="Delete remote branch"
+          message={`Delete remote branch "${remoteBranchShortName(pendingDeleteRemote.name)}"?`}
+          confirmLabel="Delete"
+          busy={deleteRemoteBranch.isPending}
+          onConfirm={async () => {
+            const parsed = parseRemoteBranchName(pendingDeleteRemote.name)
+            if (parsed) {
+              await deleteRemoteBranch.mutateAsync({
+                remote: parsed.remote,
+                branch: parsed.branch
+              })
+            }
+            setPendingDeleteRemote(null)
+          }}
+          onCancel={() => setPendingDeleteRemote(null)}
         />
       )}
     </SidebarSection>

@@ -12,6 +12,8 @@ import { SidebarIconChevron } from '@/components/layout/sidebar/SidebarIcons'
 import { CommitPanel } from '@/components/WorkingTree/CommitPanel'
 import { CleanUntrackedModal } from '@/components/WorkingTree/CleanUntrackedModal'
 import { ConfirmDialog } from '@/components/ui/Modal'
+import { FileHistoryModal } from '@/components/actions/FileHistoryModal'
+import { RenameFileModal } from '@/components/actions/RenameFileModal'
 import { ContextMenu } from '@/components/ui/ContextMenu'
 import { useContextMenu, type OpenContextMenu } from '@/hooks/useContextMenu'
 import { discardablePaths, pathsUnderFolderPrefix } from '@/lib/workingTreePaths'
@@ -29,7 +31,9 @@ function FileRow({
   openMenu,
   onDiscard,
   onDelete,
-  onRemove
+  onRemove,
+  onRename,
+  onFileHistory
 }: {
   file: GitFileChange
   onSelect: () => void
@@ -40,6 +44,8 @@ function FileRow({
   onDiscard?: () => void
   onDelete?: () => void
   onRemove?: () => void
+  onRename?: () => void
+  onFileHistory?: () => void
 }) {
   return (
     <div className="flex items-center gap-1">
@@ -53,6 +59,8 @@ function FileRow({
               onSelect,
               onStageToggle: onStage ?? (() => {}),
               onOpenInEditor: () => void window.gitfredo.openInEditor(file.path),
+              onFileHistory: onFileHistory,
+              onRename: onRename,
               onDiscard,
               onDelete,
               onRemove
@@ -128,7 +136,9 @@ function TreeNode({
   onDiscard,
   onDelete,
   onRemove,
-  onDiscardFolder
+  onDiscardFolder,
+  onRename,
+  onFileHistory
 }: {
   node: FileTreeNode
   depth: number
@@ -144,6 +154,8 @@ function TreeNode({
   onDelete?: (path: string) => void
   onRemove?: (path: string) => void
   onDiscardFolder?: (folderPath: string) => void
+  onRename?: (path: string) => void
+  onFileHistory?: (path: string) => void
 }) {
   if (node.type === 'folder') {
     const open = expandedPaths.has(node.path)
@@ -188,6 +200,8 @@ function TreeNode({
               onDelete={onDelete}
               onRemove={onRemove}
               onDiscardFolder={onDiscardFolder}
+              onRename={onRename}
+              onFileHistory={onFileHistory}
             />
           ))}
       </>
@@ -210,6 +224,8 @@ function TreeNode({
               onSelect: selectFile,
               onStageToggle: stageToggle,
               onOpenInEditor: () => void window.gitfredo.openInEditor(file.path),
+              onFileHistory: onFileHistory ? () => onFileHistory(file.path) : undefined,
+              onRename: onRename ? () => onRename(file.path) : undefined,
               onDiscard: onDiscard ? () => onDiscard(file.path, mode === 'staged') : undefined,
               onDelete: onDelete ? () => onDelete(file.path) : undefined,
               onRemove: onRemove ? () => onRemove(file.path) : undefined
@@ -254,6 +270,8 @@ export function GitWorkingTree() {
   const [pendingRemove, setPendingRemove] = useState<string | null>(null)
   const [deleteBusy, setDeleteBusy] = useState(false)
   const [cleanOpen, setCleanOpen] = useState(false)
+  const [renamePath, setRenamePath] = useState<string | null>(null)
+  const [fileHistoryPath, setFileHistoryPath] = useState<string | null>(null)
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
 
   const changesFiles = [
@@ -353,6 +371,8 @@ export function GitWorkingTree() {
                   onDelete={
                     file.status === 'untracked' ? () => requestDelete(file.path) : undefined
                   }
+                  onRename={() => setRenamePath(file.path)}
+                  onFileHistory={() => setFileHistoryPath(file.path)}
                   openMenu={openMenu}
                 />
               ))}
@@ -389,6 +409,8 @@ export function GitWorkingTree() {
                     onDiscardFolder={(folderPath) =>
                       requestFolderDiscard(folderPath, files, mode === 'staged')
                     }
+                    onRename={setRenamePath}
+                    onFileHistory={setFileHistoryPath}
                     openMenu={openMenu}
                   />
                 ))}
@@ -509,6 +531,22 @@ export function GitWorkingTree() {
       )}
 
       <CleanUntrackedModal open={cleanOpen} onClose={() => setCleanOpen(false)} />
+
+      {renamePath && (
+        <RenameFileModal
+          open
+          oldPath={renamePath}
+          onClose={() => setRenamePath(null)}
+        />
+      )}
+
+      {fileHistoryPath && (
+        <FileHistoryModal
+          open
+          path={fileHistoryPath}
+          onClose={() => setFileHistoryPath(null)}
+        />
+      )}
 
       {pendingDiscard && (
         <ConfirmDialog

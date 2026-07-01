@@ -1,6 +1,7 @@
 import { Cog6ToothIcon } from '@heroicons/react/24/outline'
 import { CommitSearch } from '@/components/layout/CommitSearch'
 import { LogToggleButton } from '@/components/layout/LogDrawer'
+import { ToolsMenu } from '@/components/layout/ToolsMenu'
 
 interface HeaderToolsMenuProps {
   onOpenSettings: () => void
@@ -13,6 +14,7 @@ export function HeaderToolsMenu({ onOpenSettings }: HeaderToolsMenuProps) {
       aria-label="Tools"
     >
       <CommitSearch />
+      <ToolsMenu />
       <LogToggleButton />
       <button
         type="button"

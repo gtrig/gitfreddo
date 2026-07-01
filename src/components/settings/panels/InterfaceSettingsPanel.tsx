@@ -48,6 +48,20 @@ export function InterfaceSettingsPanel({ form, onChange }: PanelProps) {
           placeholder="code --wait"
         />
       </div>
+      <div>
+        <FieldLabel>Default diff view</FieldLabel>
+        <select
+          value={form.diffViewMode}
+          onChange={(e) =>
+            onChange({ diffViewMode: e.target.value as AppSettings['diffViewMode'] })
+          }
+          className="w-full rounded border border-gf-border-strong bg-gf-bg-deep px-2 py-1.5 text-sm text-gf-fg"
+        >
+          <option value="unified">Unified</option>
+          <option value="split">Side by side</option>
+          <option value="word">Word diff</option>
+        </select>
+      </div>
     </div>
   )
 }

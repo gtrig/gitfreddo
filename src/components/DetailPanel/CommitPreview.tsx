@@ -7,6 +7,7 @@ import { useToastStore } from '@/stores/toast'
 import { useSelectionStore } from '@/stores/selection'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { RewordCommitModal } from '@/components/DetailPanel/RewordCommitModal'
+import { FileHistoryModal } from '@/components/actions/FileHistoryModal'
 import {
   buildFileTree,
   collectFolderPaths,
@@ -145,19 +146,29 @@ function PathFileRow({
   file,
   selected,
   onSelect,
-  openMenu
+  openMenu,
+  onFileHistory
 }: {
   file: CommitFileItem
   selected: boolean
   onSelect: () => void
   openMenu: OpenContextMenu
+  onFileHistory: (path: string) => void
 }) {
   return (
     <button
       type="button"
       onClick={onSelect}
       onContextMenu={(event) =>
-        openMenu(event, commitFileContextMenuItems(file.path, file.path.split('/').pop() ?? file.path, onSelect))
+        openMenu(
+          event,
+          commitFileContextMenuItems(
+            file.path,
+            file.path.split('/').pop() ?? file.path,
+            onSelect,
+            () => onFileHistory(file.path)
+          )
+        )
       }
       className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-gf-surface-hover ${
         selected ? 'bg-gf-surface text-gf-fg' : 'text-gf-fg-muted'
@@ -181,7 +192,8 @@ function TreeNodeRow({
   onSelectFile,
   onToggleFolder,
   isExpanded,
-  openMenu
+  openMenu,
+  onFileHistory
 }: {
   node: FileTreeNode
   depth: number
@@ -191,6 +203,7 @@ function TreeNodeRow({
   onToggleFolder: (path: string) => void
   isExpanded: (path: string) => boolean
   openMenu: OpenContextMenu
+  onFileHistory: (path: string) => void
 }) {
   if (node.type === 'folder') {
     const open = isExpanded(node.path)
@@ -224,6 +237,7 @@ function TreeNodeRow({
               onToggleFolder={onToggleFolder}
               isExpanded={isExpanded}
               openMenu={openMenu}
+              onFileHistory={onFileHistory}
             />
           ))}
       </>
@@ -237,7 +251,9 @@ function TreeNodeRow({
       onContextMenu={(event) =>
         openMenu(
           event,
-          commitFileContextMenuItems(node.path, node.name, () => onSelectFile(node.path))
+          commitFileContextMenuItems(node.path, node.name, () => onSelectFile(node.path), () =>
+            onFileHistory(node.path)
+          )
         )
       }
       className={`flex w-full items-center gap-2 py-1.5 text-left text-sm hover:bg-gf-surface-hover ${
@@ -261,7 +277,8 @@ function FileTreeList({
   onSelectFile,
   expandedPaths,
   onToggleFolder,
-  openMenu
+  openMenu,
+  onFileHistory
 }: {
   root: FileTreeFolder
   selectedPath: string | null
@@ -269,6 +286,7 @@ function FileTreeList({
   expandedPaths: Set<string>
   onToggleFolder: (path: string) => void
   openMenu: OpenContextMenu
+  onFileHistory: (path: string) => void
 }) {
   const isExpanded = (path: string) => expandedPaths.has(path)
 
@@ -285,6 +303,7 @@ function FileTreeList({
           onToggleFolder={onToggleFolder}
           isExpanded={isExpanded}
           openMenu={openMenu}
+          onFileHistory={onFileHistory}
         />
       ))}
     </div>
@@ -315,6 +334,7 @@ export function CommitPreview({
   const [rewordDraft, setRewordDraft] = useState<{ summary: string; description: string } | null>(
     null
   )
+  const [fileHistoryPath, setFileHistoryPath] = useState<string | null>(null)
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
 
   const fullMessageQuery = useQuery({
@@ -510,6 +530,7 @@ export function CommitPreview({
                 selected={selectedCommitFile === file.path}
                 onSelect={() => setSelectedCommitFile(file.path)}
                 openMenu={openMenu}
+                onFileHistory={setFileHistoryPath}
               />
             ))}
           </div>
@@ -522,9 +543,18 @@ export function CommitPreview({
             expandedPaths={expandedPaths}
             onToggleFolder={toggleFolder}
             openMenu={openMenu}
+            onFileHistory={setFileHistoryPath}
           />
         )}
       </div>
+
+      {fileHistoryPath && (
+        <FileHistoryModal
+          open
+          path={fileHistoryPath}
+          onClose={() => setFileHistoryPath(null)}
+        />
+      )}
 
       {menuState && (
         <ContextMenu

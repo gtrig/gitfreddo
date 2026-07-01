@@ -10,6 +10,7 @@ export interface PushParams {
   branch?: string
   setUpstream?: boolean
   force?: boolean
+  pushAll?: boolean
 }
 
 export function usePushRemote() {

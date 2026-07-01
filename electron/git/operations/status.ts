@@ -209,10 +209,12 @@ export async function commitCreate(
   cwd: string,
   gitBinaryPath: string,
   message: string,
-  amend = false
+  amend = false,
+  sign = false
 ): Promise<string> {
   const args = ['commit', '-m', message]
   if (amend) args.push('--amend')
+  if (sign) args.push('-S')
   const stdout = await runGitOrThrow(args, { cwd, gitBinaryPath })
   const match = stdout.match(/\[[\w/.-]+ ([0-9a-f]+)\]/)
   if (match) return match[1]

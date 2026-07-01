@@ -36,6 +36,12 @@ git add tracked.txt
 git commit -q -m "Add tracked"
 git rm -q tracked.txt
 
+# blame smoke
+git blame --line-porcelain README.md | grep -q '^author '
+
+# upstream smoke
+git branch --set-upstream-to=origin/main 2>/dev/null || true
+
 echo "Smoke repo ready at $TMPDIR/smoke-repo"
 echo "Run GitFreddo and open that path, or use npm run dev after build."
 

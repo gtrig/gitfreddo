@@ -10,13 +10,19 @@ import {
 } from './commitSelection'
 
 function makeCommit(hash: string, parents: string[] = []): GitCommit {
+  const author = { name: 'Author', email: 'a@b.c', date: '2024-01-01T00:00:00+00:00' }
   return {
     hash,
     shortHash: hash.slice(0, 7),
     parents,
     message: hash,
     subject: hash,
-    author: { name: 'Author', email: 'a@b.c', date: '2024-01-01T00:00:00+00:00' },
+    body: '',
+    author,
+    committer: author,
+    signature: null,
+    notes: '',
+    stats: null,
     refs: []
   }
 }

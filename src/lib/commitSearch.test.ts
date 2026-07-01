@@ -3,13 +3,19 @@ import { filterCommitsByMessage, commitSearchDimmedHashes, commitSearchRowDimCla
 import type { GitCommit } from './types'
 
 function commit(subject: string, message = subject): GitCommit {
+  const author = { name: 'Test', email: 'test@example.com', date: '2024-01-01' }
   return {
     hash: 'abc123',
     shortHash: 'abc123',
     parents: [],
     subject,
     message,
-    author: { name: 'Test', email: 'test@example.com', date: '2024-01-01' },
+    body: '',
+    author,
+    committer: author,
+    signature: null,
+    notes: '',
+    stats: null,
     refs: []
   }
 }

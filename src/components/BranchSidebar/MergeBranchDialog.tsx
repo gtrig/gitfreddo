@@ -15,6 +15,8 @@ export function MergeBranchDialog({ sourceBranch, onClose }: MergeBranchDialogPr
   const current = branches?.find((b) => b.isCurrent)
   const { merge } = useGitMutations()
   const [error, setError] = useState<string | null>(null)
+  const [noFf, setNoFf] = useState(false)
+  const [squash, setSquash] = useState(false)
 
   return (
     <Modal open title={`Merge ${sourceBranch}`} onClose={onClose}>
@@ -23,6 +25,18 @@ export function MergeBranchDialog({ sourceBranch, onClose }: MergeBranchDialogPr
           Merge <span className="text-gf-fg">{sourceBranch}</span> into{' '}
           <span className="text-gf-fg">{current?.name ?? 'current branch'}</span>?
         </p>
+        <label className="flex items-center gap-2 text-sm text-gf-fg-muted">
+          <input type="checkbox" checked={noFf} onChange={(e) => setNoFf(e.target.checked)} />
+          Create merge commit (--no-ff)
+        </label>
+        <label className="flex items-center gap-2 text-sm text-gf-fg-muted">
+          <input
+            type="checkbox"
+            checked={squash}
+            onChange={(e) => setSquash(e.target.checked)}
+          />
+          Squash merge
+        </label>
         {error && <p className="text-sm text-red-400">{error}</p>}
         <div className="flex justify-end gap-2">
           <ActionButton onClick={onClose}>Cancel</ActionButton>
@@ -30,7 +44,7 @@ export function MergeBranchDialog({ sourceBranch, onClose }: MergeBranchDialogPr
             loading={merge.isPending}
             onClick={async () => {
               try {
-                await merge.mutateAsync({ branch: sourceBranch })
+                await merge.mutateAsync({ branch: sourceBranch, noFf, squash })
                 onClose()
               } catch (err) {
                 setError(err instanceof Error ? err.message : String(err))

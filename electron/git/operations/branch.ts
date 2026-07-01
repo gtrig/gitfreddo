@@ -131,3 +131,70 @@ export async function branchRename(
     gitBinaryPath
   })
 }
+
+export function parseRemoteBranchRef(name: string): { remote: string; branch: string } | null {
+  const ref = name.replace(/^remotes\//, '')
+  const slash = ref.indexOf('/')
+  if (slash <= 0) return null
+  return { remote: ref.slice(0, slash), branch: ref.slice(slash + 1) }
+}
+
+export async function branchCheckoutRemote(
+  cwd: string,
+  gitBinaryPath: string,
+  remoteBranch: string,
+  localName?: string
+): Promise<void> {
+  const parsed = parseRemoteBranchRef(remoteBranch)
+  if (!parsed) {
+    throw new Error('Invalid remote branch reference.')
+  }
+
+  const trackingRef = `${parsed.remote}/${parsed.branch}`
+  const local = localName?.trim() || parsed.branch
+  const exists = await runGit(['rev-parse', '--verify', `refs/heads/${local}`], {
+    cwd,
+    gitBinaryPath
+  })
+
+  if (exists.code === 0) {
+    await runGitOrThrow(['checkout', '--end-of-options', local], { cwd, gitBinaryPath })
+    return
+  }
+
+  await runGitOrThrow(
+    ['checkout', '-b', local, '--track', trackingRef],
+    { cwd, gitBinaryPath }
+  )
+}
+
+export async function branchSetUpstream(
+  cwd: string,
+  gitBinaryPath: string,
+  branch: string,
+  upstream: string
+): Promise<void> {
+  await runGitOrThrow(['branch', '--set-upstream-to', upstream, branch], {
+    cwd,
+    gitBinaryPath
+  })
+}
+
+export async function branchUnsetUpstream(
+  cwd: string,
+  gitBinaryPath: string,
+  branch?: string
+): Promise<void> {
+  const args = ['branch', '--unset-upstream']
+  if (branch?.trim()) args.push(branch.trim())
+  await runGitOrThrow(args, { cwd, gitBinaryPath })
+}
+
+export async function branchDeleteRemote(
+  cwd: string,
+  gitBinaryPath: string,
+  remote: string,
+  branch: string
+): Promise<void> {
+  await runGitOrThrow(['push', remote, `:refs/heads/${branch}`], { cwd, gitBinaryPath })
+}

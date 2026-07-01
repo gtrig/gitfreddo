@@ -87,13 +87,37 @@ export async function remoteRemove(
   await runGitOrThrow(['remote', 'remove', name], { cwd, gitBinaryPath })
 }
 
+export interface FetchParams {
+  remote?: string
+  tags?: boolean
+  tagsOnly?: boolean
+  refspec?: string
+}
+
 export async function fetchRemote(
   cwd: string,
   gitBinaryPath: string,
-  remote?: string
+  params: FetchParams = {}
 ): Promise<void> {
-  const args = ['fetch', '--prune']
-  args.push(await resolveRemoteName(cwd, gitBinaryPath, remote))
+  const args = ['fetch']
+
+  if (params.tagsOnly) {
+    args.push('--tags')
+    if (params.remote?.trim()) {
+      args.push(params.remote.trim())
+    } else {
+      args.push(await resolveRemoteName(cwd, gitBinaryPath))
+    }
+    await runGitOrThrow(args, { cwd, gitBinaryPath })
+    return
+  }
+
+  args.push('--prune')
+  if (params.tags) args.push('--tags')
+  args.push(await resolveRemoteName(cwd, gitBinaryPath, params.remote))
+  if (params.refspec?.trim()) {
+    args.push(params.refspec.trim())
+  }
   await runGitOrThrow(args, { cwd, gitBinaryPath })
 }
 
@@ -103,8 +127,19 @@ export async function pushRemote(
   remote?: string,
   branch?: string,
   setUpstream = false,
-  force = false
+  force = false,
+  pushAll = false
 ): Promise<void> {
+  const pushRemoteName = await resolveRemoteName(cwd, gitBinaryPath, remote)
+  const args = ['push']
+  if (force) args.push('--force-with-lease')
+
+  if (pushAll) {
+    args.push('--all', pushRemoteName)
+    await runGitOrThrow(args, { cwd, gitBinaryPath })
+    return
+  }
+
   const currentBranch = (
     await runGitOrThrow(['rev-parse', '--abbrev-ref', 'HEAD'], { cwd, gitBinaryPath })
   ).trim()
@@ -114,11 +149,7 @@ export async function pushRemote(
   }
 
   const pushBranch = branch?.trim() || currentBranch
-  const pushRemoteName = await resolveRemoteName(cwd, gitBinaryPath, remote)
   const useUpstream = setUpstream || !(await branchHasUpstream(cwd, gitBinaryPath))
-
-  const args = ['push']
-  if (force) args.push('--force-with-lease')
   if (useUpstream) args.push('-u')
   args.push(pushRemoteName, pushBranch)
   await runGitOrThrow(args, { cwd, gitBinaryPath })
@@ -128,12 +159,37 @@ export async function pullRemote(
   cwd: string,
   gitBinaryPath: string,
   remote?: string,
-  branch?: string
+  branch?: string,
+  rebase = false
 ): Promise<void> {
   const pullRemoteName = await resolveRemoteName(cwd, gitBinaryPath, remote)
-  const args = ['pull', pullRemoteName]
+  const args = ['pull']
+  if (rebase) args.push('--rebase')
+  args.push(pullRemoteName)
   if (branch?.trim()) {
     args.push(branch.trim())
   }
+  await runGitOrThrow(args, { cwd, gitBinaryPath })
+}
+
+export async function remoteRename(
+  cwd: string,
+  gitBinaryPath: string,
+  oldName: string,
+  newName: string
+): Promise<void> {
+  await runGitOrThrow(['remote', 'rename', oldName, newName], { cwd, gitBinaryPath })
+}
+
+export async function remoteSetUrl(
+  cwd: string,
+  gitBinaryPath: string,
+  name: string,
+  url: string,
+  push = false
+): Promise<void> {
+  const args = ['remote', 'set-url']
+  if (push) args.push('--push')
+  args.push(name, url)
   await runGitOrThrow(args, { cwd, gitBinaryPath })
 }

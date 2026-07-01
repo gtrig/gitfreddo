@@ -12,7 +12,9 @@ import type { GitCommit, GitWorkingStatus } from '@/lib/types'
 export interface MultiCommitContextMenuActions {
   copyAllHashes: (hashes: string[]) => void
   cherryPickAll: (hashes: string[]) => void
+  cherryPickAllNoCommit: (hashes: string[]) => void
   squashSelected: (hashes: string[]) => void
+  interactiveRebase: (commits: GitCommit[]) => void
   dropSelected: (commits: GitCommit[]) => void
   removeStaleSelected: (commits: GitCommit[]) => void
   compareSelected: (oldestHash: string, newestHash: string, label: string) => void
@@ -58,6 +60,8 @@ export function buildMultiCommitContextMenuItems({
     workingTreeDirty || gitBusy || anyOnHistory || hasMerge
   const squashBlocked =
     workingTreeDirty || gitBusy || isDetached || !onHistory || !contiguous || hasMerge
+  const interactiveRebaseBlocked =
+    workingTreeDirty || gitBusy || isDetached || !onHistory || !contiguous || hasMerge
   const onHeadLine = head
     ? areContiguousOnBranchHeadLine(selectedCommits, head, allCommits)
     : false
@@ -102,6 +106,22 @@ export function buildMultiCommitContextMenuItems({
         : `Cherry-pick ${count} commits onto ${branchLabel}`,
       disabled: cherryPickBlocked,
       onClick: () => actions.cherryPickAll(hashes)
+    },
+    {
+      id: 'cherry-pick-all-no-commit',
+      label: anyOnHistory
+        ? `Cherry-pick ${count} without commit (some already on ${branchLabel})`
+        : `Cherry-pick ${count} without commit onto ${branchLabel}`,
+      disabled: cherryPickBlocked,
+      onClick: () => actions.cherryPickAllNoCommit(hashes)
+    },
+    {
+      id: 'interactive-rebase',
+      label: contiguous
+        ? `Interactive rebase ${count} commits on ${branchLabel}…`
+        : `Interactive rebase (selection not contiguous)`,
+      disabled: interactiveRebaseBlocked,
+      onClick: () => actions.interactiveRebase(chronological)
     },
     {
       id: 'squash-selected',

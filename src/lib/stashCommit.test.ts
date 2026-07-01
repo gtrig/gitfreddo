@@ -3,13 +3,19 @@ import type { GitCommit, GitStashEntry } from './types'
 import { resolveStashEntry, stashRefIndex } from './stashCommit'
 
 function makeCommit(hash: string, refs: string[]): GitCommit {
+  const author = { name: 'test', email: 'test@example.com', date: '2024-01-01T00:00:00Z' }
   return {
     hash,
     shortHash: hash.slice(0, 7),
     parents: [],
     subject: 'stash message',
     message: 'stash message',
-    author: { name: 'test', email: 'test@example.com', date: '2024-01-01T00:00:00Z' },
+    body: '',
+    author,
+    committer: author,
+    signature: null,
+    notes: '',
+    stats: null,
     refs
   }
 }

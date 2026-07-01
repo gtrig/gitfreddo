@@ -8,7 +8,7 @@ import {
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { usePushRemote } from '@/hooks/usePushRemote'
-import { useResolvedRemote } from '@/hooks/useAppSettings'
+import { useResolvedRemote, useAppSettings } from '@/hooks/useAppSettings'
 import { ConflictPanel } from '@/components/ConflictPanel/ConflictPanel'
 import { useMergeStatus } from '@/hooks/useGit'
 import { Spinner } from '@/components/ui/Spinner'
@@ -57,6 +57,7 @@ export function ActionBar() {
   const { pushRemote, isPushPending, forceConfirm, confirmForcePush, cancelForcePush } =
     usePushRemote()
   const defaultRemote = useResolvedRemote()
+  const { data: settings } = useAppSettings()
   const { data: mergeStatus } = useMergeStatus(connected)
 
   if (!connected) return null
@@ -80,7 +81,9 @@ export function ActionBar() {
         </ActionBarButton>
         <ActionBarButton
           loading={pull.isPending}
-          onClick={() => void pull.mutateAsync({ remote: defaultRemote })}
+          onClick={() =>
+            void pull.mutateAsync({ remote: defaultRemote, rebase: settings?.pullRebase })
+          }
           icon={<ArrowDownTrayIcon aria-hidden className={iconClass} />}
         >
           Pull

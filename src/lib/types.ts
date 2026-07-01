@@ -167,6 +167,38 @@ export interface GitDiffResult {
   path: string
 }
 
+export interface GitBlameLine {
+  line: number
+  hash: string
+  shortHash: string
+  author: string
+  authorMail: string
+  authorTime: string
+  summary: string
+  content: string
+}
+
+export interface GitReflogEntry {
+  hash: string
+  shortHash: string
+  selector: string
+  subject: string
+  timestamp: string
+}
+
+export interface GitBisectStatus {
+  active: boolean
+  good?: string
+  bad?: string
+  current?: string
+  remaining?: number
+}
+
+export interface GitNote {
+  hash: string
+  note: string
+}
+
 export interface GitLogGraphResult {
   commits: GitCommit[]
   maxCount: number
