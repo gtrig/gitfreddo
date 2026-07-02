@@ -77,9 +77,9 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
         <LoadingRow />
       ) : (
         <>
-          <div className="flex min-h-[280px] gap-4">
+          <div className="flex max-h-[min(60vh,32rem)] min-h-[280px] gap-4">
             <SettingsSidebar active={section} onSelect={selectSection} />
-            <div className="min-w-0 flex-1">
+            <div className="min-h-0 min-w-0 flex-1 overflow-y-auto pr-1">
               {section === 'git' && (
                 <GitSettingsPanel form={form} onChange={updateForm} onPickGit={() => void handlePickGit()} />
               )}
