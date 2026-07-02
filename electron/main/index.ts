@@ -39,6 +39,11 @@ const THEME_BG_COLORS = {
   freddo: '#1c1612'
 } as const
 
+if (process.platform === 'linux') {
+  const linuxApp = app as typeof app & { setDesktopName?: (name: string) => void }
+  linuxApp.setDesktopName?.('gitfreddo.desktop')
+}
+
 let settings: AppSettings = {
   theme: 'dark',
   gitBinaryPath: 'git',

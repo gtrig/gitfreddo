@@ -1,10 +1,11 @@
 {
   "name": "gitfreddo",
-  "version": "0.1.7",
+  "version": "0.2.0",
   "private": true,
   "description": "Desktop git client with commit graph",
   "author": "ArctosWebLabs <gtrig@users.noreply.github.com>",
   "homepage": "https://github.com/gtrig/gitfreddo",
+  "desktopName": "gitfreddo.desktop",
   "repository": {
     "type": "git",
     "url": "https://github.com/gtrig/gitfreddo.git"
@@ -15,7 +16,7 @@
   "type": "module",
   "main": "./out/main/index.js",
   "scripts": {
-    "dev": "NO_SANDBOX=1 electron-vite dev",
+    "dev": "CHROME_DESKTOP=gitfreddo.desktop NO_SANDBOX=1 electron-vite dev",
     "build": "electron-vite build",
     "preview": "NO_SANDBOX=1 electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.web.json && tsc --noEmit -p tsconfig.node.json",
