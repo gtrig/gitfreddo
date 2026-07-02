@@ -7,9 +7,9 @@ function assetsDir(): string {
 
 function iconPath(): string {
   if (process.platform === 'win32') {
-    return join(assetsDir(), 'gitFreddo.ico')
+    return join(assetsDir(), 'taskbar_logo.png')
   }
-  return join(assetsDir(), 'gitFreddo_thumbnail_150x150.png')
+  return join(assetsDir(), 'taskbar_logo.png')
 }
 
 export function loadAppIcon(): NativeImage | undefined {
