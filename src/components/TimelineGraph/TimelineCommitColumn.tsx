@@ -9,7 +9,7 @@ export function TimelineCommitColumn({
   columnId,
   width,
   align = 'left',
-  showWorkingRow,
+  prefixRows = 0,
   commits,
   rowState,
   onRowContextMenu,
@@ -20,7 +20,7 @@ export function TimelineCommitColumn({
   columnId: TimelineColumnId
   width: number
   align?: 'left' | 'right'
-  showWorkingRow: boolean
+  prefixRows?: number
   commits: GitCommit[]
   rowState: (hash: string) => {
     isSelected: boolean
@@ -37,7 +37,7 @@ export function TimelineCommitColumn({
       className="shrink-0 border-l border-gf-border/40 bg-gf-bg-deep first:border-l-0"
       style={{ width }}
     >
-      {showWorkingRow && <div style={{ height: COMPACT_ROW_HEIGHT }} />}
+      {prefixRows > 0 && <div style={{ height: prefixRows * COMPACT_ROW_HEIGHT }} />}
       {commits.map((commit) => {
         const { isSelected, isPrimary, searchDimClass } = rowState(commit.hash)
         const title = getCellTitle?.(commit) ?? commitCellTitle(columnId, commit)

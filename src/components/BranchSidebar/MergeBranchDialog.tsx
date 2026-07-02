@@ -3,6 +3,9 @@ import { Modal, ActionButton } from '@/components/ui/Modal'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useBranches } from '@/hooks/useGit'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { useSelectionStore } from '@/stores/selection'
+import { useToastStore } from '@/stores/toast'
+import type { GitMergeStartResult } from '@/lib/types'
 
 interface MergeBranchDialogProps {
   sourceBranch: string
@@ -14,6 +17,8 @@ export function MergeBranchDialog({ sourceBranch, onClose }: MergeBranchDialogPr
   const { data: branches } = useBranches(connected)
   const current = branches?.find((b) => b.isCurrent)
   const { merge } = useGitMutations()
+  const selectTimelineNode = useSelectionStore((s) => s.selectTimelineNode)
+  const showToast = useToastStore((s) => s.show)
   const [error, setError] = useState<string | null>(null)
   const [noFf, setNoFf] = useState(false)
   const [squash, setSquash] = useState(false)
@@ -44,8 +49,26 @@ export function MergeBranchDialog({ sourceBranch, onClose }: MergeBranchDialogPr
             loading={merge.isPending}
             onClick={async () => {
               try {
-                await merge.mutateAsync({ branch: sourceBranch, noFf, squash })
+                const result = (await merge.mutateAsync({
+                  branch: sourceBranch,
+                  noFf,
+                  squash
+                })) as GitMergeStartResult
                 onClose()
+                if (result.status === 'conflicts') {
+                  const count = result.conflictedPaths.length
+                  const label =
+                    count === 1
+                      ? result.conflictedPaths[0]
+                      : `${count} files`
+                  showToast(
+                    `Merge started with conflicts in ${label}. Resolve them to continue.`,
+                    'info'
+                  )
+                  selectTimelineNode('merge', 'conflicts')
+                  return
+                }
+                showToast('Merge completed.', 'success')
               } catch (err) {
                 setError(err instanceof Error ? err.message : String(err))
               }

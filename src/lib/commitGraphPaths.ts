@@ -66,7 +66,7 @@ function buildBottomElbowPath(
 
 /**
  * Anchor commit → stash: horizontal from the anchor on the main lane, then vertical on
- * the dedicated stash lane to the stash row (GitKraken-style pad connector).
+ * the dedicated stash lane to the stash row (pad connector).
  */
 export function buildStashPadPath(
   anchorX: number,
@@ -98,7 +98,7 @@ export function buildStashPadPath(
 }
 
 /**
- * GitKraken-style orthogonal edge: straight vertical on one lane, or a top elbow
+ * Orthogonal edge: straight vertical on one lane, or a top elbow
  * (horizontal at the child row, then vertical to the parent) when lanes differ.
  */
 export function buildGraphEdgePath(

@@ -193,3 +193,28 @@ export function useDiffShow(ref: string | null, path?: string, enabled = true) {
     enabled: enabled && connected && Boolean(repoPath) && Boolean(ref)
   })
 }
+
+export interface ConflictFileStages {
+  base: string
+  sideA: string
+  sideB: string
+  working: string
+}
+
+export function useConflictFileStages(path: string | undefined, enabled = true) {
+  const { repoPath, connected } = useRepoScope()
+  return useQuery<ConflictFileStages>({
+    queryKey: ['repo', repoPath, 'conflict.stages', path],
+    queryFn: async () => {
+      const filePath = path!
+      const [base, sideA, sideB, working] = await Promise.all([
+        window.gitfreddo.invoke('file.readStage', { stage: 1, path: filePath }) as Promise<string>,
+        window.gitfreddo.invoke('file.readStage', { stage: 2, path: filePath }) as Promise<string>,
+        window.gitfreddo.invoke('file.readStage', { stage: 3, path: filePath }) as Promise<string>,
+        window.gitfreddo.invoke('working.read', { path: filePath }) as Promise<string>
+      ])
+      return { base, sideA, sideB, working }
+    },
+    enabled: enabled && connected && Boolean(repoPath) && Boolean(path)
+  })
+}

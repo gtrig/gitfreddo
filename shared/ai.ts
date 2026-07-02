@@ -1,4 +1,4 @@
-export type AiFillPurpose = 'commit_message' | 'stash_message' | 'compose_commits'
+export type AiFillPurpose = 'commit_message' | 'stash_message' | 'compose_commits' | 'resolve_conflict'
 
 export interface AiComposeCommitProposal {
   summary: string
@@ -13,6 +13,13 @@ export interface AiFillContext {
   filePaths?: string[]
   currentText?: string
   diffText?: string
+  filePath?: string
+  sideA?: string
+  sideB?: string
+  sideBase?: string
+  conflictContent?: string
+  operationKind?: 'merge' | 'rebase' | 'cherry-pick'
+  incomingLabel?: string
 }
 
 export interface AiFillParams {
@@ -24,6 +31,7 @@ export interface AiCustomInstructions {
   system?: string
   commitMessage?: string
   stashMessage?: string
+  conflictResolve?: string
 }
 
 function appendCustomInstructions(base: string, custom?: string): string {
@@ -61,7 +69,7 @@ export function buildAiMessages(
     : ''
 
   const system = appendCustomInstructions(
-  purpose === 'compose_commits'
+  purpose === 'compose_commits' || purpose === 'resolve_conflict'
     ? 'You write concise, technical text for git workflows. ' +
         'Respond with only valid JSON — no quotes around the whole payload, markdown fences, or preamble.'
     : 'You write concise, technical text for git workflows. ' +
@@ -118,6 +126,47 @@ export function buildAiMessages(
         instructions.commitMessage
       )
       break
+    case 'resolve_conflict': {
+      const filePath = context.filePath?.trim()
+      const op = context.operationKind ?? 'merge'
+      const incoming = context.incomingLabel?.trim()
+      const sideABlock = context.sideA?.trim()
+        ? `\nSide A (ours / current branch):\n\`\`\`\n${context.sideA}\n\`\`\`\n`
+        : ''
+      const sideBBlock = context.sideB?.trim()
+        ? `\nSide B (theirs / incoming):\n\`\`\`\n${context.sideB}\n\`\`\`\n`
+        : ''
+      const baseBlock = context.sideBase?.trim()
+        ? `\nCommon ancestor (base):\n\`\`\`\n${context.sideBase}\n\`\`\`\n`
+        : ''
+      const markerBlock = context.conflictContent?.trim()
+        ? `\nWorking tree file with conflict markers:\n\`\`\`\n${context.conflictContent}\n\`\`\`\n`
+        : ''
+      user = appendCustomInstructions(
+        'Resolve git merge conflict markers in the working tree file.\n' +
+          (filePath ? `File: ${filePath}\n` : '') +
+          `Operation: ${op}\n` +
+          (incoming ? `Incoming: ${incoming}\n` : '') +
+          (branch ? `Current branch: ${branch}\n` : '') +
+          baseBlock +
+          sideABlock +
+          sideBBlock +
+          markerBlock +
+          'Return ONLY JSON with this shape:\n' +
+          '{\n' +
+          '  "resolutions": [\n' +
+          '    { "hunkId": 0, "text": "merged lines for conflict 0 without markers" }\n' +
+          '  ]\n' +
+          '}\n' +
+          'Rules:\n' +
+          '- One entry per conflict hunk in order (hunkId 0, 1, 2, …)\n' +
+          '- "text" is the resolved content for that hunk only (no <<<<<<< markers)\n' +
+          '- Preserve non-conflicting context; prefer minimal correct merges\n' +
+          '- Combine both sides when both changes are needed',
+        instructions.conflictResolve
+      )
+      break
+    }
   }
 
   return { system, user }
@@ -220,6 +269,49 @@ export function parseComposeCommitsResponse(
   }
 
   return proposals
+}
+
+export function parseConflictResolveResponse(
+  text: string,
+  expectedHunkCount: number
+): Map<number, string> {
+  const cleaned = stripJsonFences(text)
+  let parsed: unknown
+
+  try {
+    parsed = JSON.parse(cleaned)
+  } catch {
+    throw new Error('AI response was not valid JSON. Try again or adjust your AI settings.')
+  }
+
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('AI response was not a JSON object.')
+  }
+
+  const resolutions = (parsed as { resolutions?: unknown }).resolutions
+  if (!Array.isArray(resolutions)) {
+    throw new Error('AI response missing "resolutions" array.')
+  }
+
+  const result = new Map<number, string>()
+  for (const entry of resolutions) {
+    if (!entry || typeof entry !== 'object') continue
+    const raw = entry as { hunkId?: unknown; text?: unknown }
+    if (typeof raw.hunkId !== 'number' || typeof raw.text !== 'string') continue
+    result.set(raw.hunkId, raw.text)
+  }
+
+  if (result.size === 0) {
+    throw new Error('AI returned no usable conflict resolutions.')
+  }
+
+  for (let id = 0; id < expectedHunkCount; id++) {
+    if (!result.has(id)) {
+      throw new Error(`AI response missing resolution for conflict ${id + 1} of ${expectedHunkCount}.`)
+    }
+  }
+
+  return result
 }
 
 type ContentPart = string | { type?: string; text?: string }

@@ -5,6 +5,7 @@ import { useSelectionStore } from '@/stores/selection'
 import { useLogGraph, useRepoStatus, useWorkingStatus } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { GitWorkingTree } from '@/components/WorkingTree/GitWorkingTree'
+import { MergeConflictsPanel } from '@/components/MergeConflicts/MergeConflictsPanel'
 import { CommitPreview } from '@/components/DetailPanel/CommitPreview'
 import { StashPreview } from '@/components/DetailPanel/StashPreview'
 import { MultiCommitSelectionBar } from '@/components/DetailPanel/MultiCommitSelectionBar'
@@ -68,6 +69,14 @@ export function DetailPanel() {
     return (
       <aside className="flex h-full items-center justify-center p-4 text-sm text-gf-fg-subtle">
         Select a repository tab.
+      </aside>
+    )
+  }
+
+  if (selection?.kind === 'merge') {
+    return (
+      <aside className="flex h-full min-h-0 flex-col border-l border-gf-border">
+        <MergeConflictsPanel />
       </aside>
     )
   }

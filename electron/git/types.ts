@@ -85,6 +85,16 @@ export interface GitMergeStatus {
   conflictedPaths: string[]
   ours?: string
   theirs?: string
+  currentBranch?: string
+  incomingLabel?: string
+  mergeMessage?: string
+  oursCommit?: string
+  theirsCommit?: string
+}
+
+export interface GitMergeStartResult {
+  status: 'completed' | 'conflicts'
+  conflictedPaths: string[]
 }
 
 export interface GitRepoStatus {

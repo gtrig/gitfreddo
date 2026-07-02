@@ -40,8 +40,8 @@ export function AiSettingsPanel({ form, onChange }: PanelProps) {
   return (
     <div className="space-y-3">
       <p className="text-xs leading-relaxed text-gf-fg-subtle">
-        AI assist fills commit and stash messages from your staged or working-tree changes.
-        Supports OpenAI-compatible endpoints (LM Studio, Ollama, OpenAI, OpenRouter).
+        AI assist fills commit and stash messages from your staged or working-tree changes,
+        and can auto-resolve merge conflicts. Supports OpenAI-compatible endpoints (LM Studio, Ollama, OpenAI, OpenRouter).
       </p>
 
       <div>
@@ -128,6 +128,13 @@ export function AiSettingsPanel({ form, onChange }: PanelProps) {
             value={form.aiStashInstructions}
             placeholder="e.g. Prefix messages with WIP: and mention the feature area."
             onChange={(value) => onChange({ aiStashInstructions: value })}
+          />
+          <InstructionField
+            label="Conflict resolution instructions"
+            description="Added when auto-resolving merge conflicts with AI."
+            value={form.aiConflictInstructions}
+            placeholder="e.g. Prefer keeping both sides when changes are complementary."
+            onChange={(value) => onChange({ aiConflictInstructions: value })}
           />
         </div>
       </div>

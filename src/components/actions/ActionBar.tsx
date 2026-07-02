@@ -9,8 +9,6 @@ import { useWorkspaceStore } from '@/stores/workspace'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { usePushRemote } from '@/hooks/usePushRemote'
 import { useResolvedRemote, useAppSettings } from '@/hooks/useAppSettings'
-import { ConflictPanel } from '@/components/ConflictPanel/ConflictPanel'
-import { useMergeStatus } from '@/hooks/useGit'
 import { Spinner } from '@/components/ui/Spinner'
 import { PushForceConfirm } from '@/components/actions/PushForceConfirm'
 
@@ -58,7 +56,6 @@ export function ActionBar() {
     usePushRemote()
   const defaultRemote = useResolvedRemote()
   const { data: settings } = useAppSettings()
-  const { data: mergeStatus } = useMergeStatus(connected)
 
   if (!connected) return null
 
@@ -102,7 +99,6 @@ export function ActionBar() {
         onConfirm={confirmForcePush}
         onCancel={cancelForcePush}
       />
-      {mergeStatus?.inProgress && <ConflictPanel />}
     </>
   )
 }

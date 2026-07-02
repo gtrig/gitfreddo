@@ -18,7 +18,8 @@ import { useGraphColors } from '@/hooks/useGraphColors'
 
 export function CommitGraphOverlay({
   layout,
-  showWorkingRow,
+  prefixRows = 0,
+  showWorkingRow = false,
   workingSelected,
   selectedHash,
   selectedHashes,
@@ -27,7 +28,8 @@ export function CommitGraphOverlay({
   metrics = DEFAULT_GRAPH_METRICS
 }: {
   layout: GitGraphLayout
-  showWorkingRow: boolean
+  prefixRows?: number
+  showWorkingRow?: boolean
   workingSelected: boolean
   selectedHash: string | null
   selectedHashes?: ReadonlySet<string>
@@ -36,20 +38,21 @@ export function CommitGraphOverlay({
   metrics?: GraphMetrics
 }) {
   const colors = useGraphColors()
-  const rowCount = showWorkingRow ? layout.rows.length + 1 : layout.rows.length
+  const rowCount = layout.rows.length + prefixRows
   const height = graphHeight(rowCount, rowHeight)
   const width = graphWidth(layout.laneCount, metrics)
   const rowByKey = new Map(layout.rows.map((row) => [row.key, row]))
   const headRow = layout.rows.find((row) => row.isHead)
 
   const wipX = columnCenterX(WORKING_TREE_COLUMN, metrics)
-  const wipY = rowCenterY(0, rowHeight)
+  const wipRow = !showWorkingRow ? -1 : prefixRows >= 2 ? 1 : 0
+  const wipY = wipRow >= 0 ? rowCenterY(wipRow, rowHeight) : rowCenterY(0, rowHeight)
   const headY = headRow
-    ? rowCenterY(visualRowIndex(headRow.rowIndex, showWorkingRow), rowHeight)
+    ? rowCenterY(visualRowIndex(headRow.rowIndex, prefixRows), rowHeight)
     : wipY
 
   const rowCenter = (layoutRowIndex: number) =>
-    rowCenterY(visualRowIndex(layoutRowIndex, showWorkingRow), rowHeight)
+    rowCenterY(visualRowIndex(layoutRowIndex, prefixRows), rowHeight)
 
   const edgeDimmed = (fromKey: string, toKey: string) =>
     Boolean(dimmedHashes?.has(fromKey) || dimmedHashes?.has(toKey))

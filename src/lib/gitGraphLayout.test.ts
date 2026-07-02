@@ -195,13 +195,13 @@ describe('buildGitGraphLayout', () => {
 })
 
 describe('visualRowIndex', () => {
-  it('offsets commits when the working row is visible', () => {
-    expect(visualRowIndex(0, true)).toBe(1)
-    expect(rowCenterY(visualRowIndex(0, true))).toBe(rowCenterY(1))
+  it('offsets commits when prefix rows are visible', () => {
+    expect(visualRowIndex(0, 1)).toBe(1)
+    expect(rowCenterY(visualRowIndex(0, 1))).toBe(rowCenterY(1))
   })
 
-  it('aligns commits to the top row when the working row is hidden', () => {
-    expect(visualRowIndex(0, false)).toBe(0)
-    expect(rowCenterY(visualRowIndex(0, false))).toBe(rowCenterY(0))
+  it('aligns commits to the top row when no prefix rows', () => {
+    expect(visualRowIndex(0, 0)).toBe(0)
+    expect(rowCenterY(visualRowIndex(0, 0))).toBe(rowCenterY(0))
   })
 })

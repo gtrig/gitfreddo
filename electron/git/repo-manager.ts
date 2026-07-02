@@ -409,7 +409,7 @@ export class RepoManager {
       case 'merge.abort':
         return mergeOps.mergeAbort(cwd, git)
       case 'merge.continue':
-        return mergeOps.mergeContinue(cwd, git)
+        return mergeOps.mergeContinue(cwd, git, p.message as string | undefined)
       case 'rebase.start':
         return rebaseOps.rebaseStart(
           cwd,
@@ -427,11 +427,11 @@ export class RepoManager {
       case 'rebase.abort':
         return rebaseOps.rebaseAbort(cwd, git)
       case 'rebase.continue':
-        return rebaseOps.rebaseContinue(cwd, git)
+        return rebaseOps.rebaseContinue(cwd, git, p.message as string | undefined)
       case 'rebase.skip':
         return rebaseOps.rebaseSkip(cwd, git)
       case 'cherry-pick.continue':
-        return rebaseOps.cherryPickContinue(cwd, git)
+        return rebaseOps.cherryPickContinue(cwd, git, p.message as string | undefined)
       case 'cherry-pick.abort':
         return rebaseOps.cherryPickAbort(cwd, git)
       case 'cherry-pick.skip':

@@ -60,7 +60,8 @@ export function aiConfigFromSettings(settings: AppSettings): AiClientConfig {
     instructions: {
       system: settings.aiSystemInstructions ?? '',
       commitMessage: settings.aiCommitInstructions ?? '',
-      stashMessage: settings.aiStashInstructions ?? ''
+      stashMessage: settings.aiStashInstructions ?? '',
+      conflictResolve: settings.aiConflictInstructions ?? ''
     }
   }
 }

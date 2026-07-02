@@ -4,6 +4,7 @@ import {
   extractChatCompletionContent,
   normalizeBaseUrl,
   parseComposeCommitsResponse,
+  parseConflictResolveResponse,
   pickChatModelId
 } from './ai'
 
@@ -151,5 +152,38 @@ describe('extractChatCompletionContent', () => {
     expect(() =>
       extractChatCompletionContent({ error: { message: 'model not found' } })
     ).toThrow('model not found')
+  })
+})
+
+describe('parseConflictResolveResponse', () => {
+  it('parses valid hunk resolutions', () => {
+    const result = parseConflictResolveResponse(
+      JSON.stringify({
+        resolutions: [
+          { hunkId: 0, text: 'merged line' },
+          { hunkId: 1, text: 'second hunk' }
+        ]
+      }),
+      2
+    )
+    expect(result.get(0)).toBe('merged line')
+    expect(result.get(1)).toBe('second hunk')
+  })
+
+  it('strips markdown fences', () => {
+    const result = parseConflictResolveResponse(
+      '```json\n{"resolutions":[{"hunkId":0,"text":"ok"}]}\n```',
+      1
+    )
+    expect(result.get(0)).toBe('ok')
+  })
+
+  it('throws when a hunk is missing', () => {
+    expect(() =>
+      parseConflictResolveResponse(
+        JSON.stringify({ resolutions: [{ hunkId: 0, text: 'only one' }] }),
+        2
+      )
+    ).toThrow(/missing resolution/)
   })
 })

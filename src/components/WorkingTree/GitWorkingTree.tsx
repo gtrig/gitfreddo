@@ -277,10 +277,14 @@ export function GitWorkingTree() {
   const [fileHistoryPath, setFileHistoryPath] = useState<string | null>(null)
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
 
+  const gitOpInProgress = Boolean(
+    data?.mergeInProgress || data?.rebaseInProgress || data?.cherryPickInProgress
+  )
+
   const changesFiles = [
     ...(data?.unstaged ?? []),
     ...(data?.untracked ?? []),
-    ...(data?.conflicted ?? [])
+    ...(!gitOpInProgress ? (data?.conflicted ?? []) : [])
   ]
   const stagedFiles = data?.staged ?? []
   const unstagedDiscardable = discardablePaths(data?.unstaged ?? [])
@@ -288,7 +292,7 @@ export function GitWorkingTree() {
   const totalChangeCount =
     (data?.unstaged.length ?? 0) +
     (data?.untracked.length ?? 0) +
-    (data?.conflicted.length ?? 0) +
+    (!gitOpInProgress ? (data?.conflicted.length ?? 0) : 0) +
     (data?.staged.length ?? 0)
 
   function expandAllFolders() {
@@ -357,11 +361,6 @@ export function GitWorkingTree() {
         <p className="text-xs text-gf-fg-subtle">—</p>
       ) : (
         <>
-          {mode === 'working' && (data?.conflicted.length ?? 0) > 0 && (
-            <p className="mb-1 text-[10px] text-orange-400">
-              Conflicted files: resolve via the conflict panel.
-            </p>
-          )}
           {viewMode === 'path' ? (
             <div className="space-y-0.5">
               {files.map((file) => (
