@@ -22,6 +22,7 @@ export default defineConfig({
   },
   renderer: {
     root: resolve('src'),
+    publicDir: resolve('assets'),
     build: {
       rollupOptions: {
         input: resolve('src/index.html')

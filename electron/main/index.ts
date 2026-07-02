@@ -1,4 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
+import { loadAppIcon } from '../app-icon'
 import { join, relative, resolve } from 'path'
 import { RepoManager } from '../git/repo-manager'
 import { hasGitDir } from '../git/repo-path'
@@ -81,6 +82,7 @@ function createWindow(): void {
     minWidth: 960,
     minHeight: 640,
     show: false,
+    icon: loadAppIcon(),
     backgroundColor: THEME_BG_COLORS[settings.theme],
     title: 'GitFreddo',
     webPreferences: {

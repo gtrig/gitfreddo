@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/gitFreddo_thumbnail_150x150.png" alt="GitFreddo" width="128" height="128" />
+</p>
+
 # GitFreddo
 
 Desktop git client with commit graph — an Electron + React app that talks to `git` on your PATH.

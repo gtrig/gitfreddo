@@ -63,13 +63,15 @@
     },
     "files": [
       "out/**/*",
-      "package.json"
+      "package.json",
+      "assets/**"
     ],
     "linux": {
       "target": [
         "AppImage",
         "deb"
       ],
+      "icon": "assets/gitFreddo_thumbnail_150x150.png",
       "category": "Development",
       "maintainer": "ArctosWebLabs <gtrig@users.noreply.github.com>"
     },
@@ -82,7 +84,8 @@
     "win": {
       "target": [
         "nsis"
-      ]
+      ],
+      "icon": "assets/gitFreddo.ico"
     }
   }
 }
