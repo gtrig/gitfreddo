@@ -1,6 +1,6 @@
 {
   "name": "gitfredo",
-  "version": "0.1.0",
+  "version": "0.1.7",
   "private": true,
   "description": "Desktop git client with commit graph",
   "author": "ArctosWebLabs <gtrig@users.noreply.github.com>",
