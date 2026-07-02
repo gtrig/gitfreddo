@@ -23,7 +23,7 @@ describe('buildGitEnv', () => {
     vi.mocked(loadGitHubToken).mockResolvedValue(null)
     const env = await buildGitEnv()
     expect(env.GIT_ASKPASS).toBeUndefined()
-    expect(env.GITFREDO_GITHUB_TOKEN).toBeUndefined()
+    expect(env.gitfreddo_GITHUB_TOKEN).toBeUndefined()
   })
 
   it('injects askpass env when a token is present', async () => {
@@ -31,6 +31,6 @@ describe('buildGitEnv', () => {
     const env = await buildGitEnv()
     expect(env.GIT_TERMINAL_PROMPT).toBe('0')
     expect(env.GIT_ASKPASS).toContain('github-askpass.cjs')
-    expect(env.GITFREDO_GITHUB_TOKEN).toBe('gho_test_token')
+    expect(env.gitfreddo_GITHUB_TOKEN).toBe('gho_test_token')
   })
 })
