@@ -33,6 +33,8 @@ import { CreatePrModal } from '@/components/GitHub/CreatePrModal'
 import { RenameBranchModal } from '@/components/actions/RenameBranchModal'
 import { SetUpstreamModal } from '@/components/actions/SetUpstreamModal'
 import { CheckoutRemoteModal } from '@/components/actions/CheckoutRemoteModal'
+import { AddRemoteModal } from '@/components/actions/AddRemoteModal'
+import { EditRemoteUrlModal } from '@/components/actions/EditRemoteUrlModal'
 import { AddWorktreeModal } from '@/components/actions/AddWorktreeModal'
 import {
   folderContextMenuItems,
@@ -369,6 +371,8 @@ export function RemoteBranchesSection({
   const [collapsedRemotes, setCollapsedRemotes] = useState<Set<string>>(() => new Set())
   const [checkoutRemote, setCheckoutRemote] = useState<string | null>(null)
   const [pendingDeleteRemote, setPendingDeleteRemote] = useState<GitBranch | null>(null)
+  const [addRemoteOpen, setAddRemoteOpen] = useState(false)
+  const [editRemote, setEditRemote] = useState<GitRemote | null>(null)
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
   const { fetch, deleteRemoteBranch } = useGitMutations()
 
@@ -381,12 +385,21 @@ export function RemoteBranchesSection({
     })
   }
 
+  function openEditRemote(name: string) {
+    const remote = remotes?.find((entry) => entry.name === name)
+    if (remote) {
+      setEditRemote(remote)
+    }
+  }
+
   return (
     <SidebarSection
       sectionId="sidebar.remote"
       title="Remote"
       icon={<SidebarIconRemote className="h-3.5 w-3.5" />}
       count={count || grouped.length}
+      onAdd={() => setAddRemoteOpen(true)}
+      addTitle="Add remote"
     >
       {isLoading && <LoadingRow />}
       {error && <p className="px-2 text-xs text-red-400">{error.message}</p>}
@@ -405,7 +418,8 @@ export function RemoteBranchesSection({
                 onToggle={() => toggleRemote(remote)}
                 menuItems={remoteFolderContextMenuItems(remote, open, {
                   onToggle: () => toggleRemote(remote),
-                  onFetch: (remoteName) => void fetch.mutateAsync({ remote: remoteName })
+                  onFetch: (remoteName) => void fetch.mutateAsync({ remote: remoteName }),
+                  onEditUrl: openEditRemote
                 })}
                 openMenu={openMenu}
               />
@@ -480,6 +494,17 @@ export function RemoteBranchesSection({
             setPendingDeleteRemote(null)
           }}
           onCancel={() => setPendingDeleteRemote(null)}
+        />
+      )}
+
+      <AddRemoteModal open={addRemoteOpen} onClose={() => setAddRemoteOpen(false)} />
+
+      {editRemote && (
+        <EditRemoteUrlModal
+          open
+          remoteName={editRemote.name}
+          currentUrl={editRemote.url}
+          onClose={() => setEditRemote(null)}
         />
       )}
     </SidebarSection>

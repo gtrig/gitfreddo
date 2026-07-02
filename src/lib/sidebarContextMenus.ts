@@ -167,9 +167,10 @@ export function remoteFolderContextMenuItems(
   handlers: {
     onToggle: () => void
     onFetch: (remote: string) => void
+    onEditUrl?: (remote: string) => void
   }
 ): ContextMenuItem[] {
-  return [
+  const items: ContextMenuItem[] = [
     {
       id: 'toggle',
       label: open ? 'Collapse' : 'Expand',
@@ -179,13 +180,24 @@ export function remoteFolderContextMenuItems(
       id: 'fetch',
       label: 'Fetch from remote',
       onClick: () => handlers.onFetch(remote)
-    },
-    {
-      id: 'copy',
-      label: 'Copy remote name',
-      onClick: () => void copyToClipboard(remote)
     }
   ]
+
+  if (handlers.onEditUrl) {
+    items.push({
+      id: 'edit-url',
+      label: 'Edit URL…',
+      onClick: () => handlers.onEditUrl!(remote)
+    })
+  }
+
+  items.push({
+    id: 'copy',
+    label: 'Copy remote name',
+    onClick: () => void copyToClipboard(remote)
+  })
+
+  return items
 }
 
 export function remoteBranchContextMenuItems(
