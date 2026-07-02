@@ -6,20 +6,30 @@ import { useMergeStatus } from '@/hooks/useGit'
 import { useAiEnabled } from '@/hooks/useAppSettings'
 import { useAiFill } from '@/hooks/useAiFill'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { useSelectionStore } from '@/stores/selection'
 import { useToastStore } from '@/stores/toast'
 import { parseConflictMarkers } from '@/lib/conflictMarkers'
 import {
   mapHunksToLineRanges,
-  buildOutputLinesWithSources,
-  outputTextFromLines,
+  buildOutputFromResolutions,
+  buildResolutionFromLineSelection,
   hasUnresolvedMarkers,
   initLineSelections,
-  lineSelectionFromResolution,
   type HunkLineSelection
 } from '@/lib/threeWayMerge'
+import {
+  buildPreviewLines,
+  initHunkEditModes,
+  initResolvedTexts,
+  proposalsMapFromList,
+  syncCheckboxFromResolvedText,
+  type HunkEditMode
+} from '@/lib/conflictResolution'
 import { parseConflictResolveResponse } from '../../../shared/ai'
+import type { AiConflictResolutionProposal } from '../../../shared/ai'
 import { ThreeWayCodePane } from '@/components/DiffViewer/ThreeWayCodePane'
-import { ConflictOutputPane } from '@/components/DiffViewer/ConflictOutputPane'
+import { ConflictOutputEditor } from '@/components/DiffViewer/ConflictOutputEditor'
+import { ConflictAiProposalCard } from '@/components/DiffViewer/ConflictAiProposalCard'
 import { Spinner } from '@/components/ui/Spinner'
 
 interface ConflictMergeOverlayProps {
@@ -57,9 +67,16 @@ export function ConflictMergeOverlay({ path, onClose }: ConflictMergeOverlayProp
   const aiEnabled = useAiEnabled()
   const aiFill = useAiFill()
   const showToast = useToastStore((s) => s.show)
+  const pendingAiProposals = useSelectionStore((s) => s.pendingAiProposals[path])
+  const clearPendingAiProposals = useSelectionStore((s) => s.clearPendingAiProposals)
 
   const [markerContent, setMarkerContent] = useState('')
   const [lineSelections, setLineSelections] = useState<Map<number, HunkLineSelection>>(new Map())
+  const [resolvedTexts, setResolvedTexts] = useState<Map<number, string>>(new Map())
+  const [hunkEditModes, setHunkEditModes] = useState<Map<number, HunkEditMode>>(new Map())
+  const [aiProposals, setAiProposals] = useState<Map<number, AiConflictResolutionProposal>>(
+    new Map()
+  )
   const [activeHunkIndex, setActiveHunkIndex] = useState(0)
   const [saving, setSaving] = useState(false)
   const [aiBusy, setAiBusy] = useState(false)
@@ -67,21 +84,65 @@ export function ConflictMergeOverlay({ path, onClose }: ConflictMergeOverlayProp
   const paneOursRef = useRef<HTMLDivElement>(null)
   const paneTheirsRef = useRef<HTMLDivElement>(null)
 
+  const applyProposals = useCallback(
+    (proposals: AiConflictResolutionProposal[]) => {
+      const proposalMap = proposalsMapFromList(proposals)
+      setAiProposals(proposalMap)
+      setResolvedTexts((current) => {
+        const next = new Map(current)
+        for (const proposal of proposals) {
+          next.set(proposal.hunkId, proposal.text)
+        }
+        return next
+      })
+      setHunkEditModes((current) => {
+        const next = new Map(current)
+        for (const proposal of proposals) {
+          next.set(proposal.hunkId, 'manual')
+        }
+        return next
+      })
+      setLineSelections((current) => {
+        const next = new Map(current)
+        const hunks = parseConflictMarkers(markerContent)
+        for (const proposal of proposals) {
+          const hunk = hunks.find((item) => item.id === proposal.hunkId)
+          if (hunk) {
+            next.set(hunk.id, syncCheckboxFromResolvedText(hunk, proposal.text))
+          }
+        }
+        return next
+      })
+    },
+    [markerContent]
+  )
+
   useEffect(() => {
     if (!stages) return
     setMarkerContent(stages.working)
     const hunks = parseConflictMarkers(stages.working)
     const selections = initLineSelections(hunks)
     setLineSelections(selections)
+    setResolvedTexts(initResolvedTexts(hunks, selections))
+    setHunkEditModes(initHunkEditModes(hunks))
     setActiveHunkIndex(0)
+    setAiProposals(new Map())
   }, [stages, path])
 
+  useEffect(() => {
+    if (!pendingAiProposals?.length) return
+    applyProposals(pendingAiProposals)
+  }, [pendingAiProposals, applyProposals])
+
   const hunks = useMemo(() => parseConflictMarkers(markerContent), [markerContent])
-  const outputLines = useMemo(
-    () => buildOutputLinesWithSources(markerContent, hunks, lineSelections),
-    [markerContent, hunks, lineSelections]
+  const output = useMemo(
+    () => buildOutputFromResolutions(markerContent, resolvedTexts),
+    [markerContent, resolvedTexts]
   )
-  const output = useMemo(() => outputTextFromLines(outputLines), [outputLines])
+  const previewLines = useMemo(() => {
+    const activeHunk = hunks[activeHunkIndex] ?? null
+    return buildPreviewLines(markerContent, hunks, resolvedTexts, activeHunk?.id ?? null)
+  }, [markerContent, hunks, resolvedTexts, activeHunkIndex])
   const lineRanges = useMemo(
     () => (stages ? mapHunksToLineRanges(stages.sideA, stages.sideB, hunks) : []),
     [stages, hunks]
@@ -89,6 +150,9 @@ export function ConflictMergeOverlay({ path, onClose }: ConflictMergeOverlayProp
   const activeHunk = hunks[activeHunkIndex] ?? null
   const activeRanges = lineRanges[activeHunkIndex] ?? null
   const activeSelection = activeHunk ? lineSelections.get(activeHunk.id) : undefined
+  const activeResolvedText = activeHunk ? resolvedTexts.get(activeHunk.id) ?? '' : ''
+  const activeEditMode = activeHunk ? hunkEditModes.get(activeHunk.id) ?? 'checkbox' : 'checkbox'
+  const activeProposal = activeHunk ? aiProposals.get(activeHunk.id) : undefined
 
   const oursLabel = mergeStatus?.currentBranch
     ? `Ours — ${mergeStatus.currentBranch}`
@@ -99,15 +163,35 @@ export function ConflictMergeOverlay({ path, onClose }: ConflictMergeOverlayProp
   const oursSublabel = mergeStatus?.oursCommit ? `Commit ${mergeStatus.oursCommit}` : undefined
   const theirsSublabel = mergeStatus?.theirsCommit ? `Commit ${mergeStatus.theirsCommit}` : undefined
 
-  const applyLineSelections = useCallback((next: Map<number, HunkLineSelection>) => {
-    setLineSelections(next)
-  }, [])
+  function updateActiveResolvedText(text: string) {
+    if (!activeHunk) return
+    setResolvedTexts((current) => {
+      const next = new Map(current)
+      next.set(activeHunk.id, text)
+      return next
+    })
+    setHunkEditModes((current) => {
+      const next = new Map(current)
+      next.set(activeHunk.id, 'manual')
+      return next
+    })
+  }
 
   function updateActiveSelection(mutate: (current: HunkLineSelection) => HunkLineSelection) {
     if (!activeHunk || !activeSelection) return
-    const next = new Map(lineSelections)
-    next.set(activeHunk.id, mutate(activeSelection))
-    applyLineSelections(next)
+    const nextSelection = mutate(activeSelection)
+    const nextSelections = new Map(lineSelections)
+    nextSelections.set(activeHunk.id, nextSelection)
+    setLineSelections(nextSelections)
+
+    if (hunkEditModes.get(activeHunk.id) !== 'manual') {
+      const resolved = buildResolutionFromLineSelection(activeHunk, nextSelection)
+      setResolvedTexts((current) => {
+        const next = new Map(current)
+        next.set(activeHunk.id, resolved)
+        return next
+      })
+    }
   }
 
   function toggleOursLine(lineNo: number) {
@@ -148,6 +232,33 @@ export function ConflictMergeOverlay({ path, onClose }: ConflictMergeOverlayProp
     }))
   }
 
+  function setActiveHunkResolvedText(text: string, mode: HunkEditMode = 'manual') {
+    if (!activeHunk) return
+    setResolvedTexts((current) => {
+      const next = new Map(current)
+      next.set(activeHunk.id, text)
+      return next
+    })
+    setHunkEditModes((current) => {
+      const next = new Map(current)
+      next.set(activeHunk.id, mode)
+      return next
+    })
+    if (mode === 'checkbox') {
+      setLineSelections((current) => {
+        const next = new Map(current)
+        next.set(activeHunk.id, syncCheckboxFromResolvedText(activeHunk, text))
+        return next
+      })
+    }
+  }
+
+  function handleResetToSelection() {
+    if (!activeHunk || !activeSelection) return
+    const resolved = buildResolutionFromLineSelection(activeHunk, activeSelection)
+    setActiveHunkResolvedText(resolved, 'checkbox')
+  }
+
   async function handleAiResolve() {
     if (!stages) return
     setAiBusy(true)
@@ -165,19 +276,32 @@ export function ConflictMergeOverlay({ path, onClose }: ConflictMergeOverlayProp
           branch: mergeStatus?.currentBranch
         }
       })
-      const parsed = parseConflictResolveResponse(text, hunks.length)
-      const nextSelections = new Map(lineSelections)
-      for (const hunk of hunks) {
-        const resolution = parsed.get(hunk.id) ?? ''
-        nextSelections.set(hunk.id, lineSelectionFromResolution(hunk, resolution))
-      }
-      applyLineSelections(nextSelections)
-      showToast('AI suggested resolutions applied. Review output before saving.', 'success')
+      const proposals = parseConflictResolveResponse(text, hunks.length)
+      applyProposals(proposals)
+      showToast(
+        `${proposals.length} proposal${proposals.length === 1 ? '' : 's'} applied — review before saving.`,
+        'info'
+      )
     } catch (err) {
       showToast(err instanceof Error ? err.message : String(err), 'error')
     } finally {
       setAiBusy(false)
     }
+  }
+
+  function handleAcceptProposal() {
+    if (!activeHunk || !activeProposal) return
+    setActiveHunkResolvedText(activeProposal.text, 'manual')
+    showToast(`Accepted AI proposal for conflict ${activeHunk.id + 1}.`, 'success')
+  }
+
+  function handleRejectProposal() {
+    if (!activeHunk) return
+    setAiProposals((current) => {
+      const next = new Map(current)
+      next.delete(activeHunk.id)
+      return next
+    })
   }
 
   async function handleSave() {
@@ -190,6 +314,7 @@ export function ConflictMergeOverlay({ path, onClose }: ConflictMergeOverlayProp
     try {
       await window.gitfreddo.invoke('working.write', { path, content: output }, repoPath)
       await stageAdd.mutateAsync({ paths: [path] })
+      clearPendingAiProposals(path)
       showToast('Conflict resolved and staged.', 'success')
       onClose()
     } catch (err) {
@@ -268,7 +393,7 @@ export function ConflictMergeOverlay({ path, onClose }: ConflictMergeOverlayProp
         </div>
       )}
       {stages && !isLoading && (
-        <>
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="grid min-h-0 flex-1 grid-cols-2 gap-px bg-gf-border">
             <ThreeWayCodePane
               label={oursLabel}
@@ -298,21 +423,9 @@ export function ConflictMergeOverlay({ path, onClose }: ConflictMergeOverlayProp
             />
           </div>
 
-          <div className="flex min-h-[28%] max-h-[40%] shrink-0 flex-col border-t border-gf-border">
+          <div className="flex min-h-0 max-h-[42%] shrink-0 flex-col border-t border-gf-border">
             <div className="flex shrink-0 items-center justify-between border-b border-gf-border px-3 py-1.5">
-              <div className="flex items-center gap-3">
-                <span className="text-[11px] font-semibold uppercase text-gf-fg-subtle">Output</span>
-                <span className="inline-flex items-center gap-2 text-[10px] text-gf-fg-subtle">
-                  <span className="inline-flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-sm bg-sky-500/50" />
-                    Ours
-                  </span>
-                  <span className="inline-flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-sm bg-amber-500/50" />
-                    Theirs
-                  </span>
-                </span>
-              </div>
+              <span className="text-[11px] font-semibold uppercase text-gf-fg-subtle">Output</span>
               {hunks.length > 0 && (
                 <div className="flex items-center gap-2 text-xs text-gf-fg-muted">
                   <button
@@ -337,9 +450,40 @@ export function ConflictMergeOverlay({ path, onClose }: ConflictMergeOverlayProp
                 </div>
               )}
             </div>
-            <ConflictOutputPane lines={outputLines} />
+
+            {activeProposal && (
+              <div className="shrink-0 border-b border-gf-border px-3 py-2">
+                <ConflictAiProposalCard
+                  proposal={activeProposal}
+                  onAccept={handleAcceptProposal}
+                  onReject={handleRejectProposal}
+                />
+              </div>
+            )}
+
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <ConflictOutputEditor
+                activeHunk={activeHunk}
+                resolvedText={activeResolvedText}
+                previewLines={previewLines}
+                editMode={activeEditMode}
+                onResolvedTextChange={updateActiveResolvedText}
+                onTakeOurs={() => activeHunk && setActiveHunkResolvedText(activeHunk.ours, 'checkbox')}
+                onTakeTheirs={() =>
+                  activeHunk && setActiveHunkResolvedText(activeHunk.theirs, 'checkbox')
+                }
+                onTakeBoth={() =>
+                  activeHunk &&
+                  setActiveHunkResolvedText(
+                    [activeHunk.ours, activeHunk.theirs].filter(Boolean).join('\n'),
+                    'checkbox'
+                  )
+                }
+                onResetToSelection={handleResetToSelection}
+              />
+            </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   )

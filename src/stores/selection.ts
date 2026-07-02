@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { commitRangeInTimeline, toggleHashInList } from '@/lib/commitSelection'
 import type { GitCommit, TimelineNodeKind, TimelineSelection } from '@/lib/types'
+import type { AiConflictResolutionProposal } from '../../shared/ai'
 
 interface SelectionState {
   timelineSelection: TimelineSelection | null
@@ -14,6 +15,7 @@ interface SelectionState {
   selectedStashFile: string | null
   diffMode: 'working' | 'staged' | 'commit' | 'commit-range' | 'stash' | 'conflict' | null
   compareCommitRange: { oldestHash: string; newestHash: string; label: string } | null
+  pendingAiProposals: Record<string, AiConflictResolutionProposal[]>
   selectTimelineNode: (kind: TimelineNodeKind, id: string) => void
   toggleCommitSelection: (hash: string) => void
   selectCommitRange: (toHash: string, commits: GitCommit[]) => void
@@ -24,6 +26,8 @@ interface SelectionState {
   setSelectedCommitFile: (path: string | null) => void
   selectStash: (index: number | null, hash?: string | null) => void
   setSelectedStashFile: (path: string | null) => void
+  setPendingAiProposals: (path: string, proposals: AiConflictResolutionProposal[]) => void
+  clearPendingAiProposals: (path: string) => void
   closeDiffOverlay: () => void
 }
 
@@ -60,6 +64,7 @@ export const useSelectionStore = create<SelectionState>((set) => ({
   selectedStashFile: null,
   diffMode: null,
   compareCommitRange: null,
+  pendingAiProposals: {},
   selectTimelineNode: (kind, id) =>
     set({
       timelineSelection: { kind, id },
@@ -180,6 +185,16 @@ export const useSelectionStore = create<SelectionState>((set) => ({
       selectedStashFile: path,
       diffMode: path ? 'stash' : null,
       selectedCommitFile: null
+    }),
+  setPendingAiProposals: (path, proposals) =>
+    set((state) => ({
+      pendingAiProposals: { ...state.pendingAiProposals, [path]: proposals }
+    })),
+  clearPendingAiProposals: (path) =>
+    set((state) => {
+      const next = { ...state.pendingAiProposals }
+      delete next[path]
+      return { pendingAiProposals: next }
     }),
   closeDiffOverlay: () =>
     set({

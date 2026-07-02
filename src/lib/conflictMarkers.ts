@@ -1,3 +1,5 @@
+import { buildOutputFromResolutions } from '@/lib/threeWayMerge'
+
 export interface ConflictHunk {
   id: number
   oursLabel: string
@@ -61,32 +63,5 @@ export function applyConflictResolutions(
   content: string,
   resolutions: Map<number, string>
 ): string {
-  const lines = content.split('\n')
-  const output: string[] = []
-  let i = 0
-  let hunkId = 0
-
-  while (i < lines.length) {
-    const line = lines[i] ?? ''
-    if (!line.startsWith('<<<<<<<')) {
-      output.push(line)
-      i++
-      continue
-    }
-
-    while (i < lines.length && !lines[i]!.startsWith('>>>>>>>')) {
-      i++
-    }
-    if (i < lines.length) i++
-
-    const resolved = resolutions.get(hunkId)
-    if (resolved !== undefined) {
-      if (resolved.length > 0) {
-        output.push(...resolved.split('\n'))
-      }
-    }
-    hunkId++
-  }
-
-  return output.join('\n')
+  return buildOutputFromResolutions(content, resolutions)
 }
