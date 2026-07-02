@@ -7,12 +7,12 @@ GitFreddo is an Electron desktop client that runs `git` subprocesses in the main
 | Layer | Role |
 |-------|------|
 | **Main** (`electron/main`) | IPC handlers, repo manager, git operations |
-| **Preload** | `window.gitfredo` via `contextBridge` |
+| **Preload** | `window.gitfreddo` via `contextBridge` |
 | **Renderer** (`src/`) | React UI, TanStack Query, Zustand |
 
 ## IPC API
 
-The renderer calls `window.gitfredo.invoke(method, params)` for git operations:
+The renderer calls `window.gitfreddo.invoke(method, params)` for git operations:
 
 | Read | Write |
 |------|-------|

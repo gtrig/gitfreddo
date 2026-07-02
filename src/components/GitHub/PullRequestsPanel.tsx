@@ -99,7 +99,7 @@ export function PullRequestsPanel() {
                   <MergePrButton
                     onMerge={async (method) => {
                       if (!repoPath) return
-                      await window.gitfredo.githubMergePullRequest(repoPath, pr.number, method)
+                      await window.gitfreddo.githubMergePullRequest(repoPath, pr.number, method)
                       await invalidate(repoPath)
                       show(`PR #${pr.number} merged`, 'success')
                     }}
@@ -121,7 +121,7 @@ export function PullRequestsPanel() {
         defaultBase={defaultBase}
         onSubmit={async (params) => {
           if (!repoPath) return
-          await window.gitfredo.githubCreatePullRequest(repoPath, params)
+          await window.gitfreddo.githubCreatePullRequest(repoPath, params)
           await invalidate(repoPath)
           show('Pull request created', 'success')
         }}

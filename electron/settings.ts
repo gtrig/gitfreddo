@@ -4,7 +4,7 @@ import { join } from 'path'
 import type { AppSettings } from '../shared/ipc'
 import { normalizeAppTheme } from '../shared/ipc'
 
-const SETTINGS_DIR = join(homedir(), '.config', 'gitfredo')
+const SETTINGS_DIR = join(homedir(), '.config', 'gitfreddo')
 const SETTINGS_PATH = join(SETTINGS_DIR, 'settings.json')
 
 const DEFAULT_SETTINGS: AppSettings = {

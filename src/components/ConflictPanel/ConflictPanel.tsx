@@ -101,7 +101,7 @@ export function ConflictPanel() {
               </button>
               <button
                 type="button"
-                onClick={() => void window.gitfredo.openInEditor(path)}
+                onClick={() => void window.gitfreddo.openInEditor(path)}
                 className="shrink-0 text-gf-fg-subtle hover:text-gf-fg"
               >
                 Editor

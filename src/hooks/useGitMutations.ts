@@ -21,7 +21,7 @@ export function useGitMutations() {
     return useMutation({
       mutationFn: async (params?: unknown) => {
         if (!repoPath) throw new Error('No repository connected')
-        return window.gitfredo.invoke(method, params)
+        return window.gitfreddo.invoke(method, params)
       },
       onSuccess: () => {
         invalidate(...invalidateKeys)

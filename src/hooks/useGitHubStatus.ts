@@ -4,7 +4,7 @@ import type { GitHubStatus } from '../../shared/ipc'
 export function useGitHubStatus() {
   return useQuery<GitHubStatus>({
     queryKey: ['github-status'],
-    queryFn: () => window.gitfredo.githubGetStatus(),
+    queryFn: () => window.gitfreddo.githubGetStatus(),
     staleTime: 10_000
   })
 }

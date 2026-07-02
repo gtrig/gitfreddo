@@ -18,7 +18,7 @@ export function ReflogModal({ open, onClose }: ReflogModalProps) {
   const { data, isLoading, error } = useQuery({
     queryKey: ['repo', repoPath, 'reflog.list'],
     queryFn: async () =>
-      (await window.gitfredo.invoke('reflog.list', { maxCount: 200 })) as GitReflogEntry[],
+      (await window.gitfreddo.invoke('reflog.list', { maxCount: 200 })) as GitReflogEntry[],
     enabled: open && connected && Boolean(repoPath)
   })
 

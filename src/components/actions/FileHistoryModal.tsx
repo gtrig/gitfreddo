@@ -19,7 +19,7 @@ export function FileHistoryModal({ open, path, onClose }: FileHistoryModalProps)
   const { data, isLoading, error } = useQuery({
     queryKey: ['repo', repoPath, 'log.file', path],
     queryFn: async () =>
-      (await window.gitfredo.invoke('log.file', { path, maxCount: 100 })) as GitCommit[],
+      (await window.gitfreddo.invoke('log.file', { path, maxCount: 100 })) as GitCommit[],
     enabled: open && connected && Boolean(repoPath) && Boolean(path)
   })
 

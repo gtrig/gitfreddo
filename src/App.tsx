@@ -79,14 +79,14 @@ export default function App() {
   }, [reconnectActive, refresh])
 
   useEffect(() => {
-    const unsubscribe = window.gitfredo.onMenuAction((action: MenuAction) => {
+    const unsubscribe = window.gitfreddo.onMenuAction((action: MenuAction) => {
       if (action === 'open-workspace') void openWorkspaceDialog()
       if (action === 'open-settings') setSettingsOpen(true)
       if (action === 'refresh') {
         appLog('info', 'Manual refresh')
         refresh()
       }
-      if (action === 'quit') void window.gitfredo.disconnect()
+      if (action === 'quit') void window.gitfreddo.disconnect()
     })
     return unsubscribe
   }, [openWorkspaceDialog, refresh])

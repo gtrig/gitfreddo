@@ -24,8 +24,8 @@ export const BRANCH_TAG_WIDTH_MIN = 72
 export const BRANCH_TAG_WIDTH_MAX = 280
 export const BRANCH_TAG_WIDTH_DEFAULT = 116
 
-const LANE_WIDTH_STORAGE_KEY = 'gitfredo.timeline.graphLaneWidth'
-const BRANCH_TAG_STORAGE_KEY = 'gitfredo.timeline.branchTagWidth'
+const LANE_WIDTH_STORAGE_KEY = 'gitfreddo.timeline.graphLaneWidth'
+const BRANCH_TAG_STORAGE_KEY = 'gitfreddo.timeline.branchTagWidth'
 
 function clampLaneWidth(width: number): number {
   return Math.min(GRAPH_LANE_WIDTH_MAX, Math.max(GRAPH_LANE_WIDTH_MIN, width))

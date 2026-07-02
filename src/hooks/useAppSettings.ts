@@ -9,7 +9,7 @@ export type { AppSettings }
 export function useAppSettings() {
   return useQuery<AppSettings>({
     queryKey: ['app-settings'],
-    queryFn: () => window.gitfredo.getSettings(),
+    queryFn: () => window.gitfreddo.getSettings(),
     staleTime: 30_000
   })
 }

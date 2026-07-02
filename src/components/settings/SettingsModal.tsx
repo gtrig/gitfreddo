@@ -33,7 +33,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
     if (!open) return
     setLoading(true)
     setSection(loadSettingsSection())
-    void window.gitfredo
+    void window.gitfreddo
       .getSettings()
       .then((settings) => setForm(settings))
       .finally(() => setLoading(false))
@@ -49,7 +49,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
   }
 
   async function handlePickGit() {
-    const path = await window.gitfredo.pickGitBinary()
+    const path = await window.gitfreddo.pickGitBinary()
     if (path && form) {
       updateForm({ gitBinaryPath: path })
     }
@@ -59,7 +59,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
     if (!form) return
     setSaving(true)
     try {
-      const saved = await window.gitfredo.setSettings(form)
+      const saved = await window.gitfreddo.setSettings(form)
       setForm(saved)
       await queryClient.invalidateQueries({ queryKey: ['app-settings'] })
       show('Settings saved', 'success')

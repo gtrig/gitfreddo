@@ -61,7 +61,7 @@ export function RemoveStaleBranchesModal({
 
     setLoading(true)
     try {
-      const result = (await window.gitfredo.invoke(
+      const result = (await window.gitfreddo.invoke(
         'maintenance.staleBranches',
         hashes.length > 0 ? { hashes } : undefined,
         repoPath
@@ -101,7 +101,7 @@ export function RemoveStaleBranchesModal({
 
     setRemoving(true)
     try {
-      const result = (await window.gitfredo.invoke(
+      const result = (await window.gitfreddo.invoke(
         'maintenance.removeStaleBranches',
         { refs: [...selected] },
         repoPath

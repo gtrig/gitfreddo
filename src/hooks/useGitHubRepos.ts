@@ -5,7 +5,7 @@ import type { GitHubListReposParams } from '../../shared/github'
 export function useGitHubRepos(params?: GitHubListReposParams, enabled = true) {
   return useQuery<GitHubRepo[]>({
     queryKey: ['github-repos', params?.search ?? '', params?.page ?? 1],
-    queryFn: () => window.gitfredo.githubListRepos(params),
+    queryFn: () => window.gitfreddo.githubListRepos(params),
     enabled,
     staleTime: 60_000
   })
@@ -16,7 +16,7 @@ export function useGitHubRepoContext(repoPath: string | null, enabled = true) {
     queryKey: ['github-repo-context', repoPath],
     queryFn: () => {
       if (!repoPath) return null
-      return window.gitfredo.githubGetRepoContext(repoPath)
+      return window.gitfreddo.githubGetRepoContext(repoPath)
     },
     enabled: enabled && Boolean(repoPath),
     staleTime: 30_000

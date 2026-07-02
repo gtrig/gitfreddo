@@ -6,7 +6,7 @@ import { ContextMenu } from '@/components/ui/ContextMenu'
 import type { ContextMenuItem } from '@/components/ui/ContextMenu'
 import { useContextMenu } from '@/hooks/useContextMenu'
 
-const STORAGE_PREFIX = 'gitfredo:section:'
+const STORAGE_PREFIX = 'gitfreddo:section:'
 
 function readStoredOpen(sectionId: string, defaultOpen: boolean): boolean {
   try {

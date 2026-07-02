@@ -77,7 +77,7 @@ export function AddWorktreeModal({ open, onClose, initialBranch }: AddWorktreeMo
             />
             <ActionButton
               onClick={async () => {
-                const picked = await window.gitfredo.pickDirectory(path || repoStatus?.root || undefined)
+                const picked = await window.gitfreddo.pickDirectory(path || repoStatus?.root || undefined)
                 if (picked) setPath(picked)
               }}
             >

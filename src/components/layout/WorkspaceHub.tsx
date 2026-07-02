@@ -73,7 +73,7 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
   const [createRepoOpen, setCreateRepoOpen] = useState(false)
 
   const loadRecents = useCallback(() => {
-    void window.gitfredo.getRecentRepos().then(setRecents)
+    void window.gitfreddo.getRecentRepos().then(setRecents)
   }, [])
 
   useEffect(() => {
@@ -119,7 +119,7 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
     setError(null)
     setBusy(true)
     try {
-      const path = await window.gitfredo.openWorkspace()
+      const path = await window.gitfreddo.openWorkspace()
       if (path) {
         await onOpen(path)
         onClose?.()
@@ -135,7 +135,7 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
     setError(null)
     setBusy(true)
     try {
-      const path = await window.gitfredo.initRepository()
+      const path = await window.gitfreddo.initRepository()
       if (path) {
         await onOpen(path)
         onClose?.()
@@ -161,7 +161,7 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
   }
 
   async function handlePickCloneParent() {
-    const path = await window.gitfredo.pickDirectory(cloneParent || undefined)
+    const path = await window.gitfreddo.pickDirectory(cloneParent || undefined)
     if (path) {
       setCloneParent(path)
     }
@@ -175,7 +175,7 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
     setBusy(true)
     setError(null)
     try {
-      const path = await window.gitfredo.cloneRepository(repo.cloneUrl, cloneParent)
+      const path = await window.gitfreddo.cloneRepository(repo.cloneUrl, cloneParent)
       await onOpen(path)
       onClose?.()
     } catch (err) {
@@ -202,7 +202,7 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
 
     setBusy(true)
     try {
-      const path = await window.gitfredo.cloneRepository(url, cloneParent)
+      const path = await window.gitfreddo.cloneRepository(url, cloneParent)
       await onOpen(path)
       onClose?.()
     } catch (err) {

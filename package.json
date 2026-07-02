@@ -1,5 +1,5 @@
 {
-  "name": "gitfredo",
+  "name": "gitfreddo",
   "version": "0.1.7",
   "private": true,
   "description": "Desktop git client with commit graph",
@@ -48,13 +48,13 @@
     "vitest": "^3.2.6"
   },
   "build": {
-    "appId": "com.arctosweblabs.gitfredo",
+    "appId": "com.arctosweblabs.gitfreddo",
     "productName": "GitFreddo",
     "protocols": [
       {
         "name": "GitFreddo OAuth",
         "schemes": [
-          "gitfredo"
+          "gitfreddo"
         ]
       }
     ],

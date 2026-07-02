@@ -287,7 +287,7 @@ export function useLogSubscription(): void {
   const append = useLogStore((s) => s.append)
 
   useEffect(() => {
-    const unsubscribe = window.gitfredo.onLogEntry((entry) => {
+    const unsubscribe = window.gitfreddo.onLogEntry((entry) => {
       if (entry.stream === 'git' && !useLogStore.getState().gitListening) {
         return
       }

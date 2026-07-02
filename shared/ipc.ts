@@ -116,7 +116,7 @@ export interface GitFreddoAPI {
 
 declare global {
   interface Window {
-    gitfredo: GitFreddoAPI
+    gitfreddo: GitFreddoAPI
   }
 }
 

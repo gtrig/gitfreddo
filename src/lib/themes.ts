@@ -3,7 +3,7 @@ import { normalizeAppTheme } from '../../shared/ipc'
 
 export type { AppTheme }
 
-export const THEME_STORAGE_KEY = 'gitfredo:theme'
+export const THEME_STORAGE_KEY = 'gitfreddo:theme'
 
 export const THEME_BG_COLORS: Record<AppTheme, string> = {
   dark: '#18181b',

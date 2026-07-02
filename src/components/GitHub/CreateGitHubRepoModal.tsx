@@ -42,7 +42,7 @@ export function CreateGitHubRepoModal({
     setBusy(true)
     setError(null)
     try {
-      const repo = await window.gitfredo.githubCreateRepo({
+      const repo = await window.gitfreddo.githubCreateRepo({
         name: name.trim(),
         description: description.trim() || undefined,
         private: isPrivate,

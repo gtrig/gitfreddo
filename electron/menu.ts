@@ -78,7 +78,7 @@ export function buildAppMenu(): void {
         {
           label: 'GitFreddo on GitHub',
           click: () => {
-            void shell.openExternal('https://github.com/ArctosWebLabs/GitFredo')
+            void shell.openExternal('https://github.com/ArctosWebLabs/gitfreddo')
           }
         }
       ]

@@ -106,7 +106,7 @@ function createWindow(): void {
 }
 
 function registerIpc(): void {
-  ipcMain.handle('gitfredo:open-workspace', async () => {
+  ipcMain.handle('gitfreddo:open-workspace', async () => {
     const result = await dialog.showOpenDialog({
       properties: ['openDirectory'],
       title: 'Open repository folder'
@@ -115,7 +115,7 @@ function registerIpc(): void {
     return resolve(result.filePaths[0])
   })
 
-  ipcMain.handle('gitfredo:pick-directory', async (_event, defaultPath?: string) => {
+  ipcMain.handle('gitfreddo:pick-directory', async (_event, defaultPath?: string) => {
     const result = await dialog.showOpenDialog({
       defaultPath: defaultPath || undefined,
       properties: ['openDirectory', 'createDirectory'],
@@ -125,11 +125,11 @@ function registerIpc(): void {
     return resolve(result.filePaths[0])
   })
 
-  ipcMain.handle('gitfredo:clone-repository', async (_event, url: string, parentDir: string) => {
+  ipcMain.handle('gitfreddo:clone-repository', async (_event, url: string, parentDir: string) => {
     return cloneRepository(url, parentDir, settings.gitBinaryPath)
   })
 
-  ipcMain.handle('gitfredo:init-repository', async () => {
+  ipcMain.handle('gitfreddo:init-repository', async () => {
     const result = await dialog.showOpenDialog({
       properties: ['openDirectory', 'createDirectory'],
       title: 'Initialize new repository'
@@ -138,15 +138,15 @@ function registerIpc(): void {
     return initRepository(resolve(result.filePaths[0]), settings.gitBinaryPath)
   })
 
-  ipcMain.handle('gitfredo:normalize-repo-path', async (_event, repoPath: string) => {
+  ipcMain.handle('gitfreddo:normalize-repo-path', async (_event, repoPath: string) => {
     return normalizeRepoPath(repoPath)
   })
 
-  ipcMain.handle('gitfredo:get-recent-repos', async () => settings.recentRepos)
+  ipcMain.handle('gitfreddo:get-recent-repos', async () => settings.recentRepos)
 
-  ipcMain.handle('gitfredo:get-workspace-path', async () => repoManager.getRepoPath())
+  ipcMain.handle('gitfreddo:get-workspace-path', async () => repoManager.getRepoPath())
 
-  ipcMain.handle('gitfredo:connect', async (_event, repoPath: string) => {
+  ipcMain.handle('gitfreddo:connect', async (_event, repoPath: string) => {
     const normalized = normalizeRepoPath(repoPath)
     if (!hasGitDir(normalized)) {
       throw new Error('No .git found. Open a folder initialized as a git repository.')
@@ -157,22 +157,22 @@ function registerIpc(): void {
     return connectedPath
   })
 
-  ipcMain.handle('gitfredo:switch-workspace', async (_event, repoPath: string) => {
+  ipcMain.handle('gitfreddo:switch-workspace', async (_event, repoPath: string) => {
     return repoManager.switchRepo(repoPath)
   })
 
-  ipcMain.handle('gitfredo:disconnect-workspace', async (_event, repoPath: string) => {
+  ipcMain.handle('gitfreddo:disconnect-workspace', async (_event, repoPath: string) => {
     await repoManager.disconnectRepo(repoPath)
   })
 
-  ipcMain.handle('gitfredo:list-workspaces', async () => repoManager.listRepos())
+  ipcMain.handle('gitfreddo:list-workspaces', async () => repoManager.listRepos())
 
-  ipcMain.handle('gitfredo:disconnect', async () => {
+  ipcMain.handle('gitfreddo:disconnect', async () => {
     await repoManager.disconnectAll()
   })
 
   ipcMain.handle(
-    'gitfredo:invoke',
+    'gitfreddo:invoke',
     async (_event, method: string, params?: unknown, repoPath?: string) => {
       if (method === 'ai.fill') {
         const enriched = await enrichAiContext(repoManager, params as AiFillParams)
@@ -182,9 +182,9 @@ function registerIpc(): void {
     }
   )
 
-  ipcMain.handle('gitfredo:get-settings', async () => settings)
+  ipcMain.handle('gitfreddo:get-settings', async () => settings)
 
-  ipcMain.handle('gitfredo:set-settings', async (_event, patch: Partial<AppSettings>) => {
+  ipcMain.handle('gitfreddo:set-settings', async (_event, patch: Partial<AppSettings>) => {
     settings = await saveSettings(patch)
     applyGitConfig()
     if (patch.theme) {
@@ -193,58 +193,58 @@ function registerIpc(): void {
     return settings
   })
 
-  ipcMain.handle('gitfredo:ai-fill', async (_event, params: AiFillParams) => {
+  ipcMain.handle('gitfreddo:ai-fill', async (_event, params: AiFillParams) => {
     const enriched = await enrichAiContext(repoManager, params)
     return aiFill(aiConfigFromSettings(settings), enriched)
   })
 
-  ipcMain.handle('gitfredo:github-get-status', async () => getGitHubStatus(settings))
+  ipcMain.handle('gitfreddo:github-get-status', async () => getGitHubStatus(settings))
 
-  ipcMain.handle('gitfredo:github-connect', async (event) => {
+  ipcMain.handle('gitfreddo:github-connect', async (event) => {
     const result = await connectGitHub((progress) => {
       if (!event.sender.isDestroyed()) {
-        event.sender.send('gitfredo:github-connect-progress', progress)
+        event.sender.send('gitfreddo:github-connect-progress', progress)
       }
     })
     settings = result.settings
     return result.status
   })
 
-  ipcMain.handle('gitfredo:github-connect-pat', async (_event, token: string) => {
+  ipcMain.handle('gitfreddo:github-connect-pat', async (_event, token: string) => {
     const result = await connectGitHubPat(token)
     settings = result.settings
     return result.status
   })
 
-  ipcMain.handle('gitfredo:github-disconnect', async () => {
+  ipcMain.handle('gitfreddo:github-disconnect', async () => {
     settings = await disconnectGitHub(settings)
   })
 
-  ipcMain.handle('gitfredo:github-list-repos', async (_event, params) => listGitHubRepos(params))
+  ipcMain.handle('gitfreddo:github-list-repos', async (_event, params) => listGitHubRepos(params))
 
-  ipcMain.handle('gitfredo:github-create-repo', async (_event, params) => createGitHubRepo(params))
+  ipcMain.handle('gitfreddo:github-create-repo', async (_event, params) => createGitHubRepo(params))
 
-  ipcMain.handle('gitfredo:github-fork-repo', async (_event, owner: string, repo: string) =>
+  ipcMain.handle('gitfreddo:github-fork-repo', async (_event, owner: string, repo: string) =>
     forkGitHubRepo(owner, repo)
   )
 
-  ipcMain.handle('gitfredo:github-upload-ssh-key', async (_event, title: string) =>
+  ipcMain.handle('gitfreddo:github-upload-ssh-key', async (_event, title: string) =>
     uploadGitHubSshKey(title)
   )
 
-  ipcMain.handle('gitfredo:github-get-repo-context', async (_event, repoPath: string) =>
+  ipcMain.handle('gitfreddo:github-get-repo-context', async (_event, repoPath: string) =>
     tryGetGitHubRepoContext(repoPath, settings)
   )
 
-  ipcMain.handle('gitfredo:github-list-pull-requests', async (_event, repoPath: string) =>
+  ipcMain.handle('gitfreddo:github-list-pull-requests', async (_event, repoPath: string) =>
     listGitHubPullRequests(repoPath, settings)
   )
 
-  ipcMain.handle('gitfredo:github-create-pull-request', async (_event, repoPath: string, params) =>
+  ipcMain.handle('gitfreddo:github-create-pull-request', async (_event, repoPath: string, params) =>
     createGitHubPullRequest(repoPath, settings, params)
   )
 
-  ipcMain.handle('gitfredo:github-merge-pull-request', async (
+  ipcMain.handle('gitfreddo:github-merge-pull-request', async (
     _event,
     repoPath: string,
     number: number,
@@ -252,23 +252,23 @@ function registerIpc(): void {
   ) => mergeGitHubPullRequest(repoPath, settings, number, method))
 
   ipcMain.handle(
-    'gitfredo:github-list-issues',
+    'gitfreddo:github-list-issues',
     async (_event, repoPath: string, assigneeLogin?: string) =>
       listGitHubIssues(repoPath, settings, assigneeLogin)
   )
 
-  ipcMain.handle('gitfredo:github-create-issue', async (_event, repoPath: string, params) =>
+  ipcMain.handle('gitfreddo:github-create-issue', async (_event, repoPath: string, params) =>
     createGitHubIssue(repoPath, settings, params)
   )
 
-  ipcMain.handle('gitfredo:github-update-issue', async (
+  ipcMain.handle('gitfreddo:github-update-issue', async (
     _event,
     repoPath: string,
     number: number,
     params
   ) => updateGitHubIssue(repoPath, settings, number, params))
 
-  ipcMain.handle('gitfredo:pick-file', async () => {
+  ipcMain.handle('gitfreddo:pick-file', async () => {
     const repo = repoManager.getRepoPath()
     if (!repo) return null
     const result = await dialog.showOpenDialog({
@@ -279,7 +279,7 @@ function registerIpc(): void {
     return relative(repo, result.filePaths[0])
   })
 
-  ipcMain.handle('gitfredo:pick-files', async () => {
+  ipcMain.handle('gitfreddo:pick-files', async () => {
     const repo = repoManager.getRepoPath()
     if (!repo) return null
     const result = await dialog.showOpenDialog({
@@ -290,15 +290,15 @@ function registerIpc(): void {
     return result.filePaths.map((filePath) => relative(repo, filePath))
   })
 
-  ipcMain.handle('gitfredo:pick-git-binary', async () => pickGitBinary())
+  ipcMain.handle('gitfreddo:pick-git-binary', async () => pickGitBinary())
 
-  ipcMain.handle('gitfredo:delete-workspace-file', async (_event, relativePath: string) => {
+  ipcMain.handle('gitfreddo:delete-workspace-file', async (_event, relativePath: string) => {
     const repo = repoManager.getRepoPath()
     if (!repo) throw new Error('No repository connected')
     await deleteRepoFile(repo, relativePath)
   })
 
-  ipcMain.handle('gitfredo:open-in-editor', async (_event, relativePath: string) => {
+  ipcMain.handle('gitfreddo:open-in-editor', async (_event, relativePath: string) => {
     const repo = repoManager.getRepoPath()
     if (!repo) throw new Error('No repository connected')
     const fullPath = resolveRepoFile(repo, relativePath)
@@ -310,15 +310,15 @@ function registerIpc(): void {
 function registerProtocolHandler(): void {
   if (process.defaultApp) {
     if (process.argv.length >= 2) {
-      app.setAsDefaultProtocolClient('gitfredo', process.execPath, [resolve(process.argv[1])])
+      app.setAsDefaultProtocolClient('gitfreddo', process.execPath, [resolve(process.argv[1])])
     }
   } else {
-    app.setAsDefaultProtocolClient('gitfredo')
+    app.setAsDefaultProtocolClient('gitfreddo')
   }
 
   app.on('open-url', (event, url) => {
     event.preventDefault()
-    if (url.startsWith('gitfredo://oauth/github')) {
+    if (url.startsWith('gitfreddo://oauth/github')) {
       shell.openExternal(url)
     }
   })
@@ -327,7 +327,7 @@ function registerProtocolHandler(): void {
 function broadcastLogEntry(entry: LogEntry): void {
   for (const window of BrowserWindow.getAllWindows()) {
     if (!window.isDestroyed()) {
-      window.webContents.send('gitfredo:log-entry', entry)
+      window.webContents.send('gitfreddo:log-entry', entry)
     }
   }
 }

@@ -197,7 +197,7 @@ export async function rebaseReword(
   const isRoot =
     (await runGit(['rev-parse', '--verify', `${fullHash}^`], { cwd, gitBinaryPath })).code !== 0
 
-  const tempDir = await mkdtemp(join(tmpdir(), 'gitfredo-reword-'))
+  const tempDir = await mkdtemp(join(tmpdir(), 'gitfreddo-reword-'))
   try {
     const messageFile = join(tempDir, 'message')
     const seqEditor = join(tempDir, 'seq-editor.mjs')
@@ -306,7 +306,7 @@ export async function rebaseSquash(
   const isRoot =
     (await runGit(['rev-parse', '--verify', `${oldestHash}^`], { cwd, gitBinaryPath })).code !== 0
 
-  const tempDir = await mkdtemp(join(tmpdir(), 'gitfredo-squash-'))
+  const tempDir = await mkdtemp(join(tmpdir(), 'gitfreddo-squash-'))
   try {
     const seqEditor = join(tempDir, 'seq-editor.mjs')
     await writeFile(
@@ -363,7 +363,7 @@ export async function rebaseInteractive(
   const isRoot =
     (await runGit(['rev-parse', '--verify', `${fullHash}^`], { cwd, gitBinaryPath })).code !== 0
 
-  const tempDir = await mkdtemp(join(tmpdir(), 'gitfredo-interactive-'))
+  const tempDir = await mkdtemp(join(tmpdir(), 'gitfreddo-interactive-'))
   try {
     const seqEditor = join(tempDir, 'seq-editor.mjs')
     await writeFile(
@@ -466,7 +466,7 @@ export async function rebaseDrop(
   const isRoot =
     (await runGit(['rev-parse', '--verify', `${oldestHash}^`], { cwd, gitBinaryPath })).code !== 0
 
-  const tempDir = await mkdtemp(join(tmpdir(), 'gitfredo-drop-'))
+  const tempDir = await mkdtemp(join(tmpdir(), 'gitfreddo-drop-'))
   try {
     const seqEditor = join(tempDir, 'seq-editor.mjs')
     await writeFile(

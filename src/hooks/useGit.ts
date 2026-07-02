@@ -23,7 +23,7 @@ export function useRepoStatus(enabled = true) {
   const { repoPath, connected } = useRepoScope()
   return useQuery<GitRepoStatus>({
     queryKey: ['repo', repoPath, 'status'],
-    queryFn: async () => (await window.gitfredo.invoke('repo.status')) as GitRepoStatus,
+    queryFn: async () => (await window.gitfreddo.invoke('repo.status')) as GitRepoStatus,
     enabled: enabled && connected && Boolean(repoPath)
   })
 }
@@ -33,7 +33,7 @@ export function useLogGraph(enabled = true, maxCount = 500) {
   return useQuery<GitLogGraphResult>({
     queryKey: ['repo', repoPath, 'log.graph', maxCount],
     queryFn: async () =>
-      (await window.gitfredo.invoke('log.graph', { maxCount })) as GitLogGraphResult,
+      (await window.gitfreddo.invoke('log.graph', { maxCount })) as GitLogGraphResult,
     enabled: enabled && connected && Boolean(repoPath)
   })
 }
@@ -42,7 +42,7 @@ export function useBranches(enabled = true) {
   const { repoPath, connected } = useRepoScope()
   return useQuery<GitBranch[]>({
     queryKey: ['repo', repoPath, 'branch.list'],
-    queryFn: async () => (await window.gitfredo.invoke('branch.list')) as GitBranch[],
+    queryFn: async () => (await window.gitfreddo.invoke('branch.list')) as GitBranch[],
     enabled: enabled && connected && Boolean(repoPath)
   })
 }
@@ -51,7 +51,7 @@ export function useRemotes(enabled = true) {
   const { repoPath, connected } = useRepoScope()
   return useQuery<GitRemote[]>({
     queryKey: ['repo', repoPath, 'remote.list'],
-    queryFn: async () => (await window.gitfredo.invoke('remote.list')) as GitRemote[],
+    queryFn: async () => (await window.gitfreddo.invoke('remote.list')) as GitRemote[],
     enabled: enabled && connected && Boolean(repoPath)
   })
 }
@@ -60,7 +60,7 @@ export function useTags(enabled = true) {
   const { repoPath, connected } = useRepoScope()
   return useQuery<GitTag[]>({
     queryKey: ['repo', repoPath, 'tag.list'],
-    queryFn: async () => (await window.gitfredo.invoke('tag.list')) as GitTag[],
+    queryFn: async () => (await window.gitfreddo.invoke('tag.list')) as GitTag[],
     enabled: enabled && connected && Boolean(repoPath)
   })
 }
@@ -70,7 +70,7 @@ export function useWorkingStatus(enabled = true) {
   return useQuery<GitWorkingStatus>({
     queryKey: ['repo', repoPath, 'working.status'],
     queryFn: async () =>
-      (await window.gitfredo.invoke('working.status')) as GitWorkingStatus,
+      (await window.gitfreddo.invoke('working.status')) as GitWorkingStatus,
     enabled: enabled && connected && Boolean(repoPath)
   })
 }
@@ -79,7 +79,7 @@ export function useStashList(enabled = true) {
   const { repoPath, connected } = useRepoScope()
   return useQuery<GitStashEntry[]>({
     queryKey: ['repo', repoPath, 'stash.list'],
-    queryFn: async () => (await window.gitfredo.invoke('stash.list')) as GitStashEntry[],
+    queryFn: async () => (await window.gitfreddo.invoke('stash.list')) as GitStashEntry[],
     enabled: enabled && connected && Boolean(repoPath)
   })
 }
@@ -89,7 +89,7 @@ export function useWorktreeList(enabled = true) {
   return useQuery<GitWorktreeEntry[]>({
     queryKey: ['repo', repoPath, 'worktree.list'],
     queryFn: async () =>
-      (await window.gitfredo.invoke('worktree.list')) as GitWorktreeEntry[],
+      (await window.gitfreddo.invoke('worktree.list')) as GitWorktreeEntry[],
     enabled: enabled && connected && Boolean(repoPath)
   })
 }
@@ -98,7 +98,7 @@ export function useMergeStatus(enabled = true) {
   const { repoPath, connected } = useRepoScope()
   return useQuery<GitMergeStatus>({
     queryKey: ['repo', repoPath, 'merge.status'],
-    queryFn: async () => (await window.gitfredo.invoke('merge.status')) as GitMergeStatus,
+    queryFn: async () => (await window.gitfreddo.invoke('merge.status')) as GitMergeStatus,
     enabled: enabled && connected && Boolean(repoPath)
   })
 }
@@ -108,7 +108,7 @@ export function useCleanPreview(includeIgnored: boolean, enabled = true) {
   return useQuery<string[]>({
     queryKey: ['repo', repoPath, 'working.cleanPreview', includeIgnored],
     queryFn: async () =>
-      (await window.gitfredo.invoke('working.cleanPreview', { includeIgnored })) as string[],
+      (await window.gitfreddo.invoke('working.cleanPreview', { includeIgnored })) as string[],
     enabled: enabled && connected && Boolean(repoPath)
   })
 }
@@ -117,7 +117,7 @@ export function useStashFiles(index: number | null, enabled = true) {
   const { repoPath, connected } = useRepoScope()
   return useQuery({
     queryKey: ['repo', repoPath, 'stash.files', index],
-    queryFn: async () => window.gitfredo.invoke('stash.files', { index }) as Promise<string>,
+    queryFn: async () => window.gitfreddo.invoke('stash.files', { index }) as Promise<string>,
     enabled: enabled && connected && Boolean(repoPath) && index !== null
   })
 }
@@ -127,7 +127,7 @@ export function useStashDiff(index: number | null, path?: string, enabled = true
   return useQuery<GitDiffResult>({
     queryKey: ['repo', repoPath, 'stash.show', index, path],
     queryFn: async () =>
-      (await window.gitfredo.invoke('stash.show', { index, path })) as GitDiffResult,
+      (await window.gitfreddo.invoke('stash.show', { index, path })) as GitDiffResult,
     enabled: enabled && connected && Boolean(repoPath) && index !== null
   })
 }
@@ -137,7 +137,7 @@ export function useDiffWorking(path?: string, enabled = true, wordDiff = false) 
   return useQuery<GitDiffResult>({
     queryKey: ['repo', repoPath, 'diff.working', path, wordDiff],
     queryFn: async () =>
-      (await window.gitfredo.invoke('diff.working', { path, wordDiff })) as GitDiffResult,
+      (await window.gitfreddo.invoke('diff.working', { path, wordDiff })) as GitDiffResult,
     enabled: enabled && connected && Boolean(repoPath)
   })
 }
@@ -147,7 +147,7 @@ export function useDiffStaged(path?: string, enabled = true, wordDiff = false) {
   return useQuery<GitDiffResult>({
     queryKey: ['repo', repoPath, 'diff.staged', path, wordDiff],
     queryFn: async () =>
-      (await window.gitfredo.invoke('diff.staged', { path, wordDiff })) as GitDiffResult,
+      (await window.gitfreddo.invoke('diff.staged', { path, wordDiff })) as GitDiffResult,
     enabled: enabled && connected && Boolean(repoPath)
   })
 }
@@ -162,7 +162,7 @@ export function useDiffCommits(
   return useQuery({
     queryKey: ['repo', repoPath, 'diff.commits', fromRef, toRef, path],
     queryFn: async () =>
-      window.gitfredo.invoke('diff.commits', { fromRef, toRef, path }),
+      window.gitfreddo.invoke('diff.commits', { fromRef, toRef, path }),
     enabled: enabled && connected && Boolean(repoPath) && Boolean(fromRef && toRef)
   })
 }
@@ -176,7 +176,7 @@ export function useDiffCommitRange(
   return useQuery<GitDiffResult>({
     queryKey: ['repo', repoPath, 'diff.commitRange', oldestHash, newestHash],
     queryFn: async () =>
-      (await window.gitfredo.invoke('diff.commitRange', {
+      (await window.gitfreddo.invoke('diff.commitRange', {
         oldestHash,
         newestHash
       })) as GitDiffResult,
@@ -189,7 +189,7 @@ export function useDiffShow(ref: string | null, path?: string, enabled = true) {
   return useQuery<GitDiffResult>({
     queryKey: ['repo', repoPath, 'diff.show', ref, path],
     queryFn: async () =>
-      (await window.gitfredo.invoke('diff.show', { ref, path })) as GitDiffResult,
+      (await window.gitfreddo.invoke('diff.show', { ref, path })) as GitDiffResult,
     enabled: enabled && connected && Boolean(repoPath) && Boolean(ref)
   })
 }

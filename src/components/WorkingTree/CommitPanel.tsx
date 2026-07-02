@@ -67,7 +67,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
   const gpgSignQuery = useQuery({
     queryKey: ['repo', repoPath, 'config.get', 'commit.gpgsign'],
     queryFn: async () =>
-      (await window.gitfredo.invoke('config.get', {
+      (await window.gitfreddo.invoke('config.get', {
         key: 'commit.gpgsign',
         scope: 'local'
       })) as string | null,

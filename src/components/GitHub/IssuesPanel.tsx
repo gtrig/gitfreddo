@@ -58,7 +58,7 @@ export function IssuesPanel() {
 
   async function handleCreate() {
     if (!repoPath || !title.trim()) return
-    await window.gitfredo.githubCreateIssue(repoPath, { title: title.trim(), body })
+    await window.gitfreddo.githubCreateIssue(repoPath, { title: title.trim(), body })
     setTitle('')
     setBody('')
     setCreateOpen(false)

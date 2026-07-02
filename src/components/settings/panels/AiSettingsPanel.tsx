@@ -91,7 +91,7 @@ export function AiSettingsPanel({ form, onChange }: PanelProps) {
             autoComplete="off"
           />
           <p className="mt-1 text-[11px] text-gf-fg-subtle">
-            Stored in ~/.config/gitfredo/settings.json on this machine.
+            Stored in ~/.config/gitfreddo/settings.json on this machine.
           </p>
         </div>
       )}

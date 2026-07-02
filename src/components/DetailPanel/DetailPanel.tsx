@@ -37,7 +37,7 @@ export function DetailPanel() {
   const showOutput = useQuery({
     queryKey: ['repo', repoPath, 'log.show', selection?.id],
     queryFn: async () =>
-      window.gitfredo.invoke('log.show', { hash: selection?.id }) as Promise<string>,
+      window.gitfreddo.invoke('log.show', { hash: selection?.id }) as Promise<string>,
     enabled: connected && Boolean(repoPath) && selection?.kind === 'commit' && Boolean(selection.id)
   })
 

@@ -10,7 +10,7 @@ export function useGitHubIssues(
     queryKey: ['github-issues', repoPath, assigneeLogin ?? ''],
     queryFn: () => {
       if (!repoPath) return []
-      return window.gitfredo.githubListIssues(repoPath, assigneeLogin)
+      return window.gitfreddo.githubListIssues(repoPath, assigneeLogin)
     },
     enabled: enabled && Boolean(repoPath),
     staleTime: 30_000

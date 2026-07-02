@@ -3,12 +3,12 @@ import { homedir } from 'os'
 import { join } from 'path'
 import { loadGitHubToken } from '../github/token-store'
 
-const SETTINGS_DIR = join(homedir(), '.config', 'gitfredo')
+const SETTINGS_DIR = join(homedir(), '.config', 'gitfreddo')
 const INSTALLED_ASKPASS_PATH = join(SETTINGS_DIR, 'github-askpass.cjs')
 
 /** Keep in sync with electron/git/github-askpass.cjs */
 const ASKPASS_SCRIPT = `#!/usr/bin/env node
-const token = process.env.GITFREDO_GITHUB_TOKEN || ''
+const token = process.env.gitfreddo_GITHUB_TOKEN || ''
 const prompt = (process.argv[2] || '').toLowerCase()
 
 if (prompt.includes('username')) {
@@ -36,6 +36,6 @@ export async function buildGitEnv(): Promise<NodeJS.ProcessEnv> {
     ...process.env,
     GIT_TERMINAL_PROMPT: '0',
     GIT_ASKPASS: askpassPath,
-    GITFREDO_GITHUB_TOKEN: token
+    gitfreddo_GITHUB_TOKEN: token
   }
 }

@@ -340,7 +340,7 @@ export function CommitPreview({
   const fullMessageQuery = useQuery({
     queryKey: ['repo', repoPath, 'log.message', commit.hash],
     queryFn: async () =>
-      window.gitfredo.invoke('log.message', { hash: commit.hash }) as Promise<string>,
+      window.gitfreddo.invoke('log.message', { hash: commit.hash }) as Promise<string>,
     enabled: connected && Boolean(repoPath) && Boolean(commit.hash)
   })
 

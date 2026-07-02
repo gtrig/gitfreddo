@@ -33,7 +33,7 @@ export function MaintenanceSettingsPanel() {
 
     setScanning(true)
     try {
-      const result = (await window.gitfredo.invoke(
+      const result = (await window.gitfreddo.invoke(
         'maintenance.unreachable',
         undefined,
         repoPath
@@ -51,7 +51,7 @@ export function MaintenanceSettingsPanel() {
 
     setPruning(true)
     try {
-      const result = (await window.gitfredo.invoke(
+      const result = (await window.gitfreddo.invoke(
         'maintenance.prune',
         undefined,
         repoPath

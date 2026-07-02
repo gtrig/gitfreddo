@@ -23,7 +23,7 @@ export function GithubIntegrationCard() {
   const avatarUrl = status?.avatarUrl ?? null
 
   useEffect(() => {
-    const unsubscribe = window.gitfredo.onGitHubConnectProgress((next) => {
+    const unsubscribe = window.gitfreddo.onGitHubConnectProgress((next) => {
       setProgress(next)
     })
     return unsubscribe
@@ -35,8 +35,8 @@ export function GithubIntegrationCard() {
     try {
       const result =
         mode === 'pat'
-          ? await window.gitfredo.githubConnectPat(pat)
-          : await window.gitfredo.githubConnect()
+          ? await window.gitfreddo.githubConnectPat(pat)
+          : await window.gitfreddo.githubConnect()
       await invalidate()
       show(`Connected to GitHub as @${result.login}`, 'success')
       setPat('')
@@ -51,7 +51,7 @@ export function GithubIntegrationCard() {
   async function handleDisconnect() {
     setDisconnecting(true)
     try {
-      await window.gitfredo.githubDisconnect()
+      await window.gitfreddo.githubDisconnect()
       await invalidate()
       show('Disconnected from GitHub', 'success')
     } catch (error) {
@@ -64,7 +64,7 @@ export function GithubIntegrationCard() {
   async function handleUploadSshKey() {
     setUploadingKey(true)
     try {
-      const result = await window.gitfredo.githubUploadSshKey(`GitFreddo ${new Date().toISOString()}`)
+      const result = await window.gitfreddo.githubUploadSshKey(`GitFreddo ${new Date().toISOString()}`)
       show(`SSH key uploaded: ${result.title}`, 'success')
     } catch (error) {
       show(error instanceof Error ? error.message : String(error), 'error')

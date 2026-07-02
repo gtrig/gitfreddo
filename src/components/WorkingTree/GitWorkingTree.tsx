@@ -58,7 +58,7 @@ function FileRow({
             workingTreeFileContextMenuItems(file.path, mode, file.status, {
               onSelect,
               onStageToggle: onStage ?? (() => {}),
-              onOpenInEditor: () => void window.gitfredo.openInEditor(file.path),
+              onOpenInEditor: () => void window.gitfreddo.openInEditor(file.path),
               onFileHistory: onFileHistory,
               onRename: onRename,
               onDiscard,
@@ -226,7 +226,7 @@ function TreeNode({
             workingTreeFileContextMenuItems(file.path, mode, file.status, {
               onSelect: selectFile,
               onStageToggle: stageToggle,
-              onOpenInEditor: () => void window.gitfredo.openInEditor(file.path),
+              onOpenInEditor: () => void window.gitfreddo.openInEditor(file.path),
               onFileHistory: onFileHistory ? () => onFileHistory(file.path) : undefined,
               onRename: onRename ? () => onRename(file.path) : undefined,
               onDiscard: onDiscard ? () => onDiscard(file.path, mode === 'staged') : undefined,
@@ -611,7 +611,7 @@ export function GitWorkingTree() {
           onConfirm={async () => {
             setDeleteBusy(true)
             try {
-              await window.gitfredo.deleteWorkspaceFile(pendingDelete)
+              await window.gitfreddo.deleteWorkspaceFile(pendingDelete)
               invalidate('working.status')
               setPendingDelete(null)
             } finally {

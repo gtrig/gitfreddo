@@ -10,7 +10,7 @@ export interface SshKeyResult {
 }
 
 export function generateSshKeyPair(): { publicKey: string; privateKeyPath: string } {
-  const dir = mkdtempSync(join(tmpdir(), 'gitfredo-ssh-'))
+  const dir = mkdtempSync(join(tmpdir(), 'gitfreddo-ssh-'))
   const keyPath = join(dir, 'id_rsa')
   execSync(`ssh-keygen -t rsa -b 4096 -f "${keyPath}" -N "" -q`, { stdio: 'ignore' })
   const publicKey = readFileSync(`${keyPath}.pub`, 'utf8').trim()

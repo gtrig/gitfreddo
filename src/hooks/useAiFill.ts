@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query'
 import type { AiFillParams } from '../../shared/ai'
 
 async function requestAiFill(params: AiFillParams): Promise<string> {
-  const api = window.gitfredo
+  const api = window.gitfreddo
   if (typeof api.aiFill === 'function') {
     return api.aiFill(params)
   }

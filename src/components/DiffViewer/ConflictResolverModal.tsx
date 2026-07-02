@@ -24,7 +24,7 @@ export function ConflictResolverModal({ open, path, onClose }: ConflictResolverM
   useEffect(() => {
     if (!open || !repoPath) return
     setLoading(true)
-    void window.gitfredo
+    void window.gitfreddo
       .invoke('working.read', { path }, repoPath)
       .then((text) => {
         const fileContent = String(text)
@@ -49,7 +49,7 @@ export function ConflictResolverModal({ open, path, onClose }: ConflictResolverM
     setSaving(true)
     try {
       const resolved = applyConflictResolutions(content, resolutions)
-      await window.gitfredo.invoke('working.write', { path, content: resolved }, repoPath)
+      await window.gitfreddo.invoke('working.write', { path, content: resolved }, repoPath)
       await stageAdd.mutateAsync({ paths: [path] })
       show('Conflict resolved and staged.', 'success')
       onClose()
@@ -71,7 +71,7 @@ export function ConflictResolverModal({ open, path, onClose }: ConflictResolverM
           <ConflictDiffView hunks={hunks} onChange={updateResolution} />
         )}
         <div className="flex justify-end gap-2 border-t border-gf-border pt-3">
-          <ActionButton onClick={() => void window.gitfredo.openInEditor(path)}>
+          <ActionButton onClick={() => void window.gitfreddo.openInEditor(path)}>
             Open in editor
           </ActionButton>
           <ActionButton onClick={onClose}>Cancel</ActionButton>

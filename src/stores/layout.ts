@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-const STORAGE_KEY = 'gitfredo:sidebar-layout'
+const STORAGE_KEY = 'gitfreddo:sidebar-layout'
 
 export const LEFT_MIN = 200
 export const LEFT_MAX = 480

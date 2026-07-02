@@ -82,7 +82,7 @@ export const DEFAULT_TIMELINE_COLUMN_VISIBILITY: TimelineColumnVisibility = {
   lineStats: false
 }
 
-const STORAGE_KEY = 'gitfredo.timeline.columnVisibility'
+const STORAGE_KEY = 'gitfreddo.timeline.columnVisibility'
 
 const COLUMN_LABELS: Record<TimelineColumnId, string> = {
   branchTag: 'Branch / Tag',

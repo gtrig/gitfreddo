@@ -36,7 +36,7 @@ export function SidebarPullRequestsSection() {
 
   async function mergePullRequest(prNumber: number, method: 'merge' | 'squash' | 'rebase') {
     if (!repoPath) return
-    await window.gitfredo.githubMergePullRequest(repoPath, prNumber, method)
+    await window.gitfreddo.githubMergePullRequest(repoPath, prNumber, method)
     await invalidate(repoPath)
     show(`PR #${prNumber} merged`, 'success')
   }
@@ -112,7 +112,7 @@ export function SidebarPullRequestsSection() {
           defaultBase={defaultBase}
           onSubmit={async (params) => {
             if (!repoPath) return
-            await window.gitfredo.githubCreatePullRequest(repoPath, params)
+            await window.gitfreddo.githubCreatePullRequest(repoPath, params)
             await invalidate(repoPath)
             show('Pull request created', 'success')
           }}

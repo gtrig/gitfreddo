@@ -4,7 +4,7 @@ import type { GitFreddoAPI } from '../shared/ipc'
 
 declare global {
   interface Window {
-    gitfredo: GitFreddoAPI
+    gitfreddo: GitFreddoAPI
   }
 }
 

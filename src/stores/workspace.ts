@@ -79,14 +79,14 @@ function remapTabPath(tabs: WorkspaceTab[], fromPath: string, toPath: string): W
 
 async function ensureBackendWorkspace(path: string): Promise<string> {
   try {
-    return await window.gitfredo.switchWorkspace(path)
+    return await window.gitfreddo.switchWorkspace(path)
   } catch {
-    return window.gitfredo.connect(path)
+    return window.gitfreddo.connect(path)
   }
 }
 
 async function persistWorkspaceSessionSnapshot(snapshot: WorkspaceSessionSnapshot): Promise<void> {
-  await window.gitfredo.setSettings({
+  await window.gitfreddo.setSettings({
     openRepoTabs: snapshot.tabPaths,
     activeRepoTab: snapshot.activePath
   })
@@ -110,7 +110,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   processExited: false,
 
   openWorkspace: async (path) => {
-    const canonical = await window.gitfredo.normalizeRepoPath(path)
+    const canonical = await window.gitfreddo.normalizeRepoPath(path)
     const { tabs, activePath } = get()
     const existing = tabs.find((tab) => tab.path === canonical)
     if (existing) {
@@ -131,7 +131,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     appLog('info', 'Opening workspace', canonical)
 
     try {
-      const connectedPath = await window.gitfredo.connect(canonical)
+      const connectedPath = await window.gitfreddo.connect(canonical)
       let currentTabs = remapTabPath(get().tabs, canonical, connectedPath)
       currentTabs = updateTab(currentTabs, connectedPath, {
         connected: true,
@@ -163,7 +163,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
 
   switchWorkspace: async (path) => {
-    const canonical = await window.gitfredo.normalizeRepoPath(path)
+    const canonical = await window.gitfreddo.normalizeRepoPath(path)
     let { tabs, activePath } = get()
     tabs = remapTabPath(tabs, path, canonical)
 
@@ -201,7 +201,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
 
   closeWorkspace: async (path) => {
-    const canonical = await window.gitfredo.normalizeRepoPath(path)
+    const canonical = await window.gitfreddo.normalizeRepoPath(path)
     let { tabs, activePath } = get()
     tabs = remapTabPath(tabs, path, canonical)
     const remaining = tabs.filter((tab) => tab.path !== canonical)
@@ -211,7 +211,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       captureSelectionForWorkspace(canonical)
     }
 
-    await window.gitfredo.disconnectWorkspace(canonical)
+    await window.gitfreddo.disconnectWorkspace(canonical)
     clearSelectionSnapshot(canonical)
 
     let nextActive = activePath
@@ -259,7 +259,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         return
       }
 
-      const settings = await window.gitfredo.getSettings()
+      const settings = await window.gitfreddo.getSettings()
       const snapshot = snapshotFromSettings(settings)
       if (snapshot.tabPaths.length === 0) {
         return
@@ -268,7 +268,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       const normalizedPaths: string[] = []
       for (const path of snapshot.tabPaths) {
         try {
-          normalizedPaths.push(await window.gitfredo.normalizeRepoPath(path))
+          normalizedPaths.push(await window.gitfreddo.normalizeRepoPath(path))
         } catch {
           appLog('warn', 'Skipped invalid saved workspace tab', path)
         }
@@ -282,7 +282,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       let activePath = snapshot.activePath
       if (activePath) {
         try {
-          activePath = await window.gitfredo.normalizeRepoPath(activePath)
+          activePath = await window.gitfreddo.normalizeRepoPath(activePath)
         } catch {
           activePath = null
         }
@@ -312,7 +312,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       const failed = new Set<string>()
       for (const path of connectOrder) {
         try {
-          const connectedPath = await window.gitfredo.connect(path)
+          const connectedPath = await window.gitfreddo.connect(path)
           let tabs = remapTabPath(get().tabs, path, connectedPath)
           tabs = updateTab(tabs, connectedPath, {
             connected: true,
@@ -367,7 +367,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   reconnectActive: async () => {
     const { activePath } = get()
     if (!activePath) throw new Error('No repository selected')
-    await window.gitfredo.connect(activePath)
+    await window.gitfreddo.connect(activePath)
     const tabs = updateTab(get().tabs, activePath, {
       connected: true,
       processExited: false,

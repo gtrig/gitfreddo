@@ -22,7 +22,7 @@ export function usePushRemote() {
   const push = useMutation({
     mutationFn: async (params: PushParams = {}) => {
       if (!repoPath) throw new Error('No repository connected')
-      return window.gitfredo.invoke('push', params)
+      return window.gitfreddo.invoke('push', params)
     },
     onSuccess: () => {
       invalidate('branch.list', 'working.status')

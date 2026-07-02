@@ -24,7 +24,7 @@ export function BisectPanelModal({ open, onClose }: BisectPanelModalProps) {
   const statusQuery = useQuery({
     queryKey: ['repo', repoPath, 'bisect.status'],
     queryFn: async () =>
-      (await window.gitfredo.invoke('bisect.status')) as GitBisectStatus,
+      (await window.gitfreddo.invoke('bisect.status')) as GitBisectStatus,
     enabled: open && connected && Boolean(repoPath)
   })
 

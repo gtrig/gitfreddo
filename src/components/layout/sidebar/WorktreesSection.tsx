@@ -53,7 +53,7 @@ export function WorktreesSection({
   const [removeError, setRemoveError] = useState<string | null>(null)
 
   async function handleOpenInTab(path: string) {
-    const normalized = await window.gitfredo.normalizeRepoPath(path)
+    const normalized = await window.gitfreddo.normalizeRepoPath(path)
     const existing = tabs.find((tab) => tab.path === normalized)
     if (existing) {
       await useWorkspaceStore.getState().switchWorkspace(normalized)
@@ -65,7 +65,7 @@ export function WorktreesSection({
   async function handleRemove(entry: GitWorktreeEntry, force: boolean) {
     try {
       await worktreeRemove.mutateAsync({ path: entry.path, force })
-      const normalized = await window.gitfredo.normalizeRepoPath(entry.path)
+      const normalized = await window.gitfreddo.normalizeRepoPath(entry.path)
       if (tabs.some((tab) => tab.path === normalized)) {
         await closeWorkspace(normalized)
       }

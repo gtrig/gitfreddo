@@ -301,7 +301,7 @@ export function LocalBranchesSection({
           defaultHead={prBranch}
           defaultBase={defaultBase}
           onSubmit={async (params) => {
-            await window.gitfredo.githubCreatePullRequest(repoPath, params)
+            await window.gitfreddo.githubCreatePullRequest(repoPath, params)
             await invalidatePrs(repoPath)
             show('Pull request created', 'success')
             setPrBranch(null)

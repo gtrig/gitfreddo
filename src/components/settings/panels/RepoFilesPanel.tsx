@@ -20,7 +20,7 @@ export function RepoFilesPanel() {
 
   const fileQuery = useQuery({
     queryKey: ['repo', repoPath, 'working.read', selected],
-    queryFn: async () => (await window.gitfredo.invoke('working.read', { path: selected })) as string,
+    queryFn: async () => (await window.gitfreddo.invoke('working.read', { path: selected })) as string,
     enabled: connected && Boolean(repoPath)
   })
 
@@ -37,7 +37,7 @@ export function RepoFilesPanel() {
   async function handleSave() {
     setSaving(true)
     try {
-      await window.gitfredo.invoke('working.write', { path: selected, content: draft })
+      await window.gitfreddo.invoke('working.write', { path: selected, content: draft })
       showToast(`${selected} saved.`, 'success')
       await fileQuery.refetch()
     } catch (error) {

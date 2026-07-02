@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { SidebarIconChevron } from '@/components/layout/sidebar/SidebarIcons'
 
-const STORAGE_PREFIX = 'gitfredo:section:'
+const STORAGE_PREFIX = 'gitfreddo:section:'
 
 function readStoredOpen(sectionId: string, defaultOpen: boolean): boolean {
   try {

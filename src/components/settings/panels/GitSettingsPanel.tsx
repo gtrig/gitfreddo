@@ -31,7 +31,7 @@ export function GitSettingsPanel({ form, onChange, onPickGit }: PanelProps) {
   const configQuery = useQuery({
     queryKey: ['repo', repoPath, 'config.list', 'local'],
     queryFn: async () =>
-      (await window.gitfredo.invoke('config.list', { scope: 'local' })) as Record<string, string>,
+      (await window.gitfreddo.invoke('config.list', { scope: 'local' })) as Record<string, string>,
     enabled: connected && Boolean(repoPath)
   })
 
@@ -44,7 +44,7 @@ export function GitSettingsPanel({ form, onChange, onPickGit }: PanelProps) {
   async function saveKey(key: string) {
     setSavingKey(key)
     try {
-      await window.gitfredo.invoke('config.set', {
+      await window.gitfreddo.invoke('config.set', {
         key,
         value: draft[key] ?? '',
         scope: 'local'

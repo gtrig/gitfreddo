@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-const token = process.env.GITFREDO_GITHUB_TOKEN || ''
+const token = process.env.gitfreddo_GITHUB_TOKEN || ''
 const prompt = (process.argv[2] || '').toLowerCase()
 
 if (prompt.includes('username')) {

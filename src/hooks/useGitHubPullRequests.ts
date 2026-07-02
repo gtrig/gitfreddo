@@ -6,7 +6,7 @@ export function useGitHubPullRequests(repoPath: string | null, enabled = true) {
     queryKey: ['github-pull-requests', repoPath],
     queryFn: () => {
       if (!repoPath) return []
-      return window.gitfredo.githubListPullRequests(repoPath)
+      return window.gitfreddo.githubListPullRequests(repoPath)
     },
     enabled: enabled && Boolean(repoPath),
     staleTime: 30_000

@@ -111,7 +111,7 @@ export function DiffOverlay({ onClose }: DiffOverlayProps) {
   const blameQuery = useQuery({
     queryKey: ['repo', repoPath, 'file.blame', filePath, blameRef],
     queryFn: async () =>
-      (await window.gitfredo.invoke('file.blame', {
+      (await window.gitfreddo.invoke('file.blame', {
         path: filePath!,
         ...(blameRef ? { ref: blameRef } : {})
       })) as GitBlameLine[],

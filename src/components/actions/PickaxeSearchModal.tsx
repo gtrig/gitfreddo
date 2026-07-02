@@ -24,7 +24,7 @@ export function PickaxeSearchModal({ open, onClose }: PickaxeSearchModalProps) {
   const results = useQuery({
     queryKey: ['repo', repoPath, 'log.pickaxe', submitted?.query, submitted?.mode],
     queryFn: async () =>
-      (await window.gitfredo.invoke('log.pickaxe', {
+      (await window.gitfreddo.invoke('log.pickaxe', {
         query: submitted!.query,
         mode: submitted!.mode,
         maxCount: 100

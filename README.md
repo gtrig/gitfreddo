@@ -58,7 +58,7 @@ npm run dev
 - GitHub integration (PRs, issues, repo browse)
 - AI assist for commit and stash messages (local LLM or cloud API)
 
-Settings are stored in `~/.config/gitfredo/settings.json`.
+Settings are stored in `~/.config/gitfreddo/settings.json`.
 
 ## AI assist
 
@@ -69,7 +69,7 @@ Configure under **Settings → AI assist**:
 
 When configured, text fields show a star button to generate content from staged or working-tree diffs. Use **Ctrl+Shift+Space** while focused to trigger fill.
 
-API keys are stored locally in `~/.config/gitfredo/settings.json`.
+API keys are stored locally in `~/.config/gitfreddo/settings.json`.
 
 ## Architecture
 
