@@ -9,10 +9,11 @@ import { useAiFill } from '@/hooks/useAiFill'
 import { useToastStore } from '@/stores/toast'
 import { useInvalidateGit } from '@/hooks/useInvalidateGit'
 import { buildFileTree, type FileTreeNode } from '@/lib/fileTree'
-import { parseConflictMarkers, applyConflictResolutions } from '@/lib/conflictMarkers'
+import { parseConflictMarkers } from '@/lib/conflictMarkers'
 import { hasUnresolvedMarkers } from '@/lib/threeWayMerge'
-import { parseConflictResolveResponse } from '../../../shared/ai'
+import { averageConfidence, parseConflictResolveResponse } from '../../../shared/ai'
 import type { GitMergeStatus } from '@/lib/types'
+import { confidenceBadgeClass } from '@/components/DiffViewer/ConflictAiProposalCard'
 import { LoadingRow, Spinner } from '@/components/ui/Spinner'
 import { MergeCommitFooter } from '@/components/MergeConflicts/MergeCommitFooter'
 import { SidebarIconChevron } from '@/components/layout/sidebar/SidebarIcons'
@@ -35,10 +36,12 @@ function Chevron({ open }: { open: boolean }) {
 function ConflictFileRow({
   path,
   selected,
+  proposalSummary,
   onSelect
 }: {
   path: string
   selected: boolean
+  proposalSummary?: { count: number; avgConfidence: number }
   onSelect: () => void
 }) {
   return (
@@ -50,7 +53,15 @@ function ConflictFileRow({
       }`}
     >
       <span className="inline-block w-3 text-center font-mono text-[11px] text-orange-400">U</span>
-      <span className="truncate font-mono">{path}</span>
+      <span className="min-w-0 flex-1 truncate font-mono">{path}</span>
+      {proposalSummary && (
+        <span
+          className={`shrink-0 rounded border px-1 py-0.5 text-[9px] font-semibold ${confidenceBadgeClass(proposalSummary.avgConfidence)}`}
+          title={`${proposalSummary.count} AI proposal(s)`}
+        >
+          {proposalSummary.avgConfidence}%
+        </span>
+      )}
     </button>
   )
 }
@@ -62,7 +73,8 @@ function TreeFolder({
   toggleExpanded,
   selectedFile,
   onSelectFile,
-  conflictedSet
+  conflictedSet,
+  pendingAiProposals
 }: {
   node: FileTreeNode
   depth: number
@@ -71,6 +83,7 @@ function TreeFolder({
   selectedFile: string | null
   onSelectFile: (path: string) => void
   conflictedSet: Set<string>
+  pendingAiProposals: Record<string, { count: number; avgConfidence: number }>
 }) {
   if (node.type === 'folder') {
     const open = expandedPaths.has(node.path)
@@ -96,6 +109,7 @@ function TreeFolder({
               selectedFile={selectedFile}
               onSelectFile={onSelectFile}
               conflictedSet={conflictedSet}
+              pendingAiProposals={pendingAiProposals}
             />
           ))}
       </div>
@@ -109,6 +123,7 @@ function TreeFolder({
       <ConflictFileRow
         path={node.path}
         selected={selectedFile === node.path}
+        proposalSummary={pendingAiProposals[node.path]}
         onSelect={() => onSelectFile(node.path)}
       />
     </div>
@@ -122,6 +137,8 @@ export function MergeConflictsPanel() {
   const { data: workingStatus } = useWorkingStatus(connected)
   const selectedFile = useSelectionStore((s) => s.selectedConflictFile)
   const setSelectedConflictFile = useSelectionStore((s) => s.setSelectedConflictFile)
+  const pendingAiProposals = useSelectionStore((s) => s.pendingAiProposals)
+  const setPendingAiProposals = useSelectionStore((s) => s.setPendingAiProposals)
   const { stageAdd } = useGitMutations()
   const aiEnabled = useAiEnabled()
   const aiFill = useAiFill()
@@ -135,6 +152,17 @@ export function MergeConflictsPanel() {
 
   const conflictedPaths = mergeStatus?.conflictedPaths ?? []
   const conflictedSet = useMemo(() => new Set(conflictedPaths), [conflictedPaths])
+
+  const proposalSummaries = useMemo(() => {
+    const summaries: Record<string, { count: number; avgConfidence: number }> = {}
+    for (const [path, proposals] of Object.entries(pendingAiProposals)) {
+      summaries[path] = {
+        count: proposals.length,
+        avgConfidence: averageConfidence(proposals)
+      }
+    }
+    return summaries
+  }, [pendingAiProposals])
 
   const resolvedPaths = useMemo(() => {
     if (!workingStatus || !mergeStatus?.inProgress) return []
@@ -202,13 +230,8 @@ export function MergeConflictsPanel() {
     })
     const working = String(await window.gitfreddo.invoke('working.read', { path }, repoPath))
     const hunks = parseConflictMarkers(working)
-    const resolutions = parseConflictResolveResponse(text, hunks.length)
-    const resolved = applyConflictResolutions(working, resolutions)
-    if (hasUnresolvedMarkers(resolved)) {
-      throw new Error(`AI left conflict markers in ${path}`)
-    }
-    await window.gitfreddo.invoke('working.write', { path, content: resolved }, repoPath)
-    await stageAdd.mutateAsync({ paths: [path] })
+    const proposals = parseConflictResolveResponse(text, hunks.length)
+    setPendingAiProposals(path, proposals)
   }
 
   async function handleAiResolveAll() {
@@ -217,11 +240,14 @@ export function MergeConflictsPanel() {
     try {
       for (let i = 0; i < conflictedPaths.length; i++) {
         const path = conflictedPaths[i]!
-        showToast(`Resolving ${i + 1} / ${conflictedPaths.length}: ${path}`, 'info')
+        showToast(`Analyzing ${i + 1} / ${conflictedPaths.length}: ${path}`, 'info')
         await resolveFileWithAi(path)
       }
-      showToast('All conflicts auto-resolved and staged.', 'success')
-      invalidate()
+      const firstPath = conflictedPaths[0]
+      if (firstPath) {
+        setSelectedConflictFile(firstPath)
+      }
+      showToast('AI proposals ready — review each file before saving.', 'info')
     } catch (error) {
       showToast(error instanceof Error ? error.message : String(error), 'error')
     } finally {
@@ -242,6 +268,7 @@ export function MergeConflictsPanel() {
   }
 
   const busy = bulkBusy || aiBulkBusy || stageAdd.isPending
+  const proposalFileCount = Object.keys(proposalSummaries).length
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-gf-bg-deep">
@@ -251,6 +278,11 @@ export function MergeConflictsPanel() {
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-orange-300">Merge conflicts detected</p>
             <p className="mt-0.5 text-[11px] text-gf-fg-muted">{operationTitle(mergeStatus)}</p>
+            {proposalFileCount > 0 && (
+              <p className="mt-1 text-[10px] text-violet-300">
+                AI proposals ready for {proposalFileCount} file{proposalFileCount === 1 ? '' : 's'} — open to review
+              </p>
+            )}
           </div>
           <button
             type="button"
@@ -305,6 +337,7 @@ export function MergeConflictsPanel() {
                   key={path}
                   path={path}
                   selected={selectedFile === path}
+                  proposalSummary={proposalSummaries[path]}
                   onSelect={() => setSelectedConflictFile(path)}
                 />
               ))}
@@ -328,6 +361,7 @@ export function MergeConflictsPanel() {
                   selectedFile={selectedFile}
                   onSelectFile={setSelectedConflictFile}
                   conflictedSet={conflictedSet}
+                  pendingAiProposals={proposalSummaries}
                 />
               ))}
             </div>

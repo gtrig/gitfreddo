@@ -156,26 +156,61 @@ describe('extractChatCompletionContent', () => {
 })
 
 describe('parseConflictResolveResponse', () => {
-  it('parses valid hunk resolutions', () => {
+  it('parses valid hunk resolutions with analysis and confidence', () => {
     const result = parseConflictResolveResponse(
       JSON.stringify({
         resolutions: [
-          { hunkId: 0, text: 'merged line' },
-          { hunkId: 1, text: 'second hunk' }
+          {
+            hunkId: 0,
+            text: 'merged line',
+            analysis: 'Kept ours because theirs was empty.',
+            confidence: 92
+          },
+          {
+            hunkId: 1,
+            text: 'second hunk',
+            analysis: 'Combined both imports.',
+            confidence: 78
+          }
         ]
       }),
       2
     )
-    expect(result.get(0)).toBe('merged line')
-    expect(result.get(1)).toBe('second hunk')
+    expect(result).toHaveLength(2)
+    expect(result[0]?.text).toBe('merged line')
+    expect(result[0]?.analysis).toContain('Kept ours')
+    expect(result[0]?.confidence).toBe(92)
+    expect(result[1]?.text).toBe('second hunk')
+    expect(result[1]?.confidence).toBe(78)
+  })
+
+  it('defaults missing analysis and confidence for backward compatibility', () => {
+    const result = parseConflictResolveResponse(
+      JSON.stringify({
+        resolutions: [{ hunkId: 0, text: 'ok' }]
+      }),
+      1
+    )
+    expect(result[0]?.analysis).toBe('')
+    expect(result[0]?.confidence).toBe(50)
+  })
+
+  it('clamps out-of-range confidence', () => {
+    const result = parseConflictResolveResponse(
+      JSON.stringify({
+        resolutions: [{ hunkId: 0, text: 'ok', confidence: 150 }]
+      }),
+      1
+    )
+    expect(result[0]?.confidence).toBe(100)
   })
 
   it('strips markdown fences', () => {
     const result = parseConflictResolveResponse(
-      '```json\n{"resolutions":[{"hunkId":0,"text":"ok"}]}\n```',
+      '```json\n{"resolutions":[{"hunkId":0,"text":"ok","analysis":"fine","confidence":80}]}\n```',
       1
     )
-    expect(result.get(0)).toBe('ok')
+    expect(result[0]?.text).toBe('ok')
   })
 
   it('throws when a hunk is missing', () => {

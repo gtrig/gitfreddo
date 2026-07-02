@@ -6,6 +6,13 @@ export interface AiComposeCommitProposal {
   files: string[]
 }
 
+export interface AiConflictResolutionProposal {
+  hunkId: number
+  text: string
+  analysis: string
+  confidence: number
+}
+
 export type AiProvider = 'local' | 'api'
 
 export interface AiFillContext {
@@ -155,12 +162,20 @@ export function buildAiMessages(
           'Return ONLY JSON with this shape:\n' +
           '{\n' +
           '  "resolutions": [\n' +
-          '    { "hunkId": 0, "text": "merged lines for conflict 0 without markers" }\n' +
+          '    {\n' +
+          '      "hunkId": 0,\n' +
+          '      "text": "merged content without markers",\n' +
+          '      "analysis": "Brief rationale for this merge decision.",\n' +
+          '      "confidence": 92\n' +
+          '    }\n' +
           '  ]\n' +
           '}\n' +
           'Rules:\n' +
           '- One entry per conflict hunk in order (hunkId 0, 1, 2, …)\n' +
           '- "text" is the resolved content for that hunk only (no <<<<<<< markers)\n' +
+          '- "analysis" is 1-3 sentences explaining why this resolution is correct\n' +
+          '- "confidence" is an integer 0-100 reflecting certainty the merge is correct\n' +
+          '- Lower confidence when edits overlap, intent is ambiguous, or context is incomplete\n' +
           '- Preserve non-conflicting context; prefer minimal correct merges\n' +
           '- Combine both sides when both changes are needed',
         instructions.conflictResolve
@@ -271,10 +286,27 @@ export function parseComposeCommitsResponse(
   return proposals
 }
 
+export function clampConfidence(value: unknown): number {
+  if (typeof value !== 'number' || Number.isNaN(value)) return 50
+  return Math.min(100, Math.max(0, Math.round(value)))
+}
+
+export function proposalsToResolutionMap(
+  proposals: AiConflictResolutionProposal[]
+): Map<number, string> {
+  return new Map(proposals.map((proposal) => [proposal.hunkId, proposal.text]))
+}
+
+export function averageConfidence(proposals: AiConflictResolutionProposal[]): number {
+  if (proposals.length === 0) return 0
+  const total = proposals.reduce((sum, proposal) => sum + proposal.confidence, 0)
+  return Math.round(total / proposals.length)
+}
+
 export function parseConflictResolveResponse(
   text: string,
   expectedHunkCount: number
-): Map<number, string> {
+): AiConflictResolutionProposal[] {
   const cleaned = stripJsonFences(text)
   let parsed: unknown
 
@@ -293,25 +325,35 @@ export function parseConflictResolveResponse(
     throw new Error('AI response missing "resolutions" array.')
   }
 
-  const result = new Map<number, string>()
+  const result: AiConflictResolutionProposal[] = []
   for (const entry of resolutions) {
     if (!entry || typeof entry !== 'object') continue
-    const raw = entry as { hunkId?: unknown; text?: unknown }
+    const raw = entry as {
+      hunkId?: unknown
+      text?: unknown
+      analysis?: unknown
+      confidence?: unknown
+    }
     if (typeof raw.hunkId !== 'number' || typeof raw.text !== 'string') continue
-    result.set(raw.hunkId, raw.text)
+    result.push({
+      hunkId: raw.hunkId,
+      text: raw.text,
+      analysis: typeof raw.analysis === 'string' ? raw.analysis.trim() : '',
+      confidence: clampConfidence(raw.confidence)
+    })
   }
 
-  if (result.size === 0) {
+  if (result.length === 0) {
     throw new Error('AI returned no usable conflict resolutions.')
   }
 
   for (let id = 0; id < expectedHunkCount; id++) {
-    if (!result.has(id)) {
+    if (!result.some((proposal) => proposal.hunkId === id)) {
       throw new Error(`AI response missing resolution for conflict ${id + 1} of ${expectedHunkCount}.`)
     }
   }
 
-  return result
+  return result.sort((a, b) => a.hunkId - b.hunkId)
 }
 
 type ContentPart = string | { type?: string; text?: string }
