@@ -11,9 +11,18 @@ export interface AddWorktreeModalProps {
   onClose: () => void
   /** Pre-select an existing branch (from context menu). */
   initialBranch?: string
+  /** Check out this commit when creating a new branch or detached worktree. */
+  initialCommit?: string
+  initialCommitShort?: string
 }
 
-export function AddWorktreeModal({ open, onClose, initialBranch }: AddWorktreeModalProps) {
+export function AddWorktreeModal({
+  open,
+  onClose,
+  initialBranch,
+  initialCommit,
+  initialCommitShort
+}: AddWorktreeModalProps) {
   const { data: repoStatus } = useRepoStatus(open)
   const { data: branches } = useBranches(open)
   const { worktreeAdd } = useGitMutations()
@@ -33,19 +42,22 @@ export function AddWorktreeModal({ open, onClose, initialBranch }: AddWorktreeMo
     if (!open) return
     const locals = (branches ?? []).filter((b) => !b.isRemote)
     const branch = initialBranch ?? locals.find((b) => !b.isCurrent)?.name ?? ''
+    const commitLabel = initialCommitShort ?? initialCommit?.slice(0, 7) ?? ''
     setSelectedBranch(branch)
-    setNewBranch(branch)
-    setMode('existing')
+    setNewBranch(branch || (commitLabel ? `worktree-${commitLabel}` : ''))
+    setMode(initialCommit && !initialBranch ? 'new' : 'existing')
     setDetach(false)
     setShowAdvanced(false)
     if (repoStatus?.root && branch) {
       setPath(suggestWorktreePath(repoStatus.root, branch))
+    } else if (repoStatus?.root && commitLabel) {
+      setPath(suggestWorktreePath(repoStatus.root, `worktree-${commitLabel}`))
     } else if (repoStatus?.root) {
       setPath(suggestWorktreePath(repoStatus.root, 'worktree'))
     } else {
       setPath('')
     }
-  }, [open, initialBranch, repoStatus?.root, branches])
+  }, [open, initialBranch, initialCommit, initialCommitShort, repoStatus?.root, branches])
 
   useEffect(() => {
     if (!open || !repoStatus?.root) return
@@ -61,11 +73,26 @@ export function AddWorktreeModal({ open, onClose, initialBranch }: AddWorktreeMo
 
   const canSubmit =
     path.trim().length > 0 &&
-    (mode === 'new' ? newBranch.trim().length > 0 : selectedBranch.length > 0 || detach)
+    (detach
+      ? mode === 'existing'
+        ? selectedBranch.length > 0 || Boolean(initialCommit)
+        : mode === 'new'
+          ? newBranch.trim().length > 0 || Boolean(initialCommit)
+          : Boolean(initialCommit)
+      : mode === 'new'
+        ? newBranch.trim().length > 0
+        : selectedBranch.length > 0)
+
+  const commitLabel = initialCommitShort ?? initialCommit?.slice(0, 7)
 
   return (
     <Modal open={open} title="Add worktree" onClose={handleClose}>
       <div className="space-y-3 p-4">
+        {initialCommit && (
+          <p className="text-sm text-gf-fg-muted">
+            From commit <span className="font-mono text-gf-fg">{commitLabel}</span>
+          </p>
+        )}
         <label className="block text-sm">
           <span className="text-gf-fg-muted">Path</span>
           <div className="mt-1 flex gap-2">
@@ -157,14 +184,41 @@ export function AddWorktreeModal({ open, onClose, initialBranch }: AddWorktreeMo
             onClick={async () => {
               if (!canSubmit) return
               try {
-                const result = (await worktreeAdd.mutateAsync({
-                  path: path.trim(),
-                  ...(mode === 'new'
-                    ? { newBranch: newBranch.trim() }
-                    : { branch: selectedBranch }),
-                  detach
-                })) as string
-                const worktreePath = result || path.trim()
+                const trimmedPath = path.trim()
+                let payload: {
+                  path: string
+                  branch?: string
+                  newBranch?: string
+                  detach?: boolean
+                  commit?: string
+                }
+
+                if (mode === 'existing') {
+                  if (selectedBranch) {
+                    payload = { path: trimmedPath, branch: selectedBranch, detach }
+                  } else if (detach && initialCommit) {
+                    payload = { path: trimmedPath, detach: true, commit: initialCommit }
+                  } else {
+                    return
+                  }
+                } else {
+                  const branchName = newBranch.trim()
+                  if (detach && initialCommit && !branchName) {
+                    payload = { path: trimmedPath, detach: true, commit: initialCommit }
+                  } else if (branchName) {
+                    payload = {
+                      path: trimmedPath,
+                      newBranch: branchName,
+                      detach,
+                      ...(initialCommit ? { commit: initialCommit } : {})
+                    }
+                  } else {
+                    return
+                  }
+                }
+
+                const result = (await worktreeAdd.mutateAsync(payload)) as string
+                const worktreePath = result || trimmedPath
                 await openWorkspace(worktreePath)
                 showToast('Worktree created', 'success')
                 handleClose()

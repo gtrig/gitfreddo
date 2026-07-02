@@ -386,7 +386,8 @@ export class RepoManager {
           path: p.path as string,
           branch: p.branch as string | undefined,
           newBranch: p.newBranch as string | undefined,
-          detach: Boolean(p.detach)
+          detach: Boolean(p.detach),
+          commit: p.commit as string | undefined
         })
       case 'worktree.remove': {
         const removePath = normalizeRepoPath(p.path as string)

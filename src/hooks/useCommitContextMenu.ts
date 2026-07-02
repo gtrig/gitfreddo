@@ -4,6 +4,7 @@ import type {
   ResetMode
 } from '@/components/DetailPanel/DeleteCommitModal'
 import { buildCommitContextMenuItems } from '@/lib/commitContextMenu'
+import { timelineRefs } from '@/lib/timelineRefs'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useWorkingStatus } from '@/hooks/useGit'
 import { useSelectionStore } from '@/stores/selection'
@@ -31,6 +32,12 @@ interface InteractiveRebaseModalState {
   commits: GitCommit[]
 }
 
+interface WorktreeFromCommitState {
+  hash: string
+  shortHash: string
+  branchName?: string
+}
+
 export type { RemoveStaleModalState }
 
 export interface CommitContextMenuOptions {
@@ -53,6 +60,8 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
   const [removeStaleModal, setRemoveStaleModal] = useState<RemoveStaleModalState | null>(null)
   const [interactiveRebaseModal, setInteractiveRebaseModal] =
     useState<InteractiveRebaseModalState | null>(null)
+  const [mergeSource, setMergeSource] = useState<string | null>(null)
+  const [worktreeFromCommit, setWorktreeFromCommit] = useState<WorktreeFromCommitState | null>(null)
 
   const selectTimelineNode = useSelectionStore((s) => s.selectTimelineNode)
   const setPrimaryCommit = useSelectionStore((s) => s.setPrimaryCommit)
@@ -176,6 +185,19 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
         removeStaleSelected: (commits) =>
           openRemoveStaleModal({ seedHashes: commits.map((commit) => commit.hash) }),
         checkout: (ref) => runMutation(checkout.mutateAsync({ name: ref }), 'Checked out.'),
+        mergeBranch: (branchName) => {
+          closeMenu()
+          setMergeSource(branchName)
+        },
+        createWorktreeFromCommit: (commit) => {
+          closeMenu()
+          const branchName = timelineRefs(commit.refs).find((ref) => ref.kind === 'branch')?.label
+          setWorktreeFromCommit({
+            hash: commit.hash,
+            shortHash: commit.shortHash,
+            branchName
+          })
+        },
         createBranch: (hash) => setCreateBranchAt(hash),
         createTag: (hash) => setCreateTagAt(hash),
         reword: (commit) => setRewordCommit(commit),
@@ -254,6 +276,10 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
     removeStaleModal,
     setRemoveStaleModal,
     interactiveRebaseModal,
-    setInteractiveRebaseModal
+    setInteractiveRebaseModal,
+    mergeSource,
+    setMergeSource,
+    worktreeFromCommit,
+    setWorktreeFromCommit
   }
 }

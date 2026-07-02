@@ -59,6 +59,8 @@ const noopActions = {
   dropSelected: () => {},
   removeStaleSelected: () => {},
   checkout: () => {},
+  mergeBranch: () => {},
+  createWorktreeFromCommit: () => {},
   createBranch: () => {},
   createTag: () => {},
   reword: () => {},
@@ -169,5 +171,69 @@ describe('buildCommitContextMenuItems', () => {
 
     expect(items.find((item) => item.id === 'remove-stale')?.disabled).toBe(false)
     expect(items.find((item) => item.id === 'drop')).toBeUndefined()
+  })
+
+  it('offers to merge a local branch ref into the current branch', () => {
+    const featureTip: GitCommit = {
+      ...parentCommit,
+      hash: 'ccc333333333333333333333333333333333333',
+      shortHash: 'ccc3333',
+      parents: [parentCommit.hash],
+      message: 'Feature commit',
+      subject: 'Feature commit',
+      refs: ['feature/uptime']
+    }
+
+    const items = buildCommitContextMenuItems({
+      commit: featureTip,
+      head: baseCommit.hash,
+      branch: 'master',
+      isDetached: false,
+      commits: [baseCommit, featureTip, parentCommit],
+      working: cleanWorking,
+      selectedCommitId: featureTip.hash,
+      selectedCount: 1,
+      selectedHashes: [featureTip.hash],
+      actions: noopActions
+    })
+
+    const mergeItem = items.find((item) => item.id === 'merge-feature/uptime')
+    expect(mergeItem?.label).toBe('Merge feature/uptime into master…')
+    expect(mergeItem?.disabled).toBe(false)
+  })
+
+  it('does not offer merge when the commit branch is already checked out', () => {
+    const items = buildCommitContextMenuItems({
+      commit: baseCommit,
+      head: baseCommit.hash,
+      branch: 'main',
+      isDetached: false,
+      commits: [baseCommit, parentCommit],
+      working: cleanWorking,
+      selectedCommitId: baseCommit.hash,
+      selectedCount: 1,
+      selectedHashes: [baseCommit.hash],
+      actions: noopActions
+    })
+
+    expect(items.some((item) => item.id.startsWith('merge-'))).toBe(false)
+  })
+
+  it('offers to create a worktree from a commit', () => {
+    const items = buildCommitContextMenuItems({
+      commit: parentCommit,
+      head: baseCommit.hash,
+      branch: 'main',
+      isDetached: false,
+      commits: [baseCommit, parentCommit],
+      working: cleanWorking,
+      selectedCommitId: parentCommit.hash,
+      selectedCount: 1,
+      selectedHashes: [parentCommit.hash],
+      actions: noopActions
+    })
+
+    expect(items.find((item) => item.id === 'worktree')?.label).toBe('Checkout in new worktree…')
+    expect(items.find((item) => item.id === 'worktree')?.disabled).toBe(false)
   })
 })
