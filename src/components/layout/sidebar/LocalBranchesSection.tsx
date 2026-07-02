@@ -19,7 +19,7 @@ import {
 } from '@/components/layout/sidebar/SidebarIcons'
 import { SidebarFolderRow, SidebarTreeRow } from '@/components/layout/sidebar/SidebarTreeRow'
 import { LoadingRow } from '@/components/ui/Spinner'
-import { ActionButton, ConfirmDialog } from '@/components/ui/Modal'
+import { ConfirmDialog } from '@/components/ui/Modal'
 import { ContextMenu } from '@/components/ui/ContextMenu'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { useGitMutations } from '@/hooks/useGitMutations'
@@ -100,12 +100,8 @@ function BranchTree({
                 depth={depth}
                 open={open}
                 onToggle={() => toggleFolder(path)}
-                onContextMenu={(event) =>
-                  openMenu(
-                    event,
-                    folderContextMenuItems(node.name, open, () => toggleFolder(path))
-                  )
-                }
+                menuItems={folderContextMenuItems(node.name, open, () => toggleFolder(path))}
+                openMenu={openMenu}
               />
               {open && node.children && (
                 <BranchTree
@@ -132,6 +128,17 @@ function BranchTree({
 
         const branch = node.branch!
         const displayName = branch.name.includes('/') ? node.name : branch.name
+        const branchMenuItems = localBranchContextMenuItems(branch, {
+          onCheckout,
+          onSelectCommit,
+          onMerge,
+          onRename,
+          onDelete,
+          onCreatePr,
+          onCheckoutInWorktree,
+          onSetUpstream,
+          onUnsetUpstream
+        })
         return (
           <SidebarTreeRow
             key={branch.name}
@@ -148,26 +155,12 @@ function BranchTree({
                 </span>
               ) : undefined
             }
+            menuItems={branchMenuItems}
+            openMenu={openMenu}
             onClick={() => onSelectCommit(branch.head)}
             onDoubleClick={() => {
               if (!branch.isCurrent) onCheckout(branch.name)
             }}
-            onContextMenu={(event) =>
-              openMenu(
-                event,
-                localBranchContextMenuItems(branch, {
-                  onCheckout,
-                  onSelectCommit,
-                  onMerge,
-                  onRename,
-                  onDelete,
-                  onCreatePr,
-                  onCheckoutInWorktree,
-                  onSetUpstream,
-                  onUnsetUpstream
-                })
-              )
-            }
           />
         )
       })}
@@ -231,11 +224,8 @@ export function LocalBranchesSection({
       title="Local"
       icon={<SidebarIconLocal className="h-3.5 w-3.5" />}
       count={count}
-      headerActions={
-        <ActionButton onClick={onCreateBranch} className="px-1.5 py-0.5 text-[10px]">
-          +
-        </ActionButton>
-      }
+      onAdd={onCreateBranch}
+      addTitle="Create branch"
     >
       {isLoading && <LoadingRow />}
       {checkoutPending && <LoadingRow label="Checking out…" />}
@@ -413,15 +403,11 @@ export function RemoteBranchesSection({
                 depth={0}
                 open={open}
                 onToggle={() => toggleRemote(remote)}
-                onContextMenu={(event) =>
-                  openMenu(
-                    event,
-                    remoteFolderContextMenuItems(remote, open, {
-                      onToggle: () => toggleRemote(remote),
-                      onFetch: (remoteName) => void fetch.mutateAsync({ remote: remoteName })
-                    })
-                  )
-                }
+                menuItems={remoteFolderContextMenuItems(remote, open, {
+                  onToggle: () => toggleRemote(remote),
+                  onFetch: (remoteName) => void fetch.mutateAsync({ remote: remoteName })
+                })}
+                openMenu={openMenu}
               />
               {open && list.length === 0 && (
                 <p
@@ -432,29 +418,28 @@ export function RemoteBranchesSection({
                 </p>
               )}
               {open &&
-                list.map((branch) => (
-                  <SidebarTreeRow
-                    key={branch.name}
-                    icon={<SidebarIconOrigin className="h-3.5 w-3.5" />}
-                    label={remoteBranchShortName(branch.name)}
-                    depth={1}
-                    title="Click to focus commit"
-                    onClick={() => onSelectCommit(branch.head)}
-                    onContextMenu={(event) =>
-                      openMenu(
-                        event,
-                        remoteBranchContextMenuItems(branch, {
-                          onSelectCommit,
-                          onCheckout: setCheckoutRemote,
-                          onDeleteRemote: (remoteBranch) => {
-                            const match = remoteBranches.find((item) => item.name === remoteBranch)
-                            if (match) setPendingDeleteRemote(match)
-                          }
-                        })
-                      )
+                list.map((branch) => {
+                  const remoteBranchMenuItems = remoteBranchContextMenuItems(branch, {
+                    onSelectCommit,
+                    onCheckout: setCheckoutRemote,
+                    onDeleteRemote: (remoteBranch) => {
+                      const match = remoteBranches.find((item) => item.name === remoteBranch)
+                      if (match) setPendingDeleteRemote(match)
                     }
-                  />
-                ))}
+                  })
+                  return (
+                    <SidebarTreeRow
+                      key={branch.name}
+                      icon={<SidebarIconOrigin className="h-3.5 w-3.5" />}
+                      label={remoteBranchShortName(branch.name)}
+                      depth={1}
+                      title="Click to focus commit"
+                      menuItems={remoteBranchMenuItems}
+                      openMenu={openMenu}
+                      onClick={() => onSelectCommit(branch.head)}
+                    />
+                  )
+                })}
             </div>
           )
         })}

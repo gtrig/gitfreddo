@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { SidebarSection } from '@/components/layout/sidebar/SidebarSection'
 import { SidebarIconPullRequest } from '@/components/layout/sidebar/SidebarIcons'
-import { ActionButton } from '@/components/ui/Modal'
+import { SidebarTreeRow } from '@/components/layout/sidebar/SidebarTreeRow'
 import { ContextMenu } from '@/components/ui/ContextMenu'
 import { CreatePrModal } from '@/components/GitHub/CreatePrModal'
 import { useGitHubPullRequests, useInvalidateGitHubPullRequests } from '@/hooks/useGitHubPullRequests'
@@ -23,7 +23,6 @@ export function SidebarPullRequestsSection() {
   const invalidate = useInvalidateGitHubPullRequests()
   const show = useToastStore((s) => s.show)
   const [createOpen, setCreateOpen] = useState(false)
-  const [expandedPr, setExpandedPr] = useState<number | null>(null)
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
 
   const currentBranch = branches?.find((b) => b.isCurrent && !b.isRemote)?.name ?? 'main'
@@ -51,13 +50,8 @@ export function SidebarPullRequestsSection() {
         count={count}
         defaultOpen={false}
         footer
-        headerActions={
-          canUseGitHub ? (
-            <ActionButton onClick={() => setCreateOpen(true)} className="px-1.5 py-0.5 text-[10px]">
-              +
-            </ActionButton>
-          ) : undefined
-        }
+        onAdd={canUseGitHub ? () => setCreateOpen(true) : undefined}
+        addTitle="Create pull request"
       >
         {!connected && (
           <p className="px-2 text-xs text-gf-fg-subtle">Open a repository to view pull requests.</p>
@@ -72,47 +66,31 @@ export function SidebarPullRequestsSection() {
           <>
             {isLoading && <p className="px-2 text-xs text-gf-fg-subtle">Loading…</p>}
             {error && <p className="px-2 text-xs text-red-400">{(error as Error).message}</p>}
-            <ul className="space-y-1">
-              {(prs ?? []).map((pr) => (
-                <li key={pr.number} className="rounded px-2 py-1.5 text-xs hover:bg-gf-surface-hover/40">
-                  <button
-                    type="button"
-                    className="w-full text-left"
-                    onClick={() => setExpandedPr(expandedPr === pr.number ? null : pr.number)}
-                    onContextMenu={(event) =>
-                      openMenu(
-                        event,
-                        pullRequestContextMenuItems(pr, {
-                          onMerge: (method) => void mergePullRequest(pr.number, method)
-                        })
-                      )
+            <div className="space-y-0.5">
+              {(prs ?? []).map((pr) => {
+                const prMenuItems = pullRequestContextMenuItems(pr, {
+                  onMerge: (method) => void mergePullRequest(pr.number, method)
+                })
+                return (
+                  <SidebarTreeRow
+                    key={pr.number}
+                    icon={<SidebarIconPullRequest className="h-3.5 w-3.5" />}
+                    label={`#${pr.number} ${pr.title}`}
+                    suffix={
+                      <span className="shrink-0 truncate text-[10px] text-gf-fg-subtle max-w-[6rem]">
+                        {pr.head.ref} → {pr.base.ref}
+                      </span>
                     }
-                  >
-                    <p className="truncate font-medium text-gf-fg">
-                      #{pr.number} {pr.title}
-                    </p>
-                    <p className="mt-0.5 truncate text-[10px] text-gf-fg-subtle">
-                      {pr.head.ref} → {pr.base.ref}
-                    </p>
-                  </button>
-                  {expandedPr === pr.number && (
-                    <div className="mt-2 space-y-2 border-t border-gf-border pt-2">
-                      <a
-                        href={pr.htmlUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-[10px] text-gf-accent hover:underline"
-                      >
-                        Open on GitHub
-                      </a>
-                    </div>
-                  )}
-                </li>
-              ))}
+                    menuItems={prMenuItems}
+                    openMenu={openMenu}
+                    onClick={() => window.open(pr.htmlUrl, '_blank', 'noopener,noreferrer')}
+                  />
+                )
+              })}
               {(prs ?? []).length === 0 && !isLoading && (
-                <p className="px-2 text-xs text-gf-fg-subtle">No open pull requests.</p>
+                <p className="px-2 py-1 text-xs text-gf-fg-subtle">No open pull requests.</p>
               )}
-            </ul>
+            </div>
           </>
         )}
       </SidebarSection>

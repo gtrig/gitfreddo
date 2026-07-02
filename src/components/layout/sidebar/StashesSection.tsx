@@ -54,6 +54,13 @@ export function StashesSection({
       <div className="space-y-0.5">
         {filtered.map((stash) => {
           const label = stash.message || `(stash@{${stash.index}})`
+          const stashMenuItems = stashContextMenuItems(stash.index, stash.hash, label, {
+            onSelect,
+            onApply: (index) => void stashApply.mutateAsync({ index }),
+            onPop: (index) => void stashPop.mutateAsync({ index }),
+            onDrop: (index) => void stashDrop.mutateAsync({ index }),
+            onBranch: (index) => setBranchStashIndex(index)
+          })
           return (
             <SidebarTreeRow
               key={stash.index}
@@ -61,19 +68,9 @@ export function StashesSection({
               label={label}
               isSelected={selectedIndex === stash.index}
               title={label}
+              menuItems={stashMenuItems}
+              openMenu={openMenu}
               onClick={() => onSelect(stash.index, stash.hash)}
-              onContextMenu={(event) =>
-                openMenu(
-                  event,
-                  stashContextMenuItems(stash.index, stash.hash, label, {
-                    onSelect,
-                    onApply: (index) => void stashApply.mutateAsync({ index }),
-                    onPop: (index) => void stashPop.mutateAsync({ index }),
-                    onDrop: (index) => void stashDrop.mutateAsync({ index }),
-                    onBranch: (index) => setBranchStashIndex(index)
-                  })
-                )
-              }
             />
           )
         })}

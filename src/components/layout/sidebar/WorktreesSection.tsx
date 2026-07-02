@@ -4,7 +4,7 @@ import { SidebarSection } from '@/components/layout/sidebar/SidebarSection'
 import { SidebarIconWorktree } from '@/components/layout/sidebar/SidebarIcons'
 import { SidebarTreeRow } from '@/components/layout/sidebar/SidebarTreeRow'
 import { LoadingRow } from '@/components/ui/Spinner'
-import { ActionButton, ConfirmDialog } from '@/components/ui/Modal'
+import { ConfirmDialog } from '@/components/ui/Modal'
 import { ContextMenu } from '@/components/ui/ContextMenu'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { useGitMutations } from '@/hooks/useGitMutations'
@@ -94,28 +94,18 @@ export function WorktreesSection({
         title="Worktrees"
         icon={<SidebarIconWorktree className="h-3.5 w-3.5" />}
         count={filtered.length}
-        headerActions={
-          <div className="flex gap-1">
-            <ActionButton
-              onClick={() =>
-                void worktreePrune
-                  .mutateAsync(undefined)
-                  .then(() => showToast('Worktrees pruned', 'success'))
-              }
-              className="px-1.5 py-0.5 text-[10px]"
-              title="Prune stale worktrees"
-            >
-              Prune
-            </ActionButton>
-            <ActionButton
-              onClick={() => setAddOpen(true)}
-              className="px-1.5 py-0.5 text-[10px]"
-              title="Add worktree"
-            >
-              +
-            </ActionButton>
-          </div>
-        }
+        onAdd={() => setAddOpen(true)}
+        addTitle="Add worktree"
+        menuItems={[
+          {
+            id: 'prune',
+            label: 'Prune stale worktrees',
+            onClick: () =>
+              void worktreePrune
+                .mutateAsync(undefined)
+                .then(() => showToast('Worktrees pruned', 'success'))
+          }
+        ]}
       >
         {isLoading && <LoadingRow />}
         {error && <p className="px-2 text-xs text-red-400">{error.message}</p>}
@@ -127,6 +117,15 @@ export function WorktreesSection({
             const label = worktreeLabel(entry)
             const pathBasename = entry.path.replace(/[/\\]+$/, '').split(/[/\\]/).pop() || entry.path
             const isCurrentTab = activePath === entry.path
+            const worktreeMenuItems = worktreeContextMenuItems(entry, {
+              onOpenInTab: (path) => void handleOpenInTab(path),
+              onRemove: (wt) => {
+                setForceRemove(false)
+                setRemoveError(null)
+                setPendingRemove(wt)
+              },
+              onCopyPath: (path) => void copyToClipboard(path)
+            })
             return (
               <SidebarTreeRow
                 key={entry.path}
@@ -143,21 +142,9 @@ export function WorktreesSection({
                     </span>
                   )
                 }
+                menuItems={worktreeMenuItems}
+                openMenu={openMenu}
                 onClick={() => void handleOpenInTab(entry.path)}
-                onContextMenu={(event) =>
-                  openMenu(
-                    event,
-                    worktreeContextMenuItems(entry, {
-                      onOpenInTab: (path) => void handleOpenInTab(path),
-                      onRemove: (wt) => {
-                        setForceRemove(false)
-                        setRemoveError(null)
-                        setPendingRemove(wt)
-                      },
-                      onCopyPath: (path) => void copyToClipboard(path)
-                    })
-                  )
-                }
               />
             )
           })}

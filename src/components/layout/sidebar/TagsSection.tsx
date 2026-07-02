@@ -4,7 +4,7 @@ import { SidebarSection } from '@/components/layout/sidebar/SidebarSection'
 import { SidebarIconTag } from '@/components/layout/sidebar/SidebarIcons'
 import { SidebarTreeRow } from '@/components/layout/sidebar/SidebarTreeRow'
 import { LoadingRow } from '@/components/ui/Spinner'
-import { ActionButton, ConfirmDialog } from '@/components/ui/Modal'
+import { ConfirmDialog } from '@/components/ui/Modal'
 import { ContextMenu } from '@/components/ui/ContextMenu'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { useGitMutations } from '@/hooks/useGitMutations'
@@ -55,9 +55,8 @@ export function TagsSection({
         title="Tags"
         icon={<SidebarIconTag className="h-3.5 w-3.5" />}
         count={filtered.length}
-        headerActions={
-          <ActionButton onClick={() => setCreateOpen(true)}>+ New</ActionButton>
-        }
+        onAdd={() => setCreateOpen(true)}
+        addTitle="Create tag"
       >
         {isLoading && <LoadingRow />}
         {error && <p className="px-2 text-xs text-red-400">{error.message}</p>}
@@ -70,6 +69,14 @@ export function TagsSection({
             const title = tag.message
               ? `${label} — ${tag.message}`
               : `${label} @ ${tag.target.slice(0, 7)}`
+            const tagMenuItems = tagContextMenuItems(tag, {
+              defaultRemote,
+              onSelectCommit,
+              onCheckout: (name) => void checkout.mutateAsync({ name }),
+              onPush: (name, remote) => void pushTag.mutateAsync({ name, remote }),
+              onRename: (tag) => setRenameTag(tag),
+              onDelete: (tag, remote) => setPendingDelete({ tag, remote })
+            })
             return (
               <SidebarTreeRow
                 key={`${tag.isRemote ? 'remote' : 'local'}:${tag.name}`}
@@ -81,25 +88,14 @@ export function TagsSection({
                     <span className="text-[10px] text-gf-fg-subtle">annotated</span>
                   ) : undefined
                 }
+                menuItems={tagMenuItems}
+                openMenu={openMenu}
                 onClick={() => onSelectCommit(tag.target)}
                 onDoubleClick={() => {
                   if (!tag.isRemote) {
                     void checkout.mutateAsync({ name: tagCheckoutRef(tag.name) })
                   }
                 }}
-                onContextMenu={(event) =>
-                  openMenu(
-                    event,
-                    tagContextMenuItems(tag, {
-                      defaultRemote,
-                      onSelectCommit,
-                      onCheckout: (name) => void checkout.mutateAsync({ name }),
-                      onPush: (name, remote) => void pushTag.mutateAsync({ name, remote }),
-                      onRename: (tag) => setRenameTag(tag),
-                      onDelete: (tag, remote) => setPendingDelete({ tag, remote })
-                    })
-                  )
-                }
               />
             )
           })}

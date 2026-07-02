@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { SidebarSection } from '@/components/layout/sidebar/SidebarSection'
 import { SidebarIconIssues } from '@/components/layout/sidebar/SidebarIcons'
+import { SidebarTreeRow } from '@/components/layout/sidebar/SidebarTreeRow'
 import { ActionButton, Modal } from '@/components/ui/Modal'
 import { ContextMenu } from '@/components/ui/ContextMenu'
 import { useGitHubIssues, useInvalidateGitHubIssues } from '@/hooks/useGitHubIssues'
@@ -65,13 +66,8 @@ export function SidebarIssuesSection() {
         count={count}
         defaultOpen={false}
         footer
-        headerActions={
-          canUseGitHub ? (
-            <ActionButton onClick={() => setCreateOpen(true)} className="px-1.5 py-0.5 text-[10px]">
-              +
-            </ActionButton>
-          ) : undefined
-        }
+        onAdd={canUseGitHub ? () => setCreateOpen(true) : undefined}
+        addTitle="Create issue"
       >
         {!connected && (
           <p className="px-2 text-xs text-gf-fg-subtle">Open a repository to view issues.</p>
@@ -102,46 +98,26 @@ export function SidebarIssuesSection() {
             </div>
             {isLoading && <p className="px-2 text-xs text-gf-fg-subtle">Loading…</p>}
             {error && <p className="px-2 text-xs text-red-400">{(error as Error).message}</p>}
-            <ul className="space-y-1">
-              {(issues ?? []).map((issue) => (
-                <li
-                  key={issue.number}
-                  className="rounded px-2 py-1.5 text-xs hover:bg-gf-surface-hover/40"
-                  onContextMenu={(event) =>
-                    openMenu(
-                      event,
-                      issueContextMenuItems(issue, (issueNumber, issueTitle) =>
-                        void branchFromIssue(issueNumber, issueTitle)
-                      )
-                    )
-                  }
-                >
-                  <p className="truncate font-medium text-gf-fg">
-                    #{issue.number} {issue.title}
-                  </p>
-                  <div className="mt-1 flex flex-wrap gap-2">
-                    <a
-                      href={issue.htmlUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-[10px] text-gf-accent hover:underline"
-                    >
-                      Open
-                    </a>
-                    <button
-                      type="button"
-                      onClick={() => void branchFromIssue(issue.number, issue.title)}
-                      className="text-[10px] text-gf-fg-muted hover:text-gf-fg"
-                    >
-                      Branch from issue
-                    </button>
-                  </div>
-                </li>
-              ))}
+            <div className="space-y-0.5">
+              {(issues ?? []).map((issue) => {
+                const issueMenuItems = issueContextMenuItems(issue, (issueNumber, issueTitle) =>
+                  void branchFromIssue(issueNumber, issueTitle)
+                )
+                return (
+                  <SidebarTreeRow
+                    key={issue.number}
+                    icon={<SidebarIconIssues className="h-3.5 w-3.5" />}
+                    label={`#${issue.number} ${issue.title}`}
+                    menuItems={issueMenuItems}
+                    openMenu={openMenu}
+                    onClick={() => window.open(issue.htmlUrl, '_blank', 'noopener,noreferrer')}
+                  />
+                )
+              })}
               {(issues ?? []).length === 0 && !isLoading && (
-                <p className="px-2 text-xs text-gf-fg-subtle">No open issues.</p>
+                <p className="px-2 py-1 text-xs text-gf-fg-subtle">No open issues.</p>
               )}
-            </ul>
+            </div>
           </>
         )}
       </SidebarSection>

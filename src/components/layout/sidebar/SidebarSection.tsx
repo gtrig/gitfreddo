@@ -1,5 +1,10 @@
 import { useState, type ReactNode } from 'react'
+import { PlusIcon } from '@heroicons/react/24/outline'
 import { SidebarIconChevron } from '@/components/layout/sidebar/SidebarIcons'
+import { SidebarMenuButton } from '@/components/layout/sidebar/SidebarMenuButton'
+import { ContextMenu } from '@/components/ui/ContextMenu'
+import type { ContextMenuItem } from '@/components/ui/ContextMenu'
+import { useContextMenu } from '@/hooks/useContextMenu'
 
 const STORAGE_PREFIX = 'gitfredo:section:'
 
@@ -21,7 +26,9 @@ export interface SidebarSectionProps {
   icon: ReactNode
   count?: number
   defaultOpen?: boolean
-  headerActions?: ReactNode
+  onAdd?: () => void
+  addTitle?: string
+  menuItems?: ContextMenuItem[]
   footer?: boolean
   flexible?: boolean
   children: ReactNode
@@ -33,12 +40,15 @@ export function SidebarSection({
   icon,
   count,
   defaultOpen = true,
-  headerActions,
+  onAdd,
+  addTitle = 'Add',
+  menuItems,
   footer = false,
   flexible = false,
   children
 }: SidebarSectionProps) {
   const [open, setOpen] = useState(() => readStoredOpen(sectionId, defaultOpen))
+  const { state: menuState, openMenu, closeMenu } = useContextMenu()
 
   function toggle() {
     setOpen((prev) => {
@@ -53,34 +63,57 @@ export function SidebarSection({
   }
 
   const sectionClass = flexible && open ? 'flex min-h-0 flex-1 flex-col' : ''
+  const hasMenu = Boolean(menuItems?.some((item) => !item.separator))
 
   return (
     <section className={`border-b border-gf-border/60 ${sectionClass}`}>
       <div
         className={`flex items-center gap-1 bg-gf-sidebar-section-header px-2 ${footer ? 'py-1.5' : 'py-1'} ${flexible ? 'shrink-0' : ''}`}
       >
-        <button
-          type="button"
-          onClick={toggle}
-          className="flex min-w-0 flex-1 items-center gap-1.5 rounded py-0.5 text-left hover:text-gf-fg"
-          aria-expanded={open}
-        >
-          <SidebarIconChevron open={open} className="h-2.5 w-2.5 shrink-0 text-gf-fg-subtle" />
+        <div className="flex min-w-0 flex-1 items-center gap-1.5">
+          <button
+            type="button"
+            onClick={toggle}
+            className="flex shrink-0 items-center rounded py-0.5 hover:text-gf-fg"
+            aria-expanded={open}
+            aria-label={open ? `Collapse ${title}` : `Expand ${title}`}
+          >
+            <SidebarIconChevron open={open} className="h-2.5 w-2.5 text-gf-fg-subtle" />
+          </button>
           <span className="flex h-4 w-4 shrink-0 items-center justify-center text-gf-fg-subtle">
             {icon}
           </span>
-          <span className="truncate text-[11px] font-semibold uppercase tracking-wide text-gf-fg-muted">
+          <button
+            type="button"
+            onClick={toggle}
+            className="min-w-0 flex-1 truncate rounded py-0.5 text-left text-[11px] font-semibold uppercase tracking-wide text-gf-fg-muted hover:text-gf-fg"
+          >
             {title}
-          </span>
-        </button>
+          </button>
+        </div>
+        <div className="flex shrink-0 items-center gap-0.5">
+          {onAdd ? (
+            <button
+              type="button"
+              onClick={onAdd}
+              title={addTitle}
+              aria-label={addTitle}
+              className="inline-flex h-4 w-4 items-center justify-center rounded text-gf-fg-subtle hover:bg-gf-surface-hover/60 hover:text-gf-fg"
+            >
+              <PlusIcon aria-hidden className="h-3 w-3" />
+            </button>
+          ) : null}
+          {hasMenu && menuItems ? (
+            <SidebarMenuButton
+              items={menuItems}
+              onOpenMenu={openMenu}
+              title={`${title} actions`}
+            />
+          ) : null}
+        </div>
         {count !== undefined && (
           <span className="shrink-0 text-[11px] font-medium text-gf-sidebar-count">{count}</span>
         )}
-        {headerActions ? (
-          <div className="shrink-0" onClick={(event) => event.stopPropagation()}>
-            {headerActions}
-          </div>
-        ) : null}
       </div>
       {open ? (
         <div
@@ -95,6 +128,9 @@ export function SidebarSection({
           {children}
         </div>
       ) : null}
+      {menuState && (
+        <ContextMenu x={menuState.x} y={menuState.y} items={menuState.items} onClose={closeMenu} />
+      )}
     </section>
   )
 }
