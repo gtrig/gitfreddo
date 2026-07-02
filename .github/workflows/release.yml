@@ -58,7 +58,7 @@ jobs:
       - run: npm ci
       - run: npm run dist:${{ matrix.platform }} -- --publish never
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: gitfredo-${{ matrix.artifact }}
           path: |
