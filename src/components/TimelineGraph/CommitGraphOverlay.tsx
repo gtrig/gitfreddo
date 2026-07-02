@@ -104,7 +104,14 @@ export function CommitGraphOverlay({
           return (
             <path
               key={`${edge.fromKey}-${edge.toKey}-${edge.kind}`}
-              d={buildGraphEdgePath(x1, y1, x2, y2, edge.kind === 'merge' ? 'merge' : 'parent')}
+              d={buildGraphEdgePath(
+                x1,
+                y1,
+                x2,
+                y2,
+                edge.kind === 'merge' ? 'merge' : 'parent',
+                metrics.cornerRadius
+              )}
               fill="none"
               stroke={colors.lane(edge.kind === 'merge' ? edge.toColumn : edge.fromColumn)}
               strokeWidth={2.1}
@@ -191,7 +198,7 @@ export function CommitGraphOverlay({
           const anchorY = rowCenter(fromRow.rowIndex)
           const padX = columnCenterX(edge.toColumn, metrics)
           const padY = rowCenter(toRow.rowIndex)
-          const padPath = buildStashPadPath(anchorX, anchorY, padX, padY)
+          const padPath = buildStashPadPath(anchorX, anchorY, padX, padY, metrics.cornerRadius)
           const padActive =
             selectedHash === edge.fromKey ||
             selectedHash === edge.toKey ||
@@ -213,6 +220,7 @@ export function CommitGraphOverlay({
                 strokeWidth={strokeWidth + 2}
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                strokeDasharray="4 3"
                 opacity={0.28}
               />
               <path
@@ -222,6 +230,7 @@ export function CommitGraphOverlay({
                 strokeWidth={strokeWidth}
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                strokeDasharray="4 3"
               />
             </g>
           )

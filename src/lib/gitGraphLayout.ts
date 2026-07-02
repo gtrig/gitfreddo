@@ -86,15 +86,15 @@ function applyStashPadLayout(layout: GitGraphLayout, commits: GitCommit[]): GitG
 
   const rowByKey = new Map(layout.rows.map((row) => [row.key, row]))
   const stashKeys = new Set(stashRows.map((row) => row.key))
+  const maxBranchColumn = Math.max(
+    0,
+    ...layout.rows.filter((row) => !row.isStash).map((row) => row.column)
+  )
+  const stashColumn = maxBranchColumn + 1
 
   const rows = layout.rows.map((row) => {
     if (!row.isStash) return row
-
-    const anchorKey = resolveStashAnchorHash(row.commit, commits, layout.headKey)
-    const anchorRow = anchorKey ? rowByKey.get(anchorKey) : undefined
-    const anchorColumn = anchorRow?.column ?? row.column
-
-    return { ...row, column: anchorColumn + 1, isMerge: false }
+    return { ...row, column: stashColumn, isMerge: false }
   })
 
   const updatedRowByKey = new Map(rows.map((row) => [row.key, row]))
@@ -185,7 +185,12 @@ export function buildGitGraphLayout(commits: GitCommit[], head: string): GitGrap
     let column: number
     if (childToReplace) {
       column = replaceColumn
+      const displaced = branches[column]
       branches[column] = commitSha
+      if (commitSha === head && displaced && displaced !== commitSha) {
+        const newColumn = insertActiveBranch(branches, column, displaced, forbiddenIndices)
+        columnByHash.set(displaced, newColumn)
+      }
     } else if (children.length > 0) {
       const childColumn = columnByHash.get(children[0]) ?? 0
       column = insertActiveBranch(branches, childColumn, commitSha, forbiddenIndices)

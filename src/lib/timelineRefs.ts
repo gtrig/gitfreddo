@@ -2,6 +2,7 @@ import { isStashRef } from './stashCommit'
 
 const TAG_PREFIX = /^tag:\s*/i
 const REFS_TAGS_PREFIX = 'refs/tags/'
+const REFS_REMOTES_PREFIX = 'refs/remotes/'
 
 export type TimelineRefKind = 'branch' | 'remote' | 'tag'
 
@@ -20,7 +21,8 @@ function isHeadRef(ref: string): boolean {
 function parseRef(
   raw: string,
   sourceOrder: number,
-  tagNames?: ReadonlySet<string>
+  tagNames?: ReadonlySet<string>,
+  remoteNames?: ReadonlySet<string>
 ): TimelineRef | null {
   let trimmed = raw.trim()
   if (!trimmed || isHeadRef(trimmed) || isStashRef(trimmed)) return null
@@ -32,6 +34,9 @@ function parseRef(
   } else if (trimmed.startsWith(REFS_TAGS_PREFIX)) {
     trimmed = trimmed.slice(REFS_TAGS_PREFIX.length)
     kind = 'tag'
+  } else if (trimmed.startsWith(REFS_REMOTES_PREFIX)) {
+    trimmed = trimmed.slice(REFS_REMOTES_PREFIX.length)
+    kind = 'remote'
   }
 
   trimmed = trimmed.replace(/^HEAD\s*->\s*/, '').trim()
@@ -41,8 +46,14 @@ function parseRef(
     kind = 'tag'
   }
 
-  if (kind !== 'tag' && trimmed.includes('/')) {
-    kind = 'remote'
+  if (kind === 'branch') {
+    const slash = trimmed.indexOf('/')
+    if (slash > 0) {
+      const remotePrefix = trimmed.slice(0, slash)
+      if (remoteNames?.has(remotePrefix)) {
+        kind = 'remote'
+      }
+    }
   }
 
   return { label: trimmed, kind, fullRef: trimmed, sourceOrder }
@@ -54,10 +65,11 @@ export function refKey(ref: TimelineRef): string {
 
 export function timelineRefs(
   rawRefs: string[],
-  tagNames?: ReadonlySet<string>
+  tagNames?: ReadonlySet<string>,
+  remoteNames?: ReadonlySet<string>
 ): TimelineRef[] {
   const refs = rawRefs
-    .map((raw, index) => parseRef(raw, index, tagNames))
+    .map((raw, index) => parseRef(raw, index, tagNames, remoteNames))
     .filter((ref): ref is TimelineRef => ref !== null)
 
   const unique = new Map<string, TimelineRef>()

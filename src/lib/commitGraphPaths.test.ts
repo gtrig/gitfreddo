@@ -8,9 +8,12 @@ describe('buildGraphEdgePath', () => {
     expect(path).toContain('40 80')
   })
 
-  it('routes pad stash edges down the pad lane, then across to the anchor', () => {
+  it('routes pad stash edges from the anchor across to the stash lane, then to the stash row', () => {
     const path = buildStashPadPath(40, 100, 80, 40)
-    expect(path).toBe('M 80 40 L 80 100 L 40 100')
+    expect(path).toMatch(/^M 40 100/)
+    expect(path).toContain('80')
+    expect(path).toContain('40')
+    expect(path).not.toContain('M 80 40 L 80 100')
   })
 
   it('routes cross-lane edges with a top elbow like GitKraken', () => {

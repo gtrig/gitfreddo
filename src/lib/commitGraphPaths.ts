@@ -4,10 +4,14 @@ export interface GraphEdge {
   kind: GraphEdgeKind
 }
 
-function effectiveRadius(cornerRadius: number, segmentLength: number): number {
-  const boosted = cornerRadius * 15
-  const maxBySegment = segmentLength / 2 - 0.5
-  return Math.max(1.5, Math.min(boosted, maxBySegment, 10))
+function effectiveRadius(
+  cornerRadius: number,
+  verticalSpan: number,
+  horizontalSpan: number
+): number {
+  const maxByVertical = verticalSpan / 2 - 0.5
+  const maxByHorizontal = horizontalSpan / 2 - 0.5
+  return Math.max(1.5, Math.min(cornerRadius, maxByVertical, maxByHorizontal, 10))
 }
 
 /** Horizontal at the child row, then vertical to the parent (merge / branch-out). */
@@ -19,10 +23,11 @@ function buildTopElbowPath(
   cornerRadius: number
 ): string {
   const verticalSpan = parentY - childY
-  const r = effectiveRadius(cornerRadius, verticalSpan)
+  const horizontalSpan = Math.abs(parentX - childX)
+  const r = effectiveRadius(cornerRadius, verticalSpan, horizontalSpan)
   const hDir = parentX > childX ? 1 : -1
 
-  if (verticalSpan <= r * 1.5) {
+  if (verticalSpan <= r * 1.5 || horizontalSpan <= r * 1.5) {
     return `M ${childX} ${childY} L ${parentX} ${childY} L ${parentX} ${parentY}`
   }
 
@@ -43,10 +48,11 @@ function buildBottomElbowPath(
   cornerRadius: number
 ): string {
   const verticalSpan = parentY - childY
-  const r = effectiveRadius(cornerRadius, verticalSpan)
+  const horizontalSpan = Math.abs(parentX - childX)
+  const r = effectiveRadius(cornerRadius, verticalSpan, horizontalSpan)
   const hDir = parentX > childX ? 1 : -1
 
-  if (verticalSpan <= r * 1.5) {
+  if (verticalSpan <= r * 1.5 || horizontalSpan <= r * 1.5) {
     return `M ${childX} ${childY} L ${childX} ${parentY} L ${parentX} ${parentY}`
   }
 
@@ -58,17 +64,37 @@ function buildBottomElbowPath(
   ].join(' ')
 }
 
-/** Stash pad → base commit: vertical on the pad lane, then horizontal to the anchor. */
+/**
+ * Anchor commit → stash: horizontal from the anchor on the main lane, then vertical on
+ * the dedicated stash lane to the stash row (GitKraken-style pad connector).
+ */
 export function buildStashPadPath(
   anchorX: number,
   anchorY: number,
   padX: number,
-  padY: number
+  padY: number,
+  cornerRadius = 8
 ): string {
   if (Math.abs(padX - anchorX) < 0.5) {
-    return `M ${padX} ${padY} L ${anchorX} ${anchorY}`
+    return `M ${anchorX} ${anchorY} L ${padX} ${padY}`
   }
-  return `M ${padX} ${padY} L ${padX} ${anchorY} L ${anchorX} ${anchorY}`
+
+  const horizontalSpan = Math.abs(padX - anchorX)
+  const verticalSpan = Math.abs(padY - anchorY)
+  const r = effectiveRadius(cornerRadius, verticalSpan, horizontalSpan)
+  const hDir = padX > anchorX ? 1 : -1
+  const vDir = padY < anchorY ? -1 : 1
+
+  if (verticalSpan <= r * 1.5 || horizontalSpan <= r * 1.5) {
+    return `M ${anchorX} ${anchorY} L ${padX} ${anchorY} L ${padX} ${padY}`
+  }
+
+  return [
+    `M ${anchorX} ${anchorY}`,
+    `L ${padX - hDir * r} ${anchorY}`,
+    `Q ${padX} ${anchorY} ${padX} ${anchorY + vDir * r}`,
+    `L ${padX} ${padY}`
+  ].join(' ')
 }
 
 /**
@@ -81,14 +107,10 @@ export function buildGraphEdgePath(
   x2: number,
   y2: number,
   kind: GraphEdgeKind,
-  cornerRadius = 4.2
+  cornerRadius = 8
 ): string {
   if (kind === 'pad') {
-    const padX = x2
-    const padY = y2
-    const anchorX = x1
-    const anchorY = y1
-    return buildStashPadPath(anchorX, anchorY, padX, padY)
+    return buildStashPadPath(x1, y1, x2, y2, cornerRadius)
   }
 
   if (Math.abs(x1 - x2) < 0.5) {

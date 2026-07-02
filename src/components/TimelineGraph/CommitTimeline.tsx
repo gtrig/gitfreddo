@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
-import { useLogGraph, useRepoStatus, useStashList, useTags, useWorkingStatus } from '@/hooks/useGit'
+import { useLogGraph, useRepoStatus, useRemotes, useStashList, useTags, useWorkingStatus } from '@/hooks/useGit'
 import { useTimelineColumnSizes } from '@/hooks/useTimelineColumnSizes'
 import { useTimelineColumnVisibility } from '@/hooks/useTimelineColumnVisibility'
 import { useCommitContextMenu } from '@/hooks/useCommitContextMenu'
@@ -58,7 +58,9 @@ export function CommitTimeline() {
   const { data: workingStatus } = useWorkingStatus(connected)
   const { data: stashes } = useStashList(connected)
   const { data: tags } = useTags(connected)
+  const { data: remotes } = useRemotes(connected)
   const tagNames = useMemo(() => new Set((tags ?? []).map((tag) => tag.name)), [tags])
+  const remoteNames = useMemo(() => new Set((remotes ?? []).map((remote) => remote.name)), [remotes])
   const showWorkingRow = workingStatus ? !workingStatus.isClean : false
   const changeCounts = useMemo(
     () => (workingStatus ? countWorkingChanges(workingStatus) : null),
@@ -258,7 +260,7 @@ export function CommitTimeline() {
         >
           {showWorkingRow && <div style={{ height: TIMELINE_ROW_HEIGHT }} />}
           {commits.map((commit) => {
-            const refs = timelineRefs(commit.refs, tagNames)
+            const refs = timelineRefs(commit.refs, tagNames, remoteNames)
             const { isSelected, isPrimary, searchDimClass } = rowState(commit.hash)
             const stash = isStashCommit(commit)
 

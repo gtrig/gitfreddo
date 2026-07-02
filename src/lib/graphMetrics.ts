@@ -12,8 +12,8 @@ export const DEFAULT_GRAPH_METRICS: GraphMetrics = {
   laneWidth: 18,
   minGraphWidth: 56,
   sidePadding: 8,
-  // Base 4.2; effective radius is scaled in commitGraphPaths (currently ×0.945).
-  cornerRadius: 4.2
+  // Effective radius is capped per segment in commitGraphPaths.
+  cornerRadius: 8
 }
 
 export const GRAPH_LANE_WIDTH_MIN = 18

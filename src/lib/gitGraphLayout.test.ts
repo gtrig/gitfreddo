@@ -133,6 +133,41 @@ describe('buildGitGraphLayout', () => {
     expect(layout.edges.some((edge) => edge.fromKey === 'stash-tip')).toBe(false)
   })
 
+  it('keeps parallel branch tips on separate lanes (uptime / fortune scenario)', () => {
+    const commits = [
+      commit('57db012', ['078238a'], 'feat: Add fortune generator script'),
+      commit('b178d08', ['078238a'], 'Feat: Add uptime script utility'),
+      {
+        ...commit('fb2d04e', ['078238a', 'stash-index'], 'WIP on master: 078238a Add .gitignore'),
+        refs: ['stash']
+      },
+      commit('078238a', ['bbf5ca9'], 'Add .gitignore'),
+      commit('bbf5ca9', [], 'feat: Add initial README')
+    ]
+
+    const layoutOnMaster = buildGitGraphLayout(commits, '57db012')
+    expect(columnOf(layoutOnMaster, '57db012')).toBe(0)
+    expect(columnOf(layoutOnMaster, 'b178d08')).toBeGreaterThan(0)
+    expect(columnOf(layoutOnMaster, '078238a')).toBe(0)
+    expect(columnOf(layoutOnMaster, 'fb2d04e')).toBeGreaterThan(columnOf(layoutOnMaster, 'b178d08'))
+
+    const layoutOnFeature = buildGitGraphLayout(commits, 'b178d08')
+    expect(columnOf(layoutOnFeature, 'b178d08')).toBe(0)
+    expect(columnOf(layoutOnFeature, '57db012')).toBeGreaterThan(0)
+    expect(columnOf(layoutOnFeature, '078238a')).toBe(0)
+
+    const reversedTopo = [
+      commit('b178d08', ['078238a'], 'Feat: Add uptime script utility'),
+      commit('57db012', ['078238a'], 'feat: Add fortune generator script'),
+      commit('078238a', ['bbf5ca9'], 'Add .gitignore'),
+      commit('bbf5ca9', [], 'feat: Add initial README')
+    ]
+    const layoutReversed = buildGitGraphLayout(reversedTopo, '57db012')
+    expect(columnOf(layoutReversed, '57db012')).toBe(0)
+    expect(columnOf(layoutReversed, 'b178d08')).toBeGreaterThan(0)
+    expect(columnOf(layoutReversed, '078238a')).toBe(0)
+  })
+
   it('anchors stash pad after the base commit hash was rewritten', () => {
     const stash = {
       ...commit(

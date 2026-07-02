@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { primaryTimelineRef, splitTimelineRefs, timelineRefs } from './timelineRefs'
 
 describe('timelineRefs', () => {
+  const gitfreddoRemotes = new Set(['gitfreddo'])
+  const originRemotes = new Set(['origin'])
+
   it('unwraps HEAD to the checked-out branch', () => {
     expect(timelineRefs(['HEAD -> main'])).toEqual([
       { label: 'main', kind: 'branch', fullRef: 'main', sourceOrder: 0 }
@@ -9,7 +12,7 @@ describe('timelineRefs', () => {
   })
 
   it('hides symbolic remote HEAD refs', () => {
-    expect(timelineRefs(['HEAD -> main', 'gitfreddo/develop', 'gitfreddo/HEAD'])).toEqual([
+    expect(timelineRefs(['HEAD -> main', 'gitfreddo/develop', 'gitfreddo/HEAD'], undefined, gitfreddoRemotes)).toEqual([
       { label: 'main', kind: 'branch', fullRef: 'main', sourceOrder: 0 },
       { label: 'gitfreddo/develop', kind: 'remote', fullRef: 'gitfreddo/develop', sourceOrder: 1 }
     ])
@@ -41,8 +44,28 @@ describe('timelineRefs', () => {
   })
 
   it('prefers local branch over remote with the same short name', () => {
-    expect(timelineRefs(['main', 'origin/main'])).toEqual([
+    expect(timelineRefs(['main', 'origin/main'], undefined, originRemotes)).toEqual([
       { label: 'main', kind: 'branch', fullRef: 'main', sourceOrder: 0 }
+    ])
+  })
+
+  it('keeps slash-containing local branches as local branches', () => {
+    expect(timelineRefs(['feature/uptime'], undefined, originRemotes)).toEqual([
+      { label: 'feature/uptime', kind: 'branch', fullRef: 'feature/uptime', sourceOrder: 0 }
+    ])
+    expect(timelineRefs(['HEAD -> feature/uptime', 'feature/uptime'], undefined, originRemotes)).toEqual([
+      { label: 'feature/uptime', kind: 'branch', fullRef: 'feature/uptime', sourceOrder: 1 }
+    ])
+  })
+
+  it('classifies remote-tracking refs using configured remote names', () => {
+    expect(timelineRefs(['origin/feature/uptime'], undefined, originRemotes)).toEqual([
+      {
+        label: 'origin/feature/uptime',
+        kind: 'remote',
+        fullRef: 'origin/feature/uptime',
+        sourceOrder: 0
+      }
     ])
   })
 
@@ -69,14 +92,14 @@ describe('timelineRefs', () => {
 
 describe('primaryTimelineRef', () => {
   it('returns the ref with the highest source order', () => {
-    const refs = timelineRefs(['tag: v1.0.0', 'main', 'origin/develop'])
+    const refs = timelineRefs(['tag: v1.0.0', 'main', 'origin/develop'], undefined, new Set(['origin']))
     expect(primaryTimelineRef(refs)?.label).toBe('origin/develop')
   })
 })
 
 describe('splitTimelineRefs', () => {
   it('splits the latest ref from the rest', () => {
-    const refs = timelineRefs(['tag: v1.0.0', 'main', 'origin/develop'])
+    const refs = timelineRefs(['tag: v1.0.0', 'main', 'origin/develop'], undefined, new Set(['origin']))
     expect(splitTimelineRefs(refs)).toEqual({
       primary: {
         label: 'origin/develop',
