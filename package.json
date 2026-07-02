@@ -71,7 +71,7 @@
         "AppImage",
         "deb"
       ],
-      "icon": "assets/gitFreddo_thumbnail_150x150.png",
+      "icon": "assets/linux/icons",
       "category": "Development",
       "maintainer": "ArctosWebLabs <gtrig@users.noreply.github.com>"
     },
