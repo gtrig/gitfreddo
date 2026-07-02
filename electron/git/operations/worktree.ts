@@ -90,6 +90,7 @@ export async function worktreeAdd(
     branch?: string
     newBranch?: string
     detach?: boolean
+    commit?: string
   }
 ): Promise<string> {
   const args = ['worktree', 'add']
@@ -102,6 +103,8 @@ export async function worktreeAdd(
   args.push(params.path)
   if (params.branch) {
     args.push(params.branch)
+  } else if (params.commit) {
+    args.push(params.commit)
   }
 
   await runGitOrThrow(args, { cwd, gitBinaryPath })

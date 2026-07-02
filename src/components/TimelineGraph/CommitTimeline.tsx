@@ -34,6 +34,8 @@ import { TimelineRefStack } from './TimelineRefStack'
 import { ColumnResizeHandle } from '@/components/ui/ColumnResizeHandle'
 import { ContextMenu } from '@/components/ui/ContextMenu'
 import { LoadingRow } from '@/components/ui/Spinner'
+import { MergeBranchDialog } from '@/components/BranchSidebar/MergeBranchDialog'
+import { AddWorktreeModal } from '@/components/actions/AddWorktreeModal'
 import { CreateBranchModal } from '@/components/actions/CreateBranchModal'
 import { RebaseSequenceModal } from '@/components/actions/RebaseSequenceModal'
 import { CreateTagModal } from '@/components/actions/CreateTagModal'
@@ -134,7 +136,11 @@ export function CommitTimeline() {
     removeStaleModal,
     setRemoveStaleModal,
     interactiveRebaseModal,
-    setInteractiveRebaseModal
+    setInteractiveRebaseModal,
+    mergeSource,
+    setMergeSource,
+    worktreeFromCommit,
+    setWorktreeFromCommit
   } = useCommitContextMenu(connected, {
     head,
     branch: repoStatus?.branch ?? workingStatus?.branch ?? '',
@@ -534,6 +540,20 @@ export function CommitTimeline() {
         startPoint={createBranchAt ?? undefined}
         onClose={() => setCreateBranchAt(null)}
       />
+
+      {mergeSource && (
+        <MergeBranchDialog sourceBranch={mergeSource} onClose={() => setMergeSource(null)} />
+      )}
+
+      {worktreeFromCommit && (
+        <AddWorktreeModal
+          open
+          initialCommit={worktreeFromCommit.hash}
+          initialCommitShort={worktreeFromCommit.shortHash}
+          initialBranch={worktreeFromCommit.branchName}
+          onClose={() => setWorktreeFromCommit(null)}
+        />
+      )}
 
       <CreateTagModal
         open={Boolean(createTagAt)}

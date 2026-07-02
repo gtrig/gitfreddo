@@ -16,6 +16,8 @@ export interface CommitContextMenuActions extends MultiCommitContextMenuActions 
   copyHash: (hash: string) => void
   copyShortHash: (shortHash: string) => void
   checkout: (ref: string) => void
+  mergeBranch: (branchName: string) => void
+  createWorktreeFromCommit: (commit: GitCommit) => void
   createBranch: (hash: string) => void
   createTag: (hash: string) => void
   reword: (commit: GitCommit) => void
@@ -85,6 +87,10 @@ export function buildCommitContextMenuItems({
   const aheadOfHead = head ? isAheadOfHead(commit.hash, head, commits) : false
   const inHistory = onBranchHistory
   const checkoutBranches = localBranchRefs(commit).filter((name) => name !== branch || !isHead)
+  const mergeBranches =
+    !isDetached && branch && selectedCount === 1
+      ? localBranchRefs(commit).filter((name) => name !== branch)
+      : []
 
   const branchLabel = isDetached ? 'detached HEAD' : branch || 'current branch'
 
@@ -184,6 +190,20 @@ export function buildCommitContextMenuItems({
     })
   }
 
+  if (mergeBranches.length > 0) {
+    for (const branchName of mergeBranches) {
+      const alreadyMerged = inHistory
+      items.push({
+        id: `merge-${branchName}`,
+        label: alreadyMerged
+          ? `Merge ${branchName} into ${branch} (already in ${branch})`
+          : `Merge ${branchName} into ${branch}…`,
+        disabled: gitBusy || workingTreeDirty || alreadyMerged,
+        onClick: () => actions.mergeBranch(branchName)
+      })
+    }
+  }
+
   items.push({
     id: 'branch',
     label: 'Create branch here…',
@@ -197,6 +217,15 @@ export function buildCommitContextMenuItems({
     disabled: gitBusy,
     onClick: () => actions.createTag(commit.hash)
   })
+
+  if (selectedCount === 1) {
+    items.push({
+      id: 'worktree',
+      label: 'Checkout in new worktree…',
+      disabled: gitBusy,
+      onClick: () => actions.createWorktreeFromCommit(commit)
+    })
+  }
 
   items.push({ id: 'sep-history', label: '', separator: true, onClick: () => {} })
 
