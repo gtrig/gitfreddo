@@ -73,24 +73,10 @@ export function CommitTimeline() {
   const selectCommitRange = useSelectionStore((s) => s.selectCommitRange)
 
   const searchQuery = useCommitSearchStore((s) => s.query)
-  const searchAuthor = useCommitSearchStore((s) => s.author)
-  const searchHashPrefix = useCommitSearchStore((s) => s.hashPrefix)
-  const searchDateFrom = useCommitSearchStore((s) => s.dateFrom)
-  const searchDateTo = useCommitSearchStore((s) => s.dateTo)
-  const searchFilters = useMemo(
-    () => ({
-      query: searchQuery,
-      author: searchAuthor,
-      hashPrefix: searchHashPrefix,
-      dateFrom: searchDateFrom,
-      dateTo: searchDateTo
-    }),
-    [searchQuery, searchAuthor, searchHashPrefix, searchDateFrom, searchDateTo]
-  )
   const commits = useMemo(() => filterTimelineCommits(graph?.commits ?? []), [graph?.commits])
   const searchDimmedHashes = useMemo(
-    () => commitSearchDimmedHashes(commits, searchFilters),
-    [commits, searchFilters]
+    () => commitSearchDimmedHashes(commits, searchQuery),
+    [commits, searchQuery]
   )
   const head = repoStatus?.head ?? ''
   const isDetached = repoStatus?.isDetached ?? false
