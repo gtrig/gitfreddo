@@ -156,7 +156,8 @@ export class RepoManager {
           cwd,
           git,
           p.name as string,
-          p.remote as string | undefined
+          p.remote as string | undefined,
+          Boolean(p.alsoDeleteRemote)
         )
       case 'tag.push':
         return tagOps.tagPush(cwd, git, p.name as string | undefined, p.remote as string | undefined)

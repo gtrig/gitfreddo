@@ -4,15 +4,15 @@ import { SidebarSection } from '@/components/layout/sidebar/SidebarSection'
 import { SidebarIconTag } from '@/components/layout/sidebar/SidebarIcons'
 import { SidebarTreeRow } from '@/components/layout/sidebar/SidebarTreeRow'
 import { LoadingRow } from '@/components/ui/Spinner'
-import { ConfirmDialog } from '@/components/ui/Modal'
 import { ContextMenu } from '@/components/ui/ContextMenu'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { matchesFilter } from '@/lib/branchTree'
-import { localTagName, tagCheckoutRef } from '@/lib/tagNames'
+import { tagCheckoutRef } from '@/lib/tagNames'
 import { tagContextMenuItems } from '@/lib/sidebarContextMenus'
 import { CreateTagModal } from '@/components/actions/CreateTagModal'
 import { RenameTagModal } from '@/components/actions/RenameTagModal'
+import { DeleteTagModal } from '@/components/actions/DeleteTagModal'
 
 interface TagsSectionProps {
   tags: GitTag[] | undefined
@@ -41,7 +41,7 @@ export function TagsSection({
     [tags, filter]
   )
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
-  const { checkout, deleteTag, pushTag } = useGitMutations()
+  const { checkout, pushTag } = useGitMutations()
   const [createOpen, setCreateOpen] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
   const [renameTag, setRenameTag] = useState<GitTag | null>(null)
@@ -122,24 +122,12 @@ export function TagsSection({
       )}
 
       {pendingDelete && (
-        <ConfirmDialog
+        <DeleteTagModal
           open
-          title={pendingDelete.remote ? 'Delete remote tag' : 'Delete tag'}
-          message={
-            pendingDelete.remote
-              ? `Delete remote tag "${pendingDelete.tag.name}" from ${pendingDelete.remote}?`
-              : `Delete tag "${localTagName(pendingDelete.tag.name)}"?`
-          }
-          confirmLabel="Delete"
-          busy={deleteTag.isPending}
-          onConfirm={async () => {
-            await deleteTag.mutateAsync({
-              name: pendingDelete.tag.name,
-              ...(pendingDelete.remote ? { remote: pendingDelete.remote } : {})
-            })
-            setPendingDelete(null)
-          }}
-          onCancel={() => setPendingDelete(null)}
+          tag={pendingDelete.tag}
+          remote={pendingDelete.remote}
+          defaultRemote={defaultRemote}
+          onClose={() => setPendingDelete(null)}
         />
       )}
     </>

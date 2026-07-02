@@ -109,28 +109,34 @@ export async function tagCreate(
   await runGitOrThrow(args, { cwd, gitBinaryPath })
 }
 
+function resolveLocalTagName(name: string): string {
+  return name.includes('/') ? name.slice(name.indexOf('/') + 1) : name
+}
+
 export async function tagDelete(
   cwd: string,
   gitBinaryPath: string,
   name: string,
-  remote?: string
+  remote?: string,
+  alsoDeleteRemote?: boolean
 ): Promise<void> {
   const trimmedName = name.trim()
   if (!trimmedName) {
     throw new Error('Tag name is required.')
   }
 
-  if (remote?.trim()) {
-    const remoteName = remote.trim()
-    const tagRef = trimmedName.includes('/')
-      ? trimmedName.slice(trimmedName.indexOf('/') + 1)
-      : trimmedName
-    await runGitOrThrow(['push', remoteName, `:refs/tags/${tagRef}`], { cwd, gitBinaryPath })
-    return
+  const tagRef = resolveLocalTagName(trimmedName)
+  const deleteLocal = !remote?.trim() || Boolean(alsoDeleteRemote)
+  const deleteRemote = (Boolean(remote?.trim()) && !alsoDeleteRemote) || Boolean(alsoDeleteRemote)
+
+  if (deleteLocal) {
+    await runGitOrThrow(['tag', '-d', tagRef], { cwd, gitBinaryPath })
   }
 
-  const localName = trimmedName.includes('/') ? trimmedName.slice(trimmedName.indexOf('/') + 1) : trimmedName
-  await runGitOrThrow(['tag', '-d', localName], { cwd, gitBinaryPath })
+  if (deleteRemote) {
+    const remoteName = await resolveRemoteName(cwd, gitBinaryPath, remote)
+    await runGitOrThrow(['push', remoteName, `:refs/tags/${tagRef}`], { cwd, gitBinaryPath })
+  }
 }
 
 export async function tagPush(
