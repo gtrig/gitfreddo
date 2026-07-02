@@ -72,7 +72,7 @@
         "AppImage",
         "deb"
       ],
-      "icon": "assets/linux/icons",
+      "icon": "assets/logo.png",
       "category": "Development",
       "maintainer": "ArctosWebLabs <gtrig@users.noreply.github.com>"
     },
@@ -86,7 +86,7 @@
       "target": [
         "nsis"
       ],
-      "icon": "assets/gitFreddo.ico"
+      "icon": "assets/logo.png"
     }
   }
 }

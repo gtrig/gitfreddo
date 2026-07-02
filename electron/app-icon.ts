@@ -6,10 +6,7 @@ function assetsDir(): string {
 }
 
 function iconPath(): string {
-  if (process.platform === 'win32') {
-    return join(assetsDir(), 'taskbar_logo.png')
-  }
-  return join(assetsDir(), 'taskbar_logo.png')
+  return join(assetsDir(), 'logo.png')
 }
 
 export function loadAppIcon(): NativeImage | undefined {
