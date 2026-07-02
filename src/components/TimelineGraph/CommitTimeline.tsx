@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
-import { useLogGraph, useRepoStatus, useRemotes, useStashList, useTags, useWorkingStatus } from '@/hooks/useGit'
+import { useLogGraph, useRepoStatus, useRemotes, useStashList, useTags, useWorkingStatus, useMergeStatus } from '@/hooks/useGit'
 import { useTimelineColumnSizes } from '@/hooks/useTimelineColumnSizes'
 import { useTimelineColumnVisibility } from '@/hooks/useTimelineColumnVisibility'
 import { useCommitContextMenu } from '@/hooks/useCommitContextMenu'
@@ -27,6 +27,7 @@ import {
   formatTimeSince,
   useRelativeNow
 } from '@/lib/formatTimeSince'
+import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 import { SidebarIconStash } from '@/components/layout/sidebar/SidebarIcons'
 import { CommitGraphOverlay } from './CommitGraphOverlay'
 import { TimelineCommitColumn, TIMELINE_ROW_HEIGHT } from './TimelineCommitColumn'
@@ -58,12 +59,18 @@ export function CommitTimeline() {
   const { data: graph, isLoading, error } = useLogGraph(connected)
   const { data: repoStatus } = useRepoStatus(connected)
   const { data: workingStatus } = useWorkingStatus(connected)
+  const { data: mergeStatus } = useMergeStatus(connected)
   const { data: stashes } = useStashList(connected)
   const { data: tags } = useTags(connected)
   const { data: remotes } = useRemotes(connected)
   const tagNames = useMemo(() => new Set((tags ?? []).map((tag) => tag.name)), [tags])
   const remoteNames = useMemo(() => new Set((remotes ?? []).map((remote) => remote.name)), [remotes])
   const showWorkingRow = workingStatus ? !workingStatus.isClean : false
+  const showMergeRow = Boolean(
+    mergeStatus?.inProgress && (mergeStatus.conflictedPaths.length ?? 0) > 0
+  )
+  const timelinePrefixRows = (showMergeRow ? 1 : 0) + (showWorkingRow ? 1 : 0)
+  const timelinePrefixHeight = timelinePrefixRows * TIMELINE_ROW_HEIGHT
   const changeCounts = useMemo(
     () => (workingStatus ? countWorkingChanges(workingStatus) : null),
     [workingStatus]
@@ -210,9 +217,8 @@ export function CommitTimeline() {
     const container = scrollRef.current
     if (!container) return
 
-    const rowTop = (showWorkingRow ? TIMELINE_ROW_HEIGHT : 0) + firstRow * TIMELINE_ROW_HEIGHT
-    const rowBottom =
-      (showWorkingRow ? TIMELINE_ROW_HEIGHT : 0) + (lastRow + 1) * TIMELINE_ROW_HEIGHT
+    const rowTop = timelinePrefixHeight + firstRow * TIMELINE_ROW_HEIGHT
+    const rowBottom = timelinePrefixHeight + (lastRow + 1) * TIMELINE_ROW_HEIGHT
     const { scrollTop, clientHeight } = container
 
     if (rowTop < scrollTop) {
@@ -220,7 +226,7 @@ export function CommitTimeline() {
     } else if (rowBottom > scrollTop + clientHeight) {
       container.scrollTop = rowBottom - clientHeight
     }
-  }, [primaryHash, selectedStashIndex, commits, layout.edges, showWorkingRow])
+  }, [primaryHash, selectedStashIndex, commits, layout.edges, timelinePrefixHeight])
 
   const rowState = (hash: string) => ({
     isSelected: selectedHashSet.has(hash),
@@ -264,6 +270,7 @@ export function CommitTimeline() {
           className="sticky left-0 z-10 shrink-0 border-r border-gf-border/60 bg-gf-bg-deep"
           style={{ width: branchTagWidth }}
         >
+          {showMergeRow && <div style={{ height: TIMELINE_ROW_HEIGHT }} />}
           {showWorkingRow && <div style={{ height: TIMELINE_ROW_HEIGHT }} />}
           {commits.map((commit) => {
             const refs = timelineRefs(commit.refs, tagNames, remoteNames)
@@ -307,6 +314,7 @@ export function CommitTimeline() {
           <div className="relative overflow-visible">
             <CommitGraphOverlay
               layout={layout}
+              prefixRows={timelinePrefixRows}
               showWorkingRow={showWorkingRow}
               workingSelected={selection?.kind === 'working'}
               selectedHash={selectedHash}
@@ -322,7 +330,7 @@ export function CommitTimeline() {
                 onClick={handleCommitClick(commit)}
                 className="absolute left-0 right-0 cursor-pointer hover:bg-gf-bg/30"
                 style={{
-                  top: (showWorkingRow ? TIMELINE_ROW_HEIGHT : 0) + index * TIMELINE_ROW_HEIGHT,
+                  top: timelinePrefixHeight + index * TIMELINE_ROW_HEIGHT,
                   height: TIMELINE_ROW_HEIGHT
                 }}
               />
@@ -335,6 +343,27 @@ export function CommitTimeline() {
     if (columnId === 'message') {
       return (
         <div key="column-message" className="min-w-0 flex-1">
+          {showMergeRow && mergeStatus && (
+            <button
+              type="button"
+              onClick={() => selectTimelineNode('merge', 'conflicts')}
+              style={{ height: TIMELINE_ROW_HEIGHT }}
+              className={`flex w-full items-center justify-between gap-3 border-b border-gf-border/40 px-2.5 text-left text-[11px] hover:bg-gf-bg/50 ${
+                selection?.kind === 'merge' ? 'bg-orange-500/15' : ''
+              }`}
+            >
+              <span className="flex min-w-0 items-center gap-2">
+                <ExclamationTriangleIcon className="h-3.5 w-3.5 shrink-0 text-orange-400" aria-hidden />
+                <span className="font-medium text-orange-300">Merge conflicts detected</span>
+                <span className="text-[10px] text-orange-400/90">
+                  {mergeStatus.conflictedPaths.length} conflicted
+                </span>
+              </span>
+              <span className="shrink-0 rounded border border-orange-500/30 px-1.5 py-0.5 text-[10px] text-orange-300/90">
+                Resolve
+              </span>
+            </button>
+          )}
           {showWorkingRow && (
             <button
               type="button"
@@ -423,7 +452,7 @@ export function CommitTimeline() {
           columnId="timeSince"
           width={TIMELINE_COLUMN_WIDTHS.timeSince ?? 88}
           align="right"
-          showWorkingRow={showWorkingRow}
+          prefixRows={timelinePrefixRows}
           commits={commits}
           rowState={rowState}
           onRowContextMenu={onRowContextMenu}
@@ -442,7 +471,7 @@ export function CommitTimeline() {
         key={`column-${columnId}`}
         columnId={columnId}
         width={width}
-        showWorkingRow={showWorkingRow}
+        prefixRows={timelinePrefixRows}
         commits={commits}
         rowState={rowState}
         onRowContextMenu={onRowContextMenu}

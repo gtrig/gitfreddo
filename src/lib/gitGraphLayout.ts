@@ -33,8 +33,8 @@ export function rowCenterY(rowIndex: number, rowHeight = GRAPH_ROW_HEIGHT): numb
 }
 
 /** Map layout row index to the visual timeline row (0 = top). */
-export function visualRowIndex(layoutRowIndex: number, showWorkingRow: boolean): number {
-  return showWorkingRow ? layoutRowIndex + 1 : layoutRowIndex
+export function visualRowIndex(layoutRowIndex: number, prefixRows = 0): number {
+  return layoutRowIndex + prefixRows
 }
 
 export function graphHeight(rowCount: number, rowHeight = GRAPH_ROW_HEIGHT): number {
@@ -123,7 +123,7 @@ function applyStashPadLayout(layout: GitGraphLayout, commits: GitCommit[]): GitG
 }
 
 /**
- * Straight-branch lane assignment (GitKraken / gitamine style).
+ * Straight-branch lane assignment (gitamine style).
  * Commits are processed newest-first so child columns are known before parents.
  */
 export function buildGitGraphLayout(commits: GitCommit[], head: string): GitGraphLayout {

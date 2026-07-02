@@ -61,6 +61,7 @@ let settings: AppSettings = {
   aiSystemInstructions: '',
   aiCommitInstructions: '',
   aiStashInstructions: '',
+  aiConflictInstructions: '',
   githubLogin: '',
   githubConnectedAt: null,
   pullRebase: false,

@@ -30,6 +30,7 @@ export interface AppSettings {
   aiSystemInstructions: string
   aiCommitInstructions: string
   aiStashInstructions: string
+  aiConflictInstructions: string
   githubLogin: string
   githubConnectedAt: number | null
   pullRebase: boolean

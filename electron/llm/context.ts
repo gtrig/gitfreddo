@@ -1,5 +1,5 @@
 import type { RepoManager } from '../git/repo-manager'
-import type { AiFillParams } from '../../shared/ai'
+import type { AiFillContext, AiFillParams } from '../../shared/ai'
 import type { GitDiffResult, GitWorkingStatus } from '../git/types'
 
 const DIFF_PURPOSES = new Set<AiFillParams['purpose']>([
@@ -8,24 +8,102 @@ const DIFF_PURPOSES = new Set<AiFillParams['purpose']>([
   'compose_commits'
 ])
 const MAX_DIFF_CHARS = 8000
+const MAX_STAGE_CHARS = 12000
 
-function truncateDiff(text: string): string {
-  if (text.length <= MAX_DIFF_CHARS) {
+function truncateText(text: string, max: number): string {
+  if (text.length <= max) {
     return text
   }
-  return `${text.slice(0, MAX_DIFF_CHARS)}\n… (diff truncated)`
+  return `${text.slice(0, max)}\n… (truncated)`
+}
+
+function truncateDiff(text: string): string {
+  return truncateText(text, MAX_DIFF_CHARS)
+}
+
+type ConflictStageContext = Pick<AiFillContext, 'sideA' | 'sideB' | 'sideBase' | 'conflictContent'>
+
+async function loadConflictStages(
+  manager: RepoManager,
+  repoPath: string,
+  filePath: string
+): Promise<ConflictStageContext> {
+  const [sideBase, sideA, sideB, conflictContent] = await Promise.all([
+    manager.invoke(repoPath, 'file.readStage', { stage: 1, path: filePath }) as Promise<string>,
+    manager.invoke(repoPath, 'file.readStage', { stage: 2, path: filePath }) as Promise<string>,
+    manager.invoke(repoPath, 'file.readStage', { stage: 3, path: filePath }) as Promise<string>,
+    manager.invoke(repoPath, 'working.read', { path: filePath }) as Promise<string>
+  ])
+  return {
+    sideBase: truncateText(sideBase, MAX_STAGE_CHARS),
+    sideA: truncateText(sideA, MAX_STAGE_CHARS),
+    sideB: truncateText(sideB, MAX_STAGE_CHARS),
+    conflictContent: truncateText(conflictContent, MAX_STAGE_CHARS)
+  }
 }
 
 export async function enrichAiContext(
   manager: RepoManager,
   params: AiFillParams
 ): Promise<AiFillParams> {
-  if (!DIFF_PURPOSES.has(params.purpose) || params.context?.diffText) {
+  const repoPath = manager.getRepoPath()
+  if (!repoPath) {
     return params
   }
 
-  const repoPath = manager.getRepoPath()
-  if (!repoPath) {
+  if (params.purpose === 'resolve_conflict') {
+    const filePath = params.context?.filePath?.trim()
+    if (!filePath) {
+      return params
+    }
+
+    try {
+      const stages: ConflictStageContext =
+        params.context?.conflictContent && params.context?.sideA && params.context?.sideB
+          ? {
+              sideBase: params.context.sideBase,
+              sideA: params.context.sideA,
+              sideB: params.context.sideB,
+              conflictContent: params.context.conflictContent
+            }
+          : await loadConflictStages(manager, repoPath, filePath)
+
+      let branch = params.context?.branch
+      let operationKind = params.context?.operationKind
+      let incomingLabel = params.context?.incomingLabel
+
+      if (!branch || !operationKind) {
+        try {
+          const mergeStatus = (await manager.invoke(repoPath, 'merge.status')) as {
+            kind?: 'merge' | 'rebase' | 'cherry-pick' | null
+            currentBranch?: string
+            incomingLabel?: string
+          }
+          branch = branch ?? mergeStatus.currentBranch
+          operationKind = operationKind ?? mergeStatus.kind ?? undefined
+          incomingLabel = incomingLabel ?? mergeStatus.incomingLabel
+        } catch {
+          // ignore
+        }
+      }
+
+      return {
+        ...params,
+        context: {
+          ...params.context,
+          filePath,
+          branch,
+          operationKind,
+          incomingLabel,
+          ...stages
+        }
+      }
+    } catch {
+      return params
+    }
+  }
+
+  if (!DIFF_PURPOSES.has(params.purpose) || params.context?.diffText) {
     return params
   }
 

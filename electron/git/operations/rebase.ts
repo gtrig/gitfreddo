@@ -3,6 +3,7 @@ import { join } from 'path'
 import { tmpdir } from 'os'
 import { runGit, runGitOrThrow } from '../git-runner'
 import { workingStatus } from './status'
+import { continueGitOperation } from './commit-message'
 
 /** Lets process.execPath run .mjs git editor scripts when the app is Electron. */
 function electronNodeEnv(): NodeJS.ProcessEnv {
@@ -135,16 +136,24 @@ export async function rebaseAbort(cwd: string, gitBinaryPath: string): Promise<v
   await runGitOrThrow(['rebase', '--abort'], { cwd, gitBinaryPath })
 }
 
-export async function rebaseContinue(cwd: string, gitBinaryPath: string): Promise<void> {
-  await runGitOrThrow(['rebase', '--continue'], { cwd, gitBinaryPath })
+export async function rebaseContinue(
+  cwd: string,
+  gitBinaryPath: string,
+  message?: string
+): Promise<void> {
+  await continueGitOperation(cwd, gitBinaryPath, ['rebase', '--continue'], message)
 }
 
 export async function rebaseSkip(cwd: string, gitBinaryPath: string): Promise<void> {
   await runGitOrThrow(['rebase', '--skip'], { cwd, gitBinaryPath })
 }
 
-export async function cherryPickContinue(cwd: string, gitBinaryPath: string): Promise<void> {
-  await runGitOrThrow(['cherry-pick', '--continue'], { cwd, gitBinaryPath })
+export async function cherryPickContinue(
+  cwd: string,
+  gitBinaryPath: string,
+  message?: string
+): Promise<void> {
+  await continueGitOperation(cwd, gitBinaryPath, ['cherry-pick', '--continue'], message)
 }
 
 export async function cherryPickAbort(cwd: string, gitBinaryPath: string): Promise<void> {

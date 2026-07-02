@@ -139,6 +139,16 @@ export interface GitMergeStatus {
   conflictedPaths: string[]
   ours?: string
   theirs?: string
+  currentBranch?: string
+  incomingLabel?: string
+  mergeMessage?: string
+  oursCommit?: string
+  theirsCommit?: string
+}
+
+export interface GitMergeStartResult {
+  status: 'completed' | 'conflicts'
+  conflictedPaths: string[]
 }
 
 export interface GitRepoStatus {
@@ -207,7 +217,7 @@ export interface GitLogGraphResult {
 export type CommitFileChangeKind = 'added' | 'changed' | 'removed' | 'unchanged'
 
 export interface TimelineSelection {
-  kind: 'commit' | 'working'
+  kind: 'commit' | 'working' | 'merge'
   id: string
 }
 

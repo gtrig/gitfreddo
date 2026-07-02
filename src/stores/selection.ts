@@ -9,9 +9,10 @@ interface SelectionState {
   selectedCommitHash: string | null
   selectedCommitFile: string | null
   selectedWorkingFile: string | null
+  selectedConflictFile: string | null
   selectedStashIndex: number | null
   selectedStashFile: string | null
-  diffMode: 'working' | 'staged' | 'commit' | 'commit-range' | 'stash' | null
+  diffMode: 'working' | 'staged' | 'commit' | 'commit-range' | 'stash' | 'conflict' | null
   compareCommitRange: { oldestHash: string; newestHash: string; label: string } | null
   selectTimelineNode: (kind: TimelineNodeKind, id: string) => void
   toggleCommitSelection: (hash: string) => void
@@ -19,6 +20,7 @@ interface SelectionState {
   setPrimaryCommit: (hash: string) => void
   showCompareCommitRange: (oldestHash: string, newestHash: string, label: string) => void
   setSelectedWorkingFile: (path: string | null, mode?: 'working' | 'staged') => void
+  setSelectedConflictFile: (path: string | null) => void
   setSelectedCommitFile: (path: string | null) => void
   selectStash: (index: number | null, hash?: string | null) => void
   setSelectedStashFile: (path: string | null) => void
@@ -29,6 +31,7 @@ function clearNonTimelineSelection(): Pick<
   SelectionState,
   | 'selectedCommitFile'
   | 'selectedWorkingFile'
+  | 'selectedConflictFile'
   | 'selectedStashIndex'
   | 'selectedStashFile'
   | 'diffMode'
@@ -37,6 +40,7 @@ function clearNonTimelineSelection(): Pick<
   return {
     selectedCommitFile: null,
     selectedWorkingFile: null,
+    selectedConflictFile: null,
     selectedStashIndex: null,
     selectedStashFile: null,
     diffMode: null,
@@ -51,6 +55,7 @@ export const useSelectionStore = create<SelectionState>((set) => ({
   selectedCommitHash: null,
   selectedCommitFile: null,
   selectedWorkingFile: null,
+  selectedConflictFile: null,
   selectedStashIndex: null,
   selectedStashFile: null,
   diffMode: null,
@@ -126,10 +131,22 @@ export const useSelectionStore = create<SelectionState>((set) => ({
     set({
       selectedWorkingFile: path,
       diffMode: path ? mode : null,
+      selectedConflictFile: null,
       selectedCommitHash: null,
       selectedCommitFile: null,
       selectedStashIndex: null,
       selectedStashFile: null
+    }),
+  setSelectedConflictFile: (path) =>
+    set({
+      selectedConflictFile: path,
+      diffMode: path ? 'conflict' : null,
+      selectedWorkingFile: null,
+      selectedCommitHash: null,
+      selectedCommitFile: null,
+      selectedStashIndex: null,
+      selectedStashFile: null,
+      compareCommitRange: null
     }),
   setSelectedCommitFile: (path) =>
     set({
@@ -167,6 +184,7 @@ export const useSelectionStore = create<SelectionState>((set) => ({
   closeDiffOverlay: () =>
     set({
       selectedWorkingFile: null,
+      selectedConflictFile: null,
       selectedStashFile: null,
       selectedCommitFile: null,
       compareCommitRange: null,
@@ -182,6 +200,7 @@ interface SelectionSnapshot {
   selectedCommitHash: string | null
   selectedCommitFile: string | null
   selectedWorkingFile: string | null
+  selectedConflictFile: string | null
   selectedStashIndex: number | null
   selectedStashFile: string | null
   diffMode: SelectionState['diffMode']
@@ -195,6 +214,7 @@ const EMPTY_SNAPSHOT: SelectionSnapshot = {
   selectedCommitHash: null,
   selectedCommitFile: null,
   selectedWorkingFile: null,
+  selectedConflictFile: null,
   selectedStashIndex: null,
   selectedStashFile: null,
   diffMode: null,
@@ -211,6 +231,7 @@ function snapshotFromState(state: SelectionState): SelectionSnapshot {
     selectedCommitHash: state.selectedCommitHash,
     selectedCommitFile: state.selectedCommitFile,
     selectedWorkingFile: state.selectedWorkingFile,
+    selectedConflictFile: state.selectedConflictFile,
     selectedStashIndex: state.selectedStashIndex,
     selectedStashFile: state.selectedStashFile,
     diffMode: state.diffMode,
