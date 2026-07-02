@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/gitFreddo_thumbnail_150x150.png" alt="GitFreddo" width="128" height="128" />
+  <img src="assets/logo.png" alt="GitFreddo" width="250" height="250" />
 </p>
 
 # GitFreddo
