@@ -84,7 +84,6 @@ function applyStashPadLayout(layout: GitGraphLayout, commits: GitCommit[]): GitG
   const stashRows = layout.rows.filter((row) => row.isStash)
   if (stashRows.length === 0) return layout
 
-  const rowByKey = new Map(layout.rows.map((row) => [row.key, row]))
   const stashKeys = new Set(stashRows.map((row) => row.key))
   const maxBranchColumn = Math.max(
     0,
