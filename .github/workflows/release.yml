@@ -85,4 +85,6 @@ jobs:
           generate_release_notes: true
           prerelease: ${{ contains(github.ref_name, '-') }}
           files: |
-            artifacts/release/*
+            artifacts/*.AppImage
+            artifacts/*.deb
+            artifacts/*.exe
