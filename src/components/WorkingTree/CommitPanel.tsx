@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { SparklesIcon } from '@heroicons/react/24/outline'
+import { ArchiveBoxIcon, SparklesIcon } from '@heroicons/react/24/outline'
 import { ChevronDoubleRightIcon } from '@heroicons/react/24/solid'
-import { useAiEnabled } from '@/hooks/useAppSettings'
+import { useAiEnabled, useResolvedRemote } from '@/hooks/useAppSettings'
 import { useAiFill } from '@/hooks/useAiFill'
 import { useGitMutations } from '@/hooks/useGitMutations'
+import { usePushRemote } from '@/hooks/usePushRemote'
 import { useLogGraph } from '@/hooks/useGit'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
@@ -12,6 +13,7 @@ import { commitMessageBody } from '@/lib/fileTree'
 import type { GitWorkingStatus } from '@/lib/types'
 import { Spinner } from '@/components/ui/Spinner'
 import { SidebarIconChevron } from '@/components/layout/sidebar/SidebarIcons'
+import { PushForceConfirm } from '@/components/actions/PushForceConfirm'
 import { ComposeCommitsModal } from '@/components/WorkingTree/ComposeCommitsModal'
 import { parseComposeCommitsResponse, type AiComposeCommitProposal } from '../../../shared/ai'
 
@@ -44,7 +46,10 @@ export function CommitPanel({ working }: CommitPanelProps) {
   const connected = useWorkspaceStore((s) => s.connected)
   const repoPath = useWorkspaceStore((s) => s.activePath)
   const { data: graph } = useLogGraph(connected)
-  const { commit, stageAdd } = useGitMutations()
+  const { commit, stageAdd, stashPush } = useGitMutations()
+  const { pushRemote, isPushPending, forceConfirm, confirmForcePush, cancelForcePush } =
+    usePushRemote()
+  const defaultRemote = useResolvedRemote()
   const aiEnabled = useAiEnabled()
   const aiFill = useAiFill()
   const showToast = useToastStore((s) => s.show)
@@ -52,6 +57,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
   const [expanded, setExpanded] = useState(true)
   const [optionsOpen, setOptionsOpen] = useState(false)
   const [amend, setAmend] = useState(false)
+  const [pushAfterCommit, setPushAfterCommit] = useState(false)
   const [summary, setSummary] = useState('')
   const [description, setDescription] = useState('')
   const [composeOpen, setComposeOpen] = useState(false)
@@ -81,6 +87,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
   )
   const hasUnstaged = unstagedFiles.length > 0
   const hasStaged = working.staged.length > 0
+  const hasChanges = hasStaged || hasUnstaged
   const headCommit = graph?.commits[0]
 
   const stagedPaths = useMemo(() => working.staged.map((file) => file.path), [working.staged])
@@ -95,7 +102,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
     setDescription(commitMessageBody(headCommit.message, headCommit.subject))
   }, [amend, headCommit])
 
-  const busy = commit.isPending || stageAdd.isPending
+  const busy = commit.isPending || stageAdd.isPending || stashPush.isPending || isPushPending
   const subjectRemaining = SUBJECT_MAX - summary.length
 
   async function handleAiFillSummary() {
@@ -163,6 +170,24 @@ export function CommitPanel({ working }: CommitPanelProps) {
     setSummary('')
     setDescription('')
     setAmend(false)
+
+    if (pushAfterCommit) {
+      pushRemote({ remote: defaultRemote })
+    }
+  }
+
+  async function handleCreateStash() {
+    if (!hasChanges) {
+      showToast('No changes to stash.', 'error')
+      return
+    }
+
+    const message = summary.trim() || undefined
+    await stashPush.mutateAsync({ message })
+    if (message) {
+      setSummary('')
+      setDescription('')
+    }
   }
 
   const wantsStage = !hasStaged && hasUnstaged
@@ -247,15 +272,26 @@ export function CommitPanel({ working }: CommitPanelProps) {
           </button>
 
           {optionsOpen && (
-            <label className="flex items-center gap-2 pl-4 text-[11px] text-gf-fg-muted">
-              <input
-                type="checkbox"
-                checked={sign}
-                onChange={(event) => setSign(event.target.checked)}
-                className="rounded border-gf-border-strong bg-gf-bg"
-              />
-              Sign commit (GPG)
-            </label>
+            <div className="space-y-1.5 pl-4">
+              <label className="flex items-center gap-2 text-[11px] text-gf-fg-muted">
+                <input
+                  type="checkbox"
+                  checked={sign}
+                  onChange={(event) => setSign(event.target.checked)}
+                  className="rounded border-gf-border-strong bg-gf-bg"
+                />
+                Sign commit (GPG)
+              </label>
+              <label className="flex items-center gap-2 text-[11px] text-gf-fg-muted">
+                <input
+                  type="checkbox"
+                  checked={pushAfterCommit}
+                  onChange={(event) => setPushAfterCommit(event.target.checked)}
+                  className="rounded border-gf-border-strong bg-gf-bg"
+                />
+                Push after commit
+              </label>
+            </div>
           )}
 
           {aiEnabled && hasStaged && (
@@ -281,15 +317,39 @@ export function CommitPanel({ working }: CommitPanelProps) {
         onUseInPanel={handleUseProposalInPanel}
       />
 
-      <div className="border-t border-gf-border px-3 py-2">
+      <PushForceConfirm
+        params={forceConfirm}
+        busy={isPushPending}
+        onConfirm={confirmForcePush}
+        onCancel={cancelForcePush}
+      />
+
+      <div className="space-y-2 border-t border-gf-border px-3 py-2">
         <button
           type="button"
           disabled={primaryDisabled}
           onClick={() => void handlePrimaryAction()}
           className="inline-flex w-full items-center justify-center gap-2 rounded border border-emerald-600/60 bg-emerald-950/40 px-3 py-2 text-sm font-medium text-emerald-300 hover:bg-emerald-950/70 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {busy ? <Spinner size="sm" className="border-emerald-400/30 border-t-emerald-300" /> : <ChevronDoubleRightIcon className="h-4 w-4" aria-hidden />}
-          {busy ? 'Working…' : primaryLabel}
+          {busy && (commit.isPending || stageAdd.isPending) ? (
+            <Spinner size="sm" className="border-emerald-400/30 border-t-emerald-300" />
+          ) : (
+            <ChevronDoubleRightIcon className="h-4 w-4" aria-hidden />
+          )}
+          {commit.isPending || stageAdd.isPending ? 'Working…' : primaryLabel}
+        </button>
+        <button
+          type="button"
+          disabled={busy || !hasChanges}
+          onClick={() => void handleCreateStash()}
+          className="inline-flex w-full items-center justify-center gap-2 rounded border border-gf-border-strong bg-gf-bg px-3 py-1.5 text-xs font-medium text-gf-fg-muted hover:bg-gf-surface-hover disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {stashPush.isPending ? (
+            <Spinner size="sm" />
+          ) : (
+            <ArchiveBoxIcon className="h-3.5 w-3.5" aria-hidden />
+          )}
+          {stashPush.isPending ? 'Stashing…' : 'Create stash'}
         </button>
       </div>
     </div>
