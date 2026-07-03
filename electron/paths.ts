@@ -1,5 +1,9 @@
 import { homedir } from 'os'
-import { join } from 'path'
+import { posix, win32 } from 'path'
+
+function joinForPlatform(platform: NodeJS.Platform, ...segments: string[]): string {
+  return (platform === 'win32' ? win32 : posix).join(...segments)
+}
 
 export function resolveAppDataDir(
   platform: NodeJS.Platform = process.platform,
@@ -7,11 +11,16 @@ export function resolveAppDataDir(
 ): string {
   switch (platform) {
     case 'darwin':
-      return join(home, 'Library', 'Application Support', 'gitfreddo')
-    case 'win32':
-      return join(process.env.APPDATA || join(home, 'AppData', 'Roaming'), 'gitfreddo')
+      return joinForPlatform(platform, home, 'Library', 'Application Support', 'gitfreddo')
+    case 'win32': {
+      const roaming =
+        platform === process.platform && home === homedir() && process.env.APPDATA
+          ? process.env.APPDATA
+          : joinForPlatform(platform, home, 'AppData', 'Roaming')
+      return joinForPlatform(platform, roaming, 'gitfreddo')
+    }
     default:
-      return join(home, '.config', 'gitfreddo')
+      return joinForPlatform(platform, home, '.config', 'gitfreddo')
   }
 }
 

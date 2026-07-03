@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { join } from 'path'
+import { win32 } from 'path'
 import { resolveAppDataDir } from './paths'
 
 describe('resolveAppDataDir', () => {
@@ -15,7 +15,7 @@ describe('resolveAppDataDir', () => {
 
   it('uses Windows AppData Roaming', () => {
     expect(resolveAppDataDir('win32', 'C:\\Users\\test')).toBe(
-      join('C:\\Users\\test', 'AppData', 'Roaming', 'gitfreddo')
+      win32.join('C:\\Users\\test', 'AppData', 'Roaming', 'gitfreddo')
     )
   })
 })
