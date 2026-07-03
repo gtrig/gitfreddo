@@ -1,8 +1,10 @@
 import { useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 import { useCommitSearchStore } from '@/stores/commitSearch'
 
 export function CommitSearch() {
+  const { t } = useTranslation()
   const open = useCommitSearchStore((s) => s.open)
   const query = useCommitSearchStore((s) => s.query)
   const toggleOpen = useCommitSearchStore((s) => s.toggleOpen)
@@ -42,8 +44,8 @@ export function CommitSearch() {
             ? 'border-gf-border-strong bg-gf-surface text-gf-fg'
             : 'border-gf-border-strong text-gf-fg-muted hover:bg-gf-bg'
         }`}
-        title="Search commits"
-        aria-label="Search commits"
+        title={t('tools.searchCommits')}
+        aria-label={t('tools.searchCommits')}
         aria-expanded={open}
       >
         <MagnifyingGlassIcon aria-hidden className="h-3.5 w-3.5 shrink-0" />
@@ -58,8 +60,8 @@ export function CommitSearch() {
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search commit messages…"
-          aria-label="Search commit messages"
+          placeholder={t('tools.searchCommitMessages')}
+          aria-label={t('tools.searchCommitMessagesLabel')}
           className="h-7 w-full rounded border border-gf-border-strong bg-gf-bg px-2 text-xs text-gf-fg placeholder:text-gf-fg-subtle focus:border-gf-accent focus:outline-none"
         />
       </div>

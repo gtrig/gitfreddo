@@ -1,4 +1,5 @@
 import { type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { FolderIcon } from '@heroicons/react/24/outline'
 import { CurrentHeadCheck } from '@/components/ui/CurrentHeadCheck'
 import { SidebarIconChevron } from '@/components/layout/sidebar/SidebarIcons'
@@ -96,6 +97,7 @@ export function SidebarFolderRow({
   openMenu,
   onContextMenu
 }: SidebarFolderRowProps) {
+  const { t } = useTranslation()
   const hasMenu = Boolean(menuItems && openMenu)
 
   function handleContextMenu(event: React.MouseEvent<HTMLButtonElement>) {
@@ -116,7 +118,7 @@ export function SidebarFolderRow({
         onClick={onToggle}
         onContextMenu={handleContextMenu}
         className="flex shrink-0 items-center"
-        aria-label={open ? 'Collapse folder' : 'Expand folder'}
+        aria-label={open ? t('sidebar.collapseFolder') : t('sidebar.expandFolder')}
       >
         <Chevron open={open} />
       </button>

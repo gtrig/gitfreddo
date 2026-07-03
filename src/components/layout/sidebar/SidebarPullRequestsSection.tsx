@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { SidebarSection } from '@/components/layout/sidebar/SidebarSection'
 import { SidebarIconPullRequest } from '@/components/layout/sidebar/SidebarIcons'
 import { SidebarTreeRow } from '@/components/layout/sidebar/SidebarTreeRow'
@@ -14,6 +15,7 @@ import { useContextMenu } from '@/hooks/useContextMenu'
 import { pullRequestContextMenuItems } from '@/lib/sidebarContextMenus'
 
 export function SidebarPullRequestsSection() {
+  const { t } = useTranslation()
   const connected = useWorkspaceStore((s) => s.connected)
   const repoPath = useWorkspaceStore((s) => s.activePath)
   const { data: ghStatus } = useGitHubStatus()
@@ -38,33 +40,33 @@ export function SidebarPullRequestsSection() {
     if (!repoPath) return
     await window.gitfreddo.githubMergePullRequest(repoPath, prNumber, method)
     await invalidate(repoPath)
-    show(`PR #${prNumber} merged`, 'success')
+    show(t('sidebar.prMerged', { number: prNumber }), 'success')
   }
 
   return (
     <>
       <SidebarSection
         sectionId="sidebar.pull-requests"
-        title="Pull requests"
+        title={t('sidebar.pullRequests')}
         icon={<SidebarIconPullRequest className="h-3.5 w-3.5" />}
         count={count}
         defaultOpen={false}
         footer
         onAdd={canUseGitHub ? () => setCreateOpen(true) : undefined}
-        addTitle="Create pull request"
+        addTitle={t('sidebar.createPullRequest')}
       >
         {!connected && (
-          <p className="px-2 text-xs text-gf-fg-subtle">Open a repository to view pull requests.</p>
+          <p className="px-2 text-xs text-gf-fg-subtle">{t('sidebar.openRepoForPr')}</p>
         )}
         {connected && !ghStatus?.connected && (
-          <p className="px-2 text-xs text-gf-fg-subtle">Connect GitHub in Settings → Integrations.</p>
+          <p className="px-2 text-xs text-gf-fg-subtle">{t('sidebar.connectGitHub')}</p>
         )}
         {connected && ghStatus?.connected && !ctx && (
-          <p className="px-2 text-xs text-gf-fg-subtle">This repository is not linked to GitHub.</p>
+          <p className="px-2 text-xs text-gf-fg-subtle">{t('sidebar.notLinkedGitHub')}</p>
         )}
         {canUseGitHub && (
           <>
-            {isLoading && <p className="px-2 text-xs text-gf-fg-subtle">Loading…</p>}
+            {isLoading && <p className="px-2 text-xs text-gf-fg-subtle">{t('common.loading')}</p>}
             {error && <p className="px-2 text-xs text-red-400">{(error as Error).message}</p>}
             <div className="space-y-0.5">
               {(prs ?? []).map((pr) => {
@@ -88,7 +90,7 @@ export function SidebarPullRequestsSection() {
                 )
               })}
               {(prs ?? []).length === 0 && !isLoading && (
-                <p className="px-2 py-1 text-xs text-gf-fg-subtle">No open pull requests.</p>
+                <p className="px-2 py-1 text-xs text-gf-fg-subtle">{t('sidebar.noOpenPullRequests')}</p>
               )}
             </div>
           </>
@@ -114,7 +116,7 @@ export function SidebarPullRequestsSection() {
             if (!repoPath) return
             await window.gitfreddo.githubCreatePullRequest(repoPath, params)
             await invalidate(repoPath)
-            show('Pull request created', 'success')
+            show(t('sidebar.pullRequestCreated'), 'success')
           }}
         />
       )}

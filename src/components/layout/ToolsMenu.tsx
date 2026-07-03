@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline'
 import { PickaxeSearchModal } from '@/components/actions/PickaxeSearchModal'
 import { BisectPanelModal } from '@/components/actions/BisectPanelModal'
@@ -8,6 +9,7 @@ import { useWorkspaceStore } from '@/stores/workspace'
 type ToolsPanel = 'pickaxe' | 'bisect' | 'reflog' | null
 
 export function ToolsMenu() {
+  const { t } = useTranslation()
   const connected = useWorkspaceStore((s) => s.connected)
   const [open, setOpen] = useState(false)
   const [panel, setPanel] = useState<ToolsPanel>(null)
@@ -51,8 +53,8 @@ export function ToolsMenu() {
               ? 'bg-gf-surface text-gf-fg'
               : 'text-gf-fg-muted hover:bg-gf-bg disabled:opacity-40'
           }`}
-          title="Git tools"
-          aria-label="Git tools"
+          title={t('tools.gitTools')}
+          aria-label={t('tools.gitTools')}
           aria-expanded={open}
           aria-haspopup="menu"
         >
@@ -70,7 +72,7 @@ export function ToolsMenu() {
               className="block w-full px-3 py-1.5 text-left text-xs text-gf-fg-muted hover:bg-gf-surface-hover"
               onClick={() => openPanel('pickaxe')}
             >
-              Pickaxe search…
+              {t('tools.pickaxeSearch')}
             </button>
             <button
               type="button"
@@ -78,7 +80,7 @@ export function ToolsMenu() {
               className="block w-full px-3 py-1.5 text-left text-xs text-gf-fg-muted hover:bg-gf-surface-hover"
               onClick={() => openPanel('bisect')}
             >
-              Bisect…
+              {t('tools.bisect')}
             </button>
             <button
               type="button"
@@ -86,7 +88,7 @@ export function ToolsMenu() {
               className="block w-full px-3 py-1.5 text-left text-xs text-gf-fg-muted hover:bg-gf-surface-hover"
               onClick={() => openPanel('reflog')}
             >
-              Reflog…
+              {t('tools.reflog')}
             </button>
           </div>
         )}

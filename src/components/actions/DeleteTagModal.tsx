@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { GitTag } from '@/lib/types'
 import { Modal, ActionButton } from '@/components/ui/Modal'
 import { useGitMutations } from '@/hooks/useGitMutations'
@@ -19,6 +20,7 @@ export function DeleteTagModal({
   defaultRemote,
   onClose
 }: DeleteTagModalProps) {
+  const { t } = useTranslation()
   const [alsoDeleteRemote, setAlsoDeleteRemote] = useState(false)
   const { deleteTag } = useGitMutations()
   const shortName = localTagName(tag.name)
@@ -33,14 +35,14 @@ export function DeleteTagModal({
   return (
     <Modal
       open={open}
-      title={isRemoteOnly ? 'Delete remote tag' : 'Delete tag'}
+      title={isRemoteOnly ? t('modals.deleteTag.remoteTitle') : t('modals.deleteTag.title')}
       onClose={handleClose}
     >
       <div className="space-y-3 p-4">
         <p className="text-sm text-gf-fg-muted">
           {isRemoteOnly
-            ? `Delete remote tag "${tag.name}" from ${remote}?`
-            : `Delete tag "${shortName}"?`}
+            ? t('modals.deleteTag.remoteConfirm', { name: tag.name, remote })
+            : t('modals.deleteTag.confirm', { name: shortName })}
         </p>
         {showRemoteOption && (
           <label className="flex items-center gap-2 text-sm text-gf-fg-muted">
@@ -49,11 +51,11 @@ export function DeleteTagModal({
               checked={alsoDeleteRemote}
               onChange={(event) => setAlsoDeleteRemote(event.target.checked)}
             />
-            Also delete from {defaultRemote}
+            {t('modals.deleteTag.alsoDeleteFrom', { remote: defaultRemote })}
           </label>
         )}
         <div className="flex justify-end gap-2">
-          <ActionButton onClick={handleClose}>Cancel</ActionButton>
+          <ActionButton onClick={handleClose}>{t('common.cancel')}</ActionButton>
           <ActionButton
             variant="danger"
             loading={deleteTag.isPending}
@@ -69,7 +71,7 @@ export function DeleteTagModal({
               handleClose()
             }}
           >
-            Delete
+            {t('common.delete')}
           </ActionButton>
         </div>
       </div>

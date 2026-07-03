@@ -1,4 +1,5 @@
 import { EllipsisVerticalIcon } from '@heroicons/react/24/outline'
+import { useTranslation } from 'react-i18next'
 import type { ContextMenuItem } from '@/components/ui/ContextMenu'
 import type { OpenContextMenu } from '@/hooks/useContextMenu'
 
@@ -13,8 +14,10 @@ export function SidebarMenuButton({
   items,
   onOpenMenu,
   className = '',
-  title = 'More actions'
+  title
 }: SidebarMenuButtonProps) {
+  const { t } = useTranslation()
+  const label = title ?? t('sidebar.moreActions')
   if (items.filter((item) => !item.separator).length === 0) {
     return null
   }
@@ -22,8 +25,8 @@ export function SidebarMenuButton({
   return (
     <button
       type="button"
-      title={title}
-      aria-label={title}
+      title={label}
+      aria-label={label}
       aria-haspopup="menu"
       onClick={(event) => onOpenMenu(event, items)}
       onContextMenu={(event) => {

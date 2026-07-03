@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { ConfirmDialog } from '@/components/ui/Modal'
 import type { PushParams } from '@/hooks/usePushRemote'
 
@@ -9,17 +10,19 @@ interface PushForceConfirmProps {
 }
 
 export function PushForceConfirm({ params, busy, onConfirm, onCancel }: PushForceConfirmProps) {
+  const { t } = useTranslation()
+
   if (!params) return null
 
-  const branch = params.branch?.trim() || 'the current branch'
-  const remote = params.remote?.trim() || 'the remote'
+  const branch = params.branch?.trim() || t('actions.forcePush.currentBranch')
+  const remote = params.remote?.trim() || t('actions.forcePush.theRemote')
 
   return (
     <ConfirmDialog
       open
-      title="Force push?"
-      message={`The remote has commits that are not in your local ${branch}. Force pushing will overwrite ${remote} with your local branch.`}
-      confirmLabel="Force push"
+      title={t('actions.forcePush.title')}
+      message={t('actions.forcePush.message', { branch, remote })}
+      confirmLabel={t('actions.forcePush.confirm')}
       busy={busy}
       onConfirm={onConfirm}
       onCancel={onCancel}

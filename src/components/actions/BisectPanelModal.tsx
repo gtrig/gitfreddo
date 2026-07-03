@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { Modal, ActionButton, FieldLabel, TextInput } from '@/components/ui/Modal'
 import { LoadingRow } from '@/components/ui/Spinner'
@@ -13,6 +14,7 @@ interface BisectPanelModalProps {
 }
 
 export function BisectPanelModal({ open, onClose }: BisectPanelModalProps) {
+  const { t } = useTranslation()
   const connected = useWorkspaceStore((s) => s.connected)
   const repoPath = useWorkspaceStore((s) => s.activePath)
   const showToast = useToastStore((s) => s.show)
@@ -54,37 +56,40 @@ export function BisectPanelModal({ open, onClose }: BisectPanelModalProps) {
   const status = statusQuery.data
 
   return (
-    <Modal open={open} title="Git bisect" onClose={onClose} size="lg">
-      {statusQuery.isLoading && <LoadingRow label="Loading bisect status…" />}
+    <Modal open={open} title={t('modals.bisect.title')} onClose={onClose} size="lg">
+      {statusQuery.isLoading && <LoadingRow label={t('modals.bisect.loading')} />}
       {statusQuery.error && (
         <p className="text-sm text-red-400">
-          {statusQuery.error instanceof Error ? statusQuery.error.message : 'Failed to load status.'}
+          {statusQuery.error instanceof Error
+            ? statusQuery.error.message
+            : t('modals.bisect.loadFailed')}
         </p>
       )}
 
       {status && (
         <div className="space-y-4">
           <p className="text-sm text-gf-fg-muted">
-            {status.active
-              ? 'Bisect is active. Mark commits as good or bad, then reset when finished.'
-              : 'Start bisect with a known bad commit and optionally a known good commit.'}
+            {status.active ? t('modals.bisect.activeHint') : t('modals.bisect.inactiveHint')}
           </p>
 
           {status.active && (
             <div className="rounded border border-gf-border bg-gf-bg-deep px-3 py-2 text-xs text-gf-fg-muted">
               {status.current && (
                 <p>
-                  Current: <span className="font-mono text-gf-fg">{status.current.slice(0, 7)}</span>
+                  {t('modals.bisect.current')}{' '}
+                  <span className="font-mono text-gf-fg">{status.current.slice(0, 7)}</span>
                 </p>
               )}
               {status.good && (
                 <p>
-                  Good: <span className="font-mono text-gf-fg">{status.good.slice(0, 7)}</span>
+                  {t('modals.bisect.good')}{' '}
+                  <span className="font-mono text-gf-fg">{status.good.slice(0, 7)}</span>
                 </p>
               )}
               {status.bad && (
                 <p>
-                  Bad: <span className="font-mono text-gf-fg">{status.bad.slice(0, 7)}</span>
+                  {t('modals.bisect.bad')}{' '}
+                  <span className="font-mono text-gf-fg">{status.bad.slice(0, 7)}</span>
                 </p>
               )}
             </div>
@@ -93,19 +98,19 @@ export function BisectPanelModal({ open, onClose }: BisectPanelModalProps) {
           {!status.active && (
             <div className="space-y-3">
               <div>
-                <FieldLabel>Bad commit (required)</FieldLabel>
+                <FieldLabel>{t('modals.bisect.badCommit')}</FieldLabel>
                 <TextInput
                   value={badRef}
                   onChange={(event) => setBadRef(event.target.value)}
-                  placeholder="HEAD or commit hash"
+                  placeholder={t('modals.bisect.badPlaceholder')}
                 />
               </div>
               <div>
-                <FieldLabel>Good commit (optional)</FieldLabel>
+                <FieldLabel>{t('modals.bisect.goodCommit')}</FieldLabel>
                 <TextInput
                   value={goodRef}
                   onChange={(event) => setGoodRef(event.target.value)}
-                  placeholder="Older known-good commit"
+                  placeholder={t('modals.bisect.goodPlaceholder')}
                 />
               </div>
               <ActionButton
@@ -119,11 +124,11 @@ export function BisectPanelModal({ open, onClose }: BisectPanelModalProps) {
                         badRef: badRef.trim(),
                         ...(goodRef.trim() ? { goodRef: goodRef.trim() } : {})
                       }),
-                    'Bisect started.'
+                    t('modals.bisect.started')
                   )
                 }
               >
-                Start bisect
+                {t('modals.bisect.startBisect')}
               </ActionButton>
             </div>
           )}
@@ -133,24 +138,24 @@ export function BisectPanelModal({ open, onClose }: BisectPanelModalProps) {
               <ActionButton
                 loading={bisectGood.isPending}
                 disabled={busy}
-                onClick={() => void run(() => bisectGood.mutateAsync({}), 'Marked good.')}
+                onClick={() => void run(() => bisectGood.mutateAsync({}), t('modals.bisect.markedGood'))}
               >
-                Mark current good
+                {t('modals.bisect.markGood')}
               </ActionButton>
               <ActionButton
                 loading={bisectBad.isPending}
                 disabled={busy}
-                onClick={() => void run(() => bisectBad.mutateAsync({}), 'Marked bad.')}
+                onClick={() => void run(() => bisectBad.mutateAsync({}), t('modals.bisect.markedBad'))}
               >
-                Mark current bad
+                {t('modals.bisect.markBad')}
               </ActionButton>
               <ActionButton
                 variant="danger"
                 loading={bisectReset.isPending}
                 disabled={busy}
-                onClick={() => void run(() => bisectReset.mutateAsync({}), 'Bisect reset.')}
+                onClick={() => void run(() => bisectReset.mutateAsync({}), t('modals.bisect.reset'))}
               >
-                Reset bisect
+                {t('modals.bisect.resetBisect')}
               </ActionButton>
             </div>
           )}
@@ -158,7 +163,7 @@ export function BisectPanelModal({ open, onClose }: BisectPanelModalProps) {
       )}
 
       <div className="mt-4 flex justify-end">
-        <ActionButton onClick={onClose}>Close</ActionButton>
+        <ActionButton onClick={onClose}>{t('common.close')}</ActionButton>
       </div>
     </Modal>
   )

@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { PlusIcon } from '@heroicons/react/24/outline'
 import { SidebarIconChevron } from '@/components/layout/sidebar/SidebarIcons'
 import { SidebarMenuButton } from '@/components/layout/sidebar/SidebarMenuButton'
@@ -41,12 +42,14 @@ export function SidebarSection({
   count,
   defaultOpen = true,
   onAdd,
-  addTitle = 'Add',
+  addTitle,
   menuItems,
   footer = false,
   flexible = false,
   children
 }: SidebarSectionProps) {
+  const { t } = useTranslation()
+  const resolvedAddTitle = addTitle ?? t('sidebar.add')
   const [open, setOpen] = useState(() => readStoredOpen(sectionId, defaultOpen))
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
 
@@ -76,7 +79,7 @@ export function SidebarSection({
             onClick={toggle}
             className="flex shrink-0 items-center rounded py-0.5 hover:text-gf-fg"
             aria-expanded={open}
-            aria-label={open ? `Collapse ${title}` : `Expand ${title}`}
+            aria-label={open ? t('sidebar.collapseSection', { title }) : t('sidebar.expandSection', { title })}
           >
             <SidebarIconChevron open={open} className="h-2.5 w-2.5 text-gf-fg-subtle" />
           </button>
@@ -96,8 +99,8 @@ export function SidebarSection({
             <button
               type="button"
               onClick={onAdd}
-              title={addTitle}
-              aria-label={addTitle}
+              title={resolvedAddTitle}
+              aria-label={resolvedAddTitle}
               className="inline-flex h-4 w-4 items-center justify-center rounded text-gf-fg-subtle hover:bg-gf-surface-hover/60 hover:text-gf-fg"
             >
               <PlusIcon aria-hidden className="h-3 w-3" />
@@ -107,7 +110,7 @@ export function SidebarSection({
             <SidebarMenuButton
               items={menuItems}
               onOpenMenu={openMenu}
-              title={`${title} actions`}
+              title={t('sidebar.sectionActions', { title })}
             />
           ) : null}
         </div>

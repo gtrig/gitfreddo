@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { Modal, ActionButton, FieldLabel, TextInput, Select } from '@/components/ui/Modal'
 import { LoadingRow } from '@/components/ui/Spinner'
@@ -12,6 +13,7 @@ interface PickaxeSearchModalProps {
 }
 
 export function PickaxeSearchModal({ open, onClose }: PickaxeSearchModalProps) {
+  const { t } = useTranslation()
   const connected = useWorkspaceStore((s) => s.connected)
   const repoPath = useWorkspaceStore((s) => s.activePath)
   const selectTimelineNode = useSelectionStore((s) => s.selectTimelineNode)
@@ -40,21 +42,21 @@ export function PickaxeSearchModal({ open, onClose }: PickaxeSearchModalProps) {
   }
 
   return (
-    <Modal open={open} title="Pickaxe search" onClose={handleClose} size="lg">
+    <Modal open={open} title={t('modals.pickaxeSearch.title')} onClose={handleClose} size="lg">
       <div className="space-y-3">
         <div>
-          <FieldLabel>Search string</FieldLabel>
+          <FieldLabel>{t('modals.pickaxeSearch.searchString')}</FieldLabel>
           <TextInput
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Code or text to find in history"
+            placeholder={t('modals.pickaxeSearch.placeholder')}
           />
         </div>
         <div>
-          <FieldLabel>Mode</FieldLabel>
+          <FieldLabel>{t('modals.pickaxeSearch.mode')}</FieldLabel>
           <Select value={mode} onChange={(event) => setMode(event.target.value as 'pickaxe' | 'regex')}>
-            <option value="pickaxe">Pickaxe (-S) — added/removed string</option>
-            <option value="regex">Regex (-G) — pattern match</option>
+            <option value="pickaxe">{t('modals.pickaxeSearch.modePickaxe')}</option>
+            <option value="regex">{t('modals.pickaxeSearch.modeRegex')}</option>
           </Select>
         </div>
         <div className="flex justify-end">
@@ -63,20 +65,20 @@ export function PickaxeSearchModal({ open, onClose }: PickaxeSearchModalProps) {
             disabled={!query.trim()}
             onClick={() => setSubmitted({ query: query.trim(), mode })}
           >
-            Search
+            {t('common.search')}
           </ActionButton>
         </div>
 
-        {results.isLoading && <LoadingRow label="Searching history…" />}
+        {results.isLoading && <LoadingRow label={t('modals.pickaxeSearch.searching')} />}
         {results.error && (
           <p className="text-sm text-red-400">
-            {results.error instanceof Error ? results.error.message : 'Search failed.'}
+            {results.error instanceof Error ? results.error.message : t('modals.pickaxeSearch.searchFailed')}
           </p>
         )}
         {results.data && (
           <div className="max-h-72 overflow-y-auto rounded border border-gf-border">
             {results.data.length === 0 ? (
-              <p className="px-3 py-2 text-sm text-gf-fg-subtle">No matching commits.</p>
+              <p className="px-3 py-2 text-sm text-gf-fg-subtle">{t('modals.pickaxeSearch.noMatches')}</p>
             ) : (
               results.data.map((commit) => (
                 <button

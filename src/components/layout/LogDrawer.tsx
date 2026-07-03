@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { DocumentTextIcon } from '@heroicons/react/24/outline'
 import { useLogStore, type LogTab } from '@/stores/logs'
 import type { LogEntry, LogLevel } from '../../../shared/ipc'
@@ -32,11 +33,13 @@ function LogLine({ entry }: { entry: LogEntry }) {
 
 function LogList({
   entries,
-  emptyMessage = 'No log entries yet.'
+  emptyMessage
 }: {
   entries: LogEntry[]
   emptyMessage?: string
 }) {
+  const { t } = useTranslation()
+  const message = emptyMessage ?? t('tools.noLogEntries')
   const containerRef = useRef<HTMLDivElement>(null)
   const pinnedRef = useRef(true)
 
@@ -58,7 +61,7 @@ function LogList({
   }, [entries])
 
   if (entries.length === 0) {
-    return <p className="px-3 py-6 text-center text-xs text-gf-fg-subtle">{emptyMessage}</p>
+    return <p className="px-3 py-6 text-center text-xs text-gf-fg-subtle">{message}</p>
   }
 
   return (
@@ -71,6 +74,7 @@ function LogList({
 }
 
 function GitListenSwitch() {
+  const { t } = useTranslation()
   const gitListening = useLogStore((s) => s.gitListening)
   const setGitListening = useLogStore((s) => s.setGitListening)
 
@@ -80,8 +84,8 @@ function GitListenSwitch() {
         type="button"
         role="switch"
         aria-checked={gitListening}
-        aria-label="Listen to git commands"
-        title="Capture git command output in the Git log"
+        aria-label={t('tools.listenGitAria')}
+        title={t('tools.listenGitTitle')}
         onClick={() => setGitListening(!gitListening)}
         className={`relative h-4 w-7 shrink-0 rounded-full transition ${
           gitListening ? 'bg-emerald-600' : 'bg-gf-surface-hover'
@@ -93,7 +97,7 @@ function GitListenSwitch() {
           }`}
         />
       </button>
-      Listen
+      {t('tools.listen')}
     </label>
   )
 }
@@ -130,6 +134,7 @@ function TabButton({
 }
 
 export function LogDrawer() {
+  const { t } = useTranslation()
   const open = useLogStore((s) => s.open)
   const height = useLogStore((s) => s.height)
   const activeTab = useLogStore((s) => s.activeTab)
@@ -200,7 +205,7 @@ export function LogDrawer() {
           className="text-xs text-gf-fg-muted hover:text-gf-fg"
           aria-expanded={open}
         >
-          {open ? '▼' : '▲'} Logs
+          {open ? '▼' : '▲'} {t('tools.logs')}
           {!open && totalCount > 0 && (
             <span className="ml-1.5 text-gf-fg-subtle">({totalCount})</span>
           )}
@@ -210,13 +215,13 @@ export function LogDrawer() {
           <>
             <TabButton
               active={activeTab === 'git'}
-              label="Git"
+              label={t('tools.git')}
               count={gitEntries.length}
               onClick={() => setActiveTab('git')}
             />
             <TabButton
               active={activeTab === 'app'}
-              label="Application"
+              label={t('tools.application')}
               count={appEntries.length}
               onClick={() => setActiveTab('app' as LogTab)}
             />
@@ -227,14 +232,14 @@ export function LogDrawer() {
               onClick={() => clear(activeTab)}
               className="rounded px-2 py-0.5 text-[11px] text-gf-fg-subtle hover:bg-gf-bg hover:text-gf-fg-muted"
             >
-              Clear
+              {t('tools.clear')}
             </button>
             <button
               type="button"
               onClick={() => setOpen(false)}
               className="rounded px-2 py-0.5 text-[11px] text-gf-fg-subtle hover:bg-gf-bg hover:text-gf-fg-muted"
             >
-              Close
+              {t('common.close')}
             </button>
           </>
         )}
@@ -244,9 +249,7 @@ export function LogDrawer() {
         <LogList
           entries={entries}
           emptyMessage={
-            activeTab === 'git' && !gitListening
-              ? 'Git logging is off. Turn on Listen to capture git command output.'
-              : 'No log entries yet.'
+            activeTab === 'git' && !gitListening ? t('tools.gitLoggingOff') : undefined
           }
         />
       )}
@@ -255,6 +258,7 @@ export function LogDrawer() {
 }
 
 export function LogToggleButton() {
+  const { t } = useTranslation()
   const toggleOpen = useLogStore((s) => s.toggleOpen)
   const open = useLogStore((s) => s.open)
   const gitCount = useLogStore((s) => s.gitEntries.length)
@@ -270,8 +274,8 @@ export function LogToggleButton() {
           ? 'border-gf-border-strong bg-gf-surface text-gf-fg'
           : 'border-gf-border-strong text-gf-fg-muted hover:bg-gf-bg'
       }`}
-      title="Toggle log drawer (Ctrl+`)"
-      aria-label={total > 0 ? `Logs (${total})` : 'Logs'}
+      title={t('tools.toggleLogDrawer')}
+      aria-label={total > 0 ? t('tools.logsWithCount', { count: total }) : t('tools.logs')}
     >
       <DocumentTextIcon aria-hidden className="h-3.5 w-3.5 shrink-0" />
       {total > 0 && (

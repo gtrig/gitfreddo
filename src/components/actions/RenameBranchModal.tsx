@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Modal, ActionButton } from '@/components/ui/Modal'
 import { useGitMutations } from '@/hooks/useGitMutations'
 
@@ -9,6 +10,7 @@ interface RenameBranchModalProps {
 }
 
 export function RenameBranchModal({ open, currentName, onClose }: RenameBranchModalProps) {
+  const { t } = useTranslation()
   const [name, setName] = useState(currentName)
   const { renameBranch } = useGitMutations()
 
@@ -25,13 +27,14 @@ export function RenameBranchModal({ open, currentName, onClose }: RenameBranchMo
   const canSubmit = trimmed.length > 0 && trimmed !== currentName
 
   return (
-    <Modal open={open} title="Rename branch" onClose={handleClose}>
+    <Modal open={open} title={t('modals.renameBranch.title')} onClose={handleClose}>
       <div className="space-y-3 p-4">
         <p className="text-xs text-gf-fg-subtle">
-          Rename <span className="font-mono text-gf-fg-muted">{currentName}</span>
+          {t('modals.renameBranch.rename')}{' '}
+          <span className="font-mono text-gf-fg-muted">{currentName}</span>
         </p>
         <label className="block text-sm">
-          <span className="text-gf-fg-muted">New name</span>
+          <span className="text-gf-fg-muted">{t('modals.renameBranch.newName')}</span>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -40,7 +43,7 @@ export function RenameBranchModal({ open, currentName, onClose }: RenameBranchMo
           />
         </label>
         <div className="flex justify-end gap-2">
-          <ActionButton onClick={handleClose}>Cancel</ActionButton>
+          <ActionButton onClick={handleClose}>{t('common.cancel')}</ActionButton>
           <ActionButton
             loading={renameBranch.isPending}
             disabled={!canSubmit}
@@ -50,7 +53,7 @@ export function RenameBranchModal({ open, currentName, onClose }: RenameBranchMo
               handleClose()
             }}
           >
-            Rename
+            {t('common.rename')}
           </ActionButton>
         </div>
       </div>

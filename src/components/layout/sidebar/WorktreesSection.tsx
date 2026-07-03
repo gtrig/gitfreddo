@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { GitWorktreeEntry } from '@/lib/types'
 import { SidebarSection } from '@/components/layout/sidebar/SidebarSection'
 import { SidebarIconWorktree } from '@/components/layout/sidebar/SidebarIcons'
@@ -29,6 +30,7 @@ export function WorktreesSection({
   isLoading,
   error
 }: WorktreesSectionProps) {
+  const { t } = useTranslation()
   const activePath = useWorkspaceStore((s) => s.activePath)
   const openWorkspace = useWorkspaceStore((s) => s.openWorkspace)
   const closeWorkspace = useWorkspaceStore((s) => s.closeWorkspace)
@@ -69,7 +71,7 @@ export function WorktreesSection({
       if (tabs.some((tab) => tab.path === normalized)) {
         await closeWorkspace(normalized)
       }
-      showToast('Worktree removed', 'success')
+      showToast(t('sidebar.worktreeRemoved'), 'success')
       setPendingRemove(null)
       setForceRemove(false)
       setRemoveError(null)
@@ -79,7 +81,7 @@ export function WorktreesSection({
         setRemoveError(message)
         setForceRemove(true)
       } else {
-        showToast(message || 'Failed to remove worktree', 'error')
+        showToast(message || t('sidebar.failedRemoveWorktree'), 'error')
         setPendingRemove(null)
         setForceRemove(false)
         setRemoveError(null)
@@ -91,26 +93,26 @@ export function WorktreesSection({
     <>
       <SidebarSection
         sectionId="sidebar.worktrees"
-        title="Worktrees"
+        title={t('sidebar.worktrees')}
         icon={<SidebarIconWorktree className="h-3.5 w-3.5" />}
         count={filtered.length}
         onAdd={() => setAddOpen(true)}
-        addTitle="Add worktree"
+        addTitle={t('sidebar.addWorktree')}
         menuItems={[
           {
             id: 'prune',
-            label: 'Prune stale worktrees',
+            label: t('sidebar.pruneStaleWorktrees'),
             onClick: () =>
               void worktreePrune
                 .mutateAsync(undefined)
-                .then(() => showToast('Worktrees pruned', 'success'))
+                .then(() => showToast(t('sidebar.worktreesPruned'), 'success'))
           }
         ]}
       >
         {isLoading && <LoadingRow />}
         {error && <p className="px-2 text-xs text-red-400">{error.message}</p>}
         {!isLoading && filtered.length === 0 && (
-          <p className="px-2 py-1 text-xs text-gf-fg-subtle">No worktrees.</p>
+          <p className="px-2 py-1 text-xs text-gf-fg-subtle">{t('sidebar.noWorktrees')}</p>
         )}
         <div className="space-y-0.5">
           {filtered.map((entry) => {
@@ -135,7 +137,7 @@ export function WorktreesSection({
                 title={entry.path}
                 suffix={
                   entry.isMain ? (
-                    <span className="shrink-0 text-[10px] text-gf-fg-subtle">main</span>
+                    <span className="shrink-0 text-[10px] text-gf-fg-subtle">{t('sidebar.main')}</span>
                   ) : (
                     <span className="shrink-0 truncate text-[10px] text-gf-fg-subtle max-w-[4rem]">
                       {pathBasename}
@@ -165,15 +167,15 @@ export function WorktreesSection({
       {pendingRemove && (
         <ConfirmDialog
           open
-          title="Remove worktree"
+          title={t('sidebar.removeWorktree')}
           message={
             forceRemove
-              ? `Force remove worktree at "${pendingRemove.path}"? Uncommitted changes will be lost.`
+              ? t('sidebar.forceRemoveWorktreeMessage', { path: pendingRemove.path })
               : removeError
-                ? `${removeError}\n\nForce remove anyway?`
-                : `Remove worktree at "${pendingRemove.path}"?`
+                ? t('sidebar.forceRemoveAnyway', { error: removeError })
+                : t('sidebar.removeWorktreeMessage', { path: pendingRemove.path })
           }
-          confirmLabel={forceRemove ? 'Force remove' : 'Remove'}
+          confirmLabel={forceRemove ? t('sidebar.forceRemove') : t('common.remove')}
           busy={worktreeRemove.isPending}
           onConfirm={() => void handleRemove(pendingRemove, forceRemove)}
           onCancel={() => {

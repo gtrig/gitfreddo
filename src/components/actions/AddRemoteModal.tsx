@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Modal, ActionButton } from '@/components/ui/Modal'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useToastStore } from '@/stores/toast'
@@ -11,6 +12,7 @@ interface AddRemoteModalProps {
 }
 
 export function AddRemoteModal({ open, onClose }: AddRemoteModalProps) {
+  const { t } = useTranslation()
   const { remoteAdd } = useGitMutations()
   const show = useToastStore((s) => s.show)
   const [name, setName] = useState('')
@@ -28,7 +30,7 @@ export function AddRemoteModal({ open, onClose }: AddRemoteModalProps) {
 
   async function addRemote(remoteName: string, remoteUrl: string) {
     await remoteAdd.mutateAsync({ name: remoteName, url: remoteUrl })
-    show(`Added remote "${remoteName}"`, 'success')
+    show(t('modals.addRemote.added', { name: remoteName }), 'success')
     handleClose()
   }
 
@@ -39,10 +41,10 @@ export function AddRemoteModal({ open, onClose }: AddRemoteModalProps) {
 
   return (
     <>
-      <Modal open={open} title="Add remote" onClose={handleClose}>
+      <Modal open={open} title={t('modals.addRemote.title')} onClose={handleClose}>
         <div className="space-y-3 p-4">
           <label className="block text-sm">
-            <span className="text-gf-fg-muted">Name</span>
+            <span className="text-gf-fg-muted">{t('modals.addRemote.name')}</span>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -51,7 +53,7 @@ export function AddRemoteModal({ open, onClose }: AddRemoteModalProps) {
             />
           </label>
           <label className="block text-sm">
-            <span className="text-gf-fg-muted">URL</span>
+            <span className="text-gf-fg-muted">{t('modals.addRemote.url')}</span>
             <input
               value={url}
               onChange={(e) => setUrl(e.target.value)}
@@ -60,23 +62,31 @@ export function AddRemoteModal({ open, onClose }: AddRemoteModalProps) {
             />
           </label>
           <div className="flex flex-wrap gap-2">
-            <ActionButton onClick={() => setBrowseOpen(true)}>Browse GitHub</ActionButton>
-            <ActionButton onClick={() => setCreateOpen(true)}>Create on GitHub</ActionButton>
+            <ActionButton onClick={() => setBrowseOpen(true)}>
+              {t('modals.addRemote.browseGitHub')}
+            </ActionButton>
+            <ActionButton onClick={() => setCreateOpen(true)}>
+              {t('modals.addRemote.createOnGitHub')}
+            </ActionButton>
           </div>
           <div className="flex justify-end gap-2">
-            <ActionButton onClick={handleClose}>Cancel</ActionButton>
+            <ActionButton onClick={handleClose}>{t('common.cancel')}</ActionButton>
             <ActionButton
               loading={remoteAdd.isPending}
               disabled={!name.trim() || !url.trim()}
               onClick={() => void addRemote(name.trim(), url.trim())}
             >
-              Add
+              {t('common.add')}
             </ActionButton>
           </div>
         </div>
       </Modal>
 
-      <Modal open={browseOpen} title="Browse GitHub repositories" onClose={() => setBrowseOpen(false)}>
+      <Modal
+        open={browseOpen}
+        title={t('modals.addRemote.browseTitle')}
+        onClose={() => setBrowseOpen(false)}
+      >
         <div className="space-y-3 p-4">
           <RepoPicker
             selectedFullName={null}
@@ -90,7 +100,9 @@ export function AddRemoteModal({ open, onClose }: AddRemoteModalProps) {
             }}
           />
           <div className="flex justify-end gap-2 border-t border-gf-border pt-3">
-            <ActionButton onClick={() => setCreateOpen(true)}>Create new repository</ActionButton>
+            <ActionButton onClick={() => setCreateOpen(true)}>
+              {t('modals.addRemote.createNewRepo')}
+            </ActionButton>
           </div>
         </div>
       </Modal>
@@ -99,7 +111,7 @@ export function AddRemoteModal({ open, onClose }: AddRemoteModalProps) {
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         autoInit={false}
-        submitLabel="Create & add remote"
+        submitLabel={t('modals.addRemote.createAndAdd')}
         onCreated={async (repo) => {
           setUrl(repo.cloneUrl)
           if (!name.trim()) {

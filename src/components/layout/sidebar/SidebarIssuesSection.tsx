@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { SidebarSection } from '@/components/layout/sidebar/SidebarSection'
 import { SidebarIconIssues } from '@/components/layout/sidebar/SidebarIcons'
 import { SidebarTreeRow } from '@/components/layout/sidebar/SidebarTreeRow'
@@ -14,17 +15,15 @@ import { slugifyIssueBranch } from '@/lib/github'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { issueContextMenuItems } from '@/lib/sidebarContextMenus'
 
-const FILTERS = [
-  { id: 'all', label: 'All open' },
-  { id: 'mine', label: 'My issues' }
-] as const
+const FILTER_IDS = ['all', 'mine'] as const
 
 export function SidebarIssuesSection() {
+  const { t } = useTranslation()
   const connected = useWorkspaceStore((s) => s.connected)
   const repoPath = useWorkspaceStore((s) => s.activePath)
   const { data: ghStatus } = useGitHubStatus()
   const { data: ctx } = useGitHubRepoContext(repoPath, connected)
-  const [filterId, setFilterId] = useState<(typeof FILTERS)[number]['id']>('all')
+  const [filterId, setFilterId] = useState<(typeof FILTER_IDS)[number]>('all')
   const { data: issues, isLoading, error } = useGitHubIssues(
     repoPath,
     filterId === 'mine' ? ghStatus?.login ?? undefined : undefined,
@@ -48,55 +47,55 @@ export function SidebarIssuesSection() {
     setBody('')
     setCreateOpen(false)
     await invalidate(repoPath)
-    show('Issue created', 'success')
+    show(t('sidebar.issueCreated'), 'success')
   }
 
   async function branchFromIssue(issueNumber: number, issueTitle: string) {
     const branchName = `issue-${issueNumber}-${slugifyIssueBranch(issueTitle)}`
     await createBranch.mutateAsync({ name: branchName })
-    show(`Created branch ${branchName}`, 'success')
+    show(t('sidebar.branchCreated', { name: branchName }), 'success')
   }
 
   return (
     <>
       <SidebarSection
         sectionId="sidebar.issues"
-        title="Issues"
+        title={t('sidebar.issues')}
         icon={<SidebarIconIssues className="h-3.5 w-3.5" />}
         count={count}
         defaultOpen={false}
         footer
         onAdd={canUseGitHub ? () => setCreateOpen(true) : undefined}
-        addTitle="Create issue"
+        addTitle={t('sidebar.createIssue')}
       >
         {!connected && (
-          <p className="px-2 text-xs text-gf-fg-subtle">Open a repository to view issues.</p>
+          <p className="px-2 text-xs text-gf-fg-subtle">{t('sidebar.openRepoForIssues')}</p>
         )}
         {connected && !ghStatus?.connected && (
-          <p className="px-2 text-xs text-gf-fg-subtle">Connect GitHub in Settings → Integrations.</p>
+          <p className="px-2 text-xs text-gf-fg-subtle">{t('sidebar.connectGitHub')}</p>
         )}
         {connected && ghStatus?.connected && !ctx && (
-          <p className="px-2 text-xs text-gf-fg-subtle">This repository is not linked to GitHub.</p>
+          <p className="px-2 text-xs text-gf-fg-subtle">{t('sidebar.notLinkedGitHub')}</p>
         )}
         {canUseGitHub && (
           <>
             <div className="mb-2 flex flex-wrap gap-1 px-2">
-              {FILTERS.map((f) => (
+              {FILTER_IDS.map((id) => (
                 <button
-                  key={f.id}
+                  key={id}
                   type="button"
-                  onClick={() => setFilterId(f.id)}
+                  onClick={() => setFilterId(id)}
                   className={`rounded px-2 py-0.5 text-[10px] ${
-                    filterId === f.id
+                    filterId === id
                       ? 'bg-gf-accent/15 text-gf-accent'
                       : 'text-gf-fg-subtle hover:bg-gf-surface-hover'
                   }`}
                 >
-                  {f.label}
+                  {id === 'all' ? t('sidebar.filterAllOpen') : t('sidebar.filterMyIssues')}
                 </button>
               ))}
             </div>
-            {isLoading && <p className="px-2 text-xs text-gf-fg-subtle">Loading…</p>}
+            {isLoading && <p className="px-2 text-xs text-gf-fg-subtle">{t('common.loading')}</p>}
             {error && <p className="px-2 text-xs text-red-400">{(error as Error).message}</p>}
             <div className="space-y-0.5">
               {(issues ?? []).map((issue) => {
@@ -115,7 +114,7 @@ export function SidebarIssuesSection() {
                 )
               })}
               {(issues ?? []).length === 0 && !isLoading && (
-                <p className="px-2 py-1 text-xs text-gf-fg-subtle">No open issues.</p>
+                <p className="px-2 py-1 text-xs text-gf-fg-subtle">{t('sidebar.noOpenIssues')}</p>
               )}
             </div>
           </>
@@ -132,10 +131,10 @@ export function SidebarIssuesSection() {
       )}
 
       {canUseGitHub && (
-        <Modal open={createOpen} title="Create issue" onClose={() => setCreateOpen(false)}>
+        <Modal open={createOpen} title={t('modals.createIssue.title')} onClose={() => setCreateOpen(false)}>
           <div className="space-y-3 p-4">
             <label className="block text-sm">
-              <span className="text-gf-fg-muted">Title</span>
+              <span className="text-gf-fg-muted">{t('sidebar.title')}</span>
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -143,7 +142,7 @@ export function SidebarIssuesSection() {
               />
             </label>
             <label className="block text-sm">
-              <span className="text-gf-fg-muted">Body</span>
+              <span className="text-gf-fg-muted">{t('sidebar.body')}</span>
               <textarea
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
@@ -152,9 +151,9 @@ export function SidebarIssuesSection() {
               />
             </label>
             <div className="flex justify-end gap-2">
-              <ActionButton onClick={() => setCreateOpen(false)}>Cancel</ActionButton>
+              <ActionButton onClick={() => setCreateOpen(false)}>{t('common.cancel')}</ActionButton>
               <ActionButton variant="primary" onClick={() => void handleCreate()}>
-                Create
+                {t('common.create')}
               </ActionButton>
             </div>
           </div>

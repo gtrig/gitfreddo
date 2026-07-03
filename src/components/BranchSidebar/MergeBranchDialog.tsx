@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Modal, ActionButton } from '@/components/ui/Modal'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useBranches } from '@/hooks/useGit'
@@ -13,6 +14,7 @@ interface MergeBranchDialogProps {
 }
 
 export function MergeBranchDialog({ sourceBranch, onClose }: MergeBranchDialogProps) {
+  const { t } = useTranslation()
   const connected = useWorkspaceStore((s) => s.connected)
   const { data: branches } = useBranches(connected)
   const current = branches?.find((b) => b.isCurrent)
@@ -24,15 +26,17 @@ export function MergeBranchDialog({ sourceBranch, onClose }: MergeBranchDialogPr
   const [squash, setSquash] = useState(false)
 
   return (
-    <Modal open title={`Merge ${sourceBranch}`} onClose={onClose}>
+    <Modal open title={t('modals.mergeBranch.title', { branch: sourceBranch })} onClose={onClose}>
       <div className="space-y-3 p-4">
         <p className="text-sm text-gf-fg-muted">
-          Merge <span className="text-gf-fg">{sourceBranch}</span> into{' '}
-          <span className="text-gf-fg">{current?.name ?? 'current branch'}</span>?
+          {t('modals.mergeBranch.description', {
+            source: sourceBranch,
+            target: current?.name ?? t('modals.mergeBranch.currentBranch')
+          })}
         </p>
         <label className="flex items-center gap-2 text-sm text-gf-fg-muted">
           <input type="checkbox" checked={noFf} onChange={(e) => setNoFf(e.target.checked)} />
-          Create merge commit (--no-ff)
+          {t('modals.mergeBranch.noFf')}
         </label>
         <label className="flex items-center gap-2 text-sm text-gf-fg-muted">
           <input
@@ -40,11 +44,11 @@ export function MergeBranchDialog({ sourceBranch, onClose }: MergeBranchDialogPr
             checked={squash}
             onChange={(e) => setSquash(e.target.checked)}
           />
-          Squash merge
+          {t('modals.mergeBranch.squash')}
         </label>
         {error && <p className="text-sm text-red-400">{error}</p>}
         <div className="flex justify-end gap-2">
-          <ActionButton onClick={onClose}>Cancel</ActionButton>
+          <ActionButton onClick={onClose}>{t('common.cancel')}</ActionButton>
           <ActionButton
             loading={merge.isPending}
             onClick={async () => {
@@ -57,24 +61,24 @@ export function MergeBranchDialog({ sourceBranch, onClose }: MergeBranchDialogPr
                 onClose()
                 if (result.status === 'conflicts') {
                   const count = result.conflictedPaths.length
-                  const label =
-                    count === 1
-                      ? result.conflictedPaths[0]
-                      : `${count} files`
                   showToast(
-                    `Merge started with conflicts in ${label}. Resolve them to continue.`,
+                    count === 1
+                      ? t('modals.mergeBranch.conflictsOne', {
+                          file: result.conflictedPaths[0]
+                        })
+                      : t('modals.mergeBranch.conflictsMany', { count }),
                     'info'
                   )
                   selectTimelineNode('merge', 'conflicts')
                   return
                 }
-                showToast('Merge completed.', 'success')
+                showToast(t('modals.mergeBranch.completed'), 'success')
               } catch (err) {
                 setError(err instanceof Error ? err.message : String(err))
               }
             }}
           >
-            Merge
+            {t('common.merge')}
           </ActionButton>
         </div>
       </div>

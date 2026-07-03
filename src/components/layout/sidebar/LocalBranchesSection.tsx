@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { GitBranch, GitRemote } from '@/lib/types'
 import type { BranchTreeNode } from '@/lib/branchTree'
 import {
@@ -89,6 +90,7 @@ function BranchTree({
   onUnsetUpstream?: (name: string) => void
   openMenu: ReturnType<typeof useContextMenu>['openMenu']
 }) {
+  const { t } = useTranslation()
   return (
     <>
       {nodes.map((node) => {
@@ -148,7 +150,7 @@ function BranchTree({
             label={displayName}
             depth={depth}
             isCurrent={branch.isCurrent}
-            title="Click to focus commit · Double-click to checkout"
+            title={t('sidebar.branchClickHint')}
             suffix={
               branch.ahead > 0 || branch.behind > 0 ? (
                 <span className="shrink-0 text-[10px] text-gf-fg-subtle">
@@ -182,6 +184,7 @@ export function LocalBranchesSection({
   onCheckout,
   onCreateBranch
 }: LocalBranchesSectionProps) {
+  const { t } = useTranslation()
   const localBranches = useMemo(
     () => (branches ?? []).filter((b) => !b.isRemote),
     [branches]
@@ -223,17 +226,17 @@ export function LocalBranchesSection({
   return (
     <SidebarSection
       sectionId="sidebar.local"
-      title="Local"
+      title={t('sidebar.local')}
       icon={<SidebarIconLocal className="h-3.5 w-3.5" />}
       count={count}
       onAdd={onCreateBranch}
-      addTitle="Create branch"
+      addTitle={t('sidebar.createBranch')}
     >
       {isLoading && <LoadingRow />}
-      {checkoutPending && <LoadingRow label="Checking out…" />}
+      {checkoutPending && <LoadingRow label={t('sidebar.checkingOut')} />}
       {error && <p className="px-2 text-xs text-red-400">{error.message}</p>}
       {!isLoading && count === 0 && (
-        <p className="px-2 py-1 text-xs text-gf-fg-subtle">No local branches match filter.</p>
+        <p className="px-2 py-1 text-xs text-gf-fg-subtle">{t('sidebar.noLocalBranches')}</p>
       )}
       <div className="space-y-0.5">
         {showDetachedHead && head ? (
@@ -241,7 +244,7 @@ export function LocalBranchesSection({
             icon={<SidebarIconBranch className="h-3.5 w-3.5" />}
             label="HEAD"
             labelClassName="text-emerald-400"
-            title="Detached HEAD"
+            title={t('sidebar.detachedHead')}
             onClick={() => onSelectCommit(head)}
           />
         ) : null}
@@ -283,9 +286,9 @@ export function LocalBranchesSection({
       {pendingDelete && (
         <ConfirmDialog
           open
-          title="Delete branch"
-          message={`Delete branch "${pendingDelete}"?`}
-          confirmLabel="Delete"
+          title={t('sidebar.deleteBranch')}
+          message={t('sidebar.deleteBranchConfirm', { name: pendingDelete })}
+          confirmLabel={t('common.delete')}
           busy={deleteBranch.isPending}
           onConfirm={async () => {
             await deleteBranch.mutateAsync({ name: pendingDelete, force: true })
@@ -303,7 +306,7 @@ export function LocalBranchesSection({
           onSubmit={async (params) => {
             await window.gitfreddo.githubCreatePullRequest(repoPath, params)
             await invalidatePrs(repoPath)
-            show('Pull request created', 'success')
+            show(t('sidebar.pullRequestCreated'), 'success')
             setPrBranch(null)
           }}
         />
@@ -344,6 +347,7 @@ export function RemoteBranchesSection({
   error,
   onSelectCommit
 }: RemoteBranchesSectionProps) {
+  const { t } = useTranslation()
   const remoteBranches = useMemo(
     () =>
       (branches ?? []).filter((branch) => {
@@ -395,16 +399,16 @@ export function RemoteBranchesSection({
   return (
     <SidebarSection
       sectionId="sidebar.remote"
-      title="Remote"
+      title={t('sidebar.remote')}
       icon={<SidebarIconRemote className="h-3.5 w-3.5" />}
       count={count || grouped.length}
       onAdd={() => setAddRemoteOpen(true)}
-      addTitle="Add remote"
+      addTitle={t('sidebar.addRemote')}
     >
       {isLoading && <LoadingRow />}
       {error && <p className="px-2 text-xs text-red-400">{error.message}</p>}
       {!isLoading && grouped.length === 0 && (
-        <p className="px-2 py-1 text-xs text-gf-fg-subtle">No remotes configured.</p>
+        <p className="px-2 py-1 text-xs text-gf-fg-subtle">{t('sidebar.noRemotes')}</p>
       )}
       <div className="space-y-0.5">
         {grouped.map(([remote, list]) => {
@@ -428,7 +432,7 @@ export function RemoteBranchesSection({
                   style={{ paddingLeft: '22px' }}
                   className="py-1 pr-2 text-[10px] text-gf-fg-subtle"
                 >
-                  Fetch to load branches
+                  {t('sidebar.fetchToLoad')}
                 </p>
               )}
               {open &&
@@ -447,7 +451,7 @@ export function RemoteBranchesSection({
                       icon={<SidebarIconOrigin className="h-3.5 w-3.5" />}
                       label={remoteBranchShortName(branch.name)}
                       depth={1}
-                      title="Click to focus commit"
+                      title={t('sidebar.clickFocusCommit')}
                       menuItems={remoteBranchMenuItems}
                       openMenu={openMenu}
                       onClick={() => onSelectCommit(branch.head)}
@@ -479,9 +483,11 @@ export function RemoteBranchesSection({
       {pendingDeleteRemote && (
         <ConfirmDialog
           open
-          title="Delete remote branch"
-          message={`Delete remote branch "${remoteBranchShortName(pendingDeleteRemote.name)}"?`}
-          confirmLabel="Delete"
+          title={t('sidebar.deleteRemoteBranch')}
+          message={t('sidebar.deleteRemoteBranchConfirm', {
+            name: remoteBranchShortName(pendingDeleteRemote.name)
+          })}
+          confirmLabel={t('common.delete')}
           busy={deleteRemoteBranch.isPending}
           onConfirm={async () => {
             const parsed = parseRemoteBranchName(pendingDeleteRemote.name)

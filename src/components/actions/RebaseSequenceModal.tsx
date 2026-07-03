@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Modal, ActionButton, FieldLabel, TextArea, Select } from '@/components/ui/Modal'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useToastStore } from '@/stores/toast'
@@ -17,6 +18,7 @@ function defaultTodoLine(action: string, commit: GitCommit): string {
 }
 
 export function RebaseSequenceModal({ open, commits, onClose }: RebaseSequenceModalProps) {
+  const { t } = useTranslation()
   const { rebaseInteractive } = useGitMutations()
   const showToast = useToastStore((s) => s.show)
   const [lines, setLines] = useState<string[]>([])
@@ -38,13 +40,13 @@ export function RebaseSequenceModal({ open, commits, onClose }: RebaseSequenceMo
   async function handleSubmit() {
     const todoLines = lines.map((line) => line.trim()).filter(Boolean)
     if (!baseHash || todoLines.length === 0) {
-      showToast('Rebase todo list cannot be empty.', 'error')
+      showToast(t('modals.rebaseSequence.emptyTodo'), 'error')
       return
     }
 
     try {
       await rebaseInteractive.mutateAsync({ baseHash, todoLines })
-      showToast('Interactive rebase started.', 'success')
+      showToast(t('modals.rebaseSequence.started'), 'success')
       handleClose()
     } catch (error) {
       showToast(error instanceof Error ? error.message : String(error), 'error')
@@ -52,21 +54,18 @@ export function RebaseSequenceModal({ open, commits, onClose }: RebaseSequenceMo
   }
 
   return (
-    <Modal open={open} title="Interactive rebase" onClose={handleClose} size="lg">
+    <Modal open={open} title={t('modals.rebaseSequence.title')} onClose={handleClose} size="lg">
       <div className="space-y-3">
         {hasMerge && (
-          <p className="text-xs text-amber-400">
-            Selection includes merge commits. Interactive rebase may fail or produce unexpected
-            results.
-          </p>
+          <p className="text-xs text-amber-400">{t('modals.rebaseSequence.mergeWarning')}</p>
         )}
         <p className="text-xs text-gf-fg-subtle">
-          Edit the rebase todo list. Base commit:{' '}
+          {t('modals.rebaseSequence.editTodo')}{' '}
           <span className="font-mono text-gf-fg-muted">{baseHash.slice(0, 7)}</span>
         </p>
 
         <div>
-          <FieldLabel>Todo lines</FieldLabel>
+          <FieldLabel>{t('modals.rebaseSequence.todoLines')}</FieldLabel>
           <TextArea
             rows={Math.min(12, Math.max(4, lines.length + 1))}
             value={lines.join('\n')}
@@ -95,21 +94,21 @@ export function RebaseSequenceModal({ open, commits, onClose }: RebaseSequenceMo
                 event.target.value = ''
               }}
             >
-              <option value="">Set all to {action}…</option>
+              <option value="">{t('modals.rebaseSequence.setAllTo', { action })}</option>
               <option value={action}>{action}</option>
             </Select>
           ))}
         </div>
 
         <div className="flex justify-end gap-2">
-          <ActionButton onClick={handleClose}>Cancel</ActionButton>
+          <ActionButton onClick={handleClose}>{t('common.cancel')}</ActionButton>
           <ActionButton
             variant="primary"
             loading={rebaseInteractive.isPending}
             disabled={!baseHash || lines.every((line) => !line.trim())}
             onClick={() => void handleSubmit()}
           >
-            Start rebase
+            {t('modals.rebaseSequence.startRebase')}
           </ActionButton>
         </div>
       </div>

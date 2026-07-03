@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Modal, ActionButton } from '@/components/ui/Modal'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useToastStore } from '@/stores/toast'
@@ -16,6 +17,7 @@ export function EditRemoteUrlModal({
   currentUrl,
   onClose
 }: EditRemoteUrlModalProps) {
+  const { t } = useTranslation()
   const [url, setUrl] = useState(currentUrl)
   const { remoteSetUrl } = useGitMutations()
   const show = useToastStore((s) => s.show)
@@ -32,10 +34,14 @@ export function EditRemoteUrlModal({
   }
 
   return (
-    <Modal open={open} title={`Edit URL — ${remoteName}`} onClose={handleClose}>
+    <Modal
+      open={open}
+      title={t('modals.editRemoteUrl.title', { name: remoteName })}
+      onClose={handleClose}
+    >
       <div className="space-y-3 p-4">
         <label className="block text-sm">
-          <span className="text-gf-fg-muted">URL</span>
+          <span className="text-gf-fg-muted">{t('modals.editRemoteUrl.url')}</span>
           <input
             value={url}
             onChange={(e) => setUrl(e.target.value)}
@@ -44,17 +50,17 @@ export function EditRemoteUrlModal({
           />
         </label>
         <div className="flex justify-end gap-2">
-          <ActionButton onClick={handleClose}>Cancel</ActionButton>
+          <ActionButton onClick={handleClose}>{t('common.cancel')}</ActionButton>
           <ActionButton
             loading={remoteSetUrl.isPending}
             disabled={!url.trim()}
             onClick={async () => {
               await remoteSetUrl.mutateAsync({ name: remoteName, url: url.trim() })
-              show(`Updated URL for "${remoteName}"`, 'success')
+              show(t('modals.editRemoteUrl.updated', { name: remoteName }), 'success')
               handleClose()
             }}
           >
-            Save
+            {t('common.save')}
           </ActionButton>
         </div>
       </div>

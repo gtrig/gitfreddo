@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Modal, ActionButton } from '@/components/ui/Modal'
 import { useGitMutations } from '@/hooks/useGitMutations'
 
@@ -9,6 +10,7 @@ interface CreateBranchModalProps {
 }
 
 export function CreateBranchModal({ open, onClose, startPoint }: CreateBranchModalProps) {
+  const { t } = useTranslation()
   const [name, setName] = useState('')
   const { createBranch } = useGitMutations()
 
@@ -18,16 +20,16 @@ export function CreateBranchModal({ open, onClose, startPoint }: CreateBranchMod
   }
 
   return (
-    <Modal open={open} title="Create branch" onClose={handleClose}>
+    <Modal open={open} title={t('modals.createBranch.title')} onClose={handleClose}>
       <div className="space-y-3 p-4">
         {startPoint && (
           <p className="text-xs text-gf-fg-subtle">
-            Branch will start at{' '}
+            {t('modals.createBranch.startAt')}{' '}
             <span className="font-mono text-gf-fg-muted">{startPoint.slice(0, 7)}</span>
           </p>
         )}
         <label className="block text-sm">
-          <span className="text-gf-fg-muted">Branch name</span>
+          <span className="text-gf-fg-muted">{t('modals.createBranch.branchName')}</span>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -35,7 +37,7 @@ export function CreateBranchModal({ open, onClose, startPoint }: CreateBranchMod
           />
         </label>
         <div className="flex justify-end gap-2">
-          <ActionButton onClick={handleClose}>Cancel</ActionButton>
+          <ActionButton onClick={handleClose}>{t('common.cancel')}</ActionButton>
           <ActionButton
             loading={createBranch.isPending}
             onClick={async () => {
@@ -47,11 +49,10 @@ export function CreateBranchModal({ open, onClose, startPoint }: CreateBranchMod
               handleClose()
             }}
           >
-            Create
+            {t('common.create')}
           </ActionButton>
         </div>
       </div>
     </Modal>
   )
 }
-

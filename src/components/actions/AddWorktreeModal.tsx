@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Modal, ActionButton } from '@/components/ui/Modal'
 import { useBranches, useRepoStatus } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
@@ -23,6 +24,7 @@ export function AddWorktreeModal({
   initialCommit,
   initialCommitShort
 }: AddWorktreeModalProps) {
+  const { t } = useTranslation()
   const { data: repoStatus } = useRepoStatus(open)
   const { data: branches } = useBranches(open)
   const { worktreeAdd } = useGitMutations()
@@ -86,15 +88,16 @@ export function AddWorktreeModal({
   const commitLabel = initialCommitShort ?? initialCommit?.slice(0, 7)
 
   return (
-    <Modal open={open} title="Add worktree" onClose={handleClose}>
+    <Modal open={open} title={t('modals.addWorktree.title')} onClose={handleClose}>
       <div className="space-y-3 p-4">
         {initialCommit && (
           <p className="text-sm text-gf-fg-muted">
-            From commit <span className="font-mono text-gf-fg">{commitLabel}</span>
+            {t('modals.addWorktree.fromCommit')}{' '}
+            <span className="font-mono text-gf-fg">{commitLabel}</span>
           </p>
         )}
         <label className="block text-sm">
-          <span className="text-gf-fg-muted">Path</span>
+          <span className="text-gf-fg-muted">{t('modals.addWorktree.path')}</span>
           <div className="mt-1 flex gap-2">
             <input
               value={path}
@@ -108,13 +111,13 @@ export function AddWorktreeModal({
                 if (picked) setPath(picked)
               }}
             >
-              Browse…
+              {t('modals.addWorktree.browse')}
             </ActionButton>
           </div>
         </label>
 
         <fieldset className="space-y-2 text-sm">
-          <legend className="text-gf-fg-muted">Branch</legend>
+          <legend className="text-gf-fg-muted">{t('modals.addWorktree.branch')}</legend>
           <label className="flex items-center gap-2">
             <input
               type="radio"
@@ -122,7 +125,7 @@ export function AddWorktreeModal({
               checked={mode === 'existing'}
               onChange={() => setMode('existing')}
             />
-            <span>Existing branch</span>
+            <span>{t('modals.addWorktree.existingBranch')}</span>
           </label>
           {mode === 'existing' && (
             <select
@@ -130,11 +133,11 @@ export function AddWorktreeModal({
               onChange={(e) => setSelectedBranch(e.target.value)}
               className="ml-6 w-[calc(100%-1.5rem)] rounded border border-gf-border-strong bg-gf-bg px-2 py-1.5"
             >
-              <option value="">Select branch…</option>
+              <option value="">{t('modals.addWorktree.selectBranch')}</option>
               {localBranches.map((branch) => (
                 <option key={branch.name} value={branch.name}>
                   {branch.name}
-                  {branch.isCurrent ? ' (current)' : ''}
+                  {branch.isCurrent ? ` ${t('modals.addWorktree.current')}` : ''}
                 </option>
               ))}
             </select>
@@ -146,7 +149,7 @@ export function AddWorktreeModal({
               checked={mode === 'new'}
               onChange={() => setMode('new')}
             />
-            <span>New branch</span>
+            <span>{t('modals.addWorktree.newBranch')}</span>
           </label>
           {mode === 'new' && (
             <input
@@ -163,7 +166,7 @@ export function AddWorktreeModal({
           className="text-xs text-gf-fg-subtle hover:text-gf-fg"
           onClick={() => setShowAdvanced((v) => !v)}
         >
-          {showAdvanced ? 'Hide' : 'Show'} advanced options
+          {showAdvanced ? t('modals.addWorktree.hideAdvanced') : t('modals.addWorktree.showAdvanced')}
         </button>
         {showAdvanced && (
           <label className="flex items-center gap-2 text-sm">
@@ -172,12 +175,12 @@ export function AddWorktreeModal({
               checked={detach}
               onChange={(e) => setDetach(e.target.checked)}
             />
-            <span className="text-gf-fg-muted">Detached HEAD</span>
+            <span className="text-gf-fg-muted">{t('modals.addWorktree.detachedHead')}</span>
           </label>
         )}
 
         <div className="flex justify-end gap-2">
-          <ActionButton onClick={handleClose}>Cancel</ActionButton>
+          <ActionButton onClick={handleClose}>{t('common.cancel')}</ActionButton>
           <ActionButton
             loading={worktreeAdd.isPending}
             disabled={!canSubmit}
@@ -220,15 +223,15 @@ export function AddWorktreeModal({
                 const result = (await worktreeAdd.mutateAsync(payload)) as string
                 const worktreePath = result || trimmedPath
                 await openWorkspace(worktreePath)
-                showToast('Worktree created', 'success')
+                showToast(t('modals.addWorktree.created'), 'success')
                 handleClose()
               } catch (error) {
                 const message = error instanceof Error ? error.message : String(error)
-                showToast(message || 'Failed to add worktree', 'error')
+                showToast(message || t('modals.addWorktree.failed'), 'error')
               }
             }}
           >
-            Add worktree
+            {t('modals.addWorktree.addWorktree')}
           </ActionButton>
         </div>
       </div>

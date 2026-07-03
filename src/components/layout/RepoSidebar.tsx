@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
 import { useBranches, useRemotes, useRepoStatus, useStashList, useTags, useWorktreeList } from '@/hooks/useGit'
@@ -22,6 +23,7 @@ import {
 } from '@/lib/branchTree'
 
 export function RepoSidebar() {
+  const { t } = useTranslation()
   const connected = useWorkspaceStore((s) => s.connected)
   const { data: branches, isLoading, error } = useBranches(connected)
   const { data: repoStatus } = useRepoStatus(connected)
@@ -66,7 +68,7 @@ export function RepoSidebar() {
     return (
       <aside className="flex h-full flex-col">
         <div className="px-2 py-3">
-          <p className="text-xs text-gf-fg-subtle">Open a repository to browse branches and stashes.</p>
+          <p className="text-xs text-gf-fg-subtle">{t('sidebar.openRepoPrompt')}</p>
         </div>
       </aside>
     )
@@ -75,7 +77,9 @@ export function RepoSidebar() {
   return (
     <aside className="flex h-full min-h-0 flex-col">
       <div className="shrink-0 border-b border-gf-border/60 px-2 pt-2">
-        <p className="pb-1.5 text-[11px] text-gf-sidebar-count">Viewing {viewingCount}</p>
+        <p className="pb-1.5 text-[11px] text-gf-sidebar-count">
+          {t('sidebar.viewing', { count: viewingCount })}
+        </p>
         <SidebarFilter value={filter} onChange={setFilter} />
       </div>
 

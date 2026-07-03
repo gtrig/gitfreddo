@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Modal, ActionButton, FieldLabel, TextInput } from '@/components/ui/Modal'
 import { useGitMutations } from '@/hooks/useGitMutations'
 
@@ -9,6 +10,7 @@ interface RenameFileModalProps {
 }
 
 export function RenameFileModal({ open, oldPath, onClose }: RenameFileModalProps) {
+  const { t } = useTranslation()
   const { workingRename } = useGitMutations()
   const [newPath, setNewPath] = useState(oldPath)
 
@@ -30,13 +32,14 @@ export function RenameFileModal({ open, oldPath, onClose }: RenameFileModalProps
   }, [oldPath])
 
   return (
-    <Modal open={open} title="Rename file" onClose={handleClose}>
+    <Modal open={open} title={t('modals.renameFile.title')} onClose={handleClose}>
       <div className="space-y-3">
         <p className="text-xs text-gf-fg-subtle">
-          Rename <span className="font-mono text-gf-fg-muted">{oldPath}</span>
+          {t('modals.renameFile.rename')}{' '}
+          <span className="font-mono text-gf-fg-muted">{oldPath}</span>
         </p>
         <div>
-          <FieldLabel>New path</FieldLabel>
+          <FieldLabel>{t('modals.renameFile.newPath')}</FieldLabel>
           <TextInput
             value={newPath}
             onChange={(event) => setNewPath(event.target.value)}
@@ -45,7 +48,7 @@ export function RenameFileModal({ open, oldPath, onClose }: RenameFileModalProps
           />
         </div>
         <div className="flex justify-end gap-2">
-          <ActionButton onClick={handleClose}>Cancel</ActionButton>
+          <ActionButton onClick={handleClose}>{t('common.cancel')}</ActionButton>
           <ActionButton
             variant="primary"
             loading={workingRename.isPending}
@@ -56,7 +59,7 @@ export function RenameFileModal({ open, oldPath, onClose }: RenameFileModalProps
               handleClose()
             }}
           >
-            Rename
+            {t('common.rename')}
           </ActionButton>
         </div>
       </div>

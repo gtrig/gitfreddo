@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Modal, ActionButton, FieldLabel, TextInput } from '@/components/ui/Modal'
 import { useGitMutations } from '@/hooks/useGitMutations'
 
@@ -9,6 +10,7 @@ interface StashBranchModalProps {
 }
 
 export function StashBranchModal({ open, stashIndex, onClose }: StashBranchModalProps) {
+  const { t } = useTranslation()
   const { stashBranch } = useGitMutations()
   const [branchName, setBranchName] = useState('')
 
@@ -24,13 +26,14 @@ export function StashBranchModal({ open, stashIndex, onClose }: StashBranchModal
   }
 
   return (
-    <Modal open={open} title="Create branch from stash" onClose={handleClose}>
+    <Modal open={open} title={t('modals.stashBranch.title')} onClose={handleClose}>
       <div className="space-y-3">
         <p className="text-xs text-gf-fg-subtle">
-          Create a new branch from <span className="font-mono text-gf-fg-muted">stash@{'{'}{stashIndex}{'}'}</span>
+          {t('modals.stashBranch.description')}{' '}
+          <span className="font-mono text-gf-fg-muted">stash@{'{'}{stashIndex}{'}'}</span>
         </p>
         <div>
-          <FieldLabel>Branch name</FieldLabel>
+          <FieldLabel>{t('modals.stashBranch.branchName')}</FieldLabel>
           <TextInput
             value={branchName}
             onChange={(event) => setBranchName(event.target.value)}
@@ -39,7 +42,7 @@ export function StashBranchModal({ open, stashIndex, onClose }: StashBranchModal
           />
         </div>
         <div className="flex justify-end gap-2">
-          <ActionButton onClick={handleClose}>Cancel</ActionButton>
+          <ActionButton onClick={handleClose}>{t('common.cancel')}</ActionButton>
           <ActionButton
             variant="primary"
             loading={stashBranch.isPending}
@@ -50,7 +53,7 @@ export function StashBranchModal({ open, stashIndex, onClose }: StashBranchModal
               handleClose()
             }}
           >
-            Create branch
+            {t('modals.stashBranch.createBranch')}
           </ActionButton>
         </div>
       </div>

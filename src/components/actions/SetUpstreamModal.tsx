@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Modal, ActionButton } from '@/components/ui/Modal'
 import { useGitMutations } from '@/hooks/useGitMutations'
 
@@ -15,6 +16,7 @@ export function SetUpstreamModal({
   currentUpstream,
   onClose
 }: SetUpstreamModalProps) {
+  const { t } = useTranslation()
   const [upstream, setUpstream] = useState(currentUpstream ?? '')
   const { setUpstream: setUpstreamMutation } = useGitMutations()
 
@@ -24,10 +26,14 @@ export function SetUpstreamModal({
   }
 
   return (
-    <Modal open={open} title={`Set upstream for ${branchName}`} onClose={handleClose}>
+    <Modal
+      open={open}
+      title={t('modals.setUpstream.title', { branch: branchName })}
+      onClose={handleClose}
+    >
       <div className="space-y-3 p-4">
         <label className="block text-sm">
-          <span className="text-gf-fg-muted">Upstream (remote/branch)</span>
+          <span className="text-gf-fg-muted">{t('modals.setUpstream.upstream')}</span>
           <input
             value={upstream}
             onChange={(e) => setUpstream(e.target.value)}
@@ -36,7 +42,7 @@ export function SetUpstreamModal({
           />
         </label>
         <div className="flex justify-end gap-2">
-          <ActionButton onClick={handleClose}>Cancel</ActionButton>
+          <ActionButton onClick={handleClose}>{t('common.cancel')}</ActionButton>
           <ActionButton
             loading={setUpstreamMutation.isPending}
             onClick={async () => {
@@ -48,7 +54,7 @@ export function SetUpstreamModal({
               handleClose()
             }}
           >
-            Set upstream
+            {t('modals.setUpstream.setUpstream')}
           </ActionButton>
         </div>
       </div>

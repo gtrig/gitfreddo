@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { Modal, ActionButton } from '@/components/ui/Modal'
 import { LoadingRow } from '@/components/ui/Spinner'
@@ -12,6 +13,7 @@ interface FileHistoryModalProps {
 }
 
 export function FileHistoryModal({ open, path, onClose }: FileHistoryModalProps) {
+  const { t } = useTranslation()
   const connected = useWorkspaceStore((s) => s.connected)
   const repoPath = useWorkspaceStore((s) => s.activePath)
   const selectTimelineNode = useSelectionStore((s) => s.selectTimelineNode)
@@ -24,17 +26,17 @@ export function FileHistoryModal({ open, path, onClose }: FileHistoryModalProps)
   })
 
   return (
-    <Modal open={open} title={`History — ${path}`} onClose={onClose} size="lg">
-      {isLoading && <LoadingRow label="Loading file history…" />}
+    <Modal open={open} title={t('modals.fileHistory.title', { path })} onClose={onClose} size="lg">
+      {isLoading && <LoadingRow label={t('modals.fileHistory.loading')} />}
       {error && (
         <p className="text-sm text-red-400">
-          {error instanceof Error ? error.message : 'Failed to load file history.'}
+          {error instanceof Error ? error.message : t('modals.fileHistory.loadFailed')}
         </p>
       )}
       {data && (
         <div className="max-h-96 overflow-y-auto rounded border border-gf-border">
           {data.length === 0 ? (
-            <p className="px-3 py-2 text-sm text-gf-fg-subtle">No commits found for this file.</p>
+            <p className="px-3 py-2 text-sm text-gf-fg-subtle">{t('modals.fileHistory.noCommits')}</p>
           ) : (
             data.map((commit) => (
               <button
@@ -57,7 +59,7 @@ export function FileHistoryModal({ open, path, onClose }: FileHistoryModalProps)
         </div>
       )}
       <div className="mt-3 flex justify-end">
-        <ActionButton onClick={onClose}>Close</ActionButton>
+        <ActionButton onClick={onClose}>{t('common.close')}</ActionButton>
       </div>
     </Modal>
   )

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { Modal, ActionButton } from '@/components/ui/Modal'
 import { LoadingRow } from '@/components/ui/Spinner'
@@ -11,6 +12,7 @@ interface ReflogModalProps {
 }
 
 export function ReflogModal({ open, onClose }: ReflogModalProps) {
+  const { t } = useTranslation()
   const connected = useWorkspaceStore((s) => s.connected)
   const repoPath = useWorkspaceStore((s) => s.activePath)
   const selectTimelineNode = useSelectionStore((s) => s.selectTimelineNode)
@@ -23,17 +25,17 @@ export function ReflogModal({ open, onClose }: ReflogModalProps) {
   })
 
   return (
-    <Modal open={open} title="Reflog" onClose={onClose} size="lg">
-      {isLoading && <LoadingRow label="Loading reflog…" />}
+    <Modal open={open} title={t('modals.reflog.title')} onClose={onClose} size="lg">
+      {isLoading && <LoadingRow label={t('modals.reflog.loading')} />}
       {error && (
         <p className="text-sm text-red-400">
-          {error instanceof Error ? error.message : 'Failed to load reflog.'}
+          {error instanceof Error ? error.message : t('modals.reflog.loadFailed')}
         </p>
       )}
       {data && (
         <div className="max-h-96 overflow-y-auto rounded border border-gf-border">
           {data.length === 0 ? (
-            <p className="px-3 py-2 text-sm text-gf-fg-subtle">Reflog is empty.</p>
+            <p className="px-3 py-2 text-sm text-gf-fg-subtle">{t('modals.reflog.empty')}</p>
           ) : (
             data.map((entry) => (
               <button
@@ -49,7 +51,7 @@ export function ReflogModal({ open, onClose }: ReflogModalProps) {
                   <span className="font-mono text-xs text-gf-accent-fg">{entry.selector}</span>
                   <span className="font-mono text-xs text-gf-fg-muted">{entry.shortHash}</span>
                 </div>
-                <span className="text-sm text-gf-fg">{entry.subject || '(no message)'}</span>
+                <span className="text-sm text-gf-fg">{entry.subject || t('modals.reflog.noMessage')}</span>
                 {entry.timestamp && (
                   <span className="text-xs text-gf-fg-subtle">{entry.timestamp}</span>
                 )}
@@ -59,7 +61,7 @@ export function ReflogModal({ open, onClose }: ReflogModalProps) {
         </div>
       )}
       <div className="mt-3 flex justify-end">
-        <ActionButton onClick={onClose}>Close</ActionButton>
+        <ActionButton onClick={onClose}>{t('common.close')}</ActionButton>
       </div>
     </Modal>
   )
