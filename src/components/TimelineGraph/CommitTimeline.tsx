@@ -34,6 +34,7 @@ import { SidebarIconStash } from '@/components/layout/sidebar/SidebarIcons'
 import { CommitGraphOverlay } from './CommitGraphOverlay'
 import { TimelineCommitColumn, TIMELINE_ROW_HEIGHT } from './TimelineCommitColumn'
 import { TimelineRefStack } from './TimelineRefStack'
+import { REF_STASH_BADGE_STYLE } from './TimelineRefBadge'
 import { TimelineRefConnectorProvider } from './TimelineRefConnectors'
 import { useConnectorAnchor } from './TimelineRefConnectorContext'
 import { ColumnResizeHandle } from '@/components/ui/ColumnResizeHandle'
@@ -105,7 +106,7 @@ function BranchTagRow({
       {stash && (
         <span
           ref={stashConnectorAnchor}
-          className="inline-flex shrink-0 items-center gap-0.5 rounded border border-sky-500/50 bg-sky-500/15 px-1 py-0.5 text-[10px] leading-none text-sky-300"
+          className={`inline-flex shrink-0 items-center gap-0.5 rounded px-1 py-0.5 text-[10px] leading-none ${REF_STASH_BADGE_STYLE}`}
         >
           <SidebarIconStash className="h-2.5 w-2.5 shrink-0 opacity-90" />
           {t('timeline.stash')}
@@ -544,20 +545,20 @@ export function CommitTimeline() {
                   <div className="flex items-center gap-2">
                     {!visibility.hash && (
                       <span
-                        className={`shrink-0 font-mono text-[11px] ${stash ? 'text-sky-300' : 'text-gf-fg-subtle'}`}
+                        className={`shrink-0 font-mono text-[11px] ${stash ? 'text-gf-ref-stash-fg' : 'text-gf-fg-subtle'}`}
                       >
                         {commit.shortHash}
                       </span>
                     )}
                     {stash && (
-                      <span className="shrink-0 rounded border border-sky-500/50 px-1 py-0.5 text-[10px] leading-none text-sky-300">
+                      <span className={`shrink-0 rounded px-1 py-0.5 text-[10px] leading-none ${REF_STASH_BADGE_STYLE}`}>
                         {t('timeline.stash')}
                       </span>
                     )}
                     {commit.parents.length > 1 && !isStashCommit(commit) && !visibility.parents && (
                       <span className="shrink-0 text-[10px] text-violet-400">{t('timeline.merge')}</span>
                     )}
-                    <p className={`min-w-0 truncate text-[12px] ${stash ? 'text-sky-100' : 'text-gf-fg'}`}>
+                    <p className={`min-w-0 truncate text-[12px] ${stash ? 'text-gf-ref-stash-fg' : 'text-gf-fg'}`}>
                       {commit.subject}
                     </p>
                   </div>

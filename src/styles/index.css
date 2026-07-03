@@ -19,6 +19,16 @@
   --color-gf-sidebar-item-selected: var(--gf-sidebar-item-selected);
   --color-gf-sidebar-count: var(--gf-sidebar-count);
   --color-gf-sidebar-section-header: var(--gf-sidebar-section-header);
+  --color-gf-ref-tag-fg: var(--gf-ref-tag-fg);
+  --color-gf-ref-remote-fg: var(--gf-ref-remote-fg);
+  --color-gf-ref-stash-fg: var(--gf-ref-stash-fg);
+  --color-gf-ref-detached-fg: var(--gf-ref-detached-fg);
+  --color-gf-ref-branch-0: var(--gf-ref-branch-0);
+  --color-gf-ref-branch-1: var(--gf-ref-branch-1);
+  --color-gf-ref-branch-2: var(--gf-ref-branch-2);
+  --color-gf-ref-branch-3: var(--gf-ref-branch-3);
+  --color-gf-ref-branch-4: var(--gf-ref-branch-4);
+  --color-gf-ref-branch-5: var(--gf-ref-branch-5);
 }
 
 @import './themes/index.css';

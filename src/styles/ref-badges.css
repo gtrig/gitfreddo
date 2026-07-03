@@ -1,0 +1,46 @@
+[data-theme='dark'],
+[data-theme='freddo'],
+[data-theme='midnight'],
+[data-theme='sage'],
+[data-theme='lavender'],
+[data-theme='dusk'] {
+  --gf-ref-tag-fg: #e4e4e7;
+  --gf-ref-tag-border: rgb(228 228 231 / 0.28);
+  --gf-ref-tag-bg: rgb(228 228 231 / 0.1);
+  --gf-ref-remote-fg: #c4b5fd;
+  --gf-ref-remote-border: rgb(139 92 246 / 0.35);
+  --gf-ref-remote-bg: rgb(139 92 246 / 0.1);
+  --gf-ref-stash-fg: #7dd3fc;
+  --gf-ref-stash-border: rgb(14 165 233 / 0.45);
+  --gf-ref-stash-bg: rgb(14 165 233 / 0.15);
+  --gf-ref-detached-fg: #34d399;
+  --gf-ref-branch-0: var(--gf-accent-fg);
+  --gf-ref-branch-1: #34d399;
+  --gf-ref-branch-2: #fbbf24;
+  --gf-ref-branch-3: #a78bfa;
+  --gf-ref-branch-4: #fb7185;
+  --gf-ref-branch-5: #22d3ee;
+}
+
+[data-theme='paper'],
+[data-theme='cloud'],
+[data-theme='blossom'],
+[data-theme='mint'],
+[data-theme='sand'] {
+  --gf-ref-tag-fg: #57534e;
+  --gf-ref-tag-border: rgb(87 83 78 / 0.22);
+  --gf-ref-tag-bg: rgb(87 83 78 / 0.08);
+  --gf-ref-remote-fg: #6d28d9;
+  --gf-ref-remote-border: rgb(109 40 217 / 0.28);
+  --gf-ref-remote-bg: rgb(109 40 217 / 0.08);
+  --gf-ref-stash-fg: var(--gf-graph-stash);
+  --gf-ref-stash-border: color-mix(in srgb, var(--gf-graph-stash) 38%, transparent);
+  --gf-ref-stash-bg: color-mix(in srgb, var(--gf-graph-stash) 10%, transparent);
+  --gf-ref-detached-fg: var(--gf-graph-head);
+  --gf-ref-branch-0: var(--gf-accent-fg);
+  --gf-ref-branch-1: #047857;
+  --gf-ref-branch-2: #b45309;
+  --gf-ref-branch-3: #6d28d9;
+  --gf-ref-branch-4: #be123c;
+  --gf-ref-branch-5: #0e7490;
+}

@@ -17,9 +17,13 @@ const BADGE_BASE =
 
 const KIND_STYLES: Record<TimelineRefKind, string> = {
   branch: 'border-gf-border-strong/70 bg-gf-surface/90',
-  remote: 'border-violet-500/35 bg-violet-500/10 text-violet-300',
-  tag: 'border-white/25 bg-white/10 text-white'
+  remote:
+    'border-[var(--gf-ref-remote-border)] bg-[var(--gf-ref-remote-bg)] text-gf-ref-remote-fg',
+  tag: 'border-[var(--gf-ref-tag-border)] bg-[var(--gf-ref-tag-bg)] text-gf-ref-tag-fg'
 }
+
+export const REF_STASH_BADGE_STYLE =
+  'border-[var(--gf-ref-stash-border)] bg-[var(--gf-ref-stash-bg)] text-gf-ref-stash-fg'
 
 function RefIcon({ kind }: { kind: TimelineRefKind }) {
   switch (kind) {
@@ -27,7 +31,7 @@ function RefIcon({ kind }: { kind: TimelineRefKind }) {
       return (
         <TagIcon
           aria-hidden
-          className="h-3 w-3 shrink-0 stroke-[2] text-white"
+          className="h-3 w-3 shrink-0 stroke-[2] text-gf-ref-tag-fg"
         />
       )
     case 'remote':
@@ -42,7 +46,7 @@ export function TimelineDetachedHeadBadge() {
 
   return (
     <span
-      className={`${BADGE_BASE} border-gf-border-strong/70 bg-gf-surface/90 text-emerald-400`}
+      className={`${BADGE_BASE} border-gf-border-strong/70 bg-gf-surface/90 text-gf-ref-detached-fg`}
       title={t('timeline.detachedHead')}
     >
       <SidebarIconBranch className="h-2.5 w-2.5 shrink-0 opacity-90" />

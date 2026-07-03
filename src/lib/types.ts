@@ -240,12 +240,12 @@ export interface CommitFileItem {
 }
 
 export const BRANCH_COLORS = [
-  'text-gf-accent-fg',
-  'text-emerald-400',
-  'text-amber-400',
-  'text-violet-400',
-  'text-rose-400',
-  'text-cyan-400'
+  'text-gf-ref-branch-0',
+  'text-gf-ref-branch-1',
+  'text-gf-ref-branch-2',
+  'text-gf-ref-branch-3',
+  'text-gf-ref-branch-4',
+  'text-gf-ref-branch-5'
 ] as const
 
 export function branchColor(name: string): string {
