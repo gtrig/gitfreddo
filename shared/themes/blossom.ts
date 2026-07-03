@@ -1,8 +1,8 @@
 import type { ThemeDefinition } from './types'
 
-export const cloud = {
-  id: 'cloud',
-  label: 'Cloud',
-  bgColor: '#f4f5f7',
+export const blossom = {
+  id: 'blossom',
+  label: 'Blossom',
+  bgColor: '#faf7f8',
   mode: 'light'
 } as const satisfies ThemeDefinition

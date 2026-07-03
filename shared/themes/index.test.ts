@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { APP_THEMES, isAppTheme, normalizeAppTheme, THEME_BG_COLORS, THEME_LABELS } from './index'
+import { APP_THEMES, isAppTheme, normalizeAppTheme, THEME_BG_COLORS, THEME_LABELS, THEMES } from './index'
 
 describe('normalizeAppTheme', () => {
   it('accepts all known themes', () => {
@@ -39,6 +39,12 @@ describe('theme metadata', () => {
     for (const theme of APP_THEMES) {
       expect(THEME_LABELS[theme]).toBeTruthy()
       expect(THEME_BG_COLORS[theme]).toMatch(/^#[0-9a-f]{6}$/i)
+    }
+  })
+
+  it('assigns every theme to dark or light mode', () => {
+    for (const theme of THEMES) {
+      expect(theme.mode === 'dark' || theme.mode === 'light').toBe(true)
     }
   })
 })

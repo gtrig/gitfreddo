@@ -1,6 +1,6 @@
 import { FieldLabel, TextInput } from '@/components/ui/Modal'
 import type { AppSettings } from '@/hooks/useAppSettings'
-import { APP_THEMES, THEME_LABELS } from '@/lib/themes'
+import { THEME_MODE_LABELS, THEME_MODES, THEMES } from '@/lib/themes'
 
 interface PanelProps {
   form: AppSettings
@@ -17,10 +17,14 @@ export function InterfaceSettingsPanel({ form, onChange }: PanelProps) {
           onChange={(e) => onChange({ theme: e.target.value as AppSettings['theme'] })}
           className="w-full rounded border border-gf-border-strong bg-gf-bg-deep px-2 py-1.5 text-sm text-gf-fg"
         >
-          {APP_THEMES.map((theme) => (
-            <option key={theme} value={theme}>
-              {THEME_LABELS[theme]}
-            </option>
+          {THEME_MODES.map((mode) => (
+            <optgroup key={mode} label={THEME_MODE_LABELS[mode]}>
+              {THEMES.filter((theme) => theme.mode === mode).map((theme) => (
+                <option key={theme.id} value={theme.id}>
+                  {theme.label}
+                </option>
+              ))}
+            </optgroup>
           ))}
         </select>
       </div>
