@@ -14,7 +14,7 @@ function toastToneToLogLevel(tone: ToastState['tone']): LogLevel {
   return 'info'
 }
 
-const TOAST_AUTO_DISMISS_MS = 10_000
+export const TOAST_AUTO_DISMISS_MS = 5_000
 
 let dismissTimer: ReturnType<typeof setTimeout> | undefined
 
