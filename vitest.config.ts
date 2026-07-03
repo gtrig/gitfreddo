@@ -24,21 +24,21 @@ export default defineConfig({
         'src/locales/**'
       ],
       thresholds: {
-        lines: 22,
-        branches: 64,
-        functions: 33,
-        statements: 22,
+        lines: 26,
+        branches: 68,
+        functions: 40,
+        statements: 26,
         'src/lib/**': {
-          lines: 60,
+          lines: 78,
           branches: 60,
-          functions: 50,
-          statements: 60
+          functions: 64,
+          statements: 78
         },
         'shared/**': {
-          lines: 40,
-          branches: 50,
-          functions: 35,
-          statements: 40
+          lines: 80,
+          branches: 65,
+          functions: 85,
+          statements: 80
         },
         'electron/**': {
           lines: 8,

@@ -16,7 +16,16 @@ Coverage report (HTML output in `coverage/`):
 npm run test:coverage
 ```
 
-Measured source: `src/`, `shared/`, and `electron/` (excluding test helpers and locale JSON). Thresholds in `vitest.config.ts` guard `src/lib/`, `shared/`, and `electron/` from regressing.
+Measured source: `src/`, `shared/`, and `electron/` (excluding test helpers and locale JSON). Thresholds in `vitest.config.ts` guard against regressions:
+
+| Scope | Line threshold |
+|-------|----------------|
+| Global | 26% |
+| `src/lib/**` | 78% |
+| `shared/**` | 80% |
+| `electron/**` | 8% |
+
+Pure logic in `src/lib/` is the primary coverage target (~80%). UI components and Electron main/preload account for most uncovered lines globally.
 
 Coverage areas:
 

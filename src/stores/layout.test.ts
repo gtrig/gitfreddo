@@ -4,7 +4,6 @@ import {
   LEFT_MAX,
   LEFT_MIN,
   RIGHT_DEFAULT,
-  RIGHT_MAX,
   RIGHT_MIN,
   useLayoutStore
 } from '@/stores/layout'

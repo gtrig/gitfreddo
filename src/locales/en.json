@@ -268,7 +268,10 @@
     "listenGitTitle": "Capture git command output in the Git log",
     "clear": "Clear",
     "noLogEntries": "No log entries yet.",
-    "gitLoggingOff": "Git logging is off. Turn on Listen to capture git command output."
+    "gitLoggingOff": "Git logging is off. Turn on Listen to capture git command output.",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "zoomLevel": "Interface zoom {{percent}} percent"
   },
   "modals": {
     "createBranch": {
