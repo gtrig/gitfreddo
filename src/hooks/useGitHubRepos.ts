@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import type { GitHubRepo } from '../../shared/github'
-import type { GitHubListReposParams } from '../../shared/github'
+import type { GitHubRepo } from '@shared/github'
+import type { GitHubListReposParams } from '@shared/github'
 
 export function useGitHubRepos(params?: GitHubListReposParams, enabled = true) {
   return useQuery<GitHubRepo[]>({

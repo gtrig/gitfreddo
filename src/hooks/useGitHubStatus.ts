@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import type { GitHubStatus } from '../../shared/ipc'
+import type { GitHubStatus } from '@shared/ipc'
 
 export function useGitHubStatus() {
   return useQuery<GitHubStatus>({

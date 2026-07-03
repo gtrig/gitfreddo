@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ActionButton, FieldLabel, Modal, TextArea, TextInput } from '@/components/ui/Modal'
+import { ActionButton, FieldLabel, Modal, TextArea, TextInput } from '@/components/Ui/Modal'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useWorkingStatus } from '@/hooks/useGit'
-import { buildCommitMessage, commitMessageBody } from '@/lib/fileTree'
+import { buildCommitMessage, commitMessageBody } from '@/lib/workspace/fileTree'
 import { useToastStore } from '@/stores/toast'
 import type { GitCommit } from '@/lib/types'
 

@@ -10,7 +10,7 @@ import {
   orderPathsForRestore,
   snapshotFromSettings,
   type WorkspaceSessionSnapshot
-} from '@/lib/workspaceSession'
+} from '@/lib/workspace/workspaceSession'
 
 export interface WorkspaceTab {
   path: string

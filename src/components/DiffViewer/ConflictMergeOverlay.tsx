@@ -9,7 +9,7 @@ import { useAiFill } from '@/hooks/useAiFill'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
 import { useToastStore } from '@/stores/toast'
-import { parseConflictMarkers } from '@/lib/conflictMarkers'
+import { parseConflictMarkers } from '@/lib/conflicts/conflictMarkers'
 import {
   mapHunksToLineRanges,
   buildOutputFromResolutions,
@@ -17,7 +17,7 @@ import {
   hasUnresolvedMarkers,
   initLineSelections,
   type HunkLineSelection
-} from '@/lib/threeWayMerge'
+} from '@/lib/conflicts/threeWayMerge'
 import {
   buildPreviewLines,
   initHunkEditModes,
@@ -25,13 +25,13 @@ import {
   proposalsMapFromList,
   syncCheckboxFromResolvedText,
   type HunkEditMode
-} from '@/lib/conflictResolution'
-import { parseConflictResolveResponse } from '../../../shared/ai'
-import type { AiConflictResolutionProposal } from '../../../shared/ai'
+} from '@/lib/conflicts/conflictResolution'
+import { parseConflictResolveResponse } from '@shared/ai'
+import type { AiConflictResolutionProposal } from '@shared/ai'
 import { ThreeWayCodePane } from '@/components/DiffViewer/ThreeWayCodePane'
 import { ConflictOutputEditor } from '@/components/DiffViewer/ConflictOutputEditor'
 import { ConflictAiProposalCard } from '@/components/DiffViewer/ConflictAiProposalCard'
-import { Spinner } from '@/components/ui/Spinner'
+import { Spinner } from '@/components/Ui/Spinner'
 
 interface ConflictMergeOverlayProps {
   path: string

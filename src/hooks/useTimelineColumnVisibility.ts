@@ -5,7 +5,7 @@ import {
   saveTimelineColumnVisibility,
   type TimelineColumnId,
   type TimelineColumnVisibility
-} from '@/lib/timelineColumnVisibility'
+} from '@/lib/timeline/timelineColumnVisibility'
 
 export function useTimelineColumnVisibility() {
   const [visibility, setVisibility] = useState(loadTimelineColumnVisibility)

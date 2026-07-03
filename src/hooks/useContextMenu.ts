@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import type { ContextMenuItem } from '@/components/ui/ContextMenu'
+import type { ContextMenuItem } from '@/components/Ui/ContextMenu'
 
 export interface ContextMenuState {
   x: number

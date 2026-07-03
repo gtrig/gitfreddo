@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import type { GitHubPullRequest } from '../../shared/github'
+import type { GitHubPullRequest } from '@shared/github'
 
 export function useGitHubPullRequests(repoPath: string | null, enabled = true) {
   return useQuery<GitHubPullRequest[]>({

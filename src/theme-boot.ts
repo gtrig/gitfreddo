@@ -1,4 +1,4 @@
-import { isAppTheme } from '../shared/themes'
+import { isAppTheme } from '@shared/themes'
 
 const THEME_STORAGE_KEY = 'gitfreddo:theme'
 

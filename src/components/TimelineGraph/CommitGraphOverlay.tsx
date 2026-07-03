@@ -1,19 +1,19 @@
-import { buildGraphEdgePath, buildStashPadPath, buildWipToHeadPath } from '@/lib/commitGraphPaths'
-import { COMMIT_SEARCH_FADE_CLASS } from '@/lib/commitSearch'
+import { buildGraphEdgePath, buildStashPadPath, buildWipToHeadPath } from '@/lib/graph/commitGraphPaths'
+import { COMMIT_SEARCH_FADE_CLASS } from '@/lib/git/commitSearch'
 import {
   graphHeight,
   GRAPH_ROW_HEIGHT,
   rowCenterY,
   visualRowIndex,
   type GitGraphLayout
-} from '@/lib/gitGraphLayout'
+} from '@/lib/graph/gitGraphLayout'
 import {
   columnCenterX,
   DEFAULT_GRAPH_METRICS,
   graphWidth,
   type GraphMetrics,
   WORKING_TREE_COLUMN
-} from '@/lib/graphMetrics'
+} from '@/lib/graph/graphMetrics'
 import { useGraphColors } from '@/hooks/useGraphColors'
 
 export function CommitGraphOverlay({

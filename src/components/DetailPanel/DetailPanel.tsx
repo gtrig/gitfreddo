@@ -10,8 +10,8 @@ import { MergeConflictsPanel } from '@/components/MergeConflicts/MergeConflictsP
 import { CommitPreview } from '@/components/DetailPanel/CommitPreview'
 import { StashPreview } from '@/components/DetailPanel/StashPreview'
 import { MultiCommitSelectionBar } from '@/components/DetailPanel/MultiCommitSelectionBar'
-import { parseCommitNameStatus } from '@/lib/commitFiles'
-import { isStashCommit, resolveStashEntry } from '@/lib/stashCommit'
+import { parseCommitNameStatus } from '@/lib/git/commitFiles'
+import { isStashCommit, resolveStashEntry } from '@/lib/git/stashCommit'
 import { useStashList } from '@/hooks/useGit'
 import { useToastStore } from '@/stores/toast'
 

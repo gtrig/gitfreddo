@@ -5,7 +5,7 @@ import { useInvalidateGit } from '@/hooks/useInvalidateGit'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
 import { useOperationStore } from '@/stores/operation'
-import { isNonFastForwardPushError } from '@/lib/remote'
+import { isNonFastForwardPushError } from '@/lib/git/remote'
 
 export interface PushParams {
   remote?: string

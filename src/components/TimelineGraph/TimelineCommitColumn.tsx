@@ -1,7 +1,7 @@
 import type { GitCommit } from '@/lib/types'
-import { commitRowHighlightClass } from '@/lib/commitSelection'
-import { commitCellContent, commitCellTitle } from '@/lib/timelineCommitColumns'
-import type { TimelineColumnId } from '@/lib/timelineColumnVisibility'
+import { commitRowHighlightClass } from '@/lib/git/commitSelection'
+import { commitCellContent, commitCellTitle } from '@/lib/timeline/timelineCommitColumns'
+import type { TimelineColumnId } from '@/lib/timeline/timelineColumnVisibility'
 
 const COMPACT_ROW_HEIGHT = 28
 

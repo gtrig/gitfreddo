@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import type { AppSettings, GitFreddoAPI } from '../../../shared/ipc'
+import type { AppSettings, GitFreddoAPI } from '@shared/ipc'
 
 export const defaultMockSettings: AppSettings = {
   theme: 'dark',

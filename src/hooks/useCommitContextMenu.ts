@@ -4,8 +4,8 @@ import type {
   DeleteCommitAction,
   ResetMode
 } from '@/components/DetailPanel/DeleteCommitModal'
-import { buildCommitContextMenuItems } from '@/lib/commitContextMenu'
-import { timelineRefs } from '@/lib/timelineRefs'
+import { buildCommitContextMenuItems } from '@/lib/context-menus/commitContextMenu'
+import { timelineRefs } from '@/lib/timeline/timelineRefs'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useWorkingStatus } from '@/hooks/useGit'
 import { useSelectionStore } from '@/stores/selection'

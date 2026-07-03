@@ -10,13 +10,13 @@ import { usePushRemote } from '@/hooks/usePushRemote'
 import { useLogGraph } from '@/hooks/useGit'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
-import { commitMessageBody } from '@/lib/fileTree'
+import { commitMessageBody } from '@/lib/workspace/fileTree'
 import type { GitWorkingStatus } from '@/lib/types'
-import { Spinner } from '@/components/ui/Spinner'
-import { SidebarIconChevron } from '@/components/layout/sidebar/SidebarIcons'
-import { PushForceConfirm } from '@/components/actions/PushForceConfirm'
+import { Spinner } from '@/components/Ui/Spinner'
+import { SidebarIconChevron } from '@/components/Layout/sidebar/SidebarIcons'
+import { PushForceConfirm } from '@/components/Layout/PushForceConfirm'
 import { ComposeCommitsModal } from '@/components/WorkingTree/ComposeCommitsModal'
-import { parseComposeCommitsResponse, type AiComposeCommitProposal } from '../../../shared/ai'
+import { parseComposeCommitsResponse, type AiComposeCommitProposal } from '@shared/ai'
 
 const SUBJECT_MAX = 72
 

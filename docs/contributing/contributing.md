@@ -32,15 +32,20 @@ npm run dev
 ## Project structure
 
 ```
-electron/     Main process — git subprocesses, IPC, GitHub, LLM
-src/          React renderer
-shared/       Types shared between main and renderer
-docs/         User and contributor documentation
-test/         Fixtures for E2E
-e2e/          Playwright specs
+electron/              Main process — git subprocesses, IPC, GitHub, LLM
+src/
+  components/          React UI (PascalCase feature folders)
+  hooks/               TanStack Query + IPC wrappers
+  lib/                 Pure logic grouped by domain
+  stores/              Zustand state
+  locales/             i18n catalogs
+shared/                Types shared between main and renderer
+docs/                  User and contributor documentation
+test/                  Fixtures for E2E
+e2e/                   Playwright specs
 ```
 
-See [architecture.md](../architecture.md) for IPC API and layer details.
+See [codebase-map.md](../codebase-map.md) for a full navigation guide and [architecture.md](../architecture.md) for IPC API and layer details.
 
 ## Making changes
 

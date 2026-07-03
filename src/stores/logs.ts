@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { LogEntry, LogLevel, LogStream } from '../../shared/ipc'
+import type { LogEntry, LogLevel, LogStream } from '@shared/ipc'
 
 const MAX_ENTRIES = 500
 

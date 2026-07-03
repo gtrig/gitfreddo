@@ -2,13 +2,13 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useStashFiles } from '@/hooks/useGit'
 import { useSelectionStore } from '@/stores/selection'
-import { parseCommitNameStatus } from '@/lib/commitFiles'
-import { buildFileTree, collectFolderPaths, sortCommitFiles } from '@/lib/fileTree'
-import { commitFileKindColor } from '@/lib/commitFiles'
+import { parseCommitNameStatus } from '@/lib/git/commitFiles'
+import { buildFileTree, collectFolderPaths, sortCommitFiles } from '@/lib/workspace/fileTree'
+import { commitFileKindColor } from '@/lib/git/commitFiles'
 import type { CommitFileItem, GitStashEntry } from '@/lib/types'
-import { ContextMenu } from '@/components/ui/ContextMenu'
+import { ContextMenu } from '@/components/Ui/ContextMenu'
 import { useContextMenu } from '@/hooks/useContextMenu'
-import { commitFileContextMenuItems, commitFolderContextMenuItems } from '@/lib/detailPanelContextMenus'
+import { commitFileContextMenuItems, commitFolderContextMenuItems } from '@/lib/context-menus/detailPanelContextMenus'
 
 interface StashPreviewProps {
   stash: GitStashEntry

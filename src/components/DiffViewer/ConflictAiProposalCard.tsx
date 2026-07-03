@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { AiConflictResolutionProposal } from '../../../shared/ai'
+import type { AiConflictResolutionProposal } from '@shared/ai'
 
 function confidenceTone(confidence: number): string {
   if (confidence >= 80) return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'

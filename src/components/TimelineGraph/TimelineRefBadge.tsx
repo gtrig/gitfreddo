@@ -3,10 +3,10 @@ import { useTranslation } from 'react-i18next'
 import {
   SidebarIconBranch,
   SidebarIconOrigin
-} from '@/components/layout/sidebar/SidebarIcons'
-import { CurrentHeadCheck } from '@/components/ui/CurrentHeadCheck'
+} from '@/components/Layout/sidebar/SidebarIcons'
+import { CurrentHeadCheck } from '@/components/Ui/CurrentHeadCheck'
 import { branchColor } from '@/lib/types'
-import type { TimelineRef, TimelineRefKind } from '@/lib/timelineRefs'
+import type { TimelineRef, TimelineRefKind } from '@/lib/timeline/timelineRefs'
 
 export function TimelineHeadCheck() {
   return <CurrentHeadCheck />

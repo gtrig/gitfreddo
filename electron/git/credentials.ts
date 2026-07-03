@@ -6,7 +6,6 @@ import { getAppDataDir } from '../paths'
 const SETTINGS_DIR = getAppDataDir()
 const INSTALLED_ASKPASS_PATH = join(SETTINGS_DIR, 'github-askpass.cjs')
 
-/** Keep in sync with electron/git/github-askpass.cjs */
 const ASKPASS_SCRIPT = `#!/usr/bin/env node
 const token = process.env.gitfreddo_GITHUB_TOKEN || ''
 const prompt = (process.argv[2] || '').toLowerCase()

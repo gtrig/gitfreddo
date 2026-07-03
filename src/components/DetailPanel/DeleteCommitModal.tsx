@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ActionButton, Modal } from '@/components/ui/Modal'
+import { ActionButton, Modal } from '@/components/Ui/Modal'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useWorkingStatus } from '@/hooks/useGit'
 import { useToastStore } from '@/stores/toast'

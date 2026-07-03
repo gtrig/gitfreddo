@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useWorkspaceStore } from '@/stores/workspace'
-import { workspaceSessionKey } from '@/lib/workspaceSession'
+import { workspaceSessionKey } from '@/lib/workspace/workspaceSession'
 
 export function useWorkspaceSessionPersistence(): void {
   const restoreWorkspaceSession = useWorkspaceStore((s) => s.restoreWorkspaceSession)

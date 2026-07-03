@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
-import type { ConflictHunk } from '@/lib/conflictMarkers'
-import type { PreviewLine } from '@/lib/conflictResolution'
-import { ActionButton } from '@/components/ui/Modal'
+import type { ConflictHunk } from '@/lib/conflicts/conflictMarkers'
+import type { PreviewLine } from '@/lib/conflicts/conflictResolution'
+import { ActionButton } from '@/components/Ui/Modal'
 
 const ROW_GRID = 'grid-cols-[44px_minmax(0,1fr)]'
 

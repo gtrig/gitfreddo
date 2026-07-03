@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useToastStore } from '@/stores/toast'
-import { Spinner } from '@/components/ui/Spinner'
-import { SidebarIconChevron } from '@/components/layout/sidebar/SidebarIcons'
+import { Spinner } from '@/components/Ui/Spinner'
+import { SidebarIconChevron } from '@/components/Layout/sidebar/SidebarIcons'
 import type { GitMergeStatus } from '@/lib/types'
 
 const SUBJECT_MAX = 72

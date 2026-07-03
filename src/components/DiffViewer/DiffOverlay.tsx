@@ -20,7 +20,7 @@ import {
   groupRowsByHunk,
   parseUnifiedDiffRows,
   splitRowsForDisplay
-} from '@/lib/unifiedDiff'
+} from '@/lib/diff/unifiedDiff'
 import type { AppSettings } from '@/hooks/useAppSettings'
 import type { GitBlameLine, GitDiffResult } from '@/lib/types'
 

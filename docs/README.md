@@ -37,6 +37,7 @@ Progressive guides from everyday use to advanced history editing.
 
 | Guide | Description |
 |-------|-------------|
+| [Codebase map](codebase-map.md) | Where to find features in the repository |
 | [Contributing](contributing/contributing.md) | Dev setup, scripts, pull requests |
 | [Testing](contributing/testing.md) | Unit, component, and E2E tests |
 | [Internationalization](contributing/i18n.md) | Adding and translating UI strings |

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { normalizeAppTheme } from '../../shared/themes'
-import { applyTheme, normalizeTheme, readStoredTheme, THEME_STORAGE_KEY } from './themes'
+import { normalizeAppTheme } from '@shared/themes'
+import { applyTheme, normalizeTheme, readStoredTheme, THEME_STORAGE_KEY } from '@/lib/themes'
 
 describe('normalizeTheme', () => {
   it('accepts all app themes', () => {

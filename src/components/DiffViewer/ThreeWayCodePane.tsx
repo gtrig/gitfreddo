@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { LineRange } from '@/lib/threeWayMerge'
+import type { LineRange } from '@/lib/conflicts/threeWayMerge'
 
 const ROW_GRID = 'grid-cols-[28px_44px_minmax(0,1fr)]'
 

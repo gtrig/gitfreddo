@@ -1,6 +1,6 @@
-import type { DiffRow } from '@/lib/unifiedDiff'
+import type { DiffRow } from '@/lib/diff/unifiedDiff'
 import { useTranslation } from 'react-i18next'
-import { groupRowsByHunk } from '@/lib/unifiedDiff'
+import { groupRowsByHunk } from '@/lib/diff/unifiedDiff'
 import type { GitBlameLine } from '@/lib/types'
 
 function formatLineNo(value: number | null): string {

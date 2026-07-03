@@ -1,13 +1,13 @@
 import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { COMMIT_SEARCH_FADE_CLASS } from '@/lib/commitSearch'
+import { COMMIT_SEARCH_FADE_CLASS } from '@/lib/git/commitSearch'
 import {
   graphHeight,
   rowCenterY,
   visualRowIndex,
   type GitGraphLayout
-} from '@/lib/gitGraphLayout'
-import { columnCenterX, graphWidth, type GraphMetrics } from '@/lib/graphMetrics'
-import { timelineRefs } from '@/lib/timelineRefs'
+} from '@/lib/graph/gitGraphLayout'
+import { columnCenterX, graphWidth, type GraphMetrics } from '@/lib/graph/graphMetrics'
+import { timelineRefs } from '@/lib/timeline/timelineRefs'
 import { useGraphColors } from '@/hooks/useGraphColors'
 import {
   TimelineRefConnectorRegisterContext,

@@ -8,8 +8,8 @@ import { useGitHubStatus } from '@/hooks/useGitHubStatus'
 import { useInvalidateGitHubPullRequests } from '@/hooks/useGitHubPullRequests'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
-import { buildTimelineRefContextMenuItems } from '@/lib/timelineRefContextMenu'
-import type { TimelineRef } from '@/lib/timelineRefs'
+import { buildTimelineRefContextMenuItems } from '@/lib/timeline/timelineRefContextMenu'
+import type { TimelineRef } from '@/lib/timeline/timelineRefs'
 
 export interface TimelineRefContextMenuOptions {
   connected: boolean

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import type { GitHubRepo } from '../../../shared/github'
-import { ActionButton, Modal } from '@/components/ui/Modal'
+import type { GitHubRepo } from '@shared/github'
+import { ActionButton, Modal } from '@/components/Ui/Modal'
 import { useGitHubStatus } from '@/hooks/useGitHubStatus'
 
 export interface CreateGitHubRepoModalProps {

@@ -6,7 +6,7 @@ import {
   areContiguousCommits,
   selectedCommitsChronological,
   selectionHasMergeCommit
-} from '@/lib/commitSelection'
+} from '@/lib/git/commitSelection'
 
 interface MultiCommitSelectionBarProps {
   commits: GitCommit[]

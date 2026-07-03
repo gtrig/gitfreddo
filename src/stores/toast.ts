@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { appLog } from '@/stores/logs'
-import type { LogLevel } from '../../shared/ipc'
+import type { LogLevel } from '@shared/ipc'
 
 interface ToastState {
   message: string | null

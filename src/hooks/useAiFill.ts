@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query'
 import { useOperationStore } from '@/stores/operation'
-import type { AiFillParams } from '../../shared/ai'
+import type { AiFillParams } from '@shared/ai'
 
 async function requestAiFill(params: AiFillParams): Promise<string> {
   const api = window.gitfreddo

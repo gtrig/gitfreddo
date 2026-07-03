@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getDocContent, getDocTitle } from './content'
+import { getDocContent, getDocTitle } from '@/lib/docs/content'
 
 describe('doc content bundle', () => {
   it('loads the docs index', () => {

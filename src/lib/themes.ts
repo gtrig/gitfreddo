@@ -1,5 +1,5 @@
-import type { AppTheme } from '../../shared/themes'
-import { APP_THEMES, isAppTheme, normalizeAppTheme, THEME_BG_COLORS, THEME_LABELS, THEME_MODE_LABELS, THEME_MODES, THEMES } from '../../shared/themes'
+import type { AppTheme } from '@shared/themes'
+import { APP_THEMES, isAppTheme, normalizeAppTheme, THEME_BG_COLORS, THEME_LABELS, THEME_MODE_LABELS, THEME_MODES, THEMES } from '@shared/themes'
 
 export type { AppTheme }
 export { APP_THEMES, THEME_BG_COLORS, THEME_LABELS, THEME_MODE_LABELS, THEME_MODES, THEMES }

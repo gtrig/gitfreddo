@@ -1,7 +1,7 @@
 import { create } from 'zustand'
-import { commitRangeInTimeline, toggleHashInList } from '@/lib/commitSelection'
+import { commitRangeInTimeline, toggleHashInList } from '@/lib/git/commitSelection'
 import type { GitCommit, TimelineNodeKind, TimelineSelection } from '@/lib/types'
-import type { AiConflictResolutionProposal } from '../../shared/ai'
+import type { AiConflictResolutionProposal } from '@shared/ai'
 
 interface SelectionState {
   timelineSelection: TimelineSelection | null

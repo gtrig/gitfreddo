@@ -8,7 +8,7 @@ import { useToastStore } from '@/stores/toast'
 import { useSelectionStore } from '@/stores/selection'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { RewordCommitModal } from '@/components/DetailPanel/RewordCommitModal'
-import { FileHistoryModal } from '@/components/actions/FileHistoryModal'
+import { FileHistoryModal } from '@/components/History/FileHistoryModal'
 import {
   buildFileTree,
   collectFolderPaths,
@@ -18,13 +18,13 @@ import {
   type CommitFileCounts,
   type FileTreeFolder,
   type FileTreeNode
-} from '@/lib/fileTree'
-import { commitFileKindColor } from '@/lib/commitFiles'
+} from '@/lib/workspace/fileTree'
+import { commitFileKindColor } from '@/lib/git/commitFiles'
 import type { CommitFileItem, GitCommit } from '@/lib/types'
-import { ContextMenu } from '@/components/ui/ContextMenu'
-import { SidebarIconChevron } from '@/components/layout/sidebar/SidebarIcons'
+import { ContextMenu } from '@/components/Ui/ContextMenu'
+import { SidebarIconChevron } from '@/components/Layout/sidebar/SidebarIcons'
 import { useContextMenu, type OpenContextMenu } from '@/hooks/useContextMenu'
-import { commitFileContextMenuItems, commitFolderContextMenuItems } from '@/lib/detailPanelContextMenus'
+import { commitFileContextMenuItems, commitFolderContextMenuItems } from '@/lib/context-menus/detailPanelContextMenus'
 
 function authorInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean)

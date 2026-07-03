@@ -1,7 +1,7 @@
 import { useRef, useState, type Ref } from 'react'
 import { createPortal } from 'react-dom'
 import { TimelineDetachedHeadBadge, TimelineRefBadge } from './TimelineRefBadge'
-import { refKey, splitTimelineRefs, type TimelineRef } from '@/lib/timelineRefs'
+import { refKey, splitTimelineRefs, type TimelineRef } from '@/lib/timeline/timelineRefs'
 
 function resolveHeadRefs(
   refs: TimelineRef[],

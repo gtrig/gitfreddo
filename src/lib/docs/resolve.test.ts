@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveDocLink } from './resolve'
+import { resolveDocLink } from '@/lib/docs/resolve'
 
 describe('resolveDocLink', () => {
   it('resolves sibling paths', () => {

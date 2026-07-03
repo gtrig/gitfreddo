@@ -10,7 +10,7 @@ import {
   minGraphColumnWidth,
   saveBranchTagWidth,
   saveGraphLaneWidth
-} from '@/lib/graphMetrics'
+} from '@/lib/graph/graphMetrics'
 
 export function useTimelineColumnSizes(laneCount: number) {
   const [laneWidth, setLaneWidth] = useState(loadGraphLaneWidth)

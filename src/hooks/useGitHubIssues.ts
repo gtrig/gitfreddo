@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import type { GitHubIssue } from '../../shared/github'
+import type { GitHubIssue } from '@shared/github'
 
 export function useGitHubIssues(
   repoPath: string | null,

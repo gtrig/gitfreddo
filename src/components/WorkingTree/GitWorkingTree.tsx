@@ -7,22 +7,22 @@ import { useWorkingStatus } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useInvalidateGit } from '@/hooks/useInvalidateGit'
 import { statusColor, statusLabel, type GitFileChange } from '@/lib/types'
-import { buildFileTree, collectFolderPaths, countCommitFiles, type FileTreeNode } from '@/lib/fileTree'
+import { buildFileTree, collectFolderPaths, countCommitFiles, type FileTreeNode } from '@/lib/workspace/fileTree'
 import type { CommitFileItem } from '@/lib/types'
-import { LoadingRow, Spinner } from '@/components/ui/Spinner'
-import { SidebarIconChevron } from '@/components/layout/sidebar/SidebarIcons'
+import { LoadingRow, Spinner } from '@/components/Ui/Spinner'
+import { SidebarIconChevron } from '@/components/Layout/sidebar/SidebarIcons'
 import { CommitPanel } from '@/components/WorkingTree/CommitPanel'
 import { CleanUntrackedModal } from '@/components/WorkingTree/CleanUntrackedModal'
-import { ConfirmDialog } from '@/components/ui/Modal'
-import { FileHistoryModal } from '@/components/actions/FileHistoryModal'
-import { RenameFileModal } from '@/components/actions/RenameFileModal'
-import { ContextMenu } from '@/components/ui/ContextMenu'
+import { ConfirmDialog } from '@/components/Ui/Modal'
+import { FileHistoryModal } from '@/components/History/FileHistoryModal'
+import { RenameFileModal } from '@/components/WorkingTree/RenameFileModal'
+import { ContextMenu } from '@/components/Ui/ContextMenu'
 import { useContextMenu, type OpenContextMenu } from '@/hooks/useContextMenu'
-import { discardablePaths, pathsUnderFolderPrefix } from '@/lib/workingTreePaths'
+import { discardablePaths, pathsUnderFolderPrefix } from '@/lib/workspace/workingTreePaths'
 import {
   workingTreeFileContextMenuItems,
   workingTreeFolderContextMenuItems
-} from '@/lib/detailPanelContextMenus'
+} from '@/lib/context-menus/detailPanelContextMenus'
 
 type WorkingTreeActionVariant = 'stage' | 'unstage' | 'clear'
 
@@ -131,7 +131,7 @@ function FileRow({
         <span className={`mr-2 inline-block w-3 text-center font-mono text-[11px] ${statusColor(file.status)}`}>
           {statusLabel(file.status)}
         </span>
-        <span className="font-mono">{file.path}</span>
+        <FileChangePath file={file} />
       </button>
       {onStage && (
         <WorkingTreeActionButton
@@ -161,6 +161,20 @@ function fileNameFromPath(path: string): string {
   const name = parts[parts.length - 1]
   if (!name) return path
   return path.endsWith('/') ? `${name}/` : name
+}
+
+function FileChangePath({ file }: { file: GitFileChange }) {
+  if (file.status === 'renamed' && file.oldPath) {
+    return (
+      <span className="truncate font-mono">
+        <span className="text-gf-fg-subtle">{file.oldPath}</span>
+        <span className="text-gf-fg-subtle"> → </span>
+        {file.path}
+      </span>
+    )
+  }
+
+  return <span className="truncate font-mono">{file.path}</span>
 }
 
 function Chevron({ open }: { open: boolean }) {

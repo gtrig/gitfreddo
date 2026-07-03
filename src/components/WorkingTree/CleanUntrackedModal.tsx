@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Modal, ActionButton } from '@/components/ui/Modal'
+import { Modal, ActionButton } from '@/components/Ui/Modal'
 import { useCleanPreview } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
-import { LoadingRow } from '@/components/ui/Spinner'
+import { LoadingRow } from '@/components/Ui/Spinner'
 
 interface CleanUntrackedModalProps {
   open: boolean

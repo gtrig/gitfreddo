@@ -108,16 +108,37 @@ export async function workingStatus(
   }
 }
 
-function parsePorcelainV2Line(line: string): GitFileChange | null {
+/** Parse a porcelain v2 status line (`1`, `2`, or `u` record). Exported for unit tests. */
+export function parsePorcelainV2Line(line: string): GitFileChange | null {
   const parts = line.split(' ')
   if (parts.length < 9) return null
+  const recordType = parts[0]
   const xy = parts[1] ?? ''
-  const path = parts.slice(8).join(' ')
   const indexStatus = xy[0] ?? '.'
   const workTreeStatus = xy[1] ?? '.'
   const status = statusCharToKind(indexStatus, workTreeStatus)
   if (!status) return null
-  return { path, status }
+
+  if (recordType === '2') {
+    // rename/copy: <score> <newPath>\t<oldPath>
+    if (parts.length < 10) return null
+    const pathField = parts.slice(9).join(' ')
+    const tabIndex = pathField.indexOf('\t')
+    if (tabIndex === -1) return { path: pathField, status }
+    return {
+      path: pathField.slice(0, tabIndex),
+      oldPath: pathField.slice(tabIndex + 1),
+      status
+    }
+  }
+
+  if (recordType === 'u') {
+    const path = parts.slice(10).join(' ')
+    return path ? { path, status } : null
+  }
+
+  const path = parts.slice(8).join(' ')
+  return path ? { path, status } : null
 }
 
 export async function stageAdd(

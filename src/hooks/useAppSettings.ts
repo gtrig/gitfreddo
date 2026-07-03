@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import type { AppSettings } from '../../shared/ipc'
+import type { AppSettings } from '@shared/ipc'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useBranches, useRemotes } from '@/hooks/useGit'
-import { resolveDefaultRemote } from '@/lib/remote'
+import { resolveDefaultRemote } from '@/lib/git/remote'
 
 export type { AppSettings }
 

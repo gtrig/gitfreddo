@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ActionButton, FieldLabel, Modal, TextArea, TextInput } from '@/components/ui/Modal'
+import { ActionButton, FieldLabel, Modal, TextArea, TextInput } from '@/components/Ui/Modal'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useToastStore } from '@/stores/toast'
-import type { AiComposeCommitProposal } from '../../../shared/ai'
+import type { AiComposeCommitProposal } from '@shared/ai'
 
 const SUBJECT_MAX = 72
 

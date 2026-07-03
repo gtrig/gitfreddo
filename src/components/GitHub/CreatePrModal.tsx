@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { ActionButton, Modal } from '@/components/ui/Modal'
-import type { GitHubMergeMethod } from '../../../shared/github'
+import { ActionButton, Modal } from '@/components/Ui/Modal'
+import type { GitHubMergeMethod } from '@shared/github'
 
 interface CreatePrModalProps {
   open: boolean

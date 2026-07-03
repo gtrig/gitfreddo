@@ -1,4 +1,4 @@
-import type { SplitDiffRow } from '@/lib/unifiedDiff'
+import type { SplitDiffRow } from '@/lib/diff/unifiedDiff'
 import { useTranslation } from 'react-i18next'
 
 function formatLineNo(value: number | null): string {
