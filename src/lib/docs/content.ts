@@ -1,10 +1,10 @@
-const docModules = import.meta.glob<string>('../../docs/**/*.md', {
+const docModules = import.meta.glob<string>('../../../docs/**/*.md', {
   query: '?raw',
   import: 'default',
   eager: true
 })
 
-const changelogModules = import.meta.glob<string>('../../CHANGELOG.md', {
+const changelogModules = import.meta.glob<string>('../../../CHANGELOG.md', {
   query: '?raw',
   import: 'default',
   eager: true
