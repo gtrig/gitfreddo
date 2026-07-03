@@ -34,6 +34,7 @@ export interface AppSettings {
   githubConnectedAt: number | null
   pullRebase: boolean
   diffViewMode: 'unified' | 'split' | 'word'
+  uiZoomFactor: number
 }
 
 export interface GitHubStatus {
@@ -112,6 +113,10 @@ export interface GitFreddoAPI {
   ) => () => void
   onMenuAction: (callback: (action: MenuAction) => void) => () => void
   onLogEntry: (callback: (entry: LogEntry) => void) => () => void
+  getZoomFactor: () => Promise<number>
+  zoomIn: () => Promise<number>
+  zoomOut: () => Promise<number>
+  onZoomChanged: (callback: (factor: number) => void) => () => void
 }
 
 declare global {
