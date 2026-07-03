@@ -9,8 +9,10 @@ function separator(id: string): ContextMenuItem {
 export function workingTreeFolderContextMenuItems(
   path: string,
   open: boolean,
+  mode: 'working' | 'staged',
   handlers: {
     onToggle: () => void
+    onStageFolder?: () => void
     onDiscardFolder?: () => void
   }
 ): ContextMenuItem[] {
@@ -26,6 +28,14 @@ export function workingTreeFolderContextMenuItems(
       onClick: () => void copyToClipboard(path)
     }
   ]
+
+  if (handlers.onStageFolder) {
+    items.push({
+      id: 'stage-folder',
+      label: mode === 'staged' ? 'Unstage folder contents' : 'Stage folder contents',
+      onClick: handlers.onStageFolder
+    })
+  }
 
   if (handlers.onDiscardFolder) {
     items.push(separator('sep-discard'))

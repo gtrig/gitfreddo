@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { MinusIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/solid'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
 import { useWorkingStatus } from '@/hooks/useGit'
@@ -21,6 +22,57 @@ import {
   workingTreeFileContextMenuItems,
   workingTreeFolderContextMenuItems
 } from '@/lib/detailPanelContextMenus'
+
+type WorkingTreeActionVariant = 'stage' | 'unstage' | 'clear'
+
+const actionVariantStyles: Record<WorkingTreeActionVariant, string> = {
+  stage: 'border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/15',
+  unstage: 'border-amber-500/40 text-amber-400 hover:bg-amber-500/15',
+  clear: 'border-rose-500/40 text-rose-400 hover:bg-rose-500/15'
+}
+
+const actionVariantSpinnerStyles: Record<WorkingTreeActionVariant, string> = {
+  stage: 'border-emerald-400/30 border-t-emerald-300',
+  unstage: 'border-amber-400/30 border-t-amber-300',
+  clear: 'border-rose-400/30 border-t-rose-300'
+}
+
+function WorkingTreeActionButton({
+  variant,
+  label,
+  onClick,
+  disabled = false,
+  loading = false,
+  size = 'md'
+}: {
+  variant: WorkingTreeActionVariant
+  label: string
+  onClick: () => void
+  disabled?: boolean
+  loading?: boolean
+  size?: 'sm' | 'md'
+}) {
+  const Icon = variant === 'stage' ? PlusIcon : variant === 'unstage' ? MinusIcon : TrashIcon
+  const buttonSize = size === 'sm' ? 'h-5 w-5' : 'h-6 w-6'
+  const iconSize = size === 'sm' ? 'h-3 w-3' : 'h-3.5 w-3.5'
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled || loading}
+      aria-label={label}
+      title={label}
+      className={`inline-flex shrink-0 items-center justify-center rounded border disabled:cursor-not-allowed disabled:opacity-50 ${buttonSize} ${actionVariantStyles[variant]}`}
+    >
+      {loading ? (
+        <Spinner size="sm" className={actionVariantSpinnerStyles[variant]} />
+      ) : (
+        <Icon aria-hidden className={iconSize} />
+      )}
+    </button>
+  )
+}
 
 function FileRow({
   file,
@@ -77,13 +129,12 @@ function FileRow({
         <span className="font-mono">{file.path}</span>
       </button>
       {onStage && (
-        <button
-          type="button"
+        <WorkingTreeActionButton
+          variant={mode === 'staged' ? 'unstage' : 'stage'}
+          label={mode === 'staged' ? 'Unstage' : 'Stage'}
           onClick={onStage}
-          className="rounded px-2 py-0.5 text-[10px] text-gf-fg-subtle hover:bg-gf-surface-hover"
-        >
-          stage
-        </button>
+          size="sm"
+        />
       )}
     </div>
   )
@@ -140,6 +191,7 @@ function TreeNode({
   onDelete,
   onRemove,
   onDiscardFolder,
+  onStageFolder,
   onRename,
   onFileHistory
 }: {
@@ -157,6 +209,7 @@ function TreeNode({
   onDelete?: (path: string) => void
   onRemove?: (path: string) => void
   onDiscardFolder?: (folderPath: string) => void
+  onStageFolder?: (folderPath: string) => void
   onRename?: (path: string) => void
   onFileHistory?: (path: string) => void
 }) {
@@ -170,8 +223,9 @@ function TreeNode({
           onContextMenu={(event) =>
             openMenu(
               event,
-              workingTreeFolderContextMenuItems(node.path, open, {
+              workingTreeFolderContextMenuItems(node.path, open, mode, {
                 onToggle: () => toggleExpanded(node.path),
+                onStageFolder: onStageFolder ? () => onStageFolder(node.path) : undefined,
                 onDiscardFolder: onDiscardFolder
                   ? () => onDiscardFolder(node.path)
                   : undefined
@@ -203,6 +257,7 @@ function TreeNode({
               onDelete={onDelete}
               onRemove={onRemove}
               onDiscardFolder={onDiscardFolder}
+              onStageFolder={onStageFolder}
               onRename={onRename}
               onFileHistory={onFileHistory}
             />
@@ -245,13 +300,12 @@ function TreeNode({
         <span className="truncate font-mono">{fileNameFromPath(file.path)}</span>
       </button>
       {onStage && (
-        <button
-          type="button"
+        <WorkingTreeActionButton
+          variant={mode === 'staged' ? 'unstage' : 'stage'}
+          label={mode === 'staged' ? 'Unstage' : 'Stage'}
           onClick={() => onStage(file.path)}
-          className="rounded px-2 py-0.5 text-[10px] text-gf-fg-subtle hover:bg-gf-surface-hover"
-        >
-          {mode === 'staged' ? 'unstage' : 'stage'}
-        </button>
+          size="sm"
+        />
       )}
     </div>
   )
@@ -319,6 +373,16 @@ export function GitWorkingTree() {
     const inFolder = pathsUnderFolderPrefix(files, folderPath)
     const paths = discardablePaths(files.filter((file) => inFolder.includes(file.path)))
     requestBulkDiscard(paths, staged)
+  }
+
+  function requestFolderStage(folderPath: string, files: GitFileChange[], staged: boolean) {
+    const paths = pathsUnderFolderPrefix(files, folderPath)
+    if (paths.length === 0) return
+    if (staged) {
+      void stageReset.mutateAsync({ paths })
+    } else {
+      void stageAdd.mutateAsync({ paths })
+    }
   }
 
   function requestDelete(path: string) {
@@ -422,6 +486,9 @@ export function GitWorkingTree() {
                     onDiscardFolder={(folderPath) =>
                       requestFolderDiscard(folderPath, files, mode === 'staged')
                     }
+                    onStageFolder={(folderPath) =>
+                      requestFolderStage(folderPath, files, mode === 'staged')
+                    }
                     onRename={setRenamePath}
                     onFileHistory={setFileHistoryPath}
                     openMenu={openMenu}
@@ -462,27 +529,32 @@ export function GitWorkingTree() {
             </button>
           )}
         </div>
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap items-center gap-1">
           {(data?.untracked.length ?? 0) > 0 && (
-            <button
-              type="button"
+            <WorkingTreeActionButton
+              variant="clear"
+              label="Clean untracked…"
               disabled={busy}
               onClick={() => setCleanOpen(true)}
-              className="rounded border border-gf-border-strong px-2 py-0.5 text-[10px] text-gf-fg-muted hover:bg-gf-surface disabled:opacity-50"
-            >
-              Clean untracked…
-            </button>
+            />
           )}
-          {data && !data.isClean && (
-            <button
-              type="button"
+          {data && !data.isClean && changesFiles.length > 0 && (
+            <WorkingTreeActionButton
+              variant="stage"
+              label="Stage all"
               disabled={busy}
+              loading={stageAdd.isPending}
               onClick={() => void stageAdd.mutateAsync({ paths: [] })}
-              className="inline-flex items-center gap-1 rounded border border-gf-border-strong px-2 py-0.5 text-[10px] text-gf-fg-muted hover:bg-gf-surface disabled:opacity-50"
-            >
-              {stageAdd.isPending && <Spinner size="sm" />}
-              Stage all
-            </button>
+            />
+          )}
+          {stagedFiles.length > 0 && (
+            <WorkingTreeActionButton
+              variant="unstage"
+              label="Unstage all"
+              disabled={busy}
+              loading={stageReset.isPending}
+              onClick={() => void stageReset.mutateAsync({})}
+            />
           )}
         </div>
       </div>
@@ -510,17 +582,7 @@ export function GitWorkingTree() {
           stagedFiles,
           'staged',
           false,
-          <div className="flex gap-2">
-            {stagedFiles.length > 0 && (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void stageReset.mutateAsync({})}
-                className="text-[10px] text-gf-fg-subtle hover:text-gf-fg disabled:opacity-50"
-              >
-                Unstage all
-              </button>
-            )}
+          <div className="flex items-center gap-1">
             {stagedDiscardable.length > 0 && (
               <button
                 type="button"
