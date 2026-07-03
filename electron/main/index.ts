@@ -105,7 +105,8 @@ function createWindow(): void {
     applyStoredZoom(settings.uiZoomFactor)
     mainWindow.show()
   })
-  mainWindow.webContents.on('zoom-changed', (_event, _direction, zoomFactor) => {
+  mainWindow.webContents.on('zoom-changed', () => {
+    const zoomFactor = mainWindow.webContents.getZoomFactor()
     void persistZoomFactor(zoomFactor)
     broadcastZoomFactor(zoomFactor)
   })
