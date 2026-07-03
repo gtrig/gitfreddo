@@ -6,7 +6,7 @@ Thank you for contributing. This guide covers local development and pull request
 
 - Node.js 24+ (see `.nvmrc`)
 - git on PATH
-- Linux or Windows for full testing (Electron)
+- Linux, macOS, or Windows for full testing (Electron)
 
 ## Setup
 

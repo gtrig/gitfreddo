@@ -46,7 +46,7 @@ GITHUB_ENTERPRISE_HOST=github.mycompany.com
 3. Paste a token with at least `repo` scope
 4. Click **Connect**
 
-PATs are stored locally in `~/.config/gitfreddo/settings.json`.
+PATs are stored locally in your GitFreddo settings file (see [settings location](../getting-started.md#settings-location)).
 
 ## SSH key upload
 

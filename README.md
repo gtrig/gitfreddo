@@ -41,4 +41,4 @@ Full guides live in [docs/](docs/README.md):
 
 See also [CHANGELOG.md](CHANGELOG.md) and [docs/architecture.md](docs/architecture.md) for developers.
 
-Settings are stored in `~/.config/gitfreddo/settings.json`.
+Settings are stored in the app data directory for your platform (see [Getting started](docs/getting-started.md#settings-location)).

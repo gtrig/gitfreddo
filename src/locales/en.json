@@ -101,7 +101,7 @@
       "baseUrlHintLocal": "LM Studio: http://localhost:1234 · Ollama: http://localhost:11434",
       "apiKey": "API key",
       "apiKeyPlaceholder": "sk-…",
-      "apiKeyHint": "Stored in ~/.config/gitfreddo/settings.json on this machine.",
+      "apiKeyHint": "Stored locally in your GitFreddo settings file on this machine.",
       "model": "Model",
       "modelPlaceholder": "Leave empty to use the first available model",
       "customInstructions": "Custom instructions",

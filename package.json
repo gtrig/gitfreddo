@@ -24,6 +24,7 @@
     "test:e2e": "playwright test",
     "dist": "npm run build && electron-builder",
     "dist:linux": "npm run build && electron-builder --linux",
+    "dist:mac": "npm run build && electron-builder --mac",
     "dist:win": "npm run build && electron-builder --win",
     "smoke": "bash scripts/smoke-test.sh"
   },
@@ -88,6 +89,7 @@
       "target": [
         "dmg"
       ],
+      "icon": "assets/logo.png",
       "category": "public.app-category.developer-tools"
     },
     "win": {

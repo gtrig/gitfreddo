@@ -1,12 +1,10 @@
 import { readFile, writeFile, mkdir } from 'fs/promises'
-import { homedir } from 'os'
 import { join } from 'path'
 import type { AppSettings } from '../shared/ipc'
 import { normalizeAppTheme } from '../shared/ipc'
+import { getAppDataDir } from './paths'
 
-const SETTINGS_DIR =
-  process.env.GITFREDDO_SETTINGS_DIR?.trim() ||
-  join(homedir(), '.config', 'gitfreddo')
+const SETTINGS_DIR = getAppDataDir()
 const SETTINGS_PATH = join(SETTINGS_DIR, 'settings.json')
 
 const DEFAULT_SETTINGS: AppSettings = {

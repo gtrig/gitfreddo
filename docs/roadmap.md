@@ -5,7 +5,7 @@ Near-term direction for GitFreddo. Not a commitment — priorities may shift.
 ## 0.3.x — Quality and polish
 
 - [ ] Complete Greek (el) UI translation
-- [ ] macOS release builds in CI
+- [x] macOS release builds in CI
 - [ ] Merge-commit support in interactive rebase (reword, squash, drop)
 - [ ] Remove dead code (orphan sidebar components, unused `WorkspaceBanner`)
 

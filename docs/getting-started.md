@@ -12,6 +12,7 @@ Download the latest release for your platform from [GitHub Releases](https://git
 | Platform | Format |
 |----------|--------|
 | Linux | AppImage or `.deb` |
+| macOS | `.dmg` disk image |
 | Windows | NSIS installer (`.exe`) |
 
 Or build from source:
@@ -42,9 +43,11 @@ When no repository is open, GitFreddo shows the **workspace hub** with four opti
 
 App settings are stored at:
 
-```
-~/.config/gitfreddo/settings.json
-```
+| Platform | Path |
+|----------|------|
+| Linux | `~/.config/gitfreddo/settings.json` |
+| macOS | `~/Library/Application Support/gitfreddo/settings.json` |
+| Windows | `%APPDATA%\gitfreddo\settings.json` |
 
 Open **Settings** from the menu or header to change themes, git path, AI assist, and integrations.
 

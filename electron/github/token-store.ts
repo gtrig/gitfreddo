@@ -1,9 +1,9 @@
 import { safeStorage } from 'electron'
 import { readFile, writeFile, unlink, mkdir } from 'fs/promises'
-import { homedir } from 'os'
 import { join } from 'path'
+import { getAppDataDir } from '../paths'
 
-const SETTINGS_DIR = join(homedir(), '.config', 'gitfreddo')
+const SETTINGS_DIR = getAppDataDir()
 const TOKEN_PATH = join(SETTINGS_DIR, 'github-token.enc')
 
 export async function saveGitHubToken(token: string): Promise<void> {

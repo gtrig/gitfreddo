@@ -1,9 +1,9 @@
 import { chmod, mkdir, writeFile } from 'fs/promises'
-import { homedir } from 'os'
 import { join } from 'path'
 import { loadGitHubToken } from '../github/token-store'
+import { getAppDataDir } from '../paths'
 
-const SETTINGS_DIR = join(homedir(), '.config', 'gitfreddo')
+const SETTINGS_DIR = getAppDataDir()
 const INSTALLED_ASKPASS_PATH = join(SETTINGS_DIR, 'github-askpass.cjs')
 
 /** Keep in sync with electron/git/github-askpass.cjs */

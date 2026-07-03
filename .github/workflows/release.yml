@@ -15,6 +15,9 @@ jobs:
           - os: ubuntu-latest
             platform: linux
             artifact: linux
+          - os: macos-latest
+            platform: mac
+            artifact: macos
           - os: windows-latest
             platform: win
             artifact: windows
@@ -48,6 +51,16 @@ jobs:
             ~\AppData\Local\electron-builder\Cache
           key: electron-windows-${{ hashFiles('package-lock.json') }}
           restore-keys: electron-windows-
+
+      - name: Cache Electron (macOS)
+        if: matrix.platform == 'mac'
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/Library/Caches/electron
+            ~/Library/Caches/electron-builder
+          key: electron-macos-${{ hashFiles('package-lock.json') }}
+          restore-keys: electron-macos-
 
       - name: Install Linux build dependencies
         if: matrix.platform == 'linux'
@@ -94,4 +107,5 @@ jobs:
           files: |
             artifacts/*.AppImage
             artifacts/*.deb
+            artifacts/*.dmg
             artifacts/*.exe

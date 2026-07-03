@@ -26,7 +26,7 @@ Any OpenAI-compatible endpoint (OpenAI, OpenRouter, etc.).
 
 1. Select **Cloud API** in settings
 2. Set **Base URL** (e.g. `https://api.openai.com`)
-3. Enter your **API key** — stored in `~/.config/gitfreddo/settings.json`
+3. Enter your **API key** — stored locally in your GitFreddo settings file
 
 ## Instruction fields
 
