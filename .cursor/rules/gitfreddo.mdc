@@ -1,0 +1,79 @@
+---
+description: GitFreddo project structure and TDD (red-green-refactor) workflow
+alwaysApply: true
+---
+
+# GitFreddo
+
+Desktop git client (Electron + React). Full map: `docs/codebase-map.md`.
+
+## Structure — put code here
+
+| Layer | Path | Responsibility |
+|-------|------|----------------|
+| Renderer UI | `src/components/<Feature>/` | React components (PascalCase folders) |
+| IPC hooks | `src/hooks/` | TanStack Query read (`useGit.ts`) / write (`useGitMutations.ts`) |
+| Pure logic | `src/lib/<domain>/` | graph, timeline, diff, conflicts, context-menus, workspace, git, format |
+| Client state | `src/stores/` | Zustand (selection, workspace, layout, …) |
+| Main process | `electron/main/`, `electron/preload/` | Window, menu, `window.gitfreddo` bridge |
+| Git backend | `electron/git/operations/<domain>.ts` | One module per git domain; routed via `repo-manager.ts` |
+| GitHub / LLM | `electron/github/`, `electron/llm/` | OAuth, API, AI assist |
+| Shared types | `shared/` | IPC types (`ipc.ts`), git/github/ai types — import as `@shared/...` |
+| i18n | `src/locales/` | UI strings only |
+| Docs | `docs/` | User and contributor docs |
+
+**Data flow:** Renderer hooks → `window.gitfreddo.invoke` → `electron/main` → `repo-manager` → `git/operations` → shared types.
+
+**Conventions:** Pure logic in `src/lib/` or `electron/git/operations/`, not in components. New IPC methods: add types in `shared/ipc.ts`, handler in main, expose via preload, wrap in hooks.
+
+## TDD — red, green, refactor
+
+Follow strict TDD for every behavior change:
+
+1. **Red** — Write a failing test that describes the desired behavior. Run `npm run test` and confirm it fails for the right reason.
+2. **Green** — Write the smallest change that makes the test pass. Run `npm run test` again.
+3. **Refactor** — Clean up while keeping tests green. Do not skip red or green.
+
+### Where tests live
+
+| Code under test | Test file | Runner |
+|-----------------|-----------|--------|
+| `src/lib/**/*.ts` | Co-located `*.test.ts` | Vitest (node) |
+| `electron/**/*.ts` | Co-located `*.test.ts` | Vitest (node) |
+| `shared/**/*.ts` | Co-located `*.test.ts` | Vitest (node) |
+| `src/components/**/*.tsx` | Co-located `*.test.tsx` | Vitest (jsdom) |
+| App smoke path | `e2e/app-smoke.spec.ts` | Playwright (after `npm run build`) |
+
+Test helpers: `src/test/setup.ts`, `src/test/mocks/gitfreddo.ts`, `src/test/render.tsx` (`renderWithProviders`).
+
+### Test guidelines
+
+- Prefer pure functions and parsers over full UI flows.
+- Component tests: mock `window.gitfreddo`, wrap with `renderWithProviders`.
+- No network calls in unit tests; keep fixtures deterministic.
+- E2E: use `page.evaluate()` for IPC — avoid native file dialogs.
+- Git fixture repo: `test/fixtures/minimal-repo/`.
+
+### Before finishing a task
+
+Do not mark work complete until CI would pass. Run the checks below yourself — do not assume green without executing them.
+
+**Always run** (matches CI `test` job):
+
+```bash
+npm run typecheck
+npm run test:coverage
+npm run build
+npm run smoke
+```
+
+`test:coverage` is required (not just `test`) — CI enforces thresholds on `src/lib/`, `shared/`, and `electron/`.
+
+**Also run when relevant:**
+
+| Change scope | Extra command |
+|--------------|---------------|
+| App startup, IPC, preload, main window, repo connect, timeline/sidebar load | `npm run test:e2e` (after `build`) |
+| Only pure logic with co-located unit tests | `vitest run path/to/module.test.ts` during TDD; full suite before finish |
+
+Fix any failure before finishing. If a check cannot be run locally, say so and which CI step may still fail.
