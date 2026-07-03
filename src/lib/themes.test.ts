@@ -1,11 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { normalizeAppTheme } from '../../shared/ipc'
+import { normalizeAppTheme } from '../../shared/themes'
 import { applyTheme, normalizeTheme, readStoredTheme, THEME_STORAGE_KEY } from './themes'
 
 describe('normalizeTheme', () => {
-  it('accepts dark and freddo only', () => {
+  it('accepts all app themes', () => {
     expect(normalizeTheme('dark')).toBe('dark')
     expect(normalizeTheme('freddo')).toBe('freddo')
+    expect(normalizeTheme('midnight')).toBe('midnight')
+    expect(normalizeTheme('sage')).toBe('sage')
+    expect(normalizeTheme('lavender')).toBe('lavender')
+    expect(normalizeTheme('dusk')).toBe('dusk')
+    expect(normalizeTheme('paper')).toBe('paper')
+    expect(normalizeTheme('cloud')).toBe('cloud')
     expect(normalizeTheme('fredo')).toBe('freddo')
     expect(normalizeTheme('light')).toBe('dark')
     expect(normalizeTheme(undefined)).toBe('dark')
@@ -55,6 +61,11 @@ describe('applyTheme', () => {
   it('normalizes legacy fredo in localStorage', () => {
     localStorage.setItem(THEME_STORAGE_KEY, 'fredo')
     expect(readStoredTheme()).toBe('freddo')
+  })
+
+  it('reads new themes from localStorage', () => {
+    localStorage.setItem(THEME_STORAGE_KEY, 'midnight')
+    expect(readStoredTheme()).toBe('midnight')
   })
 
   it('normalizes invalid themes to dark', () => {

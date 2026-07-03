@@ -1,14 +1,10 @@
-import type { AppTheme } from '../../shared/ipc'
-import { normalizeAppTheme } from '../../shared/ipc'
+import type { AppTheme } from '../../shared/themes'
+import { APP_THEMES, isAppTheme, normalizeAppTheme, THEME_BG_COLORS, THEME_LABELS } from '../../shared/themes'
 
 export type { AppTheme }
+export { APP_THEMES, THEME_BG_COLORS, THEME_LABELS }
 
 export const THEME_STORAGE_KEY = 'gitfreddo:theme'
-
-export const THEME_BG_COLORS: Record<AppTheme, string> = {
-  dark: '#18181b',
-  freddo: '#1c1612'
-}
 
 export function normalizeTheme(value: unknown): AppTheme {
   return normalizeAppTheme(value)
@@ -27,7 +23,10 @@ export function applyTheme(theme: AppTheme): void {
 export function readStoredTheme(): AppTheme | null {
   try {
     const stored = localStorage.getItem(THEME_STORAGE_KEY)
-    return stored === 'freddo' || stored === 'fredo' || stored === 'dark' ? normalizeTheme(stored) : null
+    if (stored === 'fredo') {
+      return 'freddo'
+    }
+    return isAppTheme(stored) ? stored : null
   } catch {
     return null
   }

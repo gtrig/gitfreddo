@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { RepoSidebar } from '@/components/layout/RepoSidebar'
 import { TimelinePanel } from '@/components/TimelineGraph/TimelinePanel'
 import { DiffOverlay } from '@/components/DiffViewer/DiffOverlay'
-import { ConflictMergeOverlay } from '@/components/DiffViewer/ConflictMergeOverlay'
+import { MergeConflictScreen } from '@/components/MergeConflicts/MergeConflictScreen'
 import { DetailPanel } from '@/components/DetailPanel/DetailPanel'
 import { ActionBar } from '@/components/actions/ActionBar'
 import { WorkspaceHub } from '@/components/layout/WorkspaceHub'
@@ -35,7 +35,6 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const refresh = useManualRefresh()
   const selectedWorkingFile = useSelectionStore((s) => s.selectedWorkingFile)
-  const selectedConflictFile = useSelectionStore((s) => s.selectedConflictFile)
   const selectedCommitFile = useSelectionStore((s) => s.selectedCommitFile)
   const selectedStashFile = useSelectionStore((s) => s.selectedStashFile)
   const diffMode = useSelectionStore((s) => s.diffMode)
@@ -49,7 +48,6 @@ export default function App() {
       (diffMode === 'stash' && selectedStashIndex !== null) ||
       diffMode === 'commit-range'
   )
-  const conflictOverlayOpen = diffMode === 'conflict' && Boolean(selectedConflictFile)
   const activeTab = tabs.find((tab) => tab.path === activePath)
   const connecting = Boolean(activeTab?.connecting)
 
@@ -153,15 +151,7 @@ export default function App() {
         center={
           <>
             <TimelinePanel />
-            {conflictOverlayOpen && selectedConflictFile && (
-              <ConflictMergeOverlay
-                path={selectedConflictFile}
-                onClose={closeDiffOverlay}
-              />
-            )}
-            {diffOverlayOpen && !conflictOverlayOpen && (
-              <DiffOverlay onClose={closeDiffOverlay} />
-            )}
+            {diffOverlayOpen && <DiffOverlay onClose={closeDiffOverlay} />}
           </>
         }
         right={<DetailPanel />}
@@ -177,6 +167,7 @@ export default function App() {
         }
       />
 
+      <MergeConflictScreen />
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <WorkspaceHub
         variant="modal"

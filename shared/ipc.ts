@@ -4,14 +4,10 @@ export interface CliResult {
   code: number
 }
 
-export type AppTheme = 'dark' | 'freddo'
+import type { AppTheme } from './themes'
 
-export function normalizeAppTheme(value: unknown): AppTheme {
-  if (value === 'freddo' || value === 'fredo') {
-    return 'freddo'
-  }
-  return 'dark'
-}
+export type { AppTheme }
+export { normalizeAppTheme } from './themes'
 
 export interface AppSettings {
   theme: AppTheme

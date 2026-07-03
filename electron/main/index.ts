@@ -32,12 +32,9 @@ import {
 } from '../github/service'
 import type { AiFillParams } from '../../shared/ai'
 import type { AppSettings, LogEntry } from '../../shared/ipc'
+import { THEME_BG_COLORS } from '../../shared/themes'
 
 const repoManager = new RepoManager()
-const THEME_BG_COLORS = {
-  dark: '#18181b',
-  freddo: '#1c1612'
-} as const
 
 if (process.platform === 'linux') {
   const linuxApp = app as typeof app & { setDesktopName?: (name: string) => void }

@@ -339,7 +339,7 @@ export function ConflictMergeOverlay({ path, onClose }: ConflictMergeOverlayProp
     hunks.length > 0 ? `${path} (${hunks.length} conflict${hunks.length === 1 ? '' : 's'})` : path
 
   return (
-    <div className="absolute inset-0 z-20 flex flex-col bg-gf-bg-deep">
+    <div className="flex min-h-0 flex-1 flex-col bg-gf-bg-deep">
       <header className="flex shrink-0 items-center gap-2 border-b border-gf-border px-3 py-2">
         <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-orange-400" aria-hidden />
         <h2 className="min-w-0 flex-1 truncate text-sm font-medium text-gf-fg">{conflictLabel}</h2>

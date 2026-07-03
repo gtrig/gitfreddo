@@ -5,14 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/png" sizes="512x512" href="/logo.png" />
     <title>GitFreddo</title>
-    <script>
-      try {
-        var theme = localStorage.getItem('gitfreddo:theme')
-        if (theme === 'dark' || theme === 'freddo' || theme === 'fredo') {
-          document.documentElement.dataset.theme = theme === 'fredo' ? 'freddo' : theme
-        }
-      } catch (e) {}
-    </script>
+    <script type="module" src="./theme-boot.ts"></script>
   </head>
   <body class="bg-gf-bg text-gf-fg">
     <div id="root"></div>
