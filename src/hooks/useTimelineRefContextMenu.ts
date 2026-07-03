@@ -72,13 +72,17 @@ export function useTimelineRefContextMenu({
       onSetUpstream: setUpstreamBranch,
       onUnsetUpstream: (name: string) => void unsetUpstream.mutateAsync({ branch: name }),
       onCheckoutRemote: setCheckoutRemote,
-      onDeleteRemoteBranch: setPendingDeleteRemote,
+      onDeleteRemoteBranch: (remoteBranch: string) => {
+        const branch = (branches ?? []).find((entry) => entry.name === remoteBranch)
+        if (branch) setPendingDeleteRemote(branch)
+      },
       onPushTag: (name: string, remote?: string) => void pushTag.mutateAsync({ name, remote }),
       onRenameTag: setRenameTag,
       onDeleteTag: (tag: GitTag, remote?: string) => setPendingDeleteTag({ tag, remote }),
       defaultRemote
     }),
     [
+      branches,
       canCreatePr,
       checkout,
       defaultRemote,

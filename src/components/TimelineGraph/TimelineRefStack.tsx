@@ -89,7 +89,7 @@ export function TimelineRefStack({
         ) : null}
       </span>
     ) : (
-      <div ref={connectorAnchorRef} className="flex min-w-0 max-w-full items-center gap-1">
+      <span ref={connectorAnchorRef} className="flex min-w-0 max-w-full items-center gap-1">
         {showDetachedHead ? <TimelineDetachedHeadBadge /> : null}
         <div className="flex min-w-0 max-w-full items-center gap-0.5">
           {primary ? (
@@ -101,7 +101,7 @@ export function TimelineRefStack({
           ) : null}
           <span className="shrink-0 text-[10px] tabular-nums text-gf-fg-subtle">+{rest.length}</span>
         </div>
-      </div>
+      </span>
     )
 
   if (rest.length === 0) {
