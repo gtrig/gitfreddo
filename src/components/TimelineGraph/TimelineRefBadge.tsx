@@ -50,10 +50,12 @@ export function TimelineDetachedHeadBadge() {
 
 export function TimelineRefBadge({
   timelineRef,
-  isCurrent = false
+  isCurrent = false,
+  onContextMenu
 }: {
   timelineRef: TimelineRef
   isCurrent?: boolean
+  onContextMenu?: (event: React.MouseEvent, timelineRef: TimelineRef) => void
 }) {
   const textColor = timelineRef.kind === 'branch' ? branchColor(timelineRef.label) : ''
 
@@ -63,6 +65,13 @@ export function TimelineRefBadge({
       <span
         className={`${BADGE_BASE} ${KIND_STYLES[timelineRef.kind]} ${textColor}`}
         title={timelineRef.fullRef}
+        onContextMenu={
+          onContextMenu
+            ? (event) => {
+                onContextMenu(event, timelineRef)
+              }
+            : undefined
+        }
       >
         <RefIcon kind={timelineRef.kind} />
         <span className="truncate">{timelineRef.label}</span>

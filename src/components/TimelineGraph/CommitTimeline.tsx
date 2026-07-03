@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
-import { useLogGraph, useRepoStatus, useRemotes, useStashList, useTags, useWorkingStatus, useMergeStatus } from '@/hooks/useGit'
+import { useLogGraph, useBranches, useRepoStatus, useRemotes, useStashList, useTags, useWorkingStatus, useMergeStatus } from '@/hooks/useGit'
 import { useTimelineColumnSizes } from '@/hooks/useTimelineColumnSizes'
 import { useTimelineColumnVisibility } from '@/hooks/useTimelineColumnVisibility'
 import { useCommitContextMenu } from '@/hooks/useCommitContextMenu'
+import { useTimelineRefContextMenu } from '@/hooks/useTimelineRefContextMenu'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { buildGitGraphLayout } from '@/lib/gitGraphLayout'
@@ -36,14 +37,22 @@ import { ColumnResizeHandle } from '@/components/ui/ColumnResizeHandle'
 import { ContextMenu } from '@/components/ui/ContextMenu'
 import { LoadingRow } from '@/components/ui/Spinner'
 import { MergeBranchDialog } from '@/components/BranchSidebar/MergeBranchDialog'
+import { CreatePrModal } from '@/components/GitHub/CreatePrModal'
 import { AddWorktreeModal } from '@/components/actions/AddWorktreeModal'
+import { CheckoutRemoteModal } from '@/components/actions/CheckoutRemoteModal'
 import { CreateBranchModal } from '@/components/actions/CreateBranchModal'
+import { RenameBranchModal } from '@/components/actions/RenameBranchModal'
+import { RenameTagModal } from '@/components/actions/RenameTagModal'
+import { SetUpstreamModal } from '@/components/actions/SetUpstreamModal'
 import { RebaseSequenceModal } from '@/components/actions/RebaseSequenceModal'
 import { CreateTagModal } from '@/components/actions/CreateTagModal'
 import { DeleteCommitModal } from '@/components/DetailPanel/DeleteCommitModal'
+import { DeleteTagModal } from '@/components/actions/DeleteTagModal'
 import { RemoveStaleBranchesModal } from '@/components/DetailPanel/RemoveStaleBranchesModal'
 import { RewordCommitModal } from '@/components/DetailPanel/RewordCommitModal'
-import type { GitCommit } from '@/lib/types'
+import { ConfirmDialog } from '@/components/ui/Modal'
+import { parseRemoteBranchName } from '@/lib/branchTree'
+import type { TimelineRef } from '@/lib/timelineRefs'
 import type { TimelineColumnId } from '@/lib/timelineColumnVisibility'
 
 const RESIZE_HANDLE_WIDTH = 4
@@ -62,6 +71,7 @@ export function CommitTimeline() {
   const { data: mergeStatus } = useMergeStatus(connected)
   const { data: stashes } = useStashList(connected)
   const { data: tags } = useTags(connected)
+  const { data: branches } = useBranches(connected)
   const { data: remotes } = useRemotes(connected)
   const tagNames = useMemo(() => new Set((tags ?? []).map((tag) => tag.name)), [tags])
   const remoteNames = useMemo(() => new Set((remotes ?? []).map((remote) => remote.name)), [remotes])
@@ -154,6 +164,51 @@ export function CommitTimeline() {
     isDetached: repoStatus?.isDetached ?? false,
     commits
   })
+
+  const {
+    menuState: refMenuState,
+    closeMenu: closeRefMenu,
+    openRefMenu,
+    renameBranch,
+    setRenameBranch,
+    pendingDeleteBranch,
+    setPendingDeleteBranch,
+    deleteBranch,
+    prBranch,
+    setPrBranch,
+    defaultBase,
+    repoPath,
+    invalidatePrs,
+    show,
+    worktreeBranch,
+    setWorktreeBranch,
+    upstreamBranch,
+    setUpstreamBranch,
+    localBranches,
+    checkoutRemote,
+    setCheckoutRemote,
+    pendingDeleteRemote,
+    setPendingDeleteRemote,
+    deleteRemoteBranch,
+    renameTag,
+    setRenameTag,
+    pendingDeleteTag,
+    setPendingDeleteTag,
+    defaultRemote
+  } = useTimelineRefContextMenu({
+    connected,
+    branches,
+    tags,
+    remotes,
+    currentBranch,
+    onSelectCommit: (hash) => selectTimelineNode('commit', hash),
+    onMerge: setMergeSource
+  })
+
+  const onRefContextMenu =
+    (commit: GitCommit) => (event: React.MouseEvent, timelineRef: TimelineRef) => {
+      openRefMenu(event, timelineRef, commit.hash)
+    }
 
   const onRowContextMenu = (commit: GitCommit) => (event: React.MouseEvent) => {
     if (isStashCommit(commit)) {
@@ -296,6 +351,7 @@ export function CommitTimeline() {
                   isHeadCommit={commit.hash === head}
                   currentBranch={currentBranch}
                   isDetached={isDetached}
+                  onRefContextMenu={onRefContextMenu(commit)}
                 />
               </div>
             )
@@ -553,6 +609,113 @@ export function CommitTimeline() {
           y={stashMenuState.y}
           items={stashMenuState.items}
           onClose={closeStashMenu}
+        />
+      )}
+
+      {refMenuState && (
+        <ContextMenu
+          x={refMenuState.x}
+          y={refMenuState.y}
+          items={refMenuState.items}
+          onClose={closeRefMenu}
+        />
+      )}
+
+      {renameBranch && (
+        <RenameBranchModal
+          open
+          currentName={renameBranch}
+          onClose={() => setRenameBranch(null)}
+        />
+      )}
+
+      {pendingDeleteBranch && (
+        <ConfirmDialog
+          open
+          title="Delete branch"
+          message={`Delete branch "${pendingDeleteBranch}"?`}
+          confirmLabel="Delete"
+          busy={deleteBranch.isPending}
+          onConfirm={async () => {
+            await deleteBranch.mutateAsync({ name: pendingDeleteBranch, force: true })
+            setPendingDeleteBranch(null)
+          }}
+          onCancel={() => setPendingDeleteBranch(null)}
+        />
+      )}
+
+      {prBranch && repoPath && (
+        <CreatePrModal
+          open
+          onClose={() => setPrBranch(null)}
+          defaultHead={prBranch}
+          defaultBase={defaultBase}
+          onSubmit={async (params) => {
+            await window.gitfreddo.githubCreatePullRequest(repoPath, params)
+            await invalidatePrs(repoPath)
+            show('Pull request created', 'success')
+            setPrBranch(null)
+          }}
+        />
+      )}
+
+      {worktreeBranch && (
+        <AddWorktreeModal
+          open
+          initialBranch={worktreeBranch}
+          onClose={() => setWorktreeBranch(null)}
+        />
+      )}
+
+      {upstreamBranch && (
+        <SetUpstreamModal
+          open
+          branchName={upstreamBranch}
+          currentUpstream={localBranches.find((branch) => branch.name === upstreamBranch)?.upstream}
+          onClose={() => setUpstreamBranch(null)}
+        />
+      )}
+
+      {checkoutRemote && (
+        <CheckoutRemoteModal
+          open
+          remoteBranch={checkoutRemote}
+          onClose={() => setCheckoutRemote(null)}
+        />
+      )}
+
+      {pendingDeleteRemote && (
+        <ConfirmDialog
+          open
+          title="Delete remote branch"
+          message={`Delete remote branch "${pendingDeleteRemote.name.replace(/^remotes\//, '')}"?`}
+          confirmLabel="Delete"
+          busy={deleteRemoteBranch.isPending}
+          onConfirm={async () => {
+            const parsed = parseRemoteBranchName(pendingDeleteRemote.name)
+            if (parsed) {
+              await deleteRemoteBranch.mutateAsync({
+                remote: parsed.remote,
+                branch: parsed.branch
+              })
+            }
+            setPendingDeleteRemote(null)
+          }}
+          onCancel={() => setPendingDeleteRemote(null)}
+        />
+      )}
+
+      {renameTag && !renameTag.isRemote && (
+        <RenameTagModal open currentName={renameTag.name} onClose={() => setRenameTag(null)} />
+      )}
+
+      {pendingDeleteTag && (
+        <DeleteTagModal
+          open
+          tag={pendingDeleteTag.tag}
+          remote={pendingDeleteTag.remote}
+          defaultRemote={defaultRemote}
+          onClose={() => setPendingDeleteTag(null)}
         />
       )}
 

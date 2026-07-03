@@ -38,12 +38,14 @@ export function TimelineRefStack({
   refs,
   isHeadCommit = false,
   currentBranch = '',
-  isDetached = false
+  isDetached = false,
+  onRefContextMenu
 }: {
   refs: TimelineRef[]
   isHeadCommit?: boolean
   currentBranch?: string
   isDetached?: boolean
+  onRefContextMenu?: (event: React.MouseEvent, timelineRef: TimelineRef) => void
 }) {
   const anchorRef = useRef<HTMLDivElement>(null)
   const [hovered, setHovered] = useState(false)
@@ -77,7 +79,11 @@ export function TimelineRefStack({
       <span className="flex min-w-0 max-w-full items-center gap-1">
         {showDetachedHead ? <TimelineDetachedHeadBadge /> : null}
         {primary ? (
-          <TimelineRefBadge timelineRef={primary} isCurrent={primaryIsCurrent} />
+          <TimelineRefBadge
+            timelineRef={primary}
+            isCurrent={primaryIsCurrent}
+            onContextMenu={onRefContextMenu}
+          />
         ) : null}
       </span>
     ) : (
@@ -85,7 +91,11 @@ export function TimelineRefStack({
         {showDetachedHead ? <TimelineDetachedHeadBadge /> : null}
         <div className="flex min-w-0 max-w-full items-center gap-0.5">
           {primary ? (
-            <TimelineRefBadge timelineRef={primary} isCurrent={primaryIsCurrent} />
+            <TimelineRefBadge
+              timelineRef={primary}
+              isCurrent={primaryIsCurrent}
+              onContextMenu={onRefContextMenu}
+            />
           ) : null}
           <span className="shrink-0 text-[10px] tabular-nums text-gf-fg-subtle">+{rest.length}</span>
         </div>
@@ -126,6 +136,7 @@ export function TimelineRefStack({
                       isHeadCommit,
                       isDetached
                     )}
+                    onContextMenu={onRefContextMenu}
                   />
                 ))}
               </div>
