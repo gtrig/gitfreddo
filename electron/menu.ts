@@ -1,6 +1,6 @@
 import { BrowserWindow, Menu, app, dialog, shell } from 'electron'
 
-export type MenuAction = 'open-workspace' | 'open-settings' | 'refresh' | 'quit'
+export type MenuAction = 'open-workspace' | 'open-settings' | 'open-docs' | 'refresh' | 'quit'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -75,6 +75,12 @@ export function buildAppMenu(): void {
     {
       label: 'Help',
       submenu: [
+        {
+          label: 'Documentation',
+          accelerator: 'F1',
+          click: () => sendMenuAction('open-docs')
+        },
+        { type: 'separator' },
         {
           label: 'GitFreddo on GitHub',
           click: () => {

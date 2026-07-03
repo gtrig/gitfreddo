@@ -7,7 +7,7 @@ interface ModalProps {
   open: boolean
   onClose: () => void
   children: ReactNode
-  size?: 'md' | 'lg'
+  size?: 'md' | 'lg' | 'xl'
 }
 
 export function Modal({ title, open, onClose, children, size = 'md' }: ModalProps) {
@@ -53,7 +53,7 @@ export function Modal({ title, open, onClose, children, size = 'md' }: ModalProp
         aria-labelledby="modal-title"
         tabIndex={-1}
         className={`w-full rounded-lg border border-gf-border-strong bg-gf-bg shadow-xl outline-none ${
-          size === 'lg' ? 'max-w-2xl' : 'max-w-md'
+          size === 'xl' ? 'max-w-5xl' : size === 'lg' ? 'max-w-2xl' : 'max-w-md'
         }`}
         onClick={(event) => event.stopPropagation()}
       >

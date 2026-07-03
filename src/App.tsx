@@ -13,6 +13,7 @@ import { LogDrawer, useLogSubscription } from '@/components/layout/LogDrawer'
 import { HeaderToolsMenu } from '@/components/layout/HeaderToolsMenu'
 import { ResizableMainLayout } from '@/components/layout/ResizableMainLayout'
 import { SettingsModal } from '@/components/settings/SettingsModal'
+import { DocsModal } from '@/components/docs/DocsModal'
 import { GlobalOperationOverlay } from '@/components/ui/GlobalOperationOverlay'
 import { runGlobalOperation } from '@/stores/operation'
 import { useWorkspaceStore } from '@/stores/workspace'
@@ -35,6 +36,7 @@ export default function App() {
 
   const [error, setError] = useState<string | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [docsOpen, setDocsOpen] = useState(false)
   const refresh = useManualRefresh()
   const selectedWorkingFile = useSelectionStore((s) => s.selectedWorkingFile)
   const selectedCommitFile = useSelectionStore((s) => s.selectedCommitFile)
@@ -85,6 +87,7 @@ export default function App() {
     const unsubscribe = window.gitfreddo.onMenuAction((action: MenuAction) => {
       if (action === 'open-workspace') void openWorkspaceDialog()
       if (action === 'open-settings') setSettingsOpen(true)
+      if (action === 'open-docs') setDocsOpen(true)
       if (action === 'refresh') {
         appLog('info', 'Manual refresh')
         refresh()
@@ -110,6 +113,10 @@ export default function App() {
         event.preventDefault()
         setSettingsOpen(true)
       }
+      if (event.key === 'F1') {
+        event.preventDefault()
+        setDocsOpen(true)
+      }
       if (event.key === '`' && mod) {
         event.preventDefault()
         useLogStore.getState().toggleOpen()
@@ -124,6 +131,7 @@ export default function App() {
       <>
         <WorkspaceHub variant="page" onOpen={connectWorkspace} />
         <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+        <DocsModal open={docsOpen} onClose={() => setDocsOpen(false)} />
         <LogDrawer />
       </>
     )
@@ -145,7 +153,10 @@ export default function App() {
         <div className="flex flex-wrap items-center justify-center gap-3">
           <ActionBar />
         </div>
-        <HeaderToolsMenu onOpenSettings={() => setSettingsOpen(true)} />
+        <HeaderToolsMenu
+          onOpenSettings={() => setSettingsOpen(true)}
+          onOpenDocs={() => setDocsOpen(true)}
+        />
       </header>
 
       <ResizableMainLayout
@@ -162,6 +173,7 @@ export default function App() {
       <GlobalOperationOverlay />
       <MergeConflictScreen />
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <DocsModal open={docsOpen} onClose={() => setDocsOpen(false)} />
       <WorkspaceHub
         variant="modal"
         open={workspacePickerOpen}

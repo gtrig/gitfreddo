@@ -65,6 +65,19 @@
       "working": "Working…"
     }
   },
+  "docs": {
+    "title": "Documentation",
+    "shortcut": "Documentation (F1)",
+    "navAria": "Documentation pages",
+    "pageNotFound": "Page not found: {{path}}",
+    "sections": {
+      "start": "Get started",
+      "setup": "Setup",
+      "workflows": "Workflows",
+      "contributing": "Contributing",
+      "product": "Product"
+    }
+  },
   "settings": {
     "title": "Settings",
     "saved": "Settings saved.",
