@@ -3,11 +3,11 @@ export type SettingsSection = 'git' | 'interface' | 'ai' | 'integrations' | 'mai
 export const SETTINGS_SECTION_KEY = 'gitfreddo:settings-section'
 
 export const SETTINGS_SECTIONS: { id: SettingsSection }[] = [
-  { id: 'git' },
-  { id: 'maintenance' },
   { id: 'interface' },
   { id: 'ai' },
-  { id: 'integrations' }
+  { id: 'git' },
+  { id: 'integrations' },
+  { id: 'maintenance' }
 ]
 
 export function loadSettingsSection(): SettingsSection {
