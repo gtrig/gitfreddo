@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { filterCommitsByMessage, commitSearchDimmedHashes, commitSearchRowDimClass } from '@/lib/git/commitSearch'
+import { commitMatchesSearch, filterCommitsByMessage, commitSearchDimmedHashes, commitSearchRowDimClass } from '@/lib/git/commitSearch'
 import type { GitCommit } from '@/lib/types'
 
-function commit(subject: string, message = subject): GitCommit {
+function commit(subject: string, message = subject, overrides: Partial<GitCommit> = {}): GitCommit {
   const author = { name: 'Test', email: 'test@example.com', date: '2024-01-01' }
   return {
-    hash: 'abc123',
+    hash: 'abc123def456',
     shortHash: 'abc123',
     parents: [],
     subject,
@@ -16,7 +16,8 @@ function commit(subject: string, message = subject): GitCommit {
     signature: null,
     notes: '',
     stats: null,
-    refs: []
+    refs: [],
+    ...overrides
   }
 }
 
@@ -38,6 +39,39 @@ describe('filterCommitsByMessage', () => {
 
   it('matches body text beyond the subject', () => {
     expect(filterCommitsByMessage(commits, 'expired sessions')).toEqual([commits[0]])
+  })
+})
+
+describe('commitMatchesSearch', () => {
+  const commits = [
+    commit('Fix login', 'Fix login', {
+      hash: 'aaa111',
+      author: { name: 'Alice', email: 'alice@example.com', date: '2024-06-15T10:00:00Z' }
+    }),
+    commit('Other', 'Other', {
+      hash: 'bbb222',
+      author: { name: 'Bob', email: 'bob@example.com', date: '2024-01-01T00:00:00Z' }
+    })
+  ]
+
+  it('filters by author, hash prefix, and date range', () => {
+    expect(commitMatchesSearch(commits[0]!, { query: '', author: 'alice' })).toBe(true)
+    expect(commitMatchesSearch(commits[1]!, { query: '', author: 'alice' })).toBe(false)
+    expect(commitMatchesSearch(commits[0]!, { query: '', hashPrefix: 'aaa' })).toBe(true)
+    expect(
+      commitMatchesSearch(commits[0]!, {
+        query: '',
+        dateFrom: '2024-06-01',
+        dateTo: '2024-06-30'
+      })
+    ).toBe(true)
+    expect(
+      commitMatchesSearch(commits[1]!, {
+        query: '',
+        dateFrom: '2024-06-01',
+        dateTo: '2024-06-30'
+      })
+    ).toBe(false)
   })
 })
 

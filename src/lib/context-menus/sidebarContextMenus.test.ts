@@ -5,6 +5,7 @@ import {
   issueContextMenuItems,
   localBranchContextMenuItems,
   pullRequestContextMenuItems,
+  remoteBranchContextMenuItems,
   remoteFolderContextMenuItems,
   stashContextMenuItems,
   tagContextMenuItems,
@@ -84,6 +85,27 @@ describe('worktreeContextMenuItems', () => {
       onCopyPath: noop
     })
     expect(items.some((item) => item.id === 'remove')).toBe(false)
+  })
+})
+
+describe('remoteBranchContextMenuItems', () => {
+  it('includes delete action when handler is provided', () => {
+    const items = remoteBranchContextMenuItems(
+      {
+        name: 'remotes/origin/feature',
+        head: 'abc',
+        ahead: 0,
+        behind: 0,
+        isCurrent: false,
+        isRemote: true
+      },
+      {
+        onSelectCommit: noop,
+        onCheckout: noop,
+        onDeleteRemote: noop
+      }
+    )
+    expect(items.some((item) => item.id === 'delete-remote')).toBe(true)
   })
 })
 

@@ -2,8 +2,10 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   countVisibleColumns,
   DEFAULT_TIMELINE_COLUMN_VISIBILITY,
+  hasVisibleColumnAfter,
   loadTimelineColumnVisibility,
   saveTimelineColumnVisibility,
+  timelineColumnLabel,
   timelineHeaderContextMenuItems
 } from '@/lib/timeline/timelineColumnVisibility'
 
@@ -70,5 +72,16 @@ describe('timelineColumnVisibility', () => {
     const items = timelineHeaderContextMenuItems(visibility, () => {})
     expect(items.find((item) => item.id === 'message')?.disabled).toBe(true)
     expect(countVisibleColumns(visibility)).toBe(1)
+  })
+
+  it('labels columns and detects trailing visible columns', () => {
+    expect(timelineColumnLabel('hash')).toBe('Hash')
+    expect(hasVisibleColumnAfter(DEFAULT_TIMELINE_COLUMN_VISIBILITY, 'graph')).toBe(true)
+    expect(
+      hasVisibleColumnAfter(
+        { ...DEFAULT_TIMELINE_COLUMN_VISIBILITY, message: false, timeSince: false },
+        'graph'
+      )
+    ).toBe(false)
   })
 })

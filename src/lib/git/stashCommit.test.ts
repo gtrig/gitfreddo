@@ -1,8 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import type { GitCommit, GitStashEntry } from '@/lib/types'
-import { resolveStashEntry, stashRefIndex } from '@/lib/git/stashCommit'
+import {
+  filterTimelineCommits,
+  isInternalStashCommit,
+  isStashCommit,
+  isStashRef,
+  resolveStashAnchorHash,
+  resolveStashEntry,
+  stashBaseParentHash,
+  stashMessageSubject,
+  stashRefIndex
+} from '@/lib/git/stashCommit'
 
-function makeCommit(hash: string, refs: string[]): GitCommit {
+function makeCommit(hash: string, refs: string[] = [], overrides: Partial<GitCommit> = {}): GitCommit {
   const author = { name: 'test', email: 'test@example.com', date: '2024-01-01T00:00:00Z' }
   return {
     hash,
@@ -16,7 +26,8 @@ function makeCommit(hash: string, refs: string[]): GitCommit {
     signature: null,
     notes: '',
     stats: null,
-    refs
+    refs,
+    ...overrides
   }
 }
 
@@ -39,5 +50,38 @@ describe('resolveStashEntry', () => {
 
   it('falls back to stash ref index when hash differs', () => {
     expect(resolveStashEntry(makeCommit('other', ['stash@{0}']), stashes)?.index).toBe(0)
+  })
+})
+
+describe('stash ref helpers', () => {
+  it('detects stash refs and commits', () => {
+    expect(isStashRef('stash@{1}')).toBe(true)
+    expect(isStashRef('refs/stash')).toBe(true)
+    expect(isStashRef('main')).toBe(false)
+    expect(isStashCommit(makeCommit('x', ['stash@{0}']))).toBe(true)
+  })
+
+  it('filters internal stash commits from the timeline', () => {
+    const commits = [
+      makeCommit('a', []),
+      makeCommit('b', ['stash'], { subject: 'index on main: abc WIP' })
+    ]
+    expect(isInternalStashCommit(commits[1]!)).toBe(true)
+    expect(filterTimelineCommits(commits)).toHaveLength(1)
+  })
+
+  it('parses stash message subjects and parent hashes', () => {
+    expect(stashMessageSubject('WIP on main: abc1234 save login work')).toBe('save login work')
+    expect(stashBaseParentHash({ parents: ['parent-hash'] })).toBe('parent-hash')
+  })
+
+  it('resolves stash anchor hash from parent or subject', () => {
+    const parent = makeCommit('parent1234567890', [])
+    const stash = makeCommit('stash1', [], {
+      parents: ['parent1234567890'],
+      subject: 'WIP on main: parent1 save work'
+    })
+    const commits = [stash, parent]
+    expect(resolveStashAnchorHash(stash, commits, 'parent1234567890')).toBe('parent1234567890')
   })
 })

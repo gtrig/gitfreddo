@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import type { GitCommit } from '@/lib/types'
 import {
+  allSelectedOnBranchHistory,
+  anySelectedOnBranchHistory,
   areContiguousCommits,
   areContiguousOnBranchHeadLine,
   commitRangeInTimeline,
+  commitRowHighlightClass,
   firstParentChainFromHead,
   selectedCommitsChronological,
+  selectedCommitsInTimeline,
+  selectionHasMergeCommit,
   toggleHashInList
 } from '@/lib/git/commitSelection'
 
@@ -72,5 +77,31 @@ describe('commitSelection', () => {
     expect(areContiguousOnBranchHeadLine([c2, c3], 'c3', chain)).toBe(true)
     expect(areContiguousOnBranchHeadLine([c1, c3], 'c3', chain)).toBe(false)
     expect(areContiguousOnBranchHeadLine([feature], 'c3', chain)).toBe(false)
+  })
+
+  it('detects merge commits and branch-history membership', () => {
+    const c1 = makeCommit('c1', [])
+    const c2 = makeCommit('c2', ['c1'])
+    const c3 = makeCommit('c3', ['c2'])
+    const feature = makeCommit('feature', ['c1'])
+    const chain = [c3, c2, feature, c1]
+    const merge = makeCommit('merge', ['c2', 'feature'])
+
+    expect(selectionHasMergeCommit([merge])).toBe(true)
+    expect(allSelectedOnBranchHistory([c2], 'c3', chain)).toBe(true)
+    expect(anySelectedOnBranchHistory([feature], 'c3', chain)).toBe(false)
+  })
+
+  it('orders selected commits in timeline order', () => {
+    expect(selectedCommitsInTimeline(commits, ['c3', 'c1']).map((c) => c.hash)).toEqual([
+      'c1',
+      'c3'
+    ])
+  })
+
+  it('highlights selected and primary rows', () => {
+    expect(commitRowHighlightClass(true, false)).toContain('bg-gf-accent/10')
+    expect(commitRowHighlightClass(true, true)).toContain('bg-gf-accent/20')
+    expect(commitRowHighlightClass(false, false)).toBe('')
   })
 })

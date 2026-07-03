@@ -94,4 +94,17 @@ describe('parseLogGraphOutput', () => {
 
     expect(parseLogGraphOutput(stdout)).toHaveLength(1)
   })
+
+  it('parses insertions-only shortstat', () => {
+    const stdout = `${logRecord({ shortstat: '1 file changed, 3 insertions(+)' })}${LOG_RECORD_SEPARATOR}`
+    expect(parseLogGraphOutput(stdout)[0]?.stats).toEqual({
+      filesChanged: 1,
+      insertions: 3,
+      deletions: 0
+    })
+  })
+
+  it('skips malformed records', () => {
+    expect(parseLogGraphOutput('too\x1ffew\x1ffields')).toEqual([])
+  })
 })

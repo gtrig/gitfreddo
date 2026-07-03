@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildFileTree, countCommitFiles, commitMessageBody, parsePathForTree } from '@/lib/workspace/fileTree'
+import { buildFileTree, countCommitFiles, commitMessageBody, parsePathForTree, sortCommitFiles, collectFolderPaths, buildCommitMessage, emptyCommitFileCounts } from '@/lib/workspace/fileTree'
 import type { CommitFileItem } from '@/lib/types'
 
 describe('countCommitFiles', () => {
@@ -77,5 +77,36 @@ describe('commitMessageBody', () => {
     expect(
       commitMessageBody('Fix graph\n\nDetails here.', 'Fix graph')
     ).toBe('Details here.')
+  })
+})
+
+describe('sortCommitFiles', () => {
+  it('sorts paths ascending or descending', () => {
+    const files = [{ path: 'z.ts', kind: 'added' as const }, { path: 'a.ts', kind: 'added' as const }]
+    expect(sortCommitFiles(files).map((file) => file.path)).toEqual(['a.ts', 'z.ts'])
+    expect(sortCommitFiles(files, false).map((file) => file.path)).toEqual(['z.ts', 'a.ts'])
+  })
+})
+
+describe('collectFolderPaths', () => {
+  it('returns nested folder paths', () => {
+    const tree = buildFileTree([
+      { path: 'src/lib/a.ts', kind: 'added' },
+      { path: 'src/b.ts', kind: 'changed' }
+    ])
+    expect(collectFolderPaths(tree)).toEqual(['src', 'src/lib'])
+  })
+})
+
+describe('buildCommitMessage', () => {
+  it('joins summary and body with a blank line', () => {
+    expect(buildCommitMessage('feat: add auth', 'Login form')).toBe('feat: add auth\n\nLogin form')
+    expect(buildCommitMessage('fix bug', '')).toBe('fix bug')
+  })
+})
+
+describe('emptyCommitFileCounts', () => {
+  it('starts at zero', () => {
+    expect(emptyCommitFileCounts()).toEqual({ added: 0, changed: 0, removed: 0 })
   })
 })

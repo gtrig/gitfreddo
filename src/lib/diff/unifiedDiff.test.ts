@@ -1,9 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import {
   alignFileLinesForSplit,
+  buildAddedFileDiff,
+  buildFileViewDiff,
+  buildHunkPatch,
+  buildRemovedFileDiff,
+  buildUnifiedDiff,
+  diffStatsFromRows,
+  diffStatsFromSplitRows,
   diffStatsFromUnified,
+  groupRowsByHunk,
+  headHashForPath,
+  isBinaryContent,
+  parseUnifiedDiff,
   parseUnifiedDiffRows,
-  rowsToSplitDisplay
+  rowsToSplitDisplay,
+  splitRowsForDisplay
 } from '@/lib/diff/unifiedDiff'
 
 const sample = `--- a/src/a.go
@@ -68,5 +80,93 @@ describe('alignFileLinesForSplit', () => {
     expect(split).toHaveLength(1)
     expect(split[0].leftText).toBe('same')
     expect(split[0].rightText).toBe('same')
+  })
+})
+
+describe('buildUnifiedDiff', () => {
+  it('builds a unified diff for simple edits', () => {
+    const diff = buildUnifiedDiff('alpha\nbeta\n', 'alpha\ngamma\n', 'src/file.ts')
+    expect(diff).toContain('--- a/src/file.ts')
+    expect(diff).toContain('-beta')
+    expect(diff).toContain('+gamma')
+    expect(diffStatsFromUnified(diff)).toEqual({ additions: 1, deletions: 1 })
+  })
+})
+
+describe('added and removed file diffs', () => {
+  it('builds added file diff', () => {
+    const diff = buildAddedFileDiff('new.ts', 'hello\nworld\n')
+    expect(diff).toContain('+++ b/new.ts')
+    expect(diff).toContain('+hello')
+    expect(diffStatsFromUnified(diff).additions).toBe(2)
+  })
+
+  it('builds removed file diff', () => {
+    const diff = buildRemovedFileDiff('old.ts', 'line\n')
+    expect(diff).toContain('--- a/old.ts')
+    expect(diff).toContain('-line')
+    expect(diffStatsFromUnified(diff).deletions).toBe(1)
+  })
+
+  it('handles empty added and removed files', () => {
+    expect(buildAddedFileDiff('empty.ts', '')).toContain('@@ -0,0 +0,0 @@')
+    expect(buildRemovedFileDiff('empty.ts', '')).toContain('@@ -0,0 +0,0 @@')
+  })
+})
+
+describe('buildFileViewDiff', () => {
+  it('renders file contents as context lines', () => {
+    const diff = buildFileViewDiff('readme.md', 'title\n')
+    expect(diff).toContain(' title')
+    expect(parseUnifiedDiffRows(diff).some((row) => row.kind === 'context')).toBe(true)
+  })
+})
+
+describe('parseUnifiedDiff', () => {
+  it('maps rows back to diff line text', () => {
+    const lines = parseUnifiedDiff(sample)
+    expect(lines.some((line) => line.text === '+func new() {}')).toBe(true)
+  })
+})
+
+describe('hunk helpers', () => {
+  const rows = parseUnifiedDiffRows(sample)
+
+  it('groups rows by hunk', () => {
+    const groups = groupRowsByHunk(rows)
+    expect(groups).toHaveLength(1)
+    expect(groups[0]?.some((row) => row.kind === 'remove')).toBe(true)
+  })
+
+  it('builds hunk patches and split rows', () => {
+    const patch = buildHunkPatch('src/a.go', rows)
+    expect(patch).toContain('@@')
+    const split = splitRowsForDisplay(rows)
+    expect(diffStatsFromSplitRows(split)).toEqual(diffStatsFromRows(rows))
+    expect(rowsToSplitDisplay(rows).length).toBeGreaterThan(0)
+  })
+})
+
+describe('isBinaryContent', () => {
+  it('detects null bytes', () => {
+    expect(isBinaryContent('text')).toBe(false)
+    expect(isBinaryContent('bin\0ary')).toBe(true)
+  })
+})
+
+describe('headHashForPath', () => {
+  const diff = {
+    added: [{ path: 'new.ts', hash: 'aaa' }],
+    removed: [{ path: 'old.ts', hash: 'bbb' }],
+    changed: [{ path: 'changed.ts', old_hash: 'ccc', new_hash: 'ddd' }],
+    unchanged: [{ path: 'same.ts', hash: 'eee' }]
+  }
+
+  it('resolves hashes from diff buckets', () => {
+    expect(headHashForPath('old.ts', diff)).toBe('bbb')
+    expect(headHashForPath('same.ts', diff)).toBe('eee')
+    expect(headHashForPath('changed.ts', diff)).toBe('ccc')
+    expect(headHashForPath('new.ts', diff)).toBeNull()
+    expect(headHashForPath('missing.ts', diff)).toBeNull()
   })
 })

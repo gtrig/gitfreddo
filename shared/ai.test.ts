@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
+  averageConfidence,
   buildAiMessages,
+  clampConfidence,
   extractChatCompletionContent,
+  isNonChatModelId,
   normalizeBaseUrl,
   parseComposeCommitsResponse,
   parseConflictResolveResponse,
-  pickChatModelId
+  pickChatModelId,
+  proposalsToResolutionMap
 } from './ai'
 
 describe('normalizeBaseUrl', () => {
@@ -120,6 +124,33 @@ describe('pickChatModelId', () => {
 
   it('falls back to first model when all look non-chat', () => {
     expect(pickChatModelId(['nomic-embed-text'])).toBe('nomic-embed-text')
+  })
+})
+
+describe('ai helper utilities', () => {
+  it('clamps confidence values', () => {
+    expect(clampConfidence(150)).toBe(100)
+    expect(clampConfidence(-5)).toBe(0)
+    expect(clampConfidence('80')).toBe(50)
+  })
+
+  it('maps proposals and averages confidence', () => {
+    const proposals = [
+      { hunkId: 0, text: 'a', analysis: '', confidence: 80 },
+      { hunkId: 1, text: 'b', analysis: '', confidence: 60 }
+    ]
+    expect(proposalsToResolutionMap(proposals)).toEqual(
+      new Map([
+        [0, 'a'],
+        [1, 'b']
+      ])
+    )
+    expect(averageConfidence(proposals)).toBe(70)
+  })
+
+  it('detects non-chat model ids', () => {
+    expect(isNonChatModelId('text-embedding-3-small')).toBe(true)
+    expect(isNonChatModelId('llama3')).toBe(false)
   })
 })
 

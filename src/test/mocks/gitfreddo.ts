@@ -23,7 +23,8 @@ export const defaultMockSettings: AppSettings = {
   githubConnectedAt: null,
   pullRebase: false,
   diffViewMode: 'unified',
-  locale: 'en'
+  locale: 'en',
+  uiZoomFactor: 1
 }
 
 export function createGitFreddoMock(overrides: Partial<GitFreddoAPI> = {}): GitFreddoAPI {
@@ -114,6 +115,10 @@ export function createGitFreddoMock(overrides: Partial<GitFreddoAPI> = {}): GitF
     onGitHubConnectProgress: vi.fn(() => () => undefined),
     onMenuAction: vi.fn(() => () => undefined),
     onLogEntry: vi.fn(() => () => undefined),
+    getZoomFactor: vi.fn(async () => 1),
+    zoomIn: vi.fn(async () => 1.1),
+    zoomOut: vi.fn(async () => 0.9),
+    onZoomChanged: vi.fn(() => () => undefined),
     ...overrides
   }
 }
