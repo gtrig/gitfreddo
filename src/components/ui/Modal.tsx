@@ -121,8 +121,12 @@ export function ConfirmDialog({
   )
 }
 
-export function FieldLabel({ children }: { children: ReactNode }) {
-  return <label className="mb-1 block text-xs font-medium text-gf-fg-muted">{children}</label>
+export function FieldLabel({ children, htmlFor }: { children: ReactNode; htmlFor?: string }) {
+  return (
+    <label htmlFor={htmlFor} className="mb-1 block text-xs font-medium text-gf-fg-muted">
+      {children}
+    </label>
+  )
 }
 
 export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
