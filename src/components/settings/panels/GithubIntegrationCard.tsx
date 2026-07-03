@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ActionButton, TextInput } from '@/components/ui/Modal'
 import { useGitHubStatus, useInvalidateGitHubStatus } from '@/hooks/useGitHubStatus'
 import { useToastStore } from '@/stores/toast'
@@ -6,6 +7,7 @@ import { useToastStore } from '@/stores/toast'
 type ConnectMode = 'oauth' | 'pat'
 
 export function GithubIntegrationCard() {
+  const { t } = useTranslation()
   const { data: status, isLoading } = useGitHubStatus()
   const invalidate = useInvalidateGitHubStatus()
   const show = useToastStore((s) => s.show)
@@ -38,7 +40,7 @@ export function GithubIntegrationCard() {
           ? await window.gitfreddo.githubConnectPat(pat)
           : await window.gitfreddo.githubConnect()
       await invalidate()
-      show(`Connected to GitHub as @${result.login}`, 'success')
+      show(t('toast.github.connected', { login: result.login }), 'success')
       setPat('')
     } catch (error) {
       show(error instanceof Error ? error.message : String(error), 'error')
@@ -53,7 +55,7 @@ export function GithubIntegrationCard() {
     try {
       await window.gitfreddo.githubDisconnect()
       await invalidate()
-      show('Disconnected from GitHub', 'success')
+      show(t('toast.github.disconnected'), 'success')
     } catch (error) {
       show(error instanceof Error ? error.message : String(error), 'error')
     } finally {
@@ -65,7 +67,7 @@ export function GithubIntegrationCard() {
     setUploadingKey(true)
     try {
       const result = await window.gitfreddo.githubUploadSshKey(`GitFreddo ${new Date().toISOString()}`)
-      show(`SSH key uploaded: ${result.title}`, 'success')
+      show(t('toast.github.sshKeyUploaded', { title: result.title }), 'success')
     } catch (error) {
       show(error instanceof Error ? error.message : String(error), 'error')
     } finally {
@@ -77,10 +79,9 @@ export function GithubIntegrationCard() {
     <div className="rounded border border-gf-border-strong p-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="text-sm font-medium text-gf-fg">GitHub</h3>
+          <h3 className="text-sm font-medium text-gf-fg">{t('settings.github.title')}</h3>
           <p className="mt-1 text-xs leading-relaxed text-gf-fg-subtle">
-            Sign in to browse repositories, manage pull requests and issues, and authenticate git
-            operations.
+            {t('settings.github.description')}
           </p>
         </div>
         <span
@@ -90,7 +91,7 @@ export function GithubIntegrationCard() {
               : 'bg-gf-surface-hover text-gf-fg-muted'
           }`}
         >
-          {isLoading ? '…' : connected ? 'Connected' : 'Not connected'}
+          {isLoading ? '…' : connected ? t('settings.github.connected') : t('settings.github.notConnected')}
         </span>
       </div>
 
@@ -101,11 +102,11 @@ export function GithubIntegrationCard() {
               <img src={avatarUrl} alt="" className="h-8 w-8 rounded-full border border-gf-border" />
             )}
             <p className="text-xs text-gf-fg">
-              Signed in as <span className="font-medium">@{login}</span>
+              {t('settings.github.signedInAs', { login })}
             </p>
           </div>
         ) : (
-          <p className="text-xs text-gf-fg-muted">No GitHub account linked.</p>
+          <p className="text-xs text-gf-fg-muted">{t('settings.github.noAccount')}</p>
         )}
       </div>
 
@@ -122,7 +123,7 @@ export function GithubIntegrationCard() {
                   : 'border-gf-border-strong text-gf-fg-muted hover:bg-gf-surface-hover'
               }`}
             >
-              {value === 'oauth' ? 'OAuth' : 'Token'}
+              {value === 'oauth' ? t('settings.github.oauth') : t('settings.github.token')}
             </button>
           ))}
         </div>
@@ -134,7 +135,7 @@ export function GithubIntegrationCard() {
             type="password"
             value={pat}
             onChange={(e) => setPat(e.target.value)}
-            placeholder="ghp_… or github_pat_…"
+            placeholder={t('settings.github.patPlaceholder')}
             autoComplete="off"
           />
         </div>
@@ -143,27 +144,27 @@ export function GithubIntegrationCard() {
       {connecting && progress && (
         <div className="mt-3 rounded border border-gf-border bg-gf-bg/60 p-2">
           <p className="text-xs text-gf-fg-subtle">
-            Enter this code on GitHub:{' '}
+            {t('settings.github.enterCode')}{' '}
             <span className="font-mono text-sm font-semibold text-gf-fg">{progress.userCode}</span>
           </p>
           <p className="mt-1 text-[11px] text-gf-fg-subtle">
-            Waiting for authorization in your browser…
+            {t('settings.github.waitingAuth')}
           </p>
         </div>
       )}
 
       {connecting && !progress && mode === 'oauth' && (
-        <p className="mt-2 text-xs text-gf-fg-subtle">Starting GitHub authorization…</p>
+        <p className="mt-2 text-xs text-gf-fg-subtle">{t('settings.github.startingAuth')}</p>
       )}
 
       <div className="mt-3 flex flex-wrap gap-2">
         {connected ? (
           <>
             <ActionButton onClick={() => void handleDisconnect()} disabled={disconnecting}>
-              {disconnecting ? 'Disconnecting…' : 'Disconnect'}
+              {disconnecting ? t('settings.github.disconnecting') : t('settings.github.disconnect')}
             </ActionButton>
             <ActionButton onClick={() => void handleUploadSshKey()} disabled={uploadingKey}>
-              {uploadingKey ? 'Uploading…' : 'Upload SSH key'}
+              {uploadingKey ? t('settings.github.uploading') : t('settings.github.uploadSshKey')}
             </ActionButton>
           </>
         ) : (
@@ -172,13 +173,17 @@ export function GithubIntegrationCard() {
             onClick={() => void handleConnect()}
             disabled={connecting || isLoading || (mode === 'pat' && !pat.trim())}
           >
-            {connecting ? 'Connecting…' : mode === 'pat' ? 'Connect with token' : 'Connect with GitHub'}
+            {connecting
+              ? t('settings.github.connecting')
+              : mode === 'pat'
+                ? t('settings.github.connectWithToken')
+                : t('settings.github.connectWithGithub')}
           </ActionButton>
         )}
       </div>
 
       <p className="mt-3 text-[11px] leading-relaxed text-gf-fg-subtle">
-        Your access token is encrypted with the OS keychain and stored separately from settings.json.
+        {t('settings.github.tokenHint')}
       </p>
     </div>
   )

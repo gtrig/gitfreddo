@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   CheckCircleIcon,
   ExclamationCircleIcon,
@@ -26,6 +27,7 @@ const TONE_CONFIG = {
 } as const
 
 export function ToastBanner() {
+  const { t } = useTranslation()
   const message = useToastStore((s) => s.message)
   const tone = useToastStore((s) => s.tone)
   const clear = useToastStore((s) => s.clear)
@@ -59,7 +61,7 @@ export function ToastBanner() {
             type="button"
             onClick={clear}
             className="shrink-0 rounded p-0.5 text-gf-fg-subtle hover:bg-gf-surface-hover hover:text-gf-fg"
-            aria-label="Dismiss"
+            aria-label={t('common.dismiss')}
           >
             <XMarkIcon className="h-4 w-4" />
           </button>

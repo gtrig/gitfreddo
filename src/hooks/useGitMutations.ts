@@ -1,27 +1,29 @@
 import { useMutation } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { useInvalidateGit } from '@/hooks/useInvalidateGit'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
 import { useOperationStore } from '@/stores/operation'
 
-const REMOTE_ACTION_LABELS: Record<string, { success: string; error: string }> = {
-  fetch: { success: 'Fetched from remote', error: 'Fetch failed' },
-  push: { success: 'Pushed to remote', error: 'Push failed' },
-  pull: { success: 'Pulled from remote', error: 'Pull failed' },
-  'tag.push': { success: 'Tag pushed to remote', error: 'Tag push failed' }
+const REMOTE_ACTION_KEYS: Record<string, { success: string; error: string }> = {
+  fetch: { success: 'toast.fetch.success', error: 'toast.fetch.error' },
+  push: { success: 'toast.push.success', error: 'toast.push.error' },
+  pull: { success: 'toast.pull.success', error: 'toast.pull.error' },
+  'tag.push': { success: 'toast.tagPush.success', error: 'toast.tagPush.error' }
 }
 
 export function useGitMutations() {
+  const { t } = useTranslation()
   const invalidate = useInvalidateGit()
   const repoPath = useWorkspaceStore((s) => s.activePath)
   const showToast = useToastStore((s) => s.show)
 
   const wrap = (method: string, invalidateKeys: string[] = []) => {
-    const remoteAction = REMOTE_ACTION_LABELS[method]
+    const remoteAction = REMOTE_ACTION_KEYS[method]
 
     return useMutation({
       mutationFn: async (params?: unknown) => {
-        if (!repoPath) throw new Error('No repository connected')
+        if (!repoPath) throw new Error(t('toast.noRepoConnected'))
         return window.gitfreddo.invoke(method, params)
       },
       onMutate: () => {
@@ -33,13 +35,13 @@ export function useGitMutations() {
       onSuccess: () => {
         invalidate(...invalidateKeys)
         if (remoteAction) {
-          showToast(remoteAction.success, 'success')
+          showToast(t(remoteAction.success), 'success')
         }
       },
       onError: (error) => {
         if (remoteAction) {
           const message = error instanceof Error ? error.message : String(error)
-          showToast(message || remoteAction.error, 'error')
+          showToast(message || t(remoteAction.error), 'error')
         }
       }
     })

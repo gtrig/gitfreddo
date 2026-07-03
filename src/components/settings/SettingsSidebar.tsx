@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { SettingsSection } from './settingsSections'
 import { SETTINGS_SECTIONS } from './settingsSections'
 
@@ -7,8 +8,10 @@ interface SettingsSidebarProps {
 }
 
 export function SettingsSidebar({ active, onSelect }: SettingsSidebarProps) {
+  const { t } = useTranslation()
+
   return (
-    <nav className="w-40 shrink-0 border-r border-gf-border pr-2" aria-label="Settings sections">
+    <nav className="w-40 shrink-0 border-r border-gf-border pr-2" aria-label={t('settings.sectionsAria')}>
       <ul className="space-y-0.5">
         {SETTINGS_SECTIONS.map((item) => (
           <li key={item.id}>
@@ -22,7 +25,7 @@ export function SettingsSidebar({ active, onSelect }: SettingsSidebarProps) {
                   : 'text-gf-fg-subtle hover:bg-gf-bg hover:text-gf-fg-muted'
               }`}
             >
-              {item.label}
+              {t(`settings.sections.${item.id}`)}
             </button>
           </li>
         ))}

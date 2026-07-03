@@ -2,12 +2,12 @@ export type SettingsSection = 'git' | 'interface' | 'ai' | 'integrations' | 'mai
 
 export const SETTINGS_SECTION_KEY = 'gitfreddo:settings-section'
 
-export const SETTINGS_SECTIONS: { id: SettingsSection; label: string }[] = [
-  { id: 'git', label: 'Git' },
-  { id: 'maintenance', label: 'Maintenance' },
-  { id: 'interface', label: 'Interface' },
-  { id: 'ai', label: 'AI assist' },
-  { id: 'integrations', label: 'Integrations' }
+export const SETTINGS_SECTIONS: { id: SettingsSection }[] = [
+  { id: 'git' },
+  { id: 'maintenance' },
+  { id: 'interface' },
+  { id: 'ai' },
+  { id: 'integrations' }
 ]
 
 export function loadSettingsSection(): SettingsSection {

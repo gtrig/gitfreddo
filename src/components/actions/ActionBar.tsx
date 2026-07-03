@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   ArchiveBoxIcon,
   ArrowDownTrayIcon,
@@ -50,6 +51,7 @@ function ActionBarButton({
 }
 
 export function ActionBar() {
+  const { t } = useTranslation()
   const connected = useWorkspaceStore((s) => s.connected)
   const { fetch, pull, stashPush } = useGitMutations()
   const { pushRemote, isPushPending, forceConfirm, confirmForcePush, cancelForcePush } =
@@ -67,14 +69,14 @@ export function ActionBar() {
           onClick={() => void stashPush.mutateAsync({})}
           icon={<ArchiveBoxIcon aria-hidden className={iconClass} />}
         >
-          Stash
+          {t('actions.stash')}
         </ActionBarButton>
         <ActionBarButton
           loading={fetch.isPending}
           onClick={() => void fetch.mutateAsync({ remote: defaultRemote })}
           icon={<ArrowPathIcon aria-hidden className={iconClass} />}
         >
-          Fetch
+          {t('actions.fetch')}
         </ActionBarButton>
         <ActionBarButton
           loading={pull.isPending}
@@ -83,14 +85,14 @@ export function ActionBar() {
           }
           icon={<ArrowDownTrayIcon aria-hidden className={iconClass} />}
         >
-          Pull
+          {t('actions.pull')}
         </ActionBarButton>
         <ActionBarButton
           loading={isPushPending}
           onClick={() => pushRemote({ remote: defaultRemote })}
           icon={<ArrowUpTrayIcon aria-hidden className={iconClass} />}
         >
-          Push
+          {t('actions.push')}
         </ActionBarButton>
       </div>
       <PushForceConfirm

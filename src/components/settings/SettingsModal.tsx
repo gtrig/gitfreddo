@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import { Modal, ActionButton } from '@/components/ui/Modal'
 import { LoadingRow } from '@/components/ui/Spinner'
@@ -22,6 +23,7 @@ interface SettingsModalProps {
 }
 
 export function SettingsModal({ open, onClose }: SettingsModalProps) {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const show = useToastStore((s) => s.show)
   const [form, setForm] = useState<AppSettings | null>(null)
@@ -62,7 +64,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
       const saved = await window.gitfreddo.setSettings(form)
       setForm(saved)
       await queryClient.invalidateQueries({ queryKey: ['app-settings'] })
-      show('Settings saved', 'success')
+      show(t('settings.saved'), 'success')
       onClose()
     } catch (error) {
       show(error instanceof Error ? error.message : String(error), 'error')
@@ -72,7 +74,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
   }
 
   return (
-    <Modal title="Settings" open={open} onClose={onClose} size="lg">
+    <Modal title={t('settings.title')} open={open} onClose={onClose} size="lg">
       {loading || !form ? (
         <LoadingRow />
       ) : (
@@ -92,9 +94,9 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
             </div>
           </div>
           <div className="mt-4 flex justify-end gap-2 border-t border-gf-border pt-4">
-            <ActionButton onClick={onClose}>Cancel</ActionButton>
+            <ActionButton onClick={onClose}>{t('common.cancel')}</ActionButton>
             <ActionButton variant="primary" onClick={() => void handleSave()} loading={saving}>
-              {saving ? 'Saving…' : 'Save'}
+              {saving ? t('common.saving') : t('common.save')}
             </ActionButton>
           </div>
         </>

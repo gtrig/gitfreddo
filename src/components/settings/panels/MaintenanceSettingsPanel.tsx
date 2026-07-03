@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ActionButton, ConfirmDialog } from '@/components/ui/Modal'
 import { RemoveStaleBranchesModal } from '@/components/DetailPanel/RemoveStaleBranchesModal'
 import { useWorkspaceStore } from '@/stores/workspace'
@@ -15,6 +16,7 @@ function formatAuthorDate(iso: string): string {
 }
 
 export function MaintenanceSettingsPanel() {
+  const { t } = useTranslation()
   const repoPath = useWorkspaceStore((s) => s.activePath)
   const connected = useWorkspaceStore((s) => s.connected)
   const showToast = useToastStore((s) => s.show)
@@ -27,7 +29,7 @@ export function MaintenanceSettingsPanel() {
 
   async function handleScan() {
     if (!repoPath) {
-      showToast('Open a repository first.', 'error')
+      showToast(t('toast.maintenance.openRepoFirst'), 'error')
       return
     }
 
@@ -58,8 +60,8 @@ export function MaintenanceSettingsPanel() {
       )) as MaintenancePruneResult
       showToast(
         result.removedCommitCount > 0
-          ? `Removed ${result.removedCommitCount} stale commit${result.removedCommitCount === 1 ? '' : 's'}.`
-          : 'Repository cleanup complete.',
+          ? t('toast.maintenance.removedCommits', { count: result.removedCommitCount })
+          : t('toast.maintenance.cleanupComplete'),
         'success'
       )
       setConfirmPrune(false)
@@ -73,51 +75,47 @@ export function MaintenanceSettingsPanel() {
 
   const totalCommits = summary?.totalCommitCount ?? 0
   const previewTruncated = summary ? summary.totalCommitCount > summary.commits.length : false
+  const otherObjectCount = summary ? summary.blobCount + summary.treeCount : 0
 
   return (
     <div className="space-y-4">
       <p className="text-xs leading-relaxed text-gf-fg-subtle">
-        Clean up unreachable objects and references that keep old commits alive in the active
-        repository. These operations modify git history and cannot be undone.
+        {t('settings.maintenance.intro')}
       </p>
 
       {!connected && (
-        <p className="text-xs text-amber-300">Open a repository to run maintenance actions.</p>
+        <p className="text-xs text-amber-300">{t('settings.maintenance.openRepoFirst')}</p>
       )}
 
       <div className="space-y-3">
         <div>
-          <h3 className="text-sm font-medium text-gf-fg">Unreachable commits</h3>
+          <h3 className="text-sm font-medium text-gf-fg">{t('settings.maintenance.unreachableCommits')}</h3>
           <p className="mt-1 text-xs text-gf-fg-muted">
-            Finds commits not reachable from any branch. Pruning expires reflog entries and runs
-            garbage collection so Git can delete them.
+            {t('settings.maintenance.unreachableDesc')}
           </p>
         </div>
 
         <div className="flex flex-wrap gap-2">
           <ActionButton onClick={() => void handleScan()} loading={scanning} disabled={!connected}>
-            {scanning ? 'Scanning…' : 'Scan for stale commits'}
+            {scanning ? t('settings.maintenance.scanning') : t('settings.maintenance.scan')}
           </ActionButton>
           <ActionButton
             variant="danger"
             disabled={!connected || totalCommits === 0}
             onClick={() => setConfirmPrune(true)}
           >
-            Remove stale commits permanently
+            {t('settings.maintenance.removeStale')}
           </ActionButton>
         </div>
 
         {summary && (
           <div className="rounded border border-gf-border-strong bg-gf-bg-deep p-3 text-xs">
             <p className="text-gf-fg-muted">
-              Found{' '}
-              <span className="font-medium text-gf-fg">{summary.totalCommitCount}</span> unreachable
-              commit{summary.totalCommitCount === 1 ? '' : 's'}
-              {summary.blobCount + summary.treeCount > 0 && (
+              {t('settings.maintenance.foundCommits', { count: summary.totalCommitCount })}
+              {otherObjectCount > 0 && (
                 <>
                   {' '}
-                  and {summary.blobCount + summary.treeCount} other unreachable object
-                  {summary.blobCount + summary.treeCount === 1 ? '' : 's'}
+                  {t('settings.maintenance.andObjects', { count: otherObjectCount })}
                 </>
               )}
               .
@@ -141,7 +139,10 @@ export function MaintenanceSettingsPanel() {
 
             {previewTruncated && (
               <p className="mt-2 text-gf-fg-subtle">
-                Showing first {summary.commits.length} of {summary.totalCommitCount} commits.
+                {t('settings.maintenance.showingFirst', {
+                  shown: summary.commits.length,
+                  total: summary.totalCommitCount
+                })}
               </p>
             )}
           </div>
@@ -150,23 +151,22 @@ export function MaintenanceSettingsPanel() {
 
       <div className="space-y-3 border-t border-gf-border pt-4">
         <div>
-          <h3 className="text-sm font-medium text-gf-fg">Stale references</h3>
+          <h3 className="text-sm font-medium text-gf-fg">{t('settings.maintenance.staleRefs')}</h3>
           <p className="mt-1 text-xs text-gf-fg-muted">
-            Commits not on your current branch may still be kept alive by branches, tags, backup
-            refs, or remote-tracking branches. Remove those references to allow garbage collection.
+            {t('settings.maintenance.staleRefsDesc')}
           </p>
         </div>
 
         <ActionButton disabled={!connected} onClick={() => setRemoveStaleOpen(true)}>
-          Remove stale branch history…
+          {t('settings.maintenance.removeStaleBranches')}
         </ActionButton>
       </div>
 
       <ConfirmDialog
         open={confirmPrune}
-        title="Remove stale commits permanently?"
-        message={`This will expire all reflog entries and run garbage collection on the active repository. Up to ${totalCommits} unreachable commit${totalCommits === 1 ? '' : 's'} may be permanently deleted. This cannot be undone.`}
-        confirmLabel="Remove permanently"
+        title={t('settings.maintenance.confirmPruneTitle')}
+        message={t('settings.maintenance.confirmPruneMessage', { count: totalCommits })}
+        confirmLabel={t('settings.maintenance.confirmPrune')}
         busy={pruning}
         onConfirm={() => void handlePrune()}
         onCancel={() => setConfirmPrune(false)}

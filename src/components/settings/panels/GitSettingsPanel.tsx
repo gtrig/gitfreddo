@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { ActionButton, FieldLabel, TextInput } from '@/components/ui/Modal'
 import { LoadingRow } from '@/components/ui/Spinner'
@@ -22,6 +23,7 @@ const REPO_CONFIG_KEYS = [
 ] as const
 
 export function GitSettingsPanel({ form, onChange, onPickGit }: PanelProps) {
+  const { t } = useTranslation()
   const connected = useWorkspaceStore((s) => s.connected)
   const repoPath = useWorkspaceStore((s) => s.activePath)
   const showToast = useToastStore((s) => s.show)
@@ -49,7 +51,7 @@ export function GitSettingsPanel({ form, onChange, onPickGit }: PanelProps) {
         value: draft[key] ?? '',
         scope: 'local'
       })
-      showToast(`Saved ${key}.`, 'success')
+      showToast(t('settings.git.configSaved', { key }), 'success')
       await configQuery.refetch()
     } catch (error) {
       showToast(error instanceof Error ? error.message : String(error), 'error')
@@ -62,17 +64,17 @@ export function GitSettingsPanel({ form, onChange, onPickGit }: PanelProps) {
     <div className="space-y-6">
       <div className="space-y-3">
         <div>
-          <FieldLabel>git binary path</FieldLabel>
+          <FieldLabel>{t('settings.git.binaryPath')}</FieldLabel>
           <div className="flex gap-2">
             <TextInput
               value={form.gitBinaryPath}
               onChange={(e) => onChange({ gitBinaryPath: e.target.value })}
             />
-            <ActionButton onClick={onPickGit}>Browse</ActionButton>
+            <ActionButton onClick={onPickGit}>{t('common.browse')}</ActionButton>
           </div>
         </div>
         <div>
-          <FieldLabel>Default remote</FieldLabel>
+          <FieldLabel>{t('settings.git.defaultRemote')}</FieldLabel>
           <TextInput
             value={form.defaultRemote}
             onChange={(e) => onChange({ defaultRemote: e.target.value })}
@@ -85,17 +87,17 @@ export function GitSettingsPanel({ form, onChange, onPickGit }: PanelProps) {
             onChange={(e) => onChange({ pullRebase: e.target.checked })}
             className="rounded border-gf-border-strong"
           />
-          Pull with rebase
+          {t('settings.git.pullRebase')}
         </label>
       </div>
 
       {connected && (
         <div className="space-y-3 border-t border-gf-border pt-4">
-          <h3 className="text-sm font-semibold text-gf-fg">Repository config (local)</h3>
-          {configQuery.isLoading && <LoadingRow label="Loading repo config…" />}
+          <h3 className="text-sm font-semibold text-gf-fg">{t('settings.git.repoConfig')}</h3>
+          {configQuery.isLoading && <LoadingRow label={t('settings.git.loadingConfig')} />}
           {configQuery.error && (
             <p className="text-sm text-red-400">
-              {configQuery.error instanceof Error ? configQuery.error.message : 'Failed to load config.'}
+              {configQuery.error instanceof Error ? configQuery.error.message : t('settings.git.configLoadFailed')}
             </p>
           )}
           {configQuery.data && (
@@ -116,7 +118,7 @@ export function GitSettingsPanel({ form, onChange, onPickGit }: PanelProps) {
                       disabled={(draft[key] ?? '') === (configQuery.data[key] ?? '')}
                       onClick={() => void saveKey(key)}
                     >
-                      Save
+                      {t('common.save')}
                     </ActionButton>
                   </div>
                 </div>
@@ -127,7 +129,7 @@ export function GitSettingsPanel({ form, onChange, onPickGit }: PanelProps) {
       )}
 
       <div className="space-y-3 border-t border-gf-border pt-4">
-        <h3 className="text-sm font-semibold text-gf-fg">Repository files</h3>
+        <h3 className="text-sm font-semibold text-gf-fg">{t('settings.git.repoFiles')}</h3>
         <RepoFilesPanel />
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { ActionButton, FieldLabel, TextArea } from '@/components/ui/Modal'
 import { LoadingRow } from '@/components/ui/Spinner'
@@ -11,6 +12,7 @@ const REPO_FILES = [
 ] as const
 
 export function RepoFilesPanel() {
+  const { t } = useTranslation()
   const connected = useWorkspaceStore((s) => s.connected)
   const repoPath = useWorkspaceStore((s) => s.activePath)
   const showToast = useToastStore((s) => s.show)
@@ -31,14 +33,14 @@ export function RepoFilesPanel() {
   }, [fileQuery.data, selected])
 
   if (!connected) {
-    return <p className="text-sm text-gf-fg-subtle">Connect a repository to edit repository files.</p>
+    return <p className="text-sm text-gf-fg-subtle">{t('settings.repoFiles.connectRequired')}</p>
   }
 
   async function handleSave() {
     setSaving(true)
     try {
       await window.gitfreddo.invoke('working.write', { path: selected, content: draft })
-      showToast(`${selected} saved.`, 'success')
+      showToast(t('settings.repoFiles.saved', { file: selected }), 'success')
       await fileQuery.refetch()
     } catch (error) {
       showToast(error instanceof Error ? error.message : String(error), 'error')
@@ -52,8 +54,7 @@ export function RepoFilesPanel() {
   return (
     <div className="space-y-3">
       <p className="text-sm text-gf-fg-muted">
-        Edit repository metadata files at the repo root. Changes are written directly to the working
-        tree.
+        {t('settings.repoFiles.description')}
       </p>
       <div className="flex flex-wrap gap-2">
         {REPO_FILES.map((file) => (
@@ -71,10 +72,10 @@ export function RepoFilesPanel() {
           </button>
         ))}
       </div>
-      {fileQuery.isLoading && <LoadingRow label={`Loading ${selected}…`} />}
+      {fileQuery.isLoading && <LoadingRow label={t('settings.repoFiles.loading', { file: selected })} />}
       {fileQuery.error && (
         <p className="text-sm text-red-400">
-          {fileQuery.error instanceof Error ? fileQuery.error.message : 'Failed to load file.'}
+          {fileQuery.error instanceof Error ? fileQuery.error.message : t('settings.repoFiles.loadFailed')}
         </p>
       )}
       {fileQuery.data !== undefined && (
@@ -95,7 +96,7 @@ export function RepoFilesPanel() {
               disabled={!dirty}
               onClick={() => void handleSave()}
             >
-              Save {selected}
+              {t('settings.repoFiles.save', { file: selected })}
             </ActionButton>
           </div>
         </>

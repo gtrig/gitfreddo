@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { useInvalidateGit } from '@/hooks/useInvalidateGit'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
@@ -15,6 +16,7 @@ export interface PushParams {
 }
 
 export function usePushRemote() {
+  const { t } = useTranslation()
   const invalidate = useInvalidateGit()
   const repoPath = useWorkspaceStore((s) => s.activePath)
   const showToast = useToastStore((s) => s.show)
@@ -22,7 +24,7 @@ export function usePushRemote() {
 
   const push = useMutation({
     mutationFn: async (params: PushParams = {}) => {
-      if (!repoPath) throw new Error('No repository connected')
+      if (!repoPath) throw new Error(t('toast.noRepoConnected'))
       return window.gitfreddo.invoke('push', params)
     },
     onMutate: () => {
@@ -33,7 +35,7 @@ export function usePushRemote() {
     },
     onSuccess: () => {
       invalidate('branch.list', 'working.status')
-      showToast('Pushed to remote', 'success')
+      showToast(t('toast.push.success'), 'success')
       setForceConfirm(null)
     },
     onError: (error, params) => {
@@ -42,7 +44,7 @@ export function usePushRemote() {
         return
       }
       const message = error instanceof Error ? error.message : String(error)
-      showToast(message || 'Push failed', 'error')
+      showToast(message || t('toast.push.error'), 'error')
     }
   })
 

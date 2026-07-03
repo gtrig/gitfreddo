@@ -1,8 +1,10 @@
+import { useTranslation } from 'react-i18next'
 import { Spinner } from '@/components/ui/Spinner'
 import { useOperationStore } from '@/stores/operation'
 import { useWorkspaceStore } from '@/stores/workspace'
 
 export function GlobalOperationOverlay() {
+  const { t } = useTranslation()
   const count = useOperationStore((s) => s.count)
   const message = useOperationStore((s) => s.message)
   const connecting = useWorkspaceStore((s) => s.tabs.some((tab) => tab.connecting))
@@ -12,7 +14,7 @@ export function GlobalOperationOverlay() {
   }
 
   const label =
-    message ?? (connecting && count === 0 ? 'Opening repository…' : 'Working…')
+    message ?? (connecting && count === 0 ? t('workspace.overlay.opening') : t('workspace.overlay.working'))
 
   return (
     <div

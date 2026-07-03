@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { DocumentDuplicateIcon, FolderIcon, FolderPlusIcon } from '@heroicons/react/24/outline'
 import { XMarkIcon } from '@heroicons/react/24/solid'
 import { workspaceTabLabel } from '@/stores/workspace'
@@ -60,6 +61,7 @@ function ActionCard({
 }
 
 export function WorkspaceHub({ variant, open = true, onClose, onOpen }: WorkspaceHubProps) {
+  const { t } = useTranslation()
   const [view, setView] = useState<HubView>('hub')
   const [recents, setRecents] = useState<string[]>([])
   const [search, setSearch] = useState('')
@@ -169,7 +171,7 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
 
   async function handleCreateRepoAndClone(repo: { cloneUrl: string }) {
     if (!cloneParent.trim()) {
-      setError('Choose a folder to clone into')
+      setError(t('workspace.hub.error.chooseFolder'))
       return
     }
     setBusy(true)
@@ -192,11 +194,11 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
         ? `https://github.com/${selectedRepo}.git`
         : cloneUrl
     if (!url.trim()) {
-      setError(cloneTab === 'github' ? 'Select a repository' : 'Enter a repository URL')
+      setError(cloneTab === 'github' ? t('workspace.hub.error.selectRepo') : t('workspace.hub.error.enterUrl'))
       return
     }
     if (!cloneParent.trim()) {
-      setError('Choose a folder to clone into')
+      setError(t('workspace.hub.error.chooseFolder'))
       return
     }
 
@@ -219,9 +221,9 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
   const content = (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="border-b border-gf-border px-6 py-5">
-        <h1 className="text-xl font-semibold text-white">Open a repository</h1>
+        <h1 className="text-xl font-semibold text-white">{t('workspace.hub.title')}</h1>
         <p className="mt-1 text-sm text-gf-fg-subtle">
-          Open an existing repository, initialize a new one, or clone from a URL to get started.
+          {t('workspace.hub.subtitle')}
         </p>
       </div>
 
@@ -230,22 +232,22 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
           {view === 'hub' ? (
             <>
               <ActionCard
-                title="Open a folder"
-                description="Browse for a local folder containing a .git directory."
+                title={t('workspace.hub.openFolder.title')}
+                description={t('workspace.hub.openFolder.description')}
                 icon={<FolderIconCard />}
                 onClick={() => void handleOpenFolder()}
                 disabled={busy}
               />
               <ActionCard
-                title="Initialize a new repository"
-                description="Create a new git repository in an empty or new folder."
+                title={t('workspace.hub.init.title')}
+                description={t('workspace.hub.init.description')}
                 icon={<InitIcon />}
                 onClick={() => void handleInitRepository()}
                 disabled={busy}
               />
               <ActionCard
-                title="Clone a repository"
-                description="Clone from GitHub, GitLab, or any git remote."
+                title={t('workspace.hub.clone.title')}
+                description={t('workspace.hub.clone.description')}
                 icon={<CloneIcon />}
                 onClick={() => {
                   setView('clone')
@@ -258,8 +260,8 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
                 disabled={busy}
               />
               <ActionCard
-                title="Create on GitHub"
-                description="Create a new repository on GitHub and clone it locally."
+                title={t('workspace.hub.createGithub.title')}
+                description={t('workspace.hub.createGithub.description')}
                 icon={<CloneIcon />}
                 onClick={() => {
                   setCreateRepoOpen(true)
@@ -281,7 +283,7 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
                 }}
                 className="text-xs text-gf-fg-subtle hover:text-gf-fg-muted"
               >
-                ← Back
+                {t('workspace.hub.back')}
               </button>
 
               <div className="flex gap-2">
@@ -296,7 +298,7 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
                         : 'border-gf-border-strong text-gf-fg-muted hover:bg-gf-bg'
                     }`}
                   >
-                    {tab === 'url' ? 'URL' : 'GitHub'}
+                    {t(`workspace.hub.cloneTab.${tab}`)}
                   </button>
                 ))}
               </div>
@@ -304,14 +306,14 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
               {cloneTab === 'url' ? (
                 <div>
                   <label htmlFor="clone-url" className="mb-1 block text-xs font-medium text-gf-fg-muted">
-                    Repository URL
+                    {t('workspace.hub.repoUrl')}
                   </label>
                   <input
                     id="clone-url"
                     type="url"
                     value={cloneUrl}
                     onChange={(event) => setCloneUrl(event.target.value)}
-                    placeholder="https://github.com/org/repo.git"
+                    placeholder={t('workspace.hub.repoUrlPlaceholder')}
                     className="w-full rounded border border-gf-border-strong bg-gf-bg-deep px-3 py-2 text-sm text-gf-fg placeholder:text-gf-fg-subtle focus:border-gf-accent focus:outline-none"
                   />
                 </div>
@@ -330,7 +332,7 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
                     onClick={() => setCreateRepoOpen(true)}
                     className="text-xs text-gf-accent hover:underline"
                   >
-                    Create new repository on GitHub
+                    {t('workspace.hub.createNewRepo')}
                   </button>
                 </div>
               )}
@@ -340,7 +342,7 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
                   htmlFor="clone-parent"
                   className="mb-1 block text-xs font-medium text-gf-fg-muted"
                 >
-                  Clone into
+                  {t('workspace.hub.cloneInto')}
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -348,7 +350,7 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
                     type="text"
                     readOnly
                     value={cloneParent}
-                    placeholder="Choose a parent folder…"
+                    placeholder={t('workspace.hub.cloneParentPlaceholder')}
                     className="min-w-0 flex-1 rounded border border-gf-border-strong bg-gf-bg-deep px-3 py-2 text-sm text-gf-fg-muted placeholder:text-gf-fg-subtle"
                   />
                   <button
@@ -356,13 +358,12 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
                     onClick={() => void handlePickCloneParent()}
                     className="shrink-0 rounded border border-gf-border-strong px-3 py-2 text-xs text-gf-fg-muted hover:bg-gf-bg"
                   >
-                    Browse
+                    {t('common.browse')}
                   </button>
                 </div>
                 {predictedCloneName && cloneParent && (
                   <p className="mt-2 text-xs text-gf-fg-subtle">
-                    Will create <span className="text-gf-fg-muted">{predictedCloneName}</span> inside the
-                    selected folder.
+                    {t('workspace.hub.willCreate', { name: predictedCloneName })}
                   </p>
                 )}
               </div>
@@ -374,7 +375,7 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
                 className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-gf-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
               >
                 {busy && <Spinner size="sm" className="border-white/30 border-t-white" />}
-                {busy ? 'Cloning…' : 'Clone repository'}
+                {busy ? t('workspace.hub.cloning') : t('workspace.hub.cloneButton')}
               </button>
             </div>
           )}
@@ -382,12 +383,12 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
 
         <div className="flex min-h-0 flex-col p-6">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-gf-fg-subtle">Recent</h2>
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-gf-fg-subtle">{t('workspace.hub.recent')}</h2>
             <input
               type="search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Filter…"
+              placeholder={t('workspace.hub.filter')}
               className="w-44 rounded border border-gf-border bg-gf-bg-deep px-2 py-1 text-xs text-gf-fg-muted placeholder:text-gf-fg-subtle focus:border-gf-border-strong focus:outline-none"
             />
           </div>
@@ -395,7 +396,7 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
           <div className="min-h-0 flex-1 overflow-auto">
             {filteredRecents.length === 0 ? (
               <p className="py-8 text-center text-sm text-gf-fg-subtle">
-                {recents.length === 0 ? 'No recent workspaces yet.' : 'No matches for your search.'}
+                {recents.length === 0 ? t('workspace.hub.noRecents') : t('workspace.hub.noMatches')}
               </p>
             ) : (
               <ul className="space-y-1">
@@ -433,7 +434,7 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
       open={createRepoOpen}
       onClose={() => setCreateRepoOpen(false)}
       autoInit
-      submitLabel="Create & clone"
+      submitLabel={t('workspace.hub.createAndClone')}
       onCreated={handleCreateRepoAndClone}
     />
   )
@@ -467,7 +468,7 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
               type="button"
               onClick={onClose}
               className="rounded px-2 py-1 text-sm text-gf-fg-subtle hover:bg-gf-bg hover:text-gf-fg-muted"
-              aria-label="Close"
+              aria-label={t('common.close')}
             >
               <XMarkIcon className="h-5 w-5" aria-hidden />
             </button>

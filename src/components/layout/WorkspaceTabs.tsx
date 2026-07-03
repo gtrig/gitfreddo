@@ -1,8 +1,10 @@
+import { useTranslation } from 'react-i18next'
 import { useWorkspaceStore, workspaceTabLabel } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
 import { PlusIcon, XMarkIcon } from '@heroicons/react/24/solid'
 
 export function WorkspaceTabs() {
+  const { t } = useTranslation()
   const tabs = useWorkspaceStore((s) => s.tabs)
   const activePath = useWorkspaceStore((s) => s.activePath)
   const switchWorkspace = useWorkspaceStore((s) => s.switchWorkspace)
@@ -62,7 +64,7 @@ export function WorkspaceTabs() {
               </button>
               <button
                 type="button"
-                aria-label={`Close ${label}`}
+                aria-label={t('workspace.tabs.close', { label })}
                 onClick={(event) => {
                   event.stopPropagation()
                   handleClose(tab.path)
@@ -79,8 +81,8 @@ export function WorkspaceTabs() {
       </div>
       <button
         type="button"
-        aria-label="Open workspace"
-        title="Open workspace"
+        aria-label={t('workspace.tabs.openWorkspace')}
+        title={t('workspace.tabs.openWorkspace')}
         onClick={() => void openWorkspaceDialog()}
         className="mb-1 shrink-0 rounded border border-gf-border px-2.5 py-1.5 text-sm text-gf-fg-muted hover:border-gf-border-strong hover:bg-gf-bg hover:text-gf-fg"
       >

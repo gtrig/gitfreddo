@@ -1,5 +1,6 @@
 import { FieldLabel, TextArea, TextInput } from '@/components/ui/Modal'
 import type { AppSettings } from '@/hooks/useAppSettings'
+import { useTranslation } from 'react-i18next'
 
 interface PanelProps {
   form: AppSettings
@@ -35,17 +36,17 @@ function InstructionField({
 }
 
 export function AiSettingsPanel({ form, onChange }: PanelProps) {
+  const { t } = useTranslation()
   const isApi = form.aiProvider === 'api'
 
   return (
     <div className="space-y-3">
       <p className="text-xs leading-relaxed text-gf-fg-subtle">
-        AI assist fills commit and stash messages from your staged or working-tree changes,
-        and can auto-resolve merge conflicts. Supports OpenAI-compatible endpoints (LM Studio, Ollama, OpenAI, OpenRouter).
+        {t('settings.ai.intro')}
       </p>
 
       <div>
-        <FieldLabel>Provider</FieldLabel>
+        <FieldLabel>{t('settings.ai.provider')}</FieldLabel>
         <div className="flex gap-2">
           {(['local', 'api'] as const).map((provider) => (
             <button
@@ -58,14 +59,14 @@ export function AiSettingsPanel({ form, onChange }: PanelProps) {
                   : 'border-gf-border-strong text-gf-fg-muted hover:bg-gf-surface-hover'
               }`}
             >
-              {provider === 'local' ? 'Local LLM' : 'Cloud API'}
+              {provider === 'local' ? t('settings.ai.providerLocal') : t('settings.ai.providerApi')}
             </button>
           ))}
         </div>
       </div>
 
       <div>
-        <FieldLabel>Base URL</FieldLabel>
+        <FieldLabel>{t('settings.ai.baseUrl')}</FieldLabel>
         <TextInput
           value={form.aiBaseUrl}
           onChange={(e) => onChange({ aiBaseUrl: e.target.value })}
@@ -74,66 +75,64 @@ export function AiSettingsPanel({ form, onChange }: PanelProps) {
           }
         />
         <p className="mt-1 text-[11px] text-gf-fg-subtle">
-          {isApi
-            ? 'OpenAI-compatible API base URL (/v1 is appended automatically).'
-            : 'LM Studio: http://localhost:1234 · Ollama: http://localhost:11434'}
+          {isApi ? t('settings.ai.baseUrlHintApi') : t('settings.ai.baseUrlHintLocal')}
         </p>
       </div>
 
       {isApi && (
         <div>
-          <FieldLabel>API key</FieldLabel>
+          <FieldLabel>{t('settings.ai.apiKey')}</FieldLabel>
           <TextInput
             type="password"
             value={form.aiApiKey}
             onChange={(e) => onChange({ aiApiKey: e.target.value })}
-            placeholder="sk-…"
+            placeholder={t('settings.ai.apiKeyPlaceholder')}
             autoComplete="off"
           />
           <p className="mt-1 text-[11px] text-gf-fg-subtle">
-            Stored in ~/.config/gitfreddo/settings.json on this machine.
+            {t('settings.ai.apiKeyHint')}
           </p>
         </div>
       )}
 
       <div>
-        <FieldLabel>Model (optional)</FieldLabel>
+        <FieldLabel>{t('settings.ai.model')}</FieldLabel>
         <TextInput
           value={form.aiModel}
           onChange={(e) => onChange({ aiModel: e.target.value })}
-          placeholder="Leave empty to auto-select first available model"
+          placeholder={t('settings.ai.modelPlaceholder')}
         />
       </div>
 
       <div className="border-t border-gf-border pt-3">
-        <p className="mb-3 text-xs font-medium text-gf-fg-muted">Custom instructions</p>
+        <p className="mb-3 text-xs font-medium text-gf-fg-muted">{t('settings.ai.customInstructions')}</p>
         <div className="space-y-3">
           <InstructionField
-            label="System instructions"
-            description="Appended to the system prompt for every AI assist request."
+            label={t('settings.ai.systemInstructions')}
+            description={t('settings.ai.systemInstructionsDesc')}
             value={form.aiSystemInstructions}
-            placeholder="e.g. Use British English. Prefer conventional commit prefixes."
+            placeholder={t('settings.ai.systemInstructionsPlaceholder')}
             onChange={(value) => onChange({ aiSystemInstructions: value })}
           />
           <InstructionField
-            label="Commit message instructions"
-            description="Added when generating commit messages from staged changes."
+            label={t('settings.ai.commitInstructions')}
+            description={t('settings.ai.commitInstructionsDesc')}
             value={form.aiCommitInstructions}
-            placeholder="e.g. Reference ticket IDs. Keep the subject under 50 characters."
+            placeholder={t('settings.ai.commitInstructionsPlaceholder')}
             onChange={(value) => onChange({ aiCommitInstructions: value })}
           />
           <InstructionField
-            label="Stash message instructions"
-            description="Added when generating stash messages from working-tree changes."
+            label={t('settings.ai.stashInstructions')}
+            description={t('settings.ai.stashInstructionsDesc')}
             value={form.aiStashInstructions}
-            placeholder="e.g. Prefix messages with WIP: and mention the feature area."
+            placeholder={t('settings.ai.stashInstructionsPlaceholder')}
             onChange={(value) => onChange({ aiStashInstructions: value })}
           />
           <InstructionField
-            label="Conflict resolution instructions"
-            description="Added when auto-resolving merge conflicts with AI."
+            label={t('settings.ai.conflictInstructions')}
+            description={t('settings.ai.conflictInstructionsDesc')}
             value={form.aiConflictInstructions}
-            placeholder="e.g. Prefer keeping both sides when changes are complementary."
+            placeholder={t('settings.ai.conflictInstructionsPlaceholder')}
             onChange={(value) => onChange({ aiConflictInstructions: value })}
           />
         </div>
