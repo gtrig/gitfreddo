@@ -1,6 +1,7 @@
 import { FieldLabel, TextInput } from '@/components/ui/Modal'
 import type { AppSettings } from '@/hooks/useAppSettings'
 import { THEME_MODE_LABELS, THEME_MODES, THEMES } from '@/lib/themes'
+import { useTranslation } from 'react-i18next'
 
 interface PanelProps {
   form: AppSettings
@@ -8,8 +9,22 @@ interface PanelProps {
 }
 
 export function InterfaceSettingsPanel({ form, onChange }: PanelProps) {
+  const { t } = useTranslation()
+
   return (
     <div className="space-y-3">
+      <div>
+        <FieldLabel htmlFor="locale-select">{t('settings.language.label')}</FieldLabel>
+        <select
+          id="locale-select"
+          value={form.locale}
+          onChange={(e) => onChange({ locale: e.target.value as AppSettings['locale'] })}
+          className="w-full rounded border border-gf-border-strong bg-gf-bg-deep px-2 py-1.5 text-sm text-gf-fg"
+        >
+          <option value="en">{t('settings.language.en')}</option>
+          <option value="el">{t('settings.language.el')}</option>
+        </select>
+      </div>
       <div>
         <FieldLabel>Theme</FieldLabel>
         <select

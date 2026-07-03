@@ -9,8 +9,11 @@ import type { AppTheme } from './themes'
 export type { AppTheme }
 export { normalizeAppTheme } from './themes'
 
+export type AppLocale = 'en' | 'el'
+
 export interface AppSettings {
   theme: AppTheme
+  locale: AppLocale
   gitBinaryPath: string
   recentRepos: string[]
   openRepoTabs: string[]

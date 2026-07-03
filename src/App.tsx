@@ -21,6 +21,7 @@ import { useAppLogger } from '@/hooks/useAppLogger'
 import { useWorkspaceSessionPersistence } from '@/hooks/useWorkspaceSessionPersistence'
 import { useSelectionStore } from '@/stores/selection'
 import { appLog, useLogStore } from '@/stores/logs'
+import { useLocale } from '@/hooks/useLocale'
 import type { MenuAction } from '../shared/ipc'
 
 export default function App() {
@@ -52,6 +53,7 @@ export default function App() {
   useAutoRefresh()
   useLogSubscription()
   useAppLogger()
+  useLocale()
   useWorkspaceSessionPersistence()
 
   const connectWorkspace = useCallback(

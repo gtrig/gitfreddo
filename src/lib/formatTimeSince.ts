@@ -10,9 +10,7 @@ const UNITS: { unit: Intl.RelativeTimeFormatUnit; ms: number }[] = [
   { unit: 'second', ms: 1000 }
 ]
 
-const relativeTimeFormatter = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' })
-
-export function formatTimeSince(iso: string, now = Date.now()): string {
+export function formatTimeSince(iso: string, now = Date.now(), locale?: string): string {
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) {
     return '—'
@@ -20,14 +18,15 @@ export function formatTimeSince(iso: string, now = Date.now()): string {
 
   const diffMs = date.getTime() - now
   const absDiff = Math.abs(diffMs)
+  const formatter = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
 
   for (const { unit, ms } of UNITS) {
     if (absDiff >= ms || unit === 'second') {
-      return relativeTimeFormatter.format(Math.round(diffMs / ms), unit)
+      return formatter.format(Math.round(diffMs / ms), unit)
     }
   }
 
-  return relativeTimeFormatter.format(0, 'second')
+  return formatter.format(0, 'second')
 }
 
 export function formatAuthoredDateTooltip(iso: string): string {

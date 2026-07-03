@@ -9,6 +9,7 @@ const SETTINGS_PATH = join(SETTINGS_DIR, 'settings.json')
 
 const DEFAULT_SETTINGS: AppSettings = {
   theme: 'dark',
+  locale: 'en',
   gitBinaryPath: 'git',
   recentRepos: [],
   openRepoTabs: [],
@@ -59,6 +60,7 @@ export async function loadSettings(): Promise<AppSettings> {
         parsed.diffViewMode === 'split' || parsed.diffViewMode === 'word'
           ? parsed.diffViewMode
           : 'unified',
+      locale: parsed.locale === 'el' ? 'el' : 'en',
       theme: normalizeAppTheme(parsed.theme)
     }
   } catch {
