@@ -1,6 +1,20 @@
 import { runGitOrThrow } from '../git-runner'
 import type { GitDiffResult, GitStashEntry } from '../types'
 
+export function parseStashListLine(line: string, index: number): GitStashEntry | null {
+  const trimmed = line.trim()
+  if (!trimmed) return null
+
+  const [ref, hash, message] = trimmed.split('\x1f')
+  const branchMatch = message?.match(/WIP on ([^:]+):/)
+  return {
+    index,
+    message: message?.trim() ?? '',
+    branch: branchMatch?.[1]?.trim() ?? '',
+    hash: hash ?? ref ?? ''
+  }
+}
+
 export async function stashList(cwd: string, gitBinaryPath: string): Promise<GitStashEntry[]> {
   const stdout = await runGitOrThrow(
     ['stash', 'list', '--format=%gd%x1f%H%x1f%s'],
@@ -10,17 +24,8 @@ export async function stashList(cwd: string, gitBinaryPath: string): Promise<Git
 
   return stdout
     .split('\n')
-    .filter(Boolean)
-    .map((line, index) => {
-      const [ref, hash, message] = line.split('\x1f')
-      const branchMatch = message?.match(/WIP on ([^:]+):/)
-      return {
-        index,
-        message: message?.trim() ?? '',
-        branch: branchMatch?.[1]?.trim() ?? '',
-        hash: hash ?? ref ?? ''
-      }
-    })
+    .map((line, index) => parseStashListLine(line, index))
+    .filter((entry): entry is GitStashEntry => entry !== null)
 }
 
 export async function stashPush(

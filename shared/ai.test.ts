@@ -153,6 +153,15 @@ describe('extractChatCompletionContent', () => {
       extractChatCompletionContent({ error: { message: 'model not found' } })
     ).toThrow('model not found')
   })
+
+  it('reads legacy text completions and empty responses', () => {
+    expect(
+      extractChatCompletionContent({
+        choices: [{ text: '  legacy completion  ' }]
+      })
+    ).toBe('legacy completion')
+    expect(extractChatCompletionContent({ choices: [] })).toBe('')
+  })
 })
 
 describe('parseConflictResolveResponse', () => {

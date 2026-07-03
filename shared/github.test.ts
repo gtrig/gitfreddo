@@ -21,6 +21,14 @@ describe('parseGitHubRemote', () => {
   it('returns null for non-github urls', () => {
     expect(parseGitHubRemote('https://gitlab.com/org/repo.git')).toBeNull()
   })
+
+  it('parses GitHub Enterprise hosts', () => {
+    expect(parseGitHubRemote('https://github.mycompany.com/team/repo.git')).toEqual({
+      host: 'github.mycompany.com',
+      owner: 'team',
+      repo: 'repo'
+    })
+  })
 })
 
 describe('slugifyIssueBranch', () => {

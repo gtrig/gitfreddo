@@ -1,11 +1,29 @@
 import { describe, expect, it } from 'vitest'
-import { orderPathsForRestore, workspaceSessionKey } from './workspaceSession'
+import { orderPathsForRestore, snapshotFromSettings, workspaceSessionKey } from './workspaceSession'
 
 describe('workspaceSessionKey', () => {
   it('changes when tab order changes', () => {
     const a = workspaceSessionKey({ tabPaths: ['/a', '/b'], activePath: '/a' })
     const b = workspaceSessionKey({ tabPaths: ['/b', '/a'], activePath: '/a' })
     expect(a).not.toBe(b)
+  })
+})
+
+describe('snapshotFromSettings', () => {
+  it('prefers repo tab fields and falls back to legacy workspace fields', () => {
+    expect(
+      snapshotFromSettings({
+        openRepoTabs: ['/a'],
+        activeRepoTab: '/a'
+      })
+    ).toEqual({ tabPaths: ['/a'], activePath: '/a' })
+
+    expect(
+      snapshotFromSettings({
+        openWorkspaceTabs: ['/legacy'],
+        activeWorkspaceTab: '/legacy'
+      })
+    ).toEqual({ tabPaths: ['/legacy'], activePath: '/legacy' })
   })
 })
 

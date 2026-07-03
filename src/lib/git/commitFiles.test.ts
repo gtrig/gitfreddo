@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseCommitNameStatus } from '@/lib/git/commitFiles'
+import { commitFileKindColor, commitFileKindLabel, parseCommitNameStatus } from '@/lib/git/commitFiles'
 
 describe('parseCommitNameStatus', () => {
   it('parses added, modified, and deleted files', () => {
@@ -22,5 +22,21 @@ describe('parseCommitNameStatus', () => {
       { path: 'src/App.tsx', kind: 'changed' },
       { path: 'src/new.ts', kind: 'added' }
     ])
+  })
+})
+
+describe('commitFileKindLabel', () => {
+  it('maps file kinds to single-letter labels', () => {
+    expect(commitFileKindLabel('added')).toBe('A')
+    expect(commitFileKindLabel('changed')).toBe('M')
+    expect(commitFileKindLabel('removed')).toBe('D')
+    expect(commitFileKindLabel('unchanged')).toBe(' ')
+  })
+})
+
+describe('commitFileKindColor', () => {
+  it('returns tailwind classes per kind', () => {
+    expect(commitFileKindColor('added')).toContain('emerald')
+    expect(commitFileKindColor('removed')).toContain('rose')
   })
 })

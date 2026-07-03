@@ -10,6 +10,14 @@ Logic and git output parsers live alongside source as `*.test.ts` files.
 npm run test
 ```
 
+Coverage report (HTML output in `coverage/`):
+
+```bash
+npm run test:coverage
+```
+
+Measured source: `src/`, `shared/`, and `electron/` (excluding test helpers and locale JSON). Thresholds in `vitest.config.ts` guard `src/lib/`, `shared/`, and `electron/` from regressing.
+
 Coverage areas:
 
 - `src/lib/` — graph layout, diff parsing, context menus
@@ -72,7 +80,7 @@ GitHub Actions (`.github/workflows/ci.yml`):
 
 | Job | Steps |
 |-----|-------|
-| `test` | `typecheck`, `test`, `build`, `smoke` |
+| `test` | `typecheck`, `test:coverage`, `build`, `smoke` |
 | `e2e` | `build`, `test:e2e` (with xvfb) |
 
 Release workflow runs `typecheck`, `test`, and `build` before packaging.

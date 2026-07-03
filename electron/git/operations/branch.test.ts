@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseBranchLine } from './branch'
+import { parseBranchLine, parseRemoteBranchRef } from './branch'
 
 describe('parseBranchLine', () => {
   it('parses local branches', () => {
@@ -47,5 +47,15 @@ describe('parseBranchLine', () => {
       isCurrent: false,
       isRemote: true
     })
+  })
+})
+
+describe('parseRemoteBranchRef', () => {
+  it('parses remote branch refs without the remotes/ prefix', () => {
+    expect(parseRemoteBranchRef('remotes/origin/feature/login')).toEqual({
+      remote: 'origin',
+      branch: 'feature/login'
+    })
+    expect(parseRemoteBranchRef('origin')).toBeNull()
   })
 })

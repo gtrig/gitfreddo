@@ -1,11 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import type { GitCommit } from '@/lib/types'
 import {
+  commitCellContent,
+  commitCellTitle,
   extractCommitIssueLinks,
+  formatCommitBodyPreview,
+  formatCommitFilesChanged,
   formatCommitIssueLinks,
   formatCommitLineStats,
   formatCommitParents,
-  formatCommitSignature
+  formatCommitRefs,
+  formatCommitSignature,
+  formatCompactDate
 } from '@/lib/timeline/timelineCommitColumns'
 
 function sampleCommit(overrides: Partial<GitCommit> = {}): GitCommit {
@@ -47,5 +53,28 @@ describe('timelineCommitColumns', () => {
     const links = extractCommitIssueLinks(sampleCommit())
     expect(links).toEqual(['#42', 'PROJ-99'])
     expect(formatCommitIssueLinks(sampleCommit())).toBe('#42, PROJ-99')
+  })
+
+  it('formats refs, body preview, and file stats', () => {
+    expect(formatCommitRefs([])).toBe('—')
+    expect(formatCommitRefs(['main', 'origin/main'])).toBe('main, origin/main')
+    expect(formatCommitBodyPreview('  multi\n  line  ')).toBe('multi line')
+    expect(formatCommitBodyPreview('')).toBe('—')
+    expect(formatCommitFilesChanged(sampleCommit())).toBe('2')
+    expect(formatCommitFilesChanged(sampleCommit({ stats: null }))).toBe('—')
+  })
+
+  it('formats compact dates and unknown signatures', () => {
+    expect(formatCompactDate('not-a-date')).toBe('—')
+    expect(formatCommitSignature('Z')).toBe('Z')
+  })
+
+  it('renders commit column cells', () => {
+    const commit = sampleCommit()
+    expect(commitCellContent('hash', commit)).toBe('abc1234')
+    expect(commitCellContent('author', commit)).toBe('Alice')
+    expect(commitCellContent('signature', commit)).toBe('Verified')
+    expect(commitCellTitle('hash', commit)).toBe(commit.hash)
+    expect(commitCellTitle('author', commit)).toBeUndefined()
   })
 })

@@ -8,3 +8,4 @@ release
 .env.*
 !.env.example
 test-results
+coverage
