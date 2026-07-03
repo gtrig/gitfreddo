@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ActionButton, FieldLabel, Modal, TextArea } from '@/components/ui/Modal'
 import { LoadingRow } from '@/components/ui/Spinner'
 import { useInvalidateGit } from '@/hooks/useInvalidateGit'
@@ -20,27 +21,13 @@ function parseHashInput(value: string): string[] {
     .filter((part) => /^[0-9a-f]{7,40}$/.test(part))
 }
 
-function kindHint(kind: StaleBranchSummary['refs'][number]['kind']): string {
-  switch (kind) {
-    case 'backup':
-      return 'Rebase/filter-branch backup'
-    case 'remote':
-      return 'Remote-tracking ref'
-    case 'tag':
-      return 'Tag'
-    case 'branch':
-      return 'Local branch'
-    default:
-      return 'Git reference'
-  }
-}
-
 export function RemoveStaleBranchesModal({
   open,
   onClose,
   seedHash,
   seedHashes
 }: RemoveStaleBranchesModalProps) {
+  const { t } = useTranslation()
   const repoPath = useWorkspaceStore((s) => s.activePath)
   const invalidate = useInvalidateGit()
   const showToast = useToastStore((s) => s.show)
@@ -55,6 +42,21 @@ export function RemoveStaleBranchesModal({
     () => [...(seedHashes ?? []), ...(seedHash ? [seedHash] : [])],
     [seedHash, seedHashes]
   )
+
+  function kindHint(kind: StaleBranchSummary['refs'][number]['kind']): string {
+    switch (kind) {
+      case 'backup':
+        return t('detail.kindBackup')
+      case 'remote':
+        return t('detail.kindRemote')
+      case 'tag':
+        return t('detail.kindTag')
+      case 'branch':
+        return t('detail.kindBranch')
+      default:
+        return t('detail.kindDefault')
+    }
+  }
 
   async function loadSummary(hashes: string[]) {
     if (!repoPath) return
@@ -107,7 +109,10 @@ export function RemoveStaleBranchesModal({
         repoPath
       )) as RemoveStaleBranchesResult
       showToast(
-        `Removed ${result.deletedRefs.length} reference${result.deletedRefs.length === 1 ? '' : 's'} and ${result.removedCommitCount} commit${result.removedCommitCount === 1 ? '' : 's'}.`,
+        t('detail.removedReferences', {
+          refs: result.deletedRefs.length,
+          commits: result.removedCommitCount
+        }),
         'success'
       )
       invalidate('branch.list', 'log.graph', 'status', 'working.status')
@@ -125,22 +130,22 @@ export function RemoveStaleBranchesModal({
         .reduce((total, entry) => total + entry.commitsNotOnHead, 0)
     : 0
 
+  const deleteButtonLabel =
+    selectedCommitCount > 0
+      ? `${t('detail.deleteReferences', { count: selected.size })}${t('detail.deleteReferencesWithCommits', { count: selectedCommitCount })}`
+      : t('detail.deleteReferences', { count: selected.size })
+
   return (
-    <Modal open={open} title="Remove stale branch history" onClose={onClose} size="lg">
-      <p className="mb-4 text-sm text-gf-fg-muted">
-        Commits that still appear in the graph but are not on your current branch are kept alive
-        by git references — local branches, backup refs from rebases (<code className="text-xs">refs/original/…</code>
-        ), tags, or remote-tracking branches. Delete those references, then Git can remove the
-        commits permanently.
-      </p>
+    <Modal open={open} title={t('detail.removeStaleTitle')} onClose={onClose} size="lg">
+      <p className="mb-4 text-sm text-gf-fg-muted">{t('detail.removeStaleDescription')}</p>
 
       <div className="mb-4">
-        <FieldLabel>Commit hashes to match (optional)</FieldLabel>
+        <FieldLabel>{t('detail.commitHashesToMatch')}</FieldLabel>
         <TextArea
           value={hashInput}
           onChange={(event) => setHashInput(event.target.value)}
           rows={4}
-          placeholder="Paste commit hashes, one per line"
+          placeholder={t('detail.pasteCommitHashes')}
           className="font-mono text-xs"
         />
         <div className="mt-2 flex justify-end">
@@ -148,25 +153,22 @@ export function RemoveStaleBranchesModal({
             disabled={loading}
             onClick={() => void loadSummary([...new Set(parseHashInput(hashInput))])}
           >
-            Match references
+            {t('detail.matchReferences')}
           </ActionButton>
         </div>
       </div>
 
       {loading ? (
-        <LoadingRow label="Scanning stale references…" />
+        <LoadingRow label={t('detail.scanningStaleReferences')} />
       ) : summary ? (
         <div className="space-y-3">
           <p className="text-xs text-gf-fg-muted">
-            {summary.totalCommitsNotOnHead} commit
-            {summary.totalCommitsNotOnHead === 1 ? '' : 's'} exist in the repository but not on
-            your current branch.
+            {t('detail.commitsNotOnBranch', { count: summary.totalCommitsNotOnHead })}
           </p>
 
           {summary.refs.length === 0 ? (
             <p className="rounded border border-gf-border-strong bg-gf-bg-deep px-3 py-2 text-xs text-gf-fg-muted">
-              No stale references found. If commits still appear in the graph, try Settings →
-              Maintenance → Scan for stale commits to remove reflog-only objects.
+              {t('detail.noStaleReferences')}
             </p>
           ) : (
             <ul className="max-h-56 space-y-2 overflow-y-auto rounded border border-gf-border-strong bg-gf-bg-deep p-2">
@@ -186,8 +188,8 @@ export function RemoveStaleBranchesModal({
                         {entry.shortHash} · {entry.subject}
                       </span>
                       <span className="text-gf-fg-subtle">
-                        {kindHint(entry.kind)} · {entry.commitsNotOnHead} commit
-                        {entry.commitsNotOnHead === 1 ? '' : 's'} not on current branch
+                        {kindHint(entry.kind)} ·{' '}
+                        {t('detail.commitsNotOnCurrentBranch', { count: entry.commitsNotOnHead })}
                       </span>
                     </span>
                   </label>
@@ -200,7 +202,7 @@ export function RemoveStaleBranchesModal({
 
       <div className="mt-5 flex justify-end gap-2">
         <ActionButton onClick={onClose} disabled={removing}>
-          Cancel
+          {t('common.cancel')}
         </ActionButton>
         <ActionButton
           variant="danger"
@@ -208,10 +210,7 @@ export function RemoveStaleBranchesModal({
           disabled={selected.size === 0}
           onClick={() => void handleRemove()}
         >
-          Delete {selected.size} reference{selected.size === 1 ? '' : 's'}
-          {selectedCommitCount > 0
-            ? ` (${selectedCommitCount} commit${selectedCommitCount === 1 ? '' : 's'})`
-            : ''}
+          {deleteButtonLabel}
         </ActionButton>
       </div>
     </Modal>

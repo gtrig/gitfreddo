@@ -1,4 +1,5 @@
 import type { SplitDiffRow } from '@/lib/unifiedDiff'
+import { useTranslation } from 'react-i18next'
 
 function formatLineNo(value: number | null): string {
   return value == null ? '' : String(value)
@@ -24,14 +25,16 @@ interface SplitDiffViewProps {
 }
 
 export function SplitDiffView({ rows, loading, emptyMessage }: SplitDiffViewProps) {
+  const { t } = useTranslation()
+
   if (loading) {
-    return <p className="px-4 py-6 text-sm text-gf-fg-subtle">Loading diff…</p>
+    return <p className="px-4 py-6 text-sm text-gf-fg-subtle">{t('diff.loadingDiff')}</p>
   }
 
   if (rows.length === 0) {
     return (
       <p className="px-4 py-6 text-sm text-gf-fg-subtle">
-        {emptyMessage ?? 'No diff content for this file.'}
+        {emptyMessage ?? t('diff.noDiffContent')}
       </p>
     )
   }

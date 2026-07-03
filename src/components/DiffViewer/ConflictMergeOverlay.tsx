@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ExclamationTriangleIcon, SparklesIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { useConflictFileStages } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
@@ -60,6 +61,7 @@ function checkedTheirsLineNumbers(
 }
 
 export function ConflictMergeOverlay({ path, onClose }: ConflictMergeOverlayProps) {
+  const { t } = useTranslation()
   const repoPath = useWorkspaceStore((s) => s.activePath)
   const { data: stages, isLoading, error } = useConflictFileStages(path)
   const { data: mergeStatus } = useMergeStatus()
@@ -155,13 +157,17 @@ export function ConflictMergeOverlay({ path, onClose }: ConflictMergeOverlayProp
   const activeProposal = activeHunk ? aiProposals.get(activeHunk.id) : undefined
 
   const oursLabel = mergeStatus?.currentBranch
-    ? `Ours — ${mergeStatus.currentBranch}`
-    : 'Ours'
+    ? t('diff.oursWithBranch', { branch: mergeStatus.currentBranch })
+    : t('diff.ours')
   const theirsLabel = mergeStatus?.incomingLabel
-    ? `Theirs — ${mergeStatus.incomingLabel}`
-    : 'Theirs'
-  const oursSublabel = mergeStatus?.oursCommit ? `Commit ${mergeStatus.oursCommit}` : undefined
-  const theirsSublabel = mergeStatus?.theirsCommit ? `Commit ${mergeStatus.theirsCommit}` : undefined
+    ? t('diff.theirsWithBranch', { branch: mergeStatus.incomingLabel })
+    : t('diff.theirs')
+  const oursSublabel = mergeStatus?.oursCommit
+    ? t('diff.commitRef', { hash: mergeStatus.oursCommit })
+    : undefined
+  const theirsSublabel = mergeStatus?.theirsCommit
+    ? t('diff.commitRef', { hash: mergeStatus.theirsCommit })
+    : undefined
 
   function updateActiveResolvedText(text: string) {
     if (!activeHunk) return
@@ -279,7 +285,7 @@ export function ConflictMergeOverlay({ path, onClose }: ConflictMergeOverlayProp
       const proposals = parseConflictResolveResponse(text, hunks.length)
       applyProposals(proposals)
       showToast(
-        `${proposals.length} proposal${proposals.length === 1 ? '' : 's'} applied — review before saving.`,
+        t('diff.proposalsApplied', { count: proposals.length }),
         'info'
       )
     } catch (err) {
@@ -292,7 +298,7 @@ export function ConflictMergeOverlay({ path, onClose }: ConflictMergeOverlayProp
   function handleAcceptProposal() {
     if (!activeHunk || !activeProposal) return
     setActiveHunkResolvedText(activeProposal.text, 'manual')
-    showToast(`Accepted AI proposal for conflict ${activeHunk.id + 1}.`, 'success')
+    showToast(t('diff.acceptedProposal', { number: activeHunk.id + 1 }), 'success')
   }
 
   function handleRejectProposal() {
@@ -307,7 +313,7 @@ export function ConflictMergeOverlay({ path, onClose }: ConflictMergeOverlayProp
   async function handleSave() {
     if (!repoPath) return
     if (hasUnresolvedMarkers(output)) {
-      showToast('Resolve all conflicts before saving.', 'error')
+      showToast(t('diff.resolveAllBeforeSave'), 'error')
       return
     }
     setSaving(true)
@@ -315,7 +321,7 @@ export function ConflictMergeOverlay({ path, onClose }: ConflictMergeOverlayProp
       await window.gitfreddo.invoke('working.write', { path, content: output }, repoPath)
       await stageAdd.mutateAsync({ paths: [path] })
       clearPendingAiProposals(path)
-      showToast('Conflict resolved and staged.', 'success')
+      showToast(t('diff.conflictResolvedStaged'), 'success')
       onClose()
     } catch (err) {
       showToast(err instanceof Error ? err.message : String(err), 'error')
@@ -336,7 +342,9 @@ export function ConflictMergeOverlay({ path, onClose }: ConflictMergeOverlayProp
   const allTheirsSelected = activeSelection?.theirs.every(Boolean) ?? false
 
   const conflictLabel =
-    hunks.length > 0 ? `${path} (${hunks.length} conflict${hunks.length === 1 ? '' : 's'})` : path
+    hunks.length > 0
+      ? t('diff.conflictCount', { path, count: hunks.length })
+      : path
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-gf-bg-deep">
@@ -353,7 +361,7 @@ export function ConflictMergeOverlay({ path, onClose }: ConflictMergeOverlayProp
             {aiBusy ? <Spinner size="sm" className="border-white/30 border-t-white" /> : (
               <SparklesIcon className="h-3.5 w-3.5" aria-hidden />
             )}
-            Auto-resolve with AI
+            {t('diff.autoResolveWithAi')}
           </button>
         )}
         <button
@@ -361,7 +369,7 @@ export function ConflictMergeOverlay({ path, onClose }: ConflictMergeOverlayProp
           onClick={() => void window.gitfreddo.openInEditor(path)}
           className="rounded border border-gf-border-strong px-2 py-1 text-xs text-gf-fg-muted hover:bg-gf-surface"
         >
-          Open in editor
+          {t('diff.openInEditor')}
         </button>
         <button
           type="button"
@@ -370,13 +378,13 @@ export function ConflictMergeOverlay({ path, onClose }: ConflictMergeOverlayProp
           className="inline-flex items-center gap-1.5 rounded bg-emerald-600 px-2.5 py-1 text-xs text-white hover:bg-emerald-500 disabled:opacity-50"
         >
           {saving && <Spinner size="sm" className="border-white/30 border-t-white" />}
-          Save
+          {t('diff.save')}
         </button>
         <button
           type="button"
           onClick={onClose}
           className="rounded p-1 text-gf-fg-subtle hover:bg-gf-surface hover:text-gf-fg"
-          aria-label="Close"
+          aria-label={t('common.close')}
         >
           <XMarkIcon className="h-4 w-4" />
         </button>
@@ -384,7 +392,7 @@ export function ConflictMergeOverlay({ path, onClose }: ConflictMergeOverlayProp
 
       {isLoading && (
         <div className="flex flex-1 items-center justify-center text-sm text-gf-fg-subtle">
-          Loading conflict stages…
+          {t('diff.loadingConflictStages')}
         </div>
       )}
       {error && (
@@ -425,7 +433,7 @@ export function ConflictMergeOverlay({ path, onClose }: ConflictMergeOverlayProp
 
           <div className="flex min-h-0 max-h-[42%] shrink-0 flex-col border-t border-gf-border">
             <div className="flex shrink-0 items-center justify-between border-b border-gf-border px-3 py-1.5">
-              <span className="text-[11px] font-semibold uppercase text-gf-fg-subtle">Output</span>
+              <span className="text-[11px] font-semibold uppercase text-gf-fg-subtle">{t('diff.output')}</span>
               {hunks.length > 0 && (
                 <div className="flex items-center gap-2 text-xs text-gf-fg-muted">
                   <button
@@ -437,7 +445,10 @@ export function ConflictMergeOverlay({ path, onClose }: ConflictMergeOverlayProp
                     ▲
                   </button>
                   <span>
-                    conflict {hunks.length === 0 ? 0 : activeHunkIndex + 1} of {hunks.length}
+                    {t('diff.conflictOf', {
+                      current: hunks.length === 0 ? 0 : activeHunkIndex + 1,
+                      total: hunks.length
+                    })}
                   </span>
                   <button
                     type="button"

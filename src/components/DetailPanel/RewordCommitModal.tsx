@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ActionButton, FieldLabel, Modal, TextArea, TextInput } from '@/components/ui/Modal'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useWorkingStatus } from '@/hooks/useGit'
@@ -23,6 +24,7 @@ export function RewordCommitModal({
   open,
   onClose
 }: RewordCommitModalProps) {
+  const { t } = useTranslation()
   const { rewordCommit } = useGitMutations()
   const { data: working } = useWorkingStatus(open)
   const showToast = useToastStore((s) => s.show)
@@ -54,7 +56,7 @@ export function RewordCommitModal({
 
   async function handleSubmit() {
     if (!summary.trim()) {
-      showToast('Enter a commit summary.', 'error')
+      showToast(t('workingTree.enterCommitSummary'), 'error')
       return
     }
 
@@ -63,7 +65,7 @@ export function RewordCommitModal({
         hash: commit.hash,
         message: buildCommitMessage(summary, description)
       })
-      showToast('Commit message updated.', 'success')
+      showToast(t('detail.commitMessageUpdated'), 'success')
       onClose()
     } catch (error) {
       showToast(error instanceof Error ? error.message : String(error), 'error')
@@ -71,37 +73,35 @@ export function RewordCommitModal({
   }
 
   return (
-    <Modal open={open} title="Reword commit" onClose={onClose} size="lg">
+    <Modal open={open} title={t('detail.rewordCommitTitle')} onClose={onClose} size="lg">
       <p className="mb-4 text-sm text-gf-fg-muted">
-        Rewrites the message for{' '}
-        <span className="font-mono text-gf-fg">{commit.shortHash}</span> and replays later commits
-        on this branch. Requires a clean working tree.
+        {t('detail.rewordDescription', { hash: commit.shortHash })}
       </p>
 
       {isMergeCommit && (
         <p className="mb-4 rounded border border-amber-800/50 bg-amber-950/30 px-3 py-2 text-xs text-amber-200">
-          Merge commits cannot be reworded from here.
+          {t('detail.mergeCannotReword')}
         </p>
       )}
       {workingTreeDirty && (
         <p className="mb-4 rounded border border-amber-800/50 bg-amber-950/30 px-3 py-2 text-xs text-amber-200">
-          Commit or stash your changes before rewording.
+          {t('detail.commitOrStashBeforeReword')}
         </p>
       )}
       {gitBusy && (
         <p className="mb-4 rounded border border-amber-800/50 bg-amber-950/30 px-3 py-2 text-xs text-amber-200">
-          Finish or abort the current merge, rebase, or cherry-pick first.
+          {t('detail.finishOrAbortGitOp')}
         </p>
       )}
 
       <div className="space-y-3">
         <div>
-          <FieldLabel>Summary</FieldLabel>
+          <FieldLabel>{t('workingTree.summary')}</FieldLabel>
           <div className="relative">
             <TextInput
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
-              placeholder="Commit summary"
+              placeholder={t('workingTree.commitSummary')}
               disabled={blocked || busy}
             />
             <span
@@ -115,11 +115,11 @@ export function RewordCommitModal({
         </div>
 
         <div>
-          <FieldLabel>Description</FieldLabel>
+          <FieldLabel>{t('workingTree.description')}</FieldLabel>
           <TextArea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Optional description"
+            placeholder={t('workingTree.optionalDescription')}
             rows={4}
             disabled={blocked || busy}
           />
@@ -128,7 +128,7 @@ export function RewordCommitModal({
 
       <div className="mt-5 flex justify-end gap-2">
         <ActionButton onClick={onClose} disabled={busy}>
-          Cancel
+          {t('common.cancel')}
         </ActionButton>
         <ActionButton
           variant="primary"
@@ -136,7 +136,7 @@ export function RewordCommitModal({
           disabled={blocked || !summary.trim()}
           onClick={() => void handleSubmit()}
         >
-          Reword commit
+          {t('detail.rewordCommitAction')}
         </ActionButton>
       </div>
     </Modal>

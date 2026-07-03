@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { ConflictHunk } from '@/lib/conflictMarkers'
 import type { PreviewLine } from '@/lib/conflictResolution'
 import { ActionButton } from '@/components/ui/Modal'
@@ -38,10 +39,12 @@ export function ConflictOutputEditor({
   onTakeBoth,
   onResetToSelection
 }: ConflictOutputEditorProps) {
+  const { t } = useTranslation()
+
   if (!activeHunk) {
     return (
       <div className="flex items-center justify-center px-3 py-8 text-xs text-gf-fg-subtle">
-        No conflicts in this file.
+        {t('diff.noConflictsInFile')}
       </div>
     )
   }
@@ -49,15 +52,15 @@ export function ConflictOutputEditor({
   return (
     <div className="px-3 py-2">
       <div className="mb-2 flex flex-wrap items-center gap-1">
-        <ActionButton onClick={onTakeOurs}>Ours</ActionButton>
-        <ActionButton onClick={onTakeTheirs}>Theirs</ActionButton>
-        <ActionButton onClick={onTakeBoth}>Both</ActionButton>
+        <ActionButton onClick={onTakeOurs}>{t('diff.ours')}</ActionButton>
+        <ActionButton onClick={onTakeTheirs}>{t('diff.theirs')}</ActionButton>
+        <ActionButton onClick={onTakeBoth}>{t('diff.both')}</ActionButton>
         {editMode === 'manual' && (
-          <ActionButton onClick={onResetToSelection}>Reset to selection</ActionButton>
+          <ActionButton onClick={onResetToSelection}>{t('diff.resetToSelection')}</ActionButton>
         )}
       </div>
       <label className="mb-1 block text-[10px] uppercase text-gf-fg-subtle">
-        Resolved text for conflict {activeHunk.id + 1}
+        {t('diff.resolvedTextFor', { number: activeHunk.id + 1 })}
       </label>
       <textarea
         value={resolvedText}
@@ -69,7 +72,7 @@ export function ConflictOutputEditor({
 
       <div className="border-t border-gf-border pt-2">
         <span className="mb-1 block text-[10px] font-semibold uppercase text-gf-fg-subtle">
-          Full file preview
+          {t('diff.fullFilePreview')}
         </span>
         <div className="font-mono text-[12px] leading-5">
           {previewLines.map((line, index) => {

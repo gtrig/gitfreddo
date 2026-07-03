@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowsUpDownIcon, MinusIcon, PencilSquareIcon, PlusIcon } from '@heroicons/react/24/solid'
 import { useAiEnabled } from '@/hooks/useAppSettings'
@@ -32,7 +33,7 @@ function authorInitials(name: string): string {
   return `${parts[0]![0] ?? ''}${parts[parts.length - 1]![0] ?? ''}`.toUpperCase()
 }
 
-function formatAuthoredDate(iso: string): string {
+function formatAuthoredDate(iso: string, t: (key: string, options?: Record<string, string>) => string): string {
   const date = new Date(iso)
   const day = date.toLocaleDateString(undefined, {
     day: '2-digit',
@@ -44,7 +45,7 @@ function formatAuthoredDate(iso: string): string {
     minute: '2-digit',
     hour12: true
   })
-  return `authored ${day} @ ${time}`
+  return t('detail.authored', { date: day, time })
 }
 
 function ModifiedIcon({ className }: { className?: string }) {
@@ -59,24 +60,32 @@ function RemovedIcon({ className }: { className?: string }) {
   return <MinusIcon aria-hidden className={className} />
 }
 
-function FileChangeBadges({ counts, compact = false }: { counts: CommitFileCounts; compact?: boolean }) {
+function FileChangeBadges({
+  counts,
+  compact = false,
+  t
+}: {
+  counts: CommitFileCounts
+  compact?: boolean
+  t: (key: string, options?: Record<string, number>) => string
+}) {
   const items = [
     counts.changed > 0 ? (
       <span key="changed" className="inline-flex items-center gap-1 text-amber-400">
         <ModifiedIcon className="h-3.5 w-3.5" />
-        {compact ? counts.changed : `${counts.changed} modified`}
+        {compact ? counts.changed : t('detail.modified', { count: counts.changed })}
       </span>
     ) : null,
     counts.added > 0 ? (
       <span key="added" className="inline-flex items-center gap-1 text-emerald-400">
         <AddedIcon className="h-3.5 w-3.5" />
-        {compact ? counts.added : `${counts.added} added`}
+        {compact ? counts.added : t('detail.added', { count: counts.added })}
       </span>
     ) : null,
     counts.removed > 0 ? (
       <span key="removed" className="inline-flex items-center gap-1 text-rose-400">
         <RemovedIcon className="h-3.5 w-3.5" />
-        {compact ? counts.removed : `${counts.removed} deleted`}
+        {compact ? counts.removed : t('detail.deleted', { count: counts.removed })}
       </span>
     ) : null
   ].filter(Boolean)
@@ -106,6 +115,7 @@ function CommitAiButton({
   fullMessage: string
   onSuggestion: (summary: string, description: string) => void
 }) {
+  const { t } = useTranslation()
   const aiEnabled = useAiEnabled()
   const aiFill = useAiFill()
   const pushToast = useToastStore((s) => s.show)
@@ -132,12 +142,12 @@ function CommitAiButton({
             }
           })
           .catch((error) => {
-            pushToast(error instanceof Error ? error.message : 'AI suggestion failed.', 'error')
+            pushToast(error instanceof Error ? error.message : t('detail.aiSuggestionFailed'), 'error')
           })
       }
       className="rounded-md border border-transparent bg-gf-bg-deep px-3 py-1 text-xs text-gf-fg-muted [background-image:linear-gradient(var(--gf-bg-deep),var(--gf-bg-deep)),linear-gradient(90deg,#a78bfa,#38bdf8)] [background-origin:border-box] [background-clip:padding-box,border-box] hover:text-gf-fg disabled:opacity-50"
     >
-      {aiFill.isPending ? 'Recomposing…' : 'Recompose commit with AI'}
+      {aiFill.isPending ? t('detail.recomposing') : t('detail.recomposeWithAi')}
     </button>
   )
 }
@@ -193,7 +203,8 @@ function TreeNodeRow({
   onToggleFolder,
   isExpanded,
   openMenu,
-  onFileHistory
+  onFileHistory,
+  t
 }: {
   node: FileTreeNode
   depth: number
@@ -204,6 +215,7 @@ function TreeNodeRow({
   isExpanded: (path: string) => boolean
   openMenu: OpenContextMenu
   onFileHistory: (path: string) => void
+  t: (key: string, options?: Record<string, unknown>) => string
 }) {
   if (node.type === 'folder') {
     const open = isExpanded(node.path)
@@ -223,7 +235,7 @@ function TreeNodeRow({
         >
           <Chevron open={open} />
           <span className="min-w-0 flex-1 truncate">{node.name}</span>
-          <FileChangeBadges counts={node.counts} compact />
+          <FileChangeBadges counts={node.counts} compact t={t} />
         </button>
         {open &&
           node.children.map((child) => (
@@ -238,6 +250,7 @@ function TreeNodeRow({
               isExpanded={isExpanded}
               openMenu={openMenu}
               onFileHistory={onFileHistory}
+              t={t}
             />
           ))}
       </>
@@ -278,7 +291,8 @@ function FileTreeList({
   expandedPaths,
   onToggleFolder,
   openMenu,
-  onFileHistory
+  onFileHistory,
+  t
 }: {
   root: FileTreeFolder
   selectedPath: string | null
@@ -287,6 +301,7 @@ function FileTreeList({
   onToggleFolder: (path: string) => void
   openMenu: OpenContextMenu
   onFileHistory: (path: string) => void
+  t: (key: string, options?: Record<string, unknown>) => string
 }) {
   const isExpanded = (path: string) => expandedPaths.has(path)
 
@@ -304,6 +319,7 @@ function FileTreeList({
           isExpanded={isExpanded}
           openMenu={openMenu}
           onFileHistory={onFileHistory}
+          t={t}
         />
       ))}
     </div>
@@ -321,6 +337,7 @@ export function CommitPreview({
   loadingFiles: boolean
   filesError?: Error | null
 }) {
+  const { t } = useTranslation()
   const connected = useWorkspaceStore((s) => s.connected)
   const repoPath = useWorkspaceStore((s) => s.activePath)
   const selectTimelineNode = useSelectionStore((s) => s.selectTimelineNode)
@@ -385,10 +402,10 @@ export function CommitPreview({
       <div className="flex items-center justify-between border-b border-gf-border px-4 py-2.5">
         <p className="text-sm text-gf-fg-muted">
           {loadingFiles
-            ? 'Loading file changes…'
+            ? t('detail.loadingFileChanges')
             : filesError
-              ? 'Could not load file changes'
-              : `${totalChanges} file change${totalChanges === 1 ? '' : 's'} in commit`}
+              ? t('detail.couldNotLoadFileChanges')
+              : t('detail.fileChangesInCommit', { count: totalChanges })}
         </p>
         <button
           type="button"
@@ -396,13 +413,14 @@ export function CommitPreview({
           disabled={sortedFiles.length === 0}
           className="rounded border border-gf-border-strong px-3 py-1 text-xs text-gf-fg-muted hover:bg-gf-surface disabled:opacity-40"
         >
-          View changes
+          {t('detail.viewChanges')}
         </button>
       </div>
 
       <div className="flex items-center justify-between border-b border-gf-border px-4 py-2">
         <p className="font-mono text-xs text-gf-fg-subtle">
-          commit: <span className="text-gf-fg-muted">{commit.shortHash}</span>
+          {t('detail.commitLabel')}{' '}
+          <span className="text-gf-fg-muted">{commit.shortHash}</span>
         </p>
         <div className="flex items-center gap-2">
           <button
@@ -413,7 +431,7 @@ export function CommitPreview({
             }}
             className="rounded border border-gf-border-strong px-3 py-1 text-xs text-gf-fg-muted hover:bg-gf-surface"
           >
-            Reword
+            {t('detail.reword')}
           </button>
           <CommitAiButton
             filePaths={changedFiles.map((file) => file.path)}
@@ -451,7 +469,7 @@ export function CommitPreview({
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm text-gf-fg">{commit.author.name}</p>
-            <p className="text-xs text-gf-fg-subtle">{formatAuthoredDate(commit.author.date)}</p>
+            <p className="text-xs text-gf-fg-subtle">{formatAuthoredDate(commit.author.date, t)}</p>
           </div>
         </div>
         {parentShort && (
@@ -460,13 +478,14 @@ export function CommitPreview({
             onClick={() => parentHash && selectTimelineNode('commit', parentHash)}
             className="shrink-0 font-mono text-xs text-gf-fg-subtle hover:text-gf-accent-fg"
           >
-            parent: <span className="text-gf-fg-muted">{parentShort}</span>
+            {t('detail.parent')}{' '}
+            <span className="text-gf-fg-muted">{parentShort}</span>
           </button>
         )}
       </div>
 
       <div className="border-b border-gf-border px-4 py-2.5">
-        <FileChangeBadges counts={counts} />
+        <FileChangeBadges counts={counts} t={t} />
       </div>
 
       <div className="flex items-center justify-between gap-2 border-b border-gf-border px-4 py-2">
@@ -475,7 +494,7 @@ export function CommitPreview({
             type="button"
             onClick={() => setSortAscending((value) => !value)}
             className="rounded p-1 text-gf-fg-subtle hover:bg-gf-surface-hover hover:text-gf-fg-muted"
-            title={sortAscending ? 'Sorted A–Z' : 'Sorted Z–A'}
+            title={sortAscending ? t('detail.sortedAsc') : t('detail.sortedDesc')}
           >
             <ArrowsUpDownIcon className="h-4 w-4" aria-hidden />
           </button>
@@ -487,7 +506,7 @@ export function CommitPreview({
                 viewMode === 'path' ? 'bg-gf-accent text-white' : 'text-gf-fg-subtle hover:text-gf-fg-muted'
               }`}
             >
-              Path
+              {t('detail.path')}
             </button>
             <button
               type="button"
@@ -496,7 +515,7 @@ export function CommitPreview({
                 viewMode === 'tree' ? 'bg-gf-accent text-white' : 'text-gf-fg-subtle hover:text-gf-fg-muted'
               }`}
             >
-              Tree
+              {t('detail.tree')}
             </button>
           </div>
         </div>
@@ -506,20 +525,20 @@ export function CommitPreview({
             onClick={expandAll}
             className="text-xs text-gf-accent-fg hover:text-gf-fg"
           >
-            Expand all
+            {t('detail.expandAll')}
           </button>
         )}
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {loadingFiles && <p className="px-4 py-3 text-sm text-gf-fg-subtle">Loading files…</p>}
+        {loadingFiles && <p className="px-4 py-3 text-sm text-gf-fg-subtle">{t('detail.loadingFiles')}</p>}
         {!loadingFiles && filesError && (
           <p className="px-4 py-3 text-sm text-red-400">
-            {filesError instanceof Error ? filesError.message : 'Failed to load commit files.'}
+            {filesError instanceof Error ? filesError.message : t('detail.failedToLoadCommitFiles')}
           </p>
         )}
         {!loadingFiles && !filesError && changedFiles.length === 0 && (
-          <p className="px-4 py-3 text-sm text-gf-fg-subtle">No file changes.</p>
+          <p className="px-4 py-3 text-sm text-gf-fg-subtle">{t('detail.noFileChanges')}</p>
         )}
         {!loadingFiles && !filesError && viewMode === 'path' && (
           <div className="py-1">
@@ -544,6 +563,7 @@ export function CommitPreview({
             onToggleFolder={toggleFolder}
             openMenu={openMenu}
             onFileHistory={setFileHistoryPath}
+            t={t}
           />
         )}
       </div>

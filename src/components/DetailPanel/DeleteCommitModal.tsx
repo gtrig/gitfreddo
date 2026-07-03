@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ActionButton, Modal } from '@/components/ui/Modal'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useWorkingStatus } from '@/hooks/useGit'
@@ -18,20 +19,20 @@ interface DeleteCommitModalProps {
   initialMode?: ResetMode
 }
 
-const MODE_DESCRIPTIONS: Record<ResetMode, string> = {
-  soft: 'Removes the commit but keeps all changes staged.',
-  mixed: 'Removes the commit and unstages changes; files remain in your working tree.',
-  hard: 'Removes the commit and discards all changes permanently.'
-}
-
-function actionTitle(action: DeleteCommitAction, count: number): string {
+function actionTitle(
+  action: DeleteCommitAction,
+  count: number,
+  t: (key: string, options?: Record<string, unknown>) => string
+): string {
   switch (action) {
     case 'deleteHead':
-      return 'Delete latest commit'
+      return t('detail.deleteLatestCommit')
     case 'drop':
-      return count === 1 ? 'Drop commit from history' : `Drop ${count} commits from history`
+      return count === 1
+        ? t('detail.dropCommitFromHistory')
+        : t('detail.dropCommitsFromHistory', { count })
     case 'revert':
-      return 'Revert commit'
+      return t('detail.revertCommit')
   }
 }
 
@@ -43,10 +44,17 @@ export function DeleteCommitModal({
   onClose,
   initialMode = 'mixed'
 }: DeleteCommitModalProps) {
+  const { t } = useTranslation()
   const { resetHead, dropCommits, revertCommit } = useGitMutations()
   const { data: working } = useWorkingStatus(open)
   const showToast = useToastStore((s) => s.show)
   const [mode, setMode] = useState<ResetMode>(initialMode)
+
+  const modeDescriptions: Record<ResetMode, string> = {
+    soft: t('detail.resetSoftDescription'),
+    mixed: t('detail.resetMixedDescription'),
+    hard: t('detail.resetHardDescription')
+  }
 
   useEffect(() => {
     if (open) setMode(initialMode)
@@ -69,16 +77,18 @@ export function DeleteCommitModal({
     try {
       if (action === 'deleteHead') {
         await resetHead.mutateAsync({ mode })
-        showToast(`Deleted latest commit (${mode} reset).`, 'success')
+        showToast(t('detail.deletedLatestCommit', { mode }), 'success')
       } else if (action === 'drop') {
         await dropCommits.mutateAsync({ hashes: commits.map((c) => c.hash) })
         showToast(
-          commits.length === 1 ? 'Commit dropped from history.' : `${commits.length} commits dropped from history.`,
+          commits.length === 1
+            ? t('detail.commitDropped')
+            : t('detail.commitsDropped', { count: commits.length }),
           'success'
         )
       } else {
         await revertCommit.mutateAsync({ hash: commits[0]!.hash })
-        showToast('Commit reverted.', 'success')
+        showToast(t('detail.commitReverted'), 'success')
       }
       onClose()
     } catch (error) {
@@ -87,45 +97,38 @@ export function DeleteCommitModal({
   }
 
   return (
-    <Modal open={open} title={actionTitle(action, commits.length)} onClose={onClose} size="lg">
+    <Modal open={open} title={actionTitle(action, commits.length, t)} onClose={onClose} size="lg">
       {action === 'deleteHead' && (
-        <p className="mb-4 text-sm text-gf-fg-muted">
-          Remove the latest commit on the current branch by resetting to its parent.
-        </p>
+        <p className="mb-4 text-sm text-gf-fg-muted">{t('detail.deleteHeadDescription')}</p>
       )}
 
       {action === 'drop' && (
         <p className="mb-4 text-sm text-gf-fg-muted">
-          Permanently remove {commits.length === 1 ? 'this commit' : 'these commits'} from branch
-          history via interactive rebase. Later commits will be replayed without{' '}
-          {commits.length === 1 ? 'it' : 'them'}.
+          {commits.length === 1 ? t('detail.dropDescriptionOne') : t('detail.dropDescriptionMany')}
         </p>
       )}
 
       {action === 'revert' && (
         <p className="mb-4 text-sm text-gf-fg-muted">
-          Creates a new commit that undoes the changes from{' '}
-          <span className="font-mono text-gf-fg">{commits[0]?.shortHash}</span>. Safe for shared
-          branches because history is not rewritten.
+          {t('detail.revertDescription', { hash: commits[0]?.shortHash })}
         </p>
       )}
 
       {showRemoteWarning && (
         <p className="mb-4 rounded border border-amber-800/50 bg-amber-950/30 px-3 py-2 text-xs text-amber-200">
-          This branch is {ahead} commit{ahead === 1 ? '' : 's'} ahead of its remote. Rewriting
-          history may require a force push. Prefer Revert when the commit is already on the remote.
+          {t('detail.remoteWarning', { count: ahead })}
         </p>
       )}
 
       {workingTreeDirty && action !== 'revert' && (
         <p className="mb-4 rounded border border-amber-800/50 bg-amber-950/30 px-3 py-2 text-xs text-amber-200">
-          Commit or stash your uncommitted changes before rewriting history.
+          {t('detail.commitOrStashBeforeRewrite')}
         </p>
       )}
 
       {gitBusy && (
         <p className="mb-4 rounded border border-amber-800/50 bg-amber-950/30 px-3 py-2 text-xs text-amber-200">
-          Finish or abort the current merge, rebase, or cherry-pick first.
+          {t('detail.finishOrAbortGitOp')}
         </p>
       )}
 
@@ -152,7 +155,7 @@ export function DeleteCommitModal({
               <span>
                 <span className="font-medium capitalize text-gf-fg">{option}</span>
                 <span className="mt-0.5 block text-xs text-gf-fg-muted">
-                  {MODE_DESCRIPTIONS[option]}
+                  {modeDescriptions[option]}
                 </span>
               </span>
             </label>
@@ -182,7 +185,7 @@ export function DeleteCommitModal({
 
       <div className="flex justify-end gap-2">
         <ActionButton onClick={onClose} disabled={busy}>
-          Cancel
+          {t('common.cancel')}
         </ActionButton>
         <ActionButton
           variant={action === 'revert' ? 'primary' : 'danger'}
@@ -190,9 +193,12 @@ export function DeleteCommitModal({
           disabled={rewriteBlocked}
           onClick={() => void handleConfirm()}
         >
-          {action === 'deleteHead' && 'Delete commit'}
-          {action === 'drop' && (commits.length === 1 ? 'Drop commit' : `Drop ${commits.length} commits`)}
-          {action === 'revert' && 'Revert commit'}
+          {action === 'deleteHead' && t('detail.deleteCommit')}
+          {action === 'drop' &&
+            (commits.length === 1
+              ? t('detail.dropCommit')
+              : t('detail.dropCommits', { count: commits.length }))}
+          {action === 'revert' && t('detail.revertCommit')}
         </ActionButton>
       </div>
     </Modal>

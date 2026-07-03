@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ActionButton, FieldLabel, Modal, TextArea, TextInput } from '@/components/ui/Modal'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useToastStore } from '@/stores/toast'
@@ -26,6 +27,7 @@ export function ComposeCommitsModal({
   onClose,
   onUseInPanel
 }: ComposeCommitsModalProps) {
+  const { t } = useTranslation()
   const { commit, stageAdd, stageReset } = useGitMutations()
   const showToast = useToastStore((s) => s.show)
   const [proposals, setProposals] = useState(initialProposals)
@@ -47,7 +49,7 @@ export function ComposeCommitsModal({
   async function handleCreateAll() {
     const invalid = proposals.find((proposal) => !proposal.summary.trim())
     if (invalid) {
-      showToast('Every commit needs a summary.', 'error')
+      showToast(t('workingTree.everyCommitNeedsSummary'), 'error')
       return
     }
 
@@ -60,7 +62,9 @@ export function ComposeCommitsModal({
       }
 
       showToast(
-        proposals.length === 1 ? 'Commit created.' : `${proposals.length} commits created.`,
+        proposals.length === 1
+          ? t('workingTree.commitCreated')
+          : t('workingTree.commitsCreated', { count: proposals.length }),
         'success'
       )
       onClose()
@@ -72,7 +76,7 @@ export function ComposeCommitsModal({
   async function handleUseInPanel(index: number) {
     const proposal = proposals[index]
     if (!proposal?.summary.trim()) {
-      showToast('Enter a commit summary.', 'error')
+      showToast(t('workingTree.enterCommitSummary'), 'error')
       return
     }
 
@@ -87,11 +91,9 @@ export function ComposeCommitsModal({
   }
 
   return (
-    <Modal open={open} title="Proposed commits" onClose={onClose} size="lg">
+    <Modal open={open} title={t('workingTree.proposedCommits')} onClose={onClose} size="lg">
       <p className="mb-4 text-sm text-gf-fg-muted">
-        AI grouped your staged changes into {proposals.length} commit
-        {proposals.length === 1 ? '' : 's'}. Review the messages below, then create them all or
-        stage one group in the commit panel.
+        {t('workingTree.proposedCommitsDescription', { count: proposals.length })}
       </p>
 
       <div className="max-h-[min(60vh,28rem)] space-y-4 overflow-y-auto pr-1">
@@ -105,8 +107,10 @@ export function ComposeCommitsModal({
             >
               <div className="mb-2 flex items-center justify-between gap-2">
                 <span className="text-xs font-medium text-gf-fg-muted">
-                  Commit {index + 1} · {proposal.files.length} file
-                  {proposal.files.length === 1 ? '' : 's'}
+                  {t('workingTree.commitNumber', {
+                    number: index + 1,
+                    count: proposal.files.length
+                  })}
                 </span>
                 <button
                   type="button"
@@ -114,18 +118,18 @@ export function ComposeCommitsModal({
                   onClick={() => void handleUseInPanel(index)}
                   className="text-[11px] text-gf-accent hover:underline disabled:opacity-50"
                 >
-                  Use in commit panel
+                  {t('workingTree.useInCommitPanel')}
                 </button>
               </div>
 
               <div className="space-y-2">
                 <div>
-                  <FieldLabel>Summary</FieldLabel>
+                  <FieldLabel>{t('workingTree.summary')}</FieldLabel>
                   <div className="relative">
                     <TextInput
                       value={proposal.summary}
                       onChange={(e) => updateProposal(index, { summary: e.target.value })}
-                      placeholder="Commit summary"
+                      placeholder={t('workingTree.commitSummary')}
                       disabled={busy}
                     />
                     <span
@@ -139,11 +143,11 @@ export function ComposeCommitsModal({
                 </div>
 
                 <div>
-                  <FieldLabel>Description</FieldLabel>
+                  <FieldLabel>{t('workingTree.description')}</FieldLabel>
                   <TextArea
                     value={proposal.description}
                     onChange={(e) => updateProposal(index, { description: e.target.value })}
-                    placeholder="Optional description"
+                    placeholder={t('workingTree.optionalDescription')}
                     rows={2}
                     disabled={busy}
                     className="resize-y"
@@ -168,10 +172,10 @@ export function ComposeCommitsModal({
 
       <div className="mt-5 flex justify-end gap-2">
         <ActionButton variant="secondary" onClick={onClose} disabled={busy}>
-          Cancel
+          {t('common.cancel')}
         </ActionButton>
         <ActionButton variant="primary" loading={busy} onClick={() => void handleCreateAll()}>
-          Create {proposals.length} commit{proposals.length === 1 ? '' : 's'}
+          {t('workingTree.createCommitCount', { count: proposals.length })}
         </ActionButton>
       </div>
     </Modal>

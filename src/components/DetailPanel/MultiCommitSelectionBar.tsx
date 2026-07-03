@@ -1,4 +1,5 @@
 import type { GitCommit } from '@/lib/types'
+import { useTranslation } from 'react-i18next'
 import {
   allSelectedOnBranchHistory,
   anySelectedOnBranchHistory,
@@ -38,11 +39,14 @@ export function MultiCommitSelectionBar({
   onCherryPickAll,
   onSquash
 }: MultiCommitSelectionBarProps) {
+  const { t } = useTranslation()
   const chronological = selectedCommitsChronological(allCommits, commits.map((commit) => commit.hash))
   const hashes = chronological.map((commit) => commit.hash)
   const oldest = chronological[0]!
   const newest = chronological[chronological.length - 1]!
-  const branchLabel = isDetached ? 'detached HEAD' : branch || 'current branch'
+  const branchLabel = isDetached
+    ? t('contextMenu.detachedHead')
+    : branch || t('contextMenu.currentBranch')
   const onHistory = head ? allSelectedOnBranchHistory(commits, head, allCommits) : false
   const anyOnHistory = head ? anySelectedOnBranchHistory(commits, head, allCommits) : false
   const hasMerge = selectionHasMergeCommit(commits)
@@ -55,14 +59,16 @@ export function MultiCommitSelectionBar({
   return (
     <div className="shrink-0 border-b border-gf-border bg-gf-surface/40 px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs font-medium text-gf-fg-muted">{commits.length} commits selected</p>
+        <p className="text-xs font-medium text-gf-fg-muted">
+          {t('detail.commitsSelected', { count: commits.length })}
+        </p>
         <div className="flex flex-wrap gap-1.5">
           <button
             type="button"
             onClick={() => onCopyAllHashes(hashes)}
             className="rounded border border-gf-border-strong px-2 py-0.5 text-[11px] text-gf-fg-muted hover:bg-gf-surface-hover"
           >
-            Copy hashes
+            {t('detail.copyHashes')}
           </button>
           <button
             type="button"
@@ -71,42 +77,46 @@ export function MultiCommitSelectionBar({
               onCompare(
                 oldest.hash,
                 newest.hash,
-                `${commits.length} commits (${oldest.shortHash}..${newest.shortHash})`
+                t('detail.compareLabel', {
+                  count: commits.length,
+                  oldest: oldest.shortHash,
+                  newest: newest.shortHash
+                })
               )
             }
             className="rounded border border-gf-border-strong px-2 py-0.5 text-[11px] text-gf-fg-muted hover:bg-gf-surface-hover disabled:opacity-40"
           >
-            Compare
+            {t('detail.compare')}
           </button>
           <button
             type="button"
             disabled={cherryPickDisabled}
             title={
               anyOnHistory
-                ? `Some commits are already on ${branchLabel}`
+                ? t('detail.someAlreadyOnBranch', { branch: branchLabel })
                 : hasMerge
-                  ? 'Merge commits cannot be cherry-picked as a group'
+                  ? t('detail.mergeCannotCherryPickGroup')
                   : undefined
             }
             onClick={() => onCherryPickAll(hashes)}
             className="rounded border border-gf-border-strong px-2 py-0.5 text-[11px] text-gf-fg-muted hover:bg-gf-surface-hover disabled:opacity-40"
           >
-            Cherry-pick all
+            {t('detail.cherryPickAll')}
           </button>
           <button
             type="button"
             disabled={squashDisabled}
             title={
               !contiguous
-                ? 'Selected commits must be adjacent in history'
+                ? t('detail.selectionNotContiguous')
                 : !onHistory
-                  ? `All commits must be on ${branchLabel}`
+                  ? t('detail.allMustBeOnBranch', { branch: branchLabel })
                   : undefined
             }
             onClick={() => onSquash(hashes)}
             className="rounded border border-gf-border-strong px-2 py-0.5 text-[11px] text-gf-fg-muted hover:bg-gf-surface-hover disabled:opacity-40"
           >
-            Squash
+            {t('detail.squash')}
           </button>
         </div>
       </div>

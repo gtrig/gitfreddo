@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
 import { useLogGraph, useBranches, useRepoStatus, useRemotes, useStashList, useTags, useWorkingStatus, useMergeStatus } from '@/hooks/useGit'
@@ -72,7 +73,8 @@ function BranchTagRow({
   searchDimClass,
   onRowContextMenu,
   onRefContextMenu,
-  handleCommitClick
+  handleCommitClick,
+  t
 }: {
   commit: GitCommit
   head: string
@@ -86,6 +88,7 @@ function BranchTagRow({
   onRowContextMenu: (event: React.MouseEvent) => void
   onRefContextMenu: (event: React.MouseEvent, timelineRef: TimelineRef) => void
   handleCommitClick: (event: React.MouseEvent) => void
+  t: (key: string, options?: Record<string, unknown>) => string
 }) {
   const refConnectorAnchor = useConnectorAnchor(`ref:${commit.hash}`)
   const stashConnectorAnchor = useConnectorAnchor(`stash:${commit.hash}`)
@@ -105,7 +108,7 @@ function BranchTagRow({
           className="inline-flex shrink-0 items-center gap-0.5 rounded border border-sky-500/50 bg-sky-500/15 px-1 py-0.5 text-[10px] leading-none text-sky-300"
         >
           <SidebarIconStash className="h-2.5 w-2.5 shrink-0 opacity-90" />
-          stash
+          {t('timeline.stash')}
         </span>
       )}
       <TimelineRefStack
@@ -127,6 +130,7 @@ function headerCellClass(columnId: TimelineColumnId): string {
 }
 
 export function CommitTimeline() {
+  const { t } = useTranslation()
   const connected = useWorkspaceStore((s) => s.connected)
   const { data: graph, isLoading, error } = useLogGraph(connected)
   const { data: repoStatus } = useRepoStatus(connected)
@@ -410,6 +414,7 @@ export function CommitTimeline() {
                 onRowContextMenu={onRowContextMenu(commit)}
                 onRefContextMenu={onRefContextMenu(commit)}
                 handleCommitClick={handleCommitClick(commit)}
+                t={t}
               />
             )
           })}
@@ -467,13 +472,13 @@ export function CommitTimeline() {
             >
               <span className="flex min-w-0 items-center gap-2">
                 <ExclamationTriangleIcon className="h-3.5 w-3.5 shrink-0 text-orange-400" aria-hidden />
-                <span className="font-medium text-orange-300">Merge conflicts detected</span>
+                <span className="font-medium text-orange-300">{t('timeline.mergeConflictsDetected')}</span>
                 <span className="text-[10px] text-orange-400/90">
-                  {mergeStatus.conflictedPaths.length} conflicted
+                  {t('timeline.conflictedCount', { count: mergeStatus.conflictedPaths.length })}
                 </span>
               </span>
               <span className="shrink-0 rounded border border-orange-500/30 px-1.5 py-0.5 text-[10px] text-orange-300/90">
-                Resolve
+                {t('timeline.resolve')}
               </span>
             </button>
           )}
@@ -487,23 +492,29 @@ export function CommitTimeline() {
               }`}
             >
               <span className="flex min-w-0 items-center gap-2">
-                <span className="font-medium text-amber-300">Uncommitted changes</span>
+                <span className="font-medium text-amber-300">{t('timeline.uncommittedChanges')}</span>
                 {changeCounts && (
                   <span className="flex flex-wrap items-center gap-2 text-[10px]">
                     {changeCounts.modified > 0 && (
-                      <span className="text-amber-400">{changeCounts.modified} modified</span>
+                      <span className="text-amber-400">
+                        {t('timeline.modified', { count: changeCounts.modified })}
+                      </span>
                     )}
                     {changeCounts.added > 0 && (
-                      <span className="text-emerald-400">+{changeCounts.added} added</span>
+                      <span className="text-emerald-400">
+                        {t('timeline.added', { count: changeCounts.added })}
+                      </span>
                     )}
                     {changeCounts.deleted > 0 && (
-                      <span className="text-rose-400">-{changeCounts.deleted} deleted</span>
+                      <span className="text-rose-400">
+                        {t('timeline.deleted', { count: changeCounts.deleted })}
+                      </span>
                     )}
                   </span>
                 )}
               </span>
               <span className="shrink-0 rounded border border-gf-border-strong px-1.5 py-0.5 text-[10px] text-gf-fg-subtle">
-                View Changes
+                {t('timeline.viewChanges')}
               </span>
             </button>
           )}
@@ -513,7 +524,7 @@ export function CommitTimeline() {
               className="px-3 text-sm text-gf-fg-subtle"
               style={{ height: TIMELINE_ROW_HEIGHT, lineHeight: `${TIMELINE_ROW_HEIGHT}px` }}
             >
-              No commits yet.
+              {t('timeline.noCommitsYet')}
             </p>
           )}
 
@@ -540,11 +551,11 @@ export function CommitTimeline() {
                     )}
                     {stash && (
                       <span className="shrink-0 rounded border border-sky-500/50 px-1 py-0.5 text-[10px] leading-none text-sky-300">
-                        stash
+                        {t('timeline.stash')}
                       </span>
                     )}
                     {commit.parents.length > 1 && !isStashCommit(commit) && !visibility.parents && (
-                      <span className="shrink-0 text-[10px] text-violet-400">merge</span>
+                      <span className="shrink-0 text-[10px] text-violet-400">{t('timeline.merge')}</span>
                     )}
                     <p className={`min-w-0 truncate text-[12px] ${stash ? 'text-sky-100' : 'text-gf-fg'}`}>
                       {commit.subject}
@@ -686,10 +697,10 @@ export function CommitTimeline() {
   }
 
   if (!connected) {
-    return <p className="p-4 text-sm text-gf-fg-subtle">Open a repository to view commits.</p>
+    return <p className="p-4 text-sm text-gf-fg-subtle">{t('timeline.openRepoPrompt')}</p>
   }
 
-  if (isLoading) return <div className="p-4"><LoadingRow label="Loading commits…" /></div>
+  if (isLoading) return <div className="p-4"><LoadingRow label={t('timeline.loadingCommits')} /></div>
   if (error) return <p className="p-4 text-sm text-red-400">{(error as Error).message}</p>
 
   return (
@@ -757,9 +768,9 @@ export function CommitTimeline() {
       {pendingDeleteBranch && (
         <ConfirmDialog
           open
-          title="Delete branch"
-          message={`Delete branch "${pendingDeleteBranch}"?`}
-          confirmLabel="Delete"
+          title={t('sidebar.deleteBranch')}
+          message={t('sidebar.deleteBranchConfirm', { name: pendingDeleteBranch })}
+          confirmLabel={t('common.delete')}
           busy={deleteBranch.isPending}
           onConfirm={async () => {
             await deleteBranch.mutateAsync({ name: pendingDeleteBranch, force: true })
@@ -778,7 +789,7 @@ export function CommitTimeline() {
           onSubmit={async (params) => {
             await window.gitfreddo.githubCreatePullRequest(repoPath, params)
             await invalidatePrs(repoPath)
-            show('Pull request created', 'success')
+            show(t('sidebar.pullRequestCreated'), 'success')
             setPrBranch(null)
           }}
         />
@@ -812,9 +823,11 @@ export function CommitTimeline() {
       {pendingDeleteRemote && (
         <ConfirmDialog
           open
-          title="Delete remote branch"
-          message={`Delete remote branch "${pendingDeleteRemote.name.replace(/^remotes\//, '')}"?`}
-          confirmLabel="Delete"
+          title={t('sidebar.deleteRemoteBranch')}
+          message={t('sidebar.deleteRemoteBranchConfirm', {
+            name: pendingDeleteRemote.name.replace(/^remotes\//, '')
+          })}
+          confirmLabel={t('common.delete')}
           busy={deleteRemoteBranch.isPending}
           onConfirm={async () => {
             const parsed = parseRemoteBranchName(pendingDeleteRemote.name)

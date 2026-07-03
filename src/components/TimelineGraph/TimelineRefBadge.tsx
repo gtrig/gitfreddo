@@ -1,4 +1,5 @@
 import { TagIcon } from '@heroicons/react/24/outline'
+import { useTranslation } from 'react-i18next'
 import {
   SidebarIconBranch,
   SidebarIconOrigin
@@ -37,10 +38,12 @@ function RefIcon({ kind }: { kind: TimelineRefKind }) {
 }
 
 export function TimelineDetachedHeadBadge() {
+  const { t } = useTranslation()
+
   return (
     <span
       className={`${BADGE_BASE} border-gf-border-strong/70 bg-gf-surface/90 text-emerald-400`}
-      title="Detached HEAD"
+      title={t('timeline.detachedHead')}
     >
       <SidebarIconBranch className="h-2.5 w-2.5 shrink-0 opacity-90" />
       <span className="truncate">HEAD</span>

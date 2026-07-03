@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next'
 import type { ContextMenuItem } from '@/components/ui/ContextMenu'
 import type { GitBranch, GitTag } from '@/lib/types'
 import {
@@ -90,7 +91,8 @@ export function buildTimelineRefContextMenuItems(
   branches: GitBranch[],
   tags: GitTag[],
   currentBranch: string,
-  handlers: TimelineRefContextMenuHandlers
+  handlers: TimelineRefContextMenuHandlers,
+  _t?: TFunction
 ): ContextMenuItem[] | null {
   if (timelineRef.kind === 'tag') {
     const tag = findTagForTimelineRef(tags, timelineRef, commitHash)

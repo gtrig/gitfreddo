@@ -1,4 +1,5 @@
 import type { DiffRow } from '@/lib/unifiedDiff'
+import { useTranslation } from 'react-i18next'
 import { groupRowsByHunk } from '@/lib/unifiedDiff'
 import type { GitBlameLine } from '@/lib/types'
 
@@ -70,14 +71,16 @@ export function UnifiedDiffView({
   onHunkAction,
   hunkBusy = false
 }: UnifiedDiffViewProps) {
+  const { t } = useTranslation()
+
   if (loading) {
-    return <p className="px-4 py-6 text-sm text-gf-fg-subtle">Loading diff…</p>
+    return <p className="px-4 py-6 text-sm text-gf-fg-subtle">{t('diff.loadingDiff')}</p>
   }
 
   if (rows.length === 0) {
     return (
       <p className="px-4 py-6 text-sm text-gf-fg-subtle">
-        {emptyMessage ?? 'No diff content for this file.'}
+        {emptyMessage ?? t('diff.noDiffContent')}
       </p>
     )
   }
@@ -103,7 +106,7 @@ export function UnifiedDiffView({
                   onClick={() => onHunkAction(groupIndex)}
                   className="shrink-0 rounded border border-gf-border-strong px-2 py-0.5 text-[10px] text-gf-fg-muted hover:bg-gf-bg disabled:opacity-50"
                 >
-                  {hunkStageMode === 'stage' ? 'Stage hunk' : 'Unstage hunk'}
+                  {hunkStageMode === 'stage' ? t('diff.stageHunk') : t('diff.unstageHunk')}
                 </button>
               )}
             </div>

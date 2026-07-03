@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
@@ -15,6 +16,7 @@ import { useStashList } from '@/hooks/useGit'
 import { useToastStore } from '@/stores/toast'
 
 export function DetailPanel() {
+  const { t } = useTranslation()
   const connected = useWorkspaceStore((s) => s.connected)
   const repoPath = useWorkspaceStore((s) => s.activePath)
   const selection = useSelectionStore((s) => s.timelineSelection)
@@ -68,7 +70,7 @@ export function DetailPanel() {
   if (!connected) {
     return (
       <aside className="flex h-full items-center justify-center p-4 text-sm text-gf-fg-subtle">
-        Select a repository tab.
+        {t('detail.selectRepoTab')}
       </aside>
     )
   }
@@ -116,19 +118,19 @@ export function DetailPanel() {
             onSelectPrimary={setPrimaryCommit}
             onCopyAllHashes={(hashes) => {
               void navigator.clipboard.writeText(hashes.join('\n'))
-              showToast(`${hashes.length} commit hashes copied.`, 'info')
+              showToast(t('detail.hashesCopied', { count: hashes.length }), 'info')
             }}
             onCompare={showCompareCommitRange}
             onCherryPickAll={(hashes) =>
               void runBulkAction(
                 cherryPick.mutateAsync({ hashes }),
-                `Cherry-picked ${hashes.length} commits.`
+                t('detail.cherryPicked', { count: hashes.length })
               )
             }
             onSquash={(hashes) =>
               void runBulkAction(
                 squashCommits.mutateAsync({ hashes }),
-                `Squashed ${hashes.length} commits.`
+                t('detail.squashed', { count: hashes.length })
               )
             }
           />
@@ -147,7 +149,7 @@ export function DetailPanel() {
 
   return (
     <aside className="flex h-full items-center justify-center border-l border-gf-border p-4 text-sm text-gf-fg-subtle">
-      Select a commit or uncommitted changes.
+      {t('detail.selectCommitOrChanges')}
     </aside>
   )
 }

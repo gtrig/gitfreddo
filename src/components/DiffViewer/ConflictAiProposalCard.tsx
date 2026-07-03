@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { AiConflictResolutionProposal } from '../../../shared/ai'
 
 function confidenceTone(confidence: number): string {
@@ -18,6 +19,7 @@ export function ConflictAiProposalCard({
   onAccept,
   onReject
 }: ConflictAiProposalCardProps) {
+  const { t } = useTranslation()
   const [expanded, setExpanded] = useState(true)
 
   return (
@@ -26,23 +28,23 @@ export function ConflictAiProposalCard({
         <span
           className={`rounded border px-1.5 py-0.5 text-[10px] font-semibold ${confidenceTone(proposal.confidence)}`}
         >
-          {proposal.confidence}% confidence
+          {t('diff.confidence', { percent: proposal.confidence })}
         </span>
-        <span className="text-[10px] text-gf-fg-subtle">AI proposal</span>
+        <span className="text-[10px] text-gf-fg-subtle">{t('diff.aiProposal')}</span>
         <div className="ml-auto flex gap-1">
           <button
             type="button"
             onClick={onAccept}
             className="rounded bg-emerald-600/80 px-2 py-0.5 text-[10px] text-white hover:bg-emerald-500"
           >
-            Accept
+            {t('diff.accept')}
           </button>
           <button
             type="button"
             onClick={onReject}
             className="rounded border border-gf-border-strong px-2 py-0.5 text-[10px] text-gf-fg-muted hover:bg-gf-surface"
           >
-            Reject
+            {t('diff.reject')}
           </button>
           {proposal.analysis && (
             <button
@@ -50,7 +52,7 @@ export function ConflictAiProposalCard({
               onClick={() => setExpanded((open) => !open)}
               className="rounded border border-gf-border-strong px-2 py-0.5 text-[10px] text-gf-fg-muted hover:bg-gf-surface"
             >
-              {expanded ? 'Hide' : 'Analysis'}
+              {expanded ? t('diff.hide') : t('diff.analysis')}
             </button>
           )}
         </div>

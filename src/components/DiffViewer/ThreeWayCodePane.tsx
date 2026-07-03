@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { LineRange } from '@/lib/threeWayMerge'
 
 const ROW_GRID = 'grid-cols-[28px_44px_minmax(0,1fr)]'
@@ -33,6 +34,7 @@ export function ThreeWayCodePane({
   scrollRef,
   onScroll
 }: ThreeWayCodePaneProps) {
+  const { t } = useTranslation()
   const localRef = useRef<HTMLDivElement>(null)
   const containerRef: React.RefObject<HTMLDivElement> = scrollRef ?? localRef
   const lines = content.split('\n')
@@ -54,8 +56,8 @@ export function ThreeWayCodePane({
               checked={allSelected ?? false}
               onChange={onSelectAll}
               className="h-3.5 w-3.5 shrink-0 rounded border-gf-border-strong"
-              aria-label={`Select all ${label} lines`}
-              title={`Select all ${label} lines for this conflict`}
+              aria-label={t('diff.selectAllLines', { label })}
+              title={t('diff.selectAllLinesTitle', { label })}
             />
           )}
         </span>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useToastStore } from '@/stores/toast'
 import { Spinner } from '@/components/ui/Spinner'
@@ -26,25 +27,28 @@ function parseCommitMessage(text: string): { summary: string; description: strin
   return { summary, description }
 }
 
-function continueLabel(kind: GitMergeStatus['kind']): string {
+function continueLabel(
+  kind: GitMergeStatus['kind'],
+  t: (key: string) => string
+): string {
   switch (kind) {
     case 'rebase':
-      return 'Continue rebase'
+      return t('conflicts.continueRebase')
     case 'cherry-pick':
-      return 'Continue cherry-pick'
+      return t('conflicts.continueCherryPick')
     default:
-      return 'Complete merge'
+      return t('conflicts.completeMerge')
   }
 }
 
-function abortLabel(kind: GitMergeStatus['kind']): string {
+function abortLabel(kind: GitMergeStatus['kind'], t: (key: string) => string): string {
   switch (kind) {
     case 'rebase':
-      return 'Abort rebase'
+      return t('conflicts.abortRebase')
     case 'cherry-pick':
-      return 'Abort cherry-pick'
+      return t('conflicts.abortCherryPick')
     default:
-      return 'Abort merge'
+      return t('conflicts.abortMerge')
   }
 }
 
@@ -54,6 +58,7 @@ interface MergeCommitFooterProps {
 }
 
 export function MergeCommitFooter({ mergeStatus, conflictedCount }: MergeCommitFooterProps) {
+  const { t } = useTranslation()
   const {
     mergeContinue,
     mergeAbort,
@@ -87,7 +92,7 @@ export function MergeCommitFooter({ mergeStatus, conflictedCount }: MergeCommitF
     if (!canContinue || !kind) return
     const message = buildCommitMessage(summary, description)
     if (!message.trim()) {
-      showToast('Enter a commit summary.', 'error')
+      showToast(t('conflicts.enterCommitSummary'), 'error')
       return
     }
     try {
@@ -98,7 +103,7 @@ export function MergeCommitFooter({ mergeStatus, conflictedCount }: MergeCommitF
       } else {
         await cherryPickContinue.mutateAsync({ message })
       }
-      showToast('Operation continued.', 'success')
+      showToast(t('conflicts.operationContinued'), 'success')
     } catch (error) {
       showToast(error instanceof Error ? error.message : String(error), 'error')
     }
@@ -114,7 +119,7 @@ export function MergeCommitFooter({ mergeStatus, conflictedCount }: MergeCommitF
       } else {
         await cherryPickAbort.mutateAsync({})
       }
-      showToast('Operation aborted.', 'success')
+      showToast(t('conflicts.operationAborted'), 'success')
     } catch (error) {
       showToast(error instanceof Error ? error.message : String(error), 'error')
     }
@@ -128,7 +133,7 @@ export function MergeCommitFooter({ mergeStatus, conflictedCount }: MergeCommitF
       } else if (kind === 'cherry-pick') {
         await cherryPickSkip.mutateAsync({})
       }
-      showToast('Skipped.', 'success')
+      showToast(t('conflicts.skipped'), 'success')
     } catch (error) {
       showToast(error instanceof Error ? error.message : String(error), 'error')
     }
@@ -143,9 +148,9 @@ export function MergeCommitFooter({ mergeStatus, conflictedCount }: MergeCommitF
     }
     if (mergeStatus.kind === 'merge') {
       const incoming = mergeStatus.incomingLabel ?? 'branch'
-      setSummary(`Merge branch '${incoming}'`)
+      setSummary(t('conflicts.mergeBranchSubject', { branch: incoming }))
     }
-  }, [mergeStatus.kind, mergeStatus.incomingLabel, mergeStatus.mergeMessage])
+  }, [mergeStatus.kind, mergeStatus.incomingLabel, mergeStatus.mergeMessage, t])
 
   const subjectRemaining = SUBJECT_MAX - summary.length
 
@@ -157,25 +162,25 @@ export function MergeCommitFooter({ mergeStatus, conflictedCount }: MergeCommitF
         className="flex w-full items-center gap-2 border-b border-gf-border px-3 py-2 text-left text-xs font-medium text-gf-fg-muted hover:bg-gf-surface/50"
       >
         <Chevron open={expanded} />
-        Commit
+        <span>{t('workingTree.commit')}</span>
       </button>
 
       {expanded && (
         <div className="space-y-2 px-3 py-3">
           <div>
             <label className="mb-1 block text-[10px] uppercase text-gf-fg-subtle">
-              Commit summary
+              {t('conflicts.commitSummary')}
               <span className="float-right font-mono text-gf-fg-subtle">{subjectRemaining}</span>
             </label>
             <input
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
               className="w-full rounded border border-gf-border-strong bg-gf-bg px-2 py-1.5 text-xs text-gf-fg"
-              placeholder="Merge commit subject"
+              placeholder={t('conflicts.mergeCommitSubject')}
             />
           </div>
           <div>
-            <label className="mb-1 block text-[10px] uppercase text-gf-fg-subtle">Description</label>
+            <label className="mb-1 block text-[10px] uppercase text-gf-fg-subtle">{t('conflicts.description')}</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -196,7 +201,7 @@ export function MergeCommitFooter({ mergeStatus, conflictedCount }: MergeCommitF
                 cherryPickContinue.isPending) && (
                 <Spinner size="sm" className="border-white/30 border-t-white" />
               )}
-              {canContinue ? continueLabel(kind) : 'Resolve conflicts to continue'}
+              {canContinue ? continueLabel(kind, t) : t('conflicts.resolveConflictsToContinue')}
             </button>
             {kind !== 'merge' && (
               <button
@@ -205,7 +210,7 @@ export function MergeCommitFooter({ mergeStatus, conflictedCount }: MergeCommitF
                 onClick={() => void handleSkip()}
                 className="rounded border border-gf-border-strong px-3 py-1.5 text-xs text-gf-fg-muted hover:bg-gf-surface disabled:opacity-50"
               >
-                Skip
+                {t('conflicts.skip')}
               </button>
             )}
             <button
@@ -214,7 +219,7 @@ export function MergeCommitFooter({ mergeStatus, conflictedCount }: MergeCommitF
               onClick={() => void handleAbort()}
               className="rounded border border-red-500/50 bg-red-500/10 px-3 py-1.5 text-xs text-red-300 hover:bg-red-500/20 disabled:opacity-50"
             >
-              {abortLabel(kind)}
+              {abortLabel(kind, t)}
             </button>
           </div>
         </div>

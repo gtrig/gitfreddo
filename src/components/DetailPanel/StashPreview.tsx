@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useStashFiles } from '@/hooks/useGit'
 import { useSelectionStore } from '@/stores/selection'
 import { parseCommitNameStatus } from '@/lib/commitFiles'
@@ -19,6 +20,7 @@ function fileNameFromPath(path: string): string {
 }
 
 export function StashPreview({ stash }: StashPreviewProps) {
+  const { t } = useTranslation()
   const { data: filesOutput, isLoading } = useStashFiles(stash.index)
   const selectedStashFile = useSelectionStore((s) => s.selectedStashFile)
   const setSelectedStashFile = useSelectionStore((s) => s.setSelectedStashFile)
@@ -101,27 +103,27 @@ export function StashPreview({ stash }: StashPreviewProps) {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="border-b border-gf-border px-4 py-3">
-        <p className="text-xs font-semibold text-gf-fg-subtle">Stash</p>
+        <p className="text-xs font-semibold text-gf-fg-subtle">{t('detail.stash')}</p>
         <p className="mt-1 text-sm text-gf-fg">{stash.message || `stash@{${stash.index}}`}</p>
         {stash.branch && (
-          <p className="mt-1 text-xs text-gf-fg-subtle">Branch: {stash.branch}</p>
+          <p className="mt-1 text-xs text-gf-fg-subtle">{t('detail.branch')} {stash.branch}</p>
         )}
       </div>
       <div className="flex items-center justify-between border-b border-gf-border px-4 py-2">
         <p className="text-xs text-gf-fg-subtle">
-          {isLoading ? 'Loading files…' : `${changedFiles.length} changed file(s)`}
+          {isLoading ? t('detail.loadingFiles') : t('detail.changedFiles', { count: changedFiles.length })}
         </p>
         <button
           type="button"
           onClick={() => setExpandedPaths(new Set(collectFolderPaths(tree)))}
           className="text-[10px] text-gf-accent-fg hover:text-gf-fg"
         >
-          Expand all
+          {t('detail.expandAll')}
         </button>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
         {!isLoading && changedFiles.length === 0 && (
-          <p className="px-2 text-xs text-gf-fg-subtle">No file changes in this stash.</p>
+          <p className="px-2 text-xs text-gf-fg-subtle">{t('detail.noFileChangesInStash')}</p>
         )}
         {tree.children.map((node) => renderNode(node, 0))}
       </div>

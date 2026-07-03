@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next'
 import type { ContextMenuItem } from '@/components/ui/ContextMenu'
 import {
   allSelectedOnBranchHistory,
@@ -28,6 +29,7 @@ export interface MultiCommitContextMenuContext {
   allCommits: GitCommit[]
   working: GitWorkingStatus | undefined
   actions: MultiCommitContextMenuActions
+  t?: TFunction
 }
 
 export function buildMultiCommitContextMenuItems({
@@ -37,7 +39,8 @@ export function buildMultiCommitContextMenuItems({
   isDetached,
   allCommits,
   working,
-  actions
+  actions,
+  t
 }: MultiCommitContextMenuContext): ContextMenuItem[] {
   if (selectedCommits.length < 2) return []
 
@@ -50,7 +53,11 @@ export function buildMultiCommitContextMenuItems({
   const gitBusy = Boolean(
     working?.rebaseInProgress || working?.mergeInProgress || working?.cherryPickInProgress
   )
-  const branchLabel = isDetached ? 'detached HEAD' : branch || 'current branch'
+  const branchLabel = isDetached
+    ? t
+      ? t('contextMenu.detachedHead')
+      : 'detached HEAD'
+    : branch || (t ? t('contextMenu.currentBranch') : 'current branch')
   const onHistory = head ? allSelectedOnBranchHistory(selectedCommits, head, allCommits) : false
   const anyOnHistory = head ? anySelectedOnBranchHistory(selectedCommits, head, allCommits) : false
   const hasMerge = selectionHasMergeCommit(selectedCommits)
@@ -70,64 +77,102 @@ export function buildMultiCommitContextMenuItems({
   const compareBlocked = gitBusy
 
   function dropLabel(): string {
-    if (hasMerge) return `Drop ${count} commits (merge commits not supported)`
-    if (!onHistory) return `Drop ${count} commits (not on current branch)`
-    if (!onHeadLine) return `Drop ${count} commits (not contiguous on branch)`
-    return `Drop ${count} commits from history…`
+    if (hasMerge) {
+      return t
+        ? t('contextMenu.dropCommitsMergeNotSupported', { count })
+        : `Drop ${count} commits (merge commits not supported)`
+    }
+    if (!onHistory) {
+      return t
+        ? t('contextMenu.dropCommitsNotOnBranch', { count })
+        : `Drop ${count} commits (not on current branch)`
+    }
+    if (!onHeadLine) {
+      return t
+        ? t('contextMenu.dropCommitsNotContiguous', { count })
+        : `Drop ${count} commits (not contiguous on branch)`
+    }
+    return t
+      ? t('contextMenu.dropCommitsFromHistory', { count })
+      : `Drop ${count} commits from history…`
   }
 
   return [
     {
       id: 'multi-heading',
-      label: `${count} commits selected`,
+      label: t ? t('contextMenu.commitsSelected', { count }) : `${count} commits selected`,
       disabled: true,
       onClick: () => {}
     },
     {
       id: 'copy-all-hashes',
-      label: 'Copy all commit hashes',
+      label: t ? t('contextMenu.copyAllCommitHashes') : 'Copy all commit hashes',
       onClick: () => actions.copyAllHashes(hashes)
     },
     {
       id: 'compare-selected',
-      label: `Compare ${oldest.shortHash}..${newest.shortHash}`,
+      label: t
+        ? t('contextMenu.compareRange', { oldest: oldest.shortHash, newest: newest.shortHash })
+        : `Compare ${oldest.shortHash}..${newest.shortHash}`,
       disabled: compareBlocked,
       onClick: () =>
         actions.compareSelected(
           oldest.hash,
           newest.hash,
-          `${count} commits (${oldest.shortHash}..${newest.shortHash})`
+          t
+            ? t('detail.compareLabel', {
+                count,
+                oldest: oldest.shortHash,
+                newest: newest.shortHash
+              })
+            : `${count} commits (${oldest.shortHash}..${newest.shortHash})`
         )
     },
     {
       id: 'cherry-pick-all',
       label: anyOnHistory
-        ? `Cherry-pick ${count} commits (some already on ${branchLabel})`
-        : `Cherry-pick ${count} commits onto ${branchLabel}`,
+        ? t
+          ? t('contextMenu.cherryPickAllAlready', { count, branch: branchLabel })
+          : `Cherry-pick ${count} commits (some already on ${branchLabel})`
+        : t
+          ? t('contextMenu.cherryPickAllOnto', { count, branch: branchLabel })
+          : `Cherry-pick ${count} commits onto ${branchLabel}`,
       disabled: cherryPickBlocked,
       onClick: () => actions.cherryPickAll(hashes)
     },
     {
       id: 'cherry-pick-all-no-commit',
       label: anyOnHistory
-        ? `Cherry-pick ${count} without commit (some already on ${branchLabel})`
-        : `Cherry-pick ${count} without commit onto ${branchLabel}`,
+        ? t
+          ? t('contextMenu.cherryPickAllNoCommitAlready', { count, branch: branchLabel })
+          : `Cherry-pick ${count} without commit (some already on ${branchLabel})`
+        : t
+          ? t('contextMenu.cherryPickAllNoCommitOnto', { count, branch: branchLabel })
+          : `Cherry-pick ${count} without commit onto ${branchLabel}`,
       disabled: cherryPickBlocked,
       onClick: () => actions.cherryPickAllNoCommit(hashes)
     },
     {
       id: 'interactive-rebase',
       label: contiguous
-        ? `Interactive rebase ${count} commits on ${branchLabel}…`
-        : `Interactive rebase (selection not contiguous)`,
+        ? t
+          ? t('contextMenu.interactiveRebaseContiguous', { count, branch: branchLabel })
+          : `Interactive rebase ${count} commits on ${branchLabel}…`
+        : t
+          ? t('contextMenu.interactiveRebaseNotContiguous')
+          : 'Interactive rebase (selection not contiguous)',
       disabled: interactiveRebaseBlocked,
       onClick: () => actions.interactiveRebase(chronological)
     },
     {
       id: 'squash-selected',
       label: contiguous
-        ? `Squash ${count} commits on ${branchLabel}…`
-        : `Squash ${count} commits (selection not contiguous)`,
+        ? t
+          ? t('contextMenu.squashContiguous', { count, branch: branchLabel })
+          : `Squash ${count} commits on ${branchLabel}…`
+        : t
+          ? t('contextMenu.squashNotContiguous', { count })
+          : `Squash ${count} commits (selection not contiguous)`,
       disabled: squashBlocked,
       onClick: () => actions.squashSelected(hashes)
     },
@@ -141,8 +186,12 @@ export function buildMultiCommitContextMenuItems({
     {
       id: 'remove-stale-selected',
       label: allOffBranch
-        ? `Remove stale branch history (${count} commits)…`
-        : `Remove stale branch history (selection spans branches)…`,
+        ? t
+          ? t('contextMenu.removeStaleHistory', { count })
+          : `Remove stale branch history (${count} commits)…`
+        : t
+          ? t('contextMenu.removeStaleHistorySpansBranches')
+          : 'Remove stale branch history (selection spans branches)…',
       disabled: gitBusy || !allOffBranch,
       danger: true,
       onClick: () => actions.removeStaleSelected(selectedCommits)

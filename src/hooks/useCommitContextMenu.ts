@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type {
   DeleteCommitAction,
   ResetMode
@@ -52,6 +53,7 @@ function mutationError(error: unknown): string {
 }
 
 export function useCommitContextMenu(connected: boolean, options: CommitContextMenuOptions) {
+  const { t } = useTranslation()
   const [menu, setMenu] = useState<MenuState | null>(null)
   const [rewordCommit, setRewordCommit] = useState<GitCommit | null>(null)
   const [createBranchAt, setCreateBranchAt] = useState<string | null>(null)
@@ -144,19 +146,20 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
       selectedCommitId: menu.commit.hash,
       selectedCount: selectedCommitHashes.length,
       selectedHashes: selectedCommitHashes,
+      t,
       actions: {
         selectCommit: (hash) => selectTimelineNode('commit', hash),
         copyHash: (hash) => {
           void navigator.clipboard.writeText(hash)
-          showToast('Commit hash copied.', 'info')
+          showToast(t('contextMenu.hashCopied'), 'info')
         },
         copyShortHash: (shortHash) => {
           void navigator.clipboard.writeText(shortHash)
-          showToast('Short hash copied.', 'info')
+          showToast(t('contextMenu.shortHashCopied'), 'info')
         },
         copyAllHashes: (hashes) => {
           void navigator.clipboard.writeText(hashes.join('\n'))
-          showToast(`${hashes.length} commit hashes copied.`, 'info')
+          showToast(t('contextMenu.hashesCopied', { count: hashes.length }), 'info')
         },
         compareSelected: (oldestHash, newestHash, label) => {
           showCompareCommitRange(oldestHash, newestHash, label)
@@ -164,12 +167,12 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
         cherryPickAll: (hashes) =>
           runMutation(
             cherryPick.mutateAsync({ hashes }),
-            `Cherry-picked ${hashes.length} commits.`
+            t('contextMenu.cherryPicked', { count: hashes.length })
           ),
         cherryPickAllNoCommit: (hashes) =>
           runMutation(
             cherryPick.mutateAsync({ hashes, noCommit: true }),
-            `Cherry-picked ${hashes.length} commits without committing.`
+            t('contextMenu.cherryPickedNoCommit', { count: hashes.length })
           ),
         interactiveRebase: (commits) => {
           closeMenu()
@@ -178,13 +181,13 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
         squashSelected: (hashes) =>
           runMutation(
             squashCommits.mutateAsync({ hashes }),
-            `Squashed ${hashes.length} commits.`
+            t('contextMenu.squashed', { count: hashes.length })
           ),
         dropSelected: (commits) =>
           openDeleteModal({ action: 'drop', commits }),
         removeStaleSelected: (commits) =>
           openRemoveStaleModal({ seedHashes: commits.map((commit) => commit.hash) }),
-        checkout: (ref) => runMutation(checkout.mutateAsync({ name: ref }), 'Checked out.'),
+        checkout: (ref) => runMutation(checkout.mutateAsync({ name: ref }), t('contextMenu.checkedOut')),
         mergeBranch: (branchName) => {
           closeMenu()
           setMergeSource(branchName)
@@ -202,34 +205,34 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
         createTag: (hash) => setCreateTagAt(hash),
         reword: (commit) => setRewordCommit(commit),
         rebaseOnto: (hash) =>
-          runMutation(rebaseStart.mutateAsync({ onto: hash }), 'Rebase started.'),
+          runMutation(rebaseStart.mutateAsync({ onto: hash }), t('contextMenu.rebaseStarted')),
         cherryPick: (hash) =>
-          runMutation(cherryPick.mutateAsync({ hash }), 'Cherry-pick complete.'),
+          runMutation(cherryPick.mutateAsync({ hash }), t('contextMenu.cherryPickComplete')),
         cherryPickNoCommit: (hash) =>
           runMutation(
             cherryPick.mutateAsync({ hash, noCommit: true }),
-            'Cherry-pick applied without commit.'
+            t('contextMenu.cherryPickAppliedNoCommit')
           ),
         reset: (mode, hash) =>
-          runMutation(reset.mutateAsync({ mode, ref: hash }), `Reset ${mode} complete.`),
+          runMutation(reset.mutateAsync({ mode, ref: hash }), t('contextMenu.resetComplete', { mode })),
         deleteHead: (mode) =>
           openDeleteModal({ action: 'deleteHead', commits: [menu.commit], initialMode: mode }),
         dropCommits: (commits) => openDeleteModal({ action: 'drop', commits }),
         revertCommit: (commit) => openDeleteModal({ action: 'revert', commits: [commit] }),
         removeStaleHistory: (commit) => openRemoveStaleModal({ seedHash: commit.hash }),
         rebaseContinue: () =>
-          runMutation(rebaseContinue.mutateAsync(undefined), 'Rebase continued.'),
-        rebaseAbort: () => runMutation(rebaseAbort.mutateAsync(undefined), 'Rebase aborted.'),
-        rebaseSkip: () => runMutation(rebaseSkip.mutateAsync(undefined), 'Rebase skipped.'),
+          runMutation(rebaseContinue.mutateAsync(undefined), t('contextMenu.rebaseContinued')),
+        rebaseAbort: () => runMutation(rebaseAbort.mutateAsync(undefined), t('contextMenu.rebaseAborted')),
+        rebaseSkip: () => runMutation(rebaseSkip.mutateAsync(undefined), t('contextMenu.rebaseSkipped')),
         mergeContinue: () =>
-          runMutation(mergeContinue.mutateAsync(undefined), 'Merge continued.'),
-        mergeAbort: () => runMutation(mergeAbort.mutateAsync(undefined), 'Merge aborted.'),
+          runMutation(mergeContinue.mutateAsync(undefined), t('contextMenu.mergeContinued')),
+        mergeAbort: () => runMutation(mergeAbort.mutateAsync(undefined), t('contextMenu.mergeAborted')),
         cherryPickContinue: () =>
-          runMutation(cherryPickContinue.mutateAsync(undefined), 'Cherry-pick continued.'),
+          runMutation(cherryPickContinue.mutateAsync(undefined), t('contextMenu.cherryPickContinued')),
         cherryPickAbort: () =>
-          runMutation(cherryPickAbort.mutateAsync(undefined), 'Cherry-pick aborted.'),
+          runMutation(cherryPickAbort.mutateAsync(undefined), t('contextMenu.cherryPickAborted')),
         cherryPickSkip: () =>
-          runMutation(cherryPickSkip.mutateAsync(undefined), 'Cherry-pick skipped.')
+          runMutation(cherryPickSkip.mutateAsync(undefined), t('contextMenu.cherryPickSkipped'))
       }
     })
   }, [
@@ -258,7 +261,7 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
     cherryPickContinue,
     cherryPickAbort,
     cherryPickSkip
-  ])
+  , t])
 
   return {
     menu,

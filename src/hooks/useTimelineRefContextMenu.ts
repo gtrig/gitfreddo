@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { GitBranch, GitRemote, GitTag } from '@/lib/types'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { useGitMutations } from '@/hooks/useGitMutations'
@@ -29,6 +30,7 @@ export function useTimelineRefContextMenu({
   onSelectCommit,
   onMerge
 }: TimelineRefContextMenuOptions) {
+  const { t } = useTranslation()
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
   const { checkout, pushTag, deleteBranch, deleteRemoteBranch, unsetUpstream } = useGitMutations()
   const repoPath = useWorkspaceStore((s) => s.activePath)
@@ -101,12 +103,13 @@ export function useTimelineRefContextMenu({
         branches ?? [],
         tags ?? [],
         currentBranch,
-        handlers
+        handlers,
+        t
       )
       if (!items) return
       openMenu(event, items)
     },
-    [branches, currentBranch, handlers, openMenu, tags]
+    [branches, currentBranch, handlers, openMenu, tags, t]
   )
 
   return {

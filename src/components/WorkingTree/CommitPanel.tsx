@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { ArchiveBoxIcon, SparklesIcon } from '@heroicons/react/24/outline'
 import { ChevronDoubleRightIcon } from '@heroicons/react/24/solid'
@@ -43,6 +44,7 @@ interface CommitPanelProps {
 }
 
 export function CommitPanel({ working }: CommitPanelProps) {
+  const { t } = useTranslation()
   const connected = useWorkspaceStore((s) => s.connected)
   const repoPath = useWorkspaceStore((s) => s.activePath)
   const { data: graph } = useLogGraph(connected)
@@ -125,7 +127,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
 
   async function handleComposeWithAi() {
     if (!hasStaged) {
-      showToast('Stage files before composing commits with AI.', 'error')
+      showToast(t('workingTree.stageBeforeCompose'), 'error')
       return
     }
 
@@ -158,7 +160,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
     }
 
     if (!summary.trim()) {
-      showToast('Enter a commit summary.', 'error')
+      showToast(t('workingTree.enterCommitSummary'), 'error')
       return
     }
 
@@ -178,7 +180,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
 
   async function handleCreateStash() {
     if (!hasChanges) {
-      showToast('No changes to stash.', 'error')
+      showToast(t('workingTree.noChangesToStash'), 'error')
       return
     }
 
@@ -194,12 +196,12 @@ export function CommitPanel({ working }: CommitPanelProps) {
   const wantsCommit = hasStaged || amend
 
   const primaryLabel = wantsStage
-    ? 'Stage Changes to Commit'
+    ? t('workingTree.stageChangesToCommit')
     : hasStaged
-      ? `Commit ${working.staged.length} file${working.staged.length === 1 ? '' : 's'}`
+      ? t('workingTree.commitFiles', { count: working.staged.length })
       : amend
-        ? 'Amend previous commit'
-        : 'Commit'
+        ? t('workingTree.amendPreviousCommit')
+        : t('workingTree.commitAction')
 
   const primaryDisabled = busy || (!wantsStage && !wantsCommit) || (wantsCommit && !wantsStage && !summary.trim())
 
@@ -211,7 +213,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
         className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-gf-fg-muted hover:bg-gf-surface-hover/50"
       >
         <Chevron open={expanded} />
-        <span>Commit</span>
+        <span>{t('workingTree.commit')}</span>
       </button>
 
       {expanded && (
@@ -223,14 +225,14 @@ export function CommitPanel({ working }: CommitPanelProps) {
               onChange={(e) => setAmend(e.target.checked)}
               className="rounded border-gf-border-strong bg-gf-bg"
             />
-            Amend previous commit
+            {t('workingTree.amendPrevious')}
           </label>
 
           <div className="relative">
             <input
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
-              placeholder="Commit summary"
+              placeholder={t('workingTree.commitSummary')}
               className="w-full rounded border border-gf-border-strong bg-gf-bg px-2.5 py-1.5 pr-16 text-sm text-gf-fg outline-none placeholder:text-gf-fg-subtle focus:border-gf-accent"
             />
             <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
@@ -244,8 +246,8 @@ export function CommitPanel({ working }: CommitPanelProps) {
                   type="button"
                   onClick={() => void handleAiFillSummary()}
                   disabled={aiFill.isPending}
-                  aria-label="Fill summary with AI"
-                  title="Fill with AI"
+                  aria-label={t('workingTree.fillSummaryWithAi')}
+                  title={t('workingTree.fillWithAi')}
                   className="flex h-5 w-5 items-center justify-center rounded text-violet-400 hover:bg-gf-surface-hover disabled:opacity-40"
                 >
                   <SparklesIcon className={`h-3 w-3 ${aiFill.isPending ? 'animate-pulse' : ''}`} aria-hidden />
@@ -257,7 +259,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Description"
+            placeholder={t('workingTree.description')}
             rows={3}
             className="w-full resize-none rounded border border-gf-border-strong bg-gf-bg px-2.5 py-1.5 text-sm text-gf-fg outline-none placeholder:text-gf-fg-subtle focus:border-gf-accent"
           />
@@ -268,7 +270,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
             className="flex items-center gap-1 text-[11px] text-gf-fg-subtle hover:text-gf-fg-muted"
           >
             <Chevron open={optionsOpen} />
-            Commit options
+            {t('workingTree.commitOptions')}
           </button>
 
           {optionsOpen && (
@@ -280,7 +282,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
                   onChange={(event) => setSign(event.target.checked)}
                   className="rounded border-gf-border-strong bg-gf-bg"
                 />
-                Sign commit (GPG)
+                {t('workingTree.signCommit')}
               </label>
               <label className="flex items-center gap-2 text-[11px] text-gf-fg-muted">
                 <input
@@ -289,7 +291,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
                   onChange={(event) => setPushAfterCommit(event.target.checked)}
                   className="rounded border-gf-border-strong bg-gf-bg"
                 />
-                Push after commit
+                {t('workingTree.pushAfterCommit')}
               </label>
             </div>
           )}
@@ -303,7 +305,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
                 className="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-gf-bg px-3 py-1 text-xs text-gf-fg-muted [background-image:linear-gradient(var(--gf-bg),var(--gf-bg)),linear-gradient(90deg,#a78bfa,#38bdf8)] [background-origin:border-box] [background-clip:padding-box,border-box] hover:text-gf-fg disabled:opacity-50"
               >
                 <SparklesIcon className="h-3 w-3 text-violet-400" aria-hidden />
-                {aiFill.isPending ? 'Composing…' : 'Compose commits with AI'}
+                {aiFill.isPending ? t('workingTree.composing') : t('workingTree.composeCommitsWithAi')}
               </button>
             </div>
           )}
@@ -336,7 +338,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
           ) : (
             <ChevronDoubleRightIcon className="h-4 w-4" aria-hidden />
           )}
-          {commit.isPending || stageAdd.isPending ? 'Working…' : primaryLabel}
+          {commit.isPending || stageAdd.isPending ? t('workingTree.working') : primaryLabel}
         </button>
         <button
           type="button"
@@ -349,7 +351,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
           ) : (
             <ArchiveBoxIcon className="h-3.5 w-3.5" aria-hidden />
           )}
-          {stashPush.isPending ? 'Stashing…' : 'Create stash'}
+          {stashPush.isPending ? t('workingTree.stashing') : t('workingTree.createStash')}
         </button>
       </div>
     </div>

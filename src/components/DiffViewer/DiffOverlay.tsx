@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { useSelectionStore } from '@/stores/selection'
 import { useWorkspaceStore } from '@/stores/workspace'
@@ -30,6 +31,7 @@ interface DiffOverlayProps {
 type DiffViewMode = AppSettings['diffViewMode'] | 'blame'
 
 export function DiffOverlay({ onClose }: DiffOverlayProps) {
+  const { t } = useTranslation()
   const { data: settings } = useAppSettings()
   const connected = useWorkspaceStore((s) => s.connected)
   const repoPath = useWorkspaceStore((s) => s.activePath)
@@ -187,7 +189,7 @@ export function DiffOverlay({ onClose }: DiffOverlayProps) {
         patch,
         reverse: hunkStageMode === 'unstage'
       })
-      showToast(hunkStageMode === 'stage' ? 'Hunk staged.' : 'Hunk unstaged.', 'success')
+      showToast(hunkStageMode === 'stage' ? t('diff.hunkStaged') : t('diff.hunkUnstaged'), 'success')
     } catch (error) {
       showToast(error instanceof Error ? error.message : String(error), 'error')
     }
@@ -217,7 +219,7 @@ export function DiffOverlay({ onClose }: DiffOverlayProps) {
                     : 'text-gf-fg-muted hover:bg-gf-bg'
                 }`}
               >
-                {mode === 'split' ? 'Side by side' : mode}
+                {mode === 'split' ? t('diff.sideBySide') : mode}
               </button>
             ))}
           </div>
@@ -226,15 +228,15 @@ export function DiffOverlay({ onClose }: DiffOverlayProps) {
             onClick={onClose}
             className="rounded border border-gf-border-strong px-3 py-1 text-xs text-gf-fg-muted hover:bg-gf-bg"
           >
-            Close
+            {t('common.close')}
           </button>
         </div>
       </header>
       <div className="min-h-0 flex-1 overflow-auto p-4">
         {loading || (showBlame && blameQuery.isLoading) ? (
-          <p className="text-sm text-gf-fg-subtle">Loading diff…</p>
+          <p className="text-sm text-gf-fg-subtle">{t('diff.loadingDiff')}</p>
         ) : rows.length === 0 ? (
-          <p className="text-sm text-gf-fg-subtle">No changes in this range.</p>
+          <p className="text-sm text-gf-fg-subtle">{t('diff.noChangesInRange')}</p>
         ) : effectiveMode === 'split' ? (
           <SplitDiffView rows={splitRows} loading={loading} />
         ) : (
