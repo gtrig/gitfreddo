@@ -46,4 +46,27 @@ describe('parsePorcelainV2Line', () => {
       status: 'modified'
     })
   })
+
+  it('parses added, deleted, untracked, and conflicted files', () => {
+    expect(parsePorcelainV2Line('1 A. N... 100644 100644 100644 abc def new.ts')?.status).toBe(
+      'added'
+    )
+    expect(parsePorcelainV2Line('1 .D N... 100644 100644 100644 abc def gone.ts')?.status).toBe(
+      'deleted'
+    )
+    expect(
+      parsePorcelainV2Line(
+        '1 ?? N... 100644 100644 100644 0000000000000000000000000000000000000000 0000000000000000000000000000000000000000 new-dir/'
+      )?.status
+    ).toBe('untracked')
+    expect(
+      parsePorcelainV2Line(
+        'u UU N... 100644 100644 100644 abc def 100644 100644 100644 100644 conflict.ts'
+      )?.status
+    ).toBe('conflicted')
+  })
+
+  it('returns null for malformed lines', () => {
+    expect(parsePorcelainV2Line('bad line')).toBeNull()
+  })
 })

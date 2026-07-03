@@ -53,6 +53,10 @@ async function branchHasUpstream(cwd: string, gitBinaryPath: string): Promise<bo
 
 export async function remoteList(cwd: string, gitBinaryPath: string): Promise<GitRemote[]> {
   const stdout = await runGitOrThrow(['remote', '-v'], { cwd, gitBinaryPath })
+  return parseRemoteVerboseOutput(stdout)
+}
+
+export function parseRemoteVerboseOutput(stdout: string): GitRemote[] {
   const map = new Map<string, GitRemote>()
 
   for (const line of stdout.split('\n')) {

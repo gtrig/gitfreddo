@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { parseBranchLine, parseRemoteBranchRef } from './branch'
+import { parseBranchLine, parseRemoteBranchRef, stripAnsi } from './branch'
+
+describe('stripAnsi', () => {
+  it('removes ANSI color sequences', () => {
+    expect(stripAnsi('\x1B[31mhello\x1B[m')).toBe('hello')
+  })
+})
 
 describe('parseBranchLine', () => {
   it('parses local branches', () => {
