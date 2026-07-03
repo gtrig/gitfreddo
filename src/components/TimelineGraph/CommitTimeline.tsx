@@ -33,6 +33,8 @@ import { SidebarIconStash } from '@/components/layout/sidebar/SidebarIcons'
 import { CommitGraphOverlay } from './CommitGraphOverlay'
 import { TimelineCommitColumn, TIMELINE_ROW_HEIGHT } from './TimelineCommitColumn'
 import { TimelineRefStack } from './TimelineRefStack'
+import { TimelineRefConnectorProvider } from './TimelineRefConnectors'
+import { useConnectorAnchor } from './TimelineRefConnectorContext'
 import { ColumnResizeHandle } from '@/components/ui/ColumnResizeHandle'
 import { ContextMenu } from '@/components/ui/ContextMenu'
 import { LoadingRow } from '@/components/ui/Spinner'
@@ -52,10 +54,71 @@ import { RemoveStaleBranchesModal } from '@/components/DetailPanel/RemoveStaleBr
 import { RewordCommitModal } from '@/components/DetailPanel/RewordCommitModal'
 import { ConfirmDialog } from '@/components/ui/Modal'
 import { parseRemoteBranchName } from '@/lib/branchTree'
+import type { GitCommit } from '@/lib/types'
 import type { TimelineRef } from '@/lib/timelineRefs'
 import type { TimelineColumnId } from '@/lib/timelineColumnVisibility'
 
 const RESIZE_HANDLE_WIDTH = 4
+
+function BranchTagRow({
+  commit,
+  head,
+  currentBranch,
+  isDetached,
+  tagNames,
+  remoteNames,
+  isSelected,
+  isPrimary,
+  searchDimClass,
+  onRowContextMenu,
+  onRefContextMenu,
+  handleCommitClick
+}: {
+  commit: GitCommit
+  head: string
+  currentBranch: string
+  isDetached: boolean
+  tagNames: ReadonlySet<string>
+  remoteNames: ReadonlySet<string>
+  isSelected: boolean
+  isPrimary: boolean
+  searchDimClass: string
+  onRowContextMenu: (event: React.MouseEvent) => void
+  onRefContextMenu: (event: React.MouseEvent, timelineRef: TimelineRef) => void
+  handleCommitClick: (event: React.MouseEvent) => void
+}) {
+  const refConnectorAnchor = useConnectorAnchor(`ref:${commit.hash}`)
+  const stashConnectorAnchor = useConnectorAnchor(`stash:${commit.hash}`)
+  const refs = timelineRefs(commit.refs, tagNames, remoteNames)
+  const stash = isStashCommit(commit)
+
+  return (
+    <div
+      onContextMenu={onRowContextMenu}
+      onClick={handleCommitClick}
+      className={`flex cursor-pointer items-center gap-1 overflow-visible border-b border-gf-border/30 px-2 hover:bg-gf-bg/50 ${commitRowHighlightClass(isSelected, isPrimary)} ${searchDimClass}`}
+      style={{ height: TIMELINE_ROW_HEIGHT }}
+    >
+      {stash && (
+        <span
+          ref={stashConnectorAnchor}
+          className="inline-flex shrink-0 items-center gap-0.5 rounded border border-sky-500/50 bg-sky-500/15 px-1 py-0.5 text-[10px] leading-none text-sky-300"
+        >
+          <SidebarIconStash className="h-2.5 w-2.5 shrink-0 opacity-90" />
+          stash
+        </span>
+      )}
+      <TimelineRefStack
+        refs={refs}
+        isHeadCommit={commit.hash === head}
+        currentBranch={currentBranch}
+        isDetached={isDetached}
+        onRefContextMenu={onRefContextMenu}
+        connectorAnchorRef={refConnectorAnchor}
+      />
+    </div>
+  )
+}
 
 function headerCellClass(columnId: TimelineColumnId): string {
   if (columnId === 'message') return 'min-w-0 flex-1 pl-2'
@@ -315,45 +378,39 @@ export function CommitTimeline() {
     )
   }
 
-  const renderDataColumn = (columnId: TimelineColumnId) => {
+  const renderDataColumn = (columnId: TimelineColumnId, embeddedInGraphBlock = false) => {
     if (!visibility[columnId]) return null
+
+    const stickyClass = embeddedInGraphBlock ? '' : 'sticky left-0 z-10 '
 
     if (columnId === 'branchTag') {
       return (
         <div
           key="column-branchTag"
-          className="sticky left-0 z-10 shrink-0 border-r border-gf-border/60 bg-gf-bg-deep"
+          className={`${stickyClass}shrink-0 border-r border-gf-border/60 ${embeddedInGraphBlock ? '' : 'bg-gf-bg-deep'}`}
           style={{ width: branchTagWidth }}
         >
           {showMergeRow && <div style={{ height: TIMELINE_ROW_HEIGHT }} />}
           {showWorkingRow && <div style={{ height: TIMELINE_ROW_HEIGHT }} />}
           {commits.map((commit) => {
-            const refs = timelineRefs(commit.refs, tagNames, remoteNames)
             const { isSelected, isPrimary, searchDimClass } = rowState(commit.hash)
-            const stash = isStashCommit(commit)
 
             return (
-              <div
+              <BranchTagRow
                 key={`refs-${commit.hash}`}
-                onContextMenu={onRowContextMenu(commit)}
-                onClick={handleCommitClick(commit)}
-                className={`flex cursor-pointer items-center gap-1 overflow-visible border-b border-gf-border/30 px-2 hover:bg-gf-bg/50 ${commitRowHighlightClass(isSelected, isPrimary)} ${searchDimClass}`}
-                style={{ height: TIMELINE_ROW_HEIGHT }}
-              >
-                {stash && (
-                  <span className="inline-flex shrink-0 items-center gap-0.5 rounded border border-sky-500/50 bg-sky-500/15 px-1 py-0.5 text-[10px] leading-none text-sky-300">
-                    <SidebarIconStash className="h-2.5 w-2.5 shrink-0 opacity-90" />
-                    stash
-                  </span>
-                )}
-                <TimelineRefStack
-                  refs={refs}
-                  isHeadCommit={commit.hash === head}
-                  currentBranch={currentBranch}
-                  isDetached={isDetached}
-                  onRefContextMenu={onRefContextMenu(commit)}
-                />
-              </div>
+                commit={commit}
+                head={head}
+                currentBranch={currentBranch}
+                isDetached={isDetached}
+                tagNames={tagNames}
+                remoteNames={remoteNames}
+                isSelected={isSelected}
+                isPrimary={isPrimary}
+                searchDimClass={searchDimClass}
+                onRowContextMenu={onRowContextMenu(commit)}
+                onRefContextMenu={onRefContextMenu(commit)}
+                handleCommitClick={handleCommitClick(commit)}
+              />
             )
           })}
         </div>
@@ -364,7 +421,7 @@ export function CommitTimeline() {
       return (
         <div
           key="column-graph"
-          className="sticky left-0 z-10 shrink-0 overflow-visible bg-gf-bg-deep"
+          className={`${stickyClass}shrink-0 overflow-visible ${embeddedInGraphBlock ? '' : 'bg-gf-bg-deep'}`}
           style={{ width: graphColumnWidth }}
         >
           <div className="relative overflow-visible">
@@ -568,6 +625,66 @@ export function CommitTimeline() {
     </>
   )
 
+  const renderGraphBodyBlock = () => {
+    const branchTagColumn = showBranchTag ? renderDataColumn('branchTag', true) : null
+    const graphColumn = showGraph ? renderDataColumn('graph', true) : null
+    const branchResize =
+      showBranchTagResize ? (
+        <ColumnResizeHandle
+          key="resize-branch-tag"
+          onDrag={onBranchTagResize}
+          onResizeStart={() => setResizing(true)}
+          onResizeEnd={() => setResizing(false)}
+        />
+      ) : null
+    const graphResize =
+      showGraphResize ? (
+        <ColumnResizeHandle
+          key="resize-graph"
+          onDrag={onGraphLaneResize}
+          onResizeStart={() => setResizing(true)}
+          onResizeEnd={() => setResizing(false)}
+        />
+      ) : null
+
+    if (showBranchTag && showGraph) {
+      return (
+        <TimelineRefConnectorProvider
+          key="timeline-graph-block"
+          commits={commits}
+          layout={layout}
+          head={head}
+          currentBranch={currentBranch}
+          isDetached={isDetached}
+          tagNames={tagNames}
+          remoteNames={remoteNames}
+          branchTagWidth={branchTagWidth}
+          resizeGap={showBranchTagResize ? RESIZE_HANDLE_WIDTH : 0}
+          prefixRows={timelinePrefixRows}
+          rowHeight={TIMELINE_ROW_HEIGHT}
+          metrics={metrics}
+          dimmedHashes={searchDimmedHashes}
+          selectedHash={selectedHash}
+          selectedHashes={selectedHashSet}
+        >
+          {branchTagColumn}
+          {branchResize}
+          {graphColumn}
+          {graphResize}
+        </TimelineRefConnectorProvider>
+      )
+    }
+
+    return (
+      <>
+        {branchTagColumn}
+        {branchResize}
+        {graphColumn}
+        {graphResize}
+      </>
+    )
+  }
+
   if (!connected) {
     return <p className="p-4 text-sm text-gf-fg-subtle">Open a repository to view commits.</p>
   }
@@ -588,7 +705,15 @@ export function CommitTimeline() {
         </div>
 
         <div className="flex">
-          {TIMELINE_COLUMN_ORDER.map((columnId) => renderBodyBlock(columnId))}
+          {TIMELINE_COLUMN_ORDER.map((columnId) => {
+            if (columnId === 'branchTag') {
+              return renderGraphBodyBlock()
+            }
+            if (columnId === 'graph') {
+              return null
+            }
+            return renderBodyBlock(columnId)
+          })}
         </div>
       </div>
 

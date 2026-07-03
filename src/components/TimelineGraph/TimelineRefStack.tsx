@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, type Ref } from 'react'
 import { createPortal } from 'react-dom'
 import { TimelineDetachedHeadBadge, TimelineRefBadge } from './TimelineRefBadge'
 import { refKey, splitTimelineRefs, type TimelineRef } from '@/lib/timelineRefs'
@@ -39,13 +39,15 @@ export function TimelineRefStack({
   isHeadCommit = false,
   currentBranch = '',
   isDetached = false,
-  onRefContextMenu
+  onRefContextMenu,
+  connectorAnchorRef
 }: {
   refs: TimelineRef[]
   isHeadCommit?: boolean
   currentBranch?: string
   isDetached?: boolean
   onRefContextMenu?: (event: React.MouseEvent, timelineRef: TimelineRef) => void
+  connectorAnchorRef?: Ref<HTMLSpanElement>
 }) {
   const anchorRef = useRef<HTMLDivElement>(null)
   const [hovered, setHovered] = useState(false)
@@ -76,7 +78,7 @@ export function TimelineRefStack({
 
   const content =
     rest.length === 0 ? (
-      <span className="flex min-w-0 max-w-full items-center gap-1">
+      <span ref={connectorAnchorRef} className="flex min-w-0 max-w-full items-center gap-1">
         {showDetachedHead ? <TimelineDetachedHeadBadge /> : null}
         {primary ? (
           <TimelineRefBadge
@@ -87,7 +89,7 @@ export function TimelineRefStack({
         ) : null}
       </span>
     ) : (
-      <div className="flex min-w-0 max-w-full items-center gap-1">
+      <div ref={connectorAnchorRef} className="flex min-w-0 max-w-full items-center gap-1">
         {showDetachedHead ? <TimelineDetachedHeadBadge /> : null}
         <div className="flex min-w-0 max-w-full items-center gap-0.5">
           {primary ? (
