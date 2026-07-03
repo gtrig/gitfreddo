@@ -1,9 +1,10 @@
-type SpinnerSize = 'sm' | 'md' | 'lg'
+type SpinnerSize = 'sm' | 'md' | 'lg' | 'xl'
 
 const sizeClasses: Record<SpinnerSize, string> = {
   sm: 'h-3 w-3 border',
   md: 'h-4 w-4 border-2',
-  lg: 'h-5 w-5 border-2'
+  lg: 'h-5 w-5 border-2',
+  xl: 'h-10 w-10 border-[3px]'
 }
 
 export function Spinner({

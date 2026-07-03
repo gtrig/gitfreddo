@@ -3,6 +3,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useInvalidateGit } from '@/hooks/useInvalidateGit'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
+import { useOperationStore } from '@/stores/operation'
 import { isNonFastForwardPushError } from '@/lib/remote'
 
 export interface PushParams {
@@ -23,6 +24,12 @@ export function usePushRemote() {
     mutationFn: async (params: PushParams = {}) => {
       if (!repoPath) throw new Error('No repository connected')
       return window.gitfreddo.invoke('push', params)
+    },
+    onMutate: () => {
+      useOperationStore.getState().begin()
+    },
+    onSettled: () => {
+      useOperationStore.getState().end()
     },
     onSuccess: () => {
       invalidate('branch.list', 'working.status')

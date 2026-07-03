@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useInvalidateGit } from '@/hooks/useInvalidateGit'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
+import { useOperationStore } from '@/stores/operation'
 
 const REMOTE_ACTION_LABELS: Record<string, { success: string; error: string }> = {
   fetch: { success: 'Fetched from remote', error: 'Fetch failed' },
@@ -22,6 +23,12 @@ export function useGitMutations() {
       mutationFn: async (params?: unknown) => {
         if (!repoPath) throw new Error('No repository connected')
         return window.gitfreddo.invoke(method, params)
+      },
+      onMutate: () => {
+        useOperationStore.getState().begin()
+      },
+      onSettled: () => {
+        useOperationStore.getState().end()
       },
       onSuccess: () => {
         invalidate(...invalidateKeys)

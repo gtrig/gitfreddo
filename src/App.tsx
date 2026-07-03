@@ -13,7 +13,8 @@ import { LogDrawer, useLogSubscription } from '@/components/layout/LogDrawer'
 import { HeaderToolsMenu } from '@/components/layout/HeaderToolsMenu'
 import { ResizableMainLayout } from '@/components/layout/ResizableMainLayout'
 import { SettingsModal } from '@/components/settings/SettingsModal'
-import { Spinner } from '@/components/ui/Spinner'
+import { GlobalOperationOverlay } from '@/components/ui/GlobalOperationOverlay'
+import { runGlobalOperation } from '@/stores/operation'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useAutoRefresh, useManualRefresh } from '@/hooks/useAutoRefresh'
 import { useAppLogger } from '@/hooks/useAppLogger'
@@ -48,9 +49,6 @@ export default function App() {
       (diffMode === 'stash' && selectedStashIndex !== null) ||
       diffMode === 'commit-range'
   )
-  const activeTab = tabs.find((tab) => tab.path === activePath)
-  const connecting = Boolean(activeTab?.connecting)
-
   useAutoRefresh()
   useLogSubscription()
   useAppLogger()
@@ -71,8 +69,10 @@ export default function App() {
   const reconnect = useCallback(async () => {
     setError(null)
     try {
-      await reconnectActive()
-      refresh()
+      await runGlobalOperation(async () => {
+        await reconnectActive()
+        refresh()
+      }, 'Reconnecting…')
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
       throw err
@@ -155,18 +155,9 @@ export default function App() {
           </>
         }
         right={<DetailPanel />}
-        overlay={
-          connecting ? (
-            <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-gf-bg-deep/40">
-              <p className="flex items-center gap-2 rounded bg-gf-bg px-4 py-2 text-sm text-gf-fg-muted">
-                <Spinner />
-                Opening repository…
-              </p>
-            </div>
-          ) : null
-        }
       />
 
+      <GlobalOperationOverlay />
       <MergeConflictScreen />
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <WorkspaceHub

@@ -1,4 +1,5 @@
 import { useMutation } from '@tanstack/react-query'
+import { useOperationStore } from '@/stores/operation'
 import type { AiFillParams } from '../../shared/ai'
 
 async function requestAiFill(params: AiFillParams): Promise<string> {
@@ -11,6 +12,12 @@ async function requestAiFill(params: AiFillParams): Promise<string> {
 
 export function useAiFill() {
   return useMutation({
-    mutationFn: requestAiFill
+    mutationFn: requestAiFill,
+    onMutate: () => {
+      useOperationStore.getState().begin('AI is working…')
+    },
+    onSettled: () => {
+      useOperationStore.getState().end()
+    }
   })
 }
