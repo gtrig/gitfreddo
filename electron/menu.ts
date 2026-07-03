@@ -8,6 +8,10 @@ export function setMainWindow(window: BrowserWindow | null): void {
   mainWindow = window
 }
 
+export function getMainWindow(): BrowserWindow | null {
+  return mainWindow
+}
+
 function sendMenuAction(action: MenuAction): void {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('app:menu', action)

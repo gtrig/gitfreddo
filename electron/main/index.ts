@@ -13,6 +13,7 @@ import { cloneRepository } from '../git/clone'
 import { initRepository } from '../git/init'
 import { aiConfigFromSettings, aiFill } from '../llm/client'
 import { enrichAiContext } from '../llm/context'
+import { applyStoredZoom, getZoomFactor, zoomIn, zoomOut } from '../zoom'
 import {
   connectGitHub,
   connectGitHubPat,
@@ -63,7 +64,8 @@ let settings: AppSettings = {
   githubLogin: '',
   githubConnectedAt: null,
   pullRebase: false,
-  diffViewMode: 'unified'
+  diffViewMode: 'unified',
+  uiZoomFactor: 1
 }
 
 function applyGitConfig(): void {
@@ -99,7 +101,14 @@ function createWindow(): void {
 
   setMainWindow(mainWindow)
   registerExternalLinkHandlers(mainWindow.webContents)
-  mainWindow.once('ready-to-show', () => mainWindow.show())
+  mainWindow.once('ready-to-show', () => {
+    applyStoredZoom(settings.uiZoomFactor)
+    mainWindow.show()
+  })
+  mainWindow.webContents.on('zoom-changed', (_event, _direction, zoomFactor) => {
+    void persistZoomFactor(zoomFactor)
+    broadcastZoomFactor(zoomFactor)
+  })
   mainWindow.on('closed', () => setMainWindow(null))
 
   if (process.env.ELECTRON_RENDERER_URL) {
@@ -107,6 +116,22 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+}
+
+function broadcastZoomFactor(factor: number): void {
+  for (const window of BrowserWindow.getAllWindows()) {
+    if (!window.isDestroyed()) {
+      window.webContents.send('gitfreddo:zoom-changed', factor)
+    }
+  }
+}
+
+async function persistZoomFactor(factor: number): Promise<void> {
+  const rounded = Math.min(2, Math.max(0.5, Math.round(factor * 10) / 10))
+  if (settings.uiZoomFactor === rounded) {
+    return
+  }
+  settings = await saveSettings({ uiZoomFactor: rounded })
 }
 
 function registerIpc(): void {
@@ -309,6 +334,12 @@ function registerIpc(): void {
     const error = await shell.openPath(fullPath)
     if (error) throw new Error(error)
   })
+
+  ipcMain.handle('gitfreddo:get-zoom-factor', async () => getZoomFactor())
+
+  ipcMain.handle('gitfreddo:zoom-in', async () => zoomIn())
+
+  ipcMain.handle('gitfreddo:zoom-out', async () => zoomOut())
 }
 
 function registerProtocolHandler(): void {

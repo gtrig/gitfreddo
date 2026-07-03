@@ -29,7 +29,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   githubLogin: '',
   githubConnectedAt: null,
   pullRebase: false,
-  diffViewMode: 'unified'
+  diffViewMode: 'unified',
+  uiZoomFactor: 1
 }
 
 export async function loadSettings(): Promise<AppSettings> {
@@ -61,7 +62,11 @@ export async function loadSettings(): Promise<AppSettings> {
           ? parsed.diffViewMode
           : 'unified',
       locale: parsed.locale === 'el' ? 'el' : 'en',
-      theme: normalizeAppTheme(parsed.theme)
+      theme: normalizeAppTheme(parsed.theme),
+      uiZoomFactor:
+        typeof parsed.uiZoomFactor === 'number' && Number.isFinite(parsed.uiZoomFactor)
+          ? Math.min(2, Math.max(0.5, Math.round(parsed.uiZoomFactor * 10) / 10))
+          : DEFAULT_SETTINGS.uiZoomFactor
     }
   } catch {
     return { ...DEFAULT_SETTINGS }

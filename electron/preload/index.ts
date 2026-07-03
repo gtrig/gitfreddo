@@ -59,6 +59,14 @@ const api: GitFreddoAPI = {
     ipcRenderer.on('gitfreddo:log-entry', listener)
     return () => ipcRenderer.removeListener('gitfreddo:log-entry', listener)
   },
+  getZoomFactor: () => ipcRenderer.invoke('gitfreddo:get-zoom-factor'),
+  zoomIn: () => ipcRenderer.invoke('gitfreddo:zoom-in'),
+  zoomOut: () => ipcRenderer.invoke('gitfreddo:zoom-out'),
+  onZoomChanged: (callback) => {
+    const listener = (_event: Electron.IpcRendererEvent, factor: number) => callback(factor)
+    ipcRenderer.on('gitfreddo:zoom-changed', listener)
+    return () => ipcRenderer.removeListener('gitfreddo:zoom-changed', listener)
+  },
   onGitHubConnectProgress: (callback) => {
     const listener = (
       _event: Electron.IpcRendererEvent,
