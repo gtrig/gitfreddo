@@ -33,7 +33,7 @@ export type StaleLocalBranch = StaleRetentionRef & { name: string }
 export interface StaleBranchSummary {
   refs: StaleRetentionRef[]
   /** @deprecated Use refs */
-  branches: StaleRetentionRef[]
+  branches: StaleLocalBranch[]
   totalCommitsNotOnHead: number
   matchingRefs: string[]
   /** @deprecated Use matchingRefs */
