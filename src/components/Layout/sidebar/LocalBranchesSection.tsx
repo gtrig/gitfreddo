@@ -375,10 +375,11 @@ export function RemoteBranchesSection({
   const [collapsedRemotes, setCollapsedRemotes] = useState<Set<string>>(() => new Set())
   const [checkoutRemote, setCheckoutRemote] = useState<string | null>(null)
   const [pendingDeleteRemote, setPendingDeleteRemote] = useState<GitBranch | null>(null)
+  const [pendingRemoveRemote, setPendingRemoveRemote] = useState<string | null>(null)
   const [addRemoteOpen, setAddRemoteOpen] = useState(false)
   const [editRemote, setEditRemote] = useState<GitRemote | null>(null)
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
-  const { fetch, deleteRemoteBranch } = useGitMutations()
+  const { fetch, deleteRemoteBranch, remoteRemove } = useGitMutations()
 
   function toggleRemote(name: string) {
     setCollapsedRemotes((prev) => {
@@ -423,7 +424,8 @@ export function RemoteBranchesSection({
                 menuItems={remoteFolderContextMenuItems(remote, open, {
                   onToggle: () => toggleRemote(remote),
                   onFetch: (remoteName) => void fetch.mutateAsync({ remote: remoteName }),
-                  onEditUrl: openEditRemote
+                  onEditUrl: openEditRemote,
+                  onDelete: setPendingRemoveRemote
                 })}
                 openMenu={openMenu}
               />
@@ -500,6 +502,21 @@ export function RemoteBranchesSection({
             setPendingDeleteRemote(null)
           }}
           onCancel={() => setPendingDeleteRemote(null)}
+        />
+      )}
+
+      {pendingRemoveRemote && (
+        <ConfirmDialog
+          open
+          title={t('sidebar.deleteRemote')}
+          message={t('sidebar.deleteRemoteConfirm', { name: pendingRemoveRemote })}
+          confirmLabel={t('common.delete')}
+          busy={remoteRemove.isPending}
+          onConfirm={async () => {
+            await remoteRemove.mutateAsync({ name: pendingRemoveRemote })
+            setPendingRemoveRemote(null)
+          }}
+          onCancel={() => setPendingRemoveRemote(null)}
         />
       )}
 

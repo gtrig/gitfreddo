@@ -93,7 +93,7 @@ export function useGitMutations() {
     worktreeRemove: wrap('worktree.remove', ['worktree.list', 'branch.list']),
     worktreePrune: wrap('worktree.prune', ['worktree.list']),
     remoteAdd: wrap('remote.add', ['remote.list']),
-    remoteRemove: wrap('remote.remove', ['remote.list']),
+    remoteRemove: wrap('remote.remove', ['remote.list', 'branch.list', 'tag.list']),
     remoteRename: wrap('remote.rename', ['remote.list', 'branch.list']),
     remoteSetUrl: wrap('remote.setUrl', ['remote.list']),
     createTag: wrap('tag.create', ['tag.list', 'log.graph']),

@@ -58,11 +58,13 @@ export function TimelineDetachedHeadBadge() {
 export function TimelineRefBadge({
   timelineRef,
   isCurrent = false,
-  onContextMenu
+  onContextMenu,
+  onDoubleClick
 }: {
   timelineRef: TimelineRef
   isCurrent?: boolean
   onContextMenu?: (event: React.MouseEvent, timelineRef: TimelineRef) => void
+  onDoubleClick?: (event: React.MouseEvent) => void
 }) {
   const textColor = timelineRef.kind === 'branch' ? branchColor(timelineRef.label) : ''
 
@@ -79,6 +81,7 @@ export function TimelineRefBadge({
               }
             : undefined
         }
+        onDoubleClick={onDoubleClick}
       >
         <RefIcon kind={timelineRef.kind} />
         <span className="truncate">{timelineRef.label}</span>

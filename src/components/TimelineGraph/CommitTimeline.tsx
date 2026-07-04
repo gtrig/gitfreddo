@@ -59,6 +59,10 @@ import { parseRemoteBranchName } from '@/lib/workspace/branchTree'
 import type { GitCommit } from '@/lib/types'
 import type { TimelineRef } from '@/lib/timeline/timelineRefs'
 import type { TimelineColumnId } from '@/lib/timeline/timelineColumnVisibility'
+import {
+  resolveCommitDoubleClickCheckout,
+  resolveTimelineRefDoubleClickCheckout
+} from '@/lib/timeline/timelineRefCheckout'
 
 const RESIZE_HANDLE_WIDTH = 4
 
@@ -74,7 +78,9 @@ function BranchTagRow({
   searchDimClass,
   onRowContextMenu,
   onRefContextMenu,
+  onRefDoubleClick,
   handleCommitClick,
+  handleCommitDoubleClick,
   t
 }: {
   commit: GitCommit
@@ -88,7 +94,9 @@ function BranchTagRow({
   searchDimClass: string
   onRowContextMenu: (event: React.MouseEvent) => void
   onRefContextMenu: (event: React.MouseEvent, timelineRef: TimelineRef) => void
+  onRefDoubleClick: (event: React.MouseEvent, timelineRef: TimelineRef) => void
   handleCommitClick: (event: React.MouseEvent) => void
+  handleCommitDoubleClick: (event: React.MouseEvent) => void
   t: (key: string, options?: Record<string, unknown>) => string
 }) {
   const refConnectorAnchor = useConnectorAnchor(`ref:${commit.hash}`)
@@ -100,6 +108,7 @@ function BranchTagRow({
     <div
       onContextMenu={onRowContextMenu}
       onClick={handleCommitClick}
+      onDoubleClick={handleCommitDoubleClick}
       className={`flex cursor-pointer items-center gap-1 overflow-visible border-b border-gf-border/30 px-2 hover:bg-gf-bg/50 ${commitRowHighlightClass(isSelected, isPrimary)} ${searchDimClass}`}
       style={{ height: TIMELINE_ROW_HEIGHT }}
     >
@@ -118,6 +127,7 @@ function BranchTagRow({
         currentBranch={currentBranch}
         isDetached={isDetached}
         onRefContextMenu={onRefContextMenu}
+        onRefDoubleClick={onRefDoubleClick}
         connectorAnchorRef={refConnectorAnchor}
       />
     </div>
@@ -193,7 +203,14 @@ export function CommitTimeline() {
     selectTimelineNode('commit', commit.hash)
   }
 
-  const { stashApply, stashPop, stashDrop } = useGitMutations()
+  const { checkout, stashApply, stashPop, stashDrop } = useGitMutations()
+
+  const handleCommitDoubleClick = (commit: GitCommit) => (event: React.MouseEvent) => {
+    event.preventDefault()
+    if (isStashCommit(commit)) return
+
+    void checkout.mutateAsync({ name: resolveCommitDoubleClickCheckout(commit.hash) })
+  }
   const {
     state: stashMenuState,
     openMenu: openStashMenu,
@@ -276,6 +293,31 @@ export function CommitTimeline() {
   const onRefContextMenu =
     (commit: GitCommit) => (event: React.MouseEvent, timelineRef: TimelineRef) => {
       openRefMenu(event, timelineRef, commit.hash)
+    }
+
+  const isCurrentBranchRefOnCommit = (
+    timelineRef: TimelineRef,
+    commitHash: string
+  ): boolean =>
+    commitHash === head &&
+    !isDetached &&
+    Boolean(currentBranch) &&
+    timelineRef.kind === 'branch' &&
+    timelineRef.label === currentBranch
+
+  const handleRefDoubleClick =
+    (commit: GitCommit) => (_event: React.MouseEvent, timelineRef: TimelineRef) => {
+      const action = resolveTimelineRefDoubleClickCheckout(timelineRef, {
+        isCurrent: isCurrentBranchRefOnCommit(timelineRef, commit.hash)
+      })
+      if (!action) return
+
+      if (action.kind === 'remote') {
+        setCheckoutRemote(action.remoteBranch)
+        return
+      }
+
+      void checkout.mutateAsync({ name: action.ref })
     }
 
   const onRowContextMenu = (commit: GitCommit) => (event: React.MouseEvent) => {
@@ -414,7 +456,9 @@ export function CommitTimeline() {
                 searchDimClass={searchDimClass}
                 onRowContextMenu={onRowContextMenu(commit)}
                 onRefContextMenu={onRefContextMenu(commit)}
+                onRefDoubleClick={handleRefDoubleClick(commit)}
                 handleCommitClick={handleCommitClick(commit)}
+                handleCommitDoubleClick={handleCommitDoubleClick(commit)}
                 t={t}
               />
             )
@@ -447,6 +491,7 @@ export function CommitTimeline() {
                 key={`graph-hit-${commit.hash}`}
                 onContextMenu={onRowContextMenu(commit)}
                 onClick={handleCommitClick(commit)}
+                onDoubleClick={handleCommitDoubleClick(commit)}
                 className="absolute left-0 right-0 cursor-pointer hover:bg-gf-bg/30"
                 style={{
                   top: timelinePrefixHeight + index * TIMELINE_ROW_HEIGHT,
@@ -537,6 +582,7 @@ export function CommitTimeline() {
                 key={commit.hash}
                 type="button"
                 onClick={handleCommitClick(commit)}
+                onDoubleClick={handleCommitDoubleClick(commit)}
                 onContextMenu={onRowContextMenu(commit)}
                 style={{ height: TIMELINE_ROW_HEIGHT }}
                 className={`flex w-full items-center gap-2 overflow-hidden border-b border-gf-border/30 px-2.5 text-left hover:bg-gf-bg/50 ${commitRowHighlightClass(isSelected, isPrimary)} ${searchDimClass}`}
@@ -582,6 +628,7 @@ export function CommitTimeline() {
           rowState={rowState}
           onRowContextMenu={onRowContextMenu}
           handleCommitClick={handleCommitClick}
+          handleCommitDoubleClick={handleCommitDoubleClick}
           getCellContent={(commit) => formatTimeSince(commit.author.date, relativeNow)}
           getCellTitle={(commit) => formatAuthoredDateTooltip(commit.author.date)}
         />
@@ -601,6 +648,7 @@ export function CommitTimeline() {
         rowState={rowState}
         onRowContextMenu={onRowContextMenu}
         handleCommitClick={handleCommitClick}
+        handleCommitDoubleClick={handleCommitDoubleClick}
       />
     )
   }

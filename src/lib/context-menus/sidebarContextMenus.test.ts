@@ -118,6 +118,16 @@ describe('remoteFolderContextMenuItems', () => {
     })
     expect(items.map((item) => item.id)).toEqual(['toggle', 'fetch', 'edit-url', 'copy'])
   })
+
+  it('includes delete remote when handler is provided', () => {
+    const items = remoteFolderContextMenuItems('origin', false, {
+      onToggle: noop,
+      onFetch: noop,
+      onDelete: noop
+    })
+    expect(items.some((item) => item.id === 'delete-remote')).toBe(true)
+    expect(items.find((item) => item.id === 'delete-remote')?.danger).toBe(true)
+  })
 })
 
 describe('stashContextMenuItems', () => {

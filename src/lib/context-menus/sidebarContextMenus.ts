@@ -168,6 +168,7 @@ export function remoteFolderContextMenuItems(
     onToggle: () => void
     onFetch: (remote: string) => void
     onEditUrl?: (remote: string) => void
+    onDelete?: (remote: string) => void
   }
 ): ContextMenuItem[] {
   const items: ContextMenuItem[] = [
@@ -196,6 +197,16 @@ export function remoteFolderContextMenuItems(
     label: 'Copy remote name',
     onClick: () => void copyToClipboard(remote)
   })
+
+  if (handlers.onDelete) {
+    items.push(separator('sep-delete-remote'))
+    items.push({
+      id: 'delete-remote',
+      label: 'Delete remote…',
+      danger: true,
+      onClick: () => handlers.onDelete!(remote)
+    })
+  }
 
   return items
 }

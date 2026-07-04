@@ -1,4 +1,4 @@
-import { useRef, useState, type Ref } from 'react'
+import { useEffect, useRef, useState, type Ref } from 'react'
 import { createPortal } from 'react-dom'
 import { TimelineDetachedHeadBadge, TimelineRefBadge } from './TimelineRefBadge'
 import { refKey, splitTimelineRefs, type TimelineRef } from '@/lib/timeline/timelineRefs'
@@ -40,6 +40,7 @@ export function TimelineRefStack({
   currentBranch = '',
   isDetached = false,
   onRefContextMenu,
+  onRefDoubleClick,
   connectorAnchorRef
 }: {
   refs: TimelineRef[]
@@ -47,11 +48,19 @@ export function TimelineRefStack({
   currentBranch?: string
   isDetached?: boolean
   onRefContextMenu?: (event: React.MouseEvent, timelineRef: TimelineRef) => void
+  onRefDoubleClick?: (event: React.MouseEvent, timelineRef: TimelineRef) => void
   connectorAnchorRef?: Ref<HTMLSpanElement>
 }) {
   const anchorRef = useRef<HTMLDivElement>(null)
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [hovered, setHovered] = useState(false)
   const [menuRect, setMenuRect] = useState<DOMRect | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current)
+    }
+  }, [])
 
   const showDetachedHead = isHeadCommit && isDetached
   const { primary, rest } =
@@ -62,6 +71,10 @@ export function TimelineRefStack({
   if (!primary && !showDetachedHead) return null
 
   const showMenu = () => {
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current)
+      hideTimerRef.current = null
+    }
     const rect = anchorRef.current?.getBoundingClientRect()
     if (!rect) return
     setMenuRect(rect)
@@ -69,8 +82,18 @@ export function TimelineRefStack({
   }
 
   const hideMenu = () => {
-    setHovered(false)
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current)
+    hideTimerRef.current = setTimeout(() => {
+      setHovered(false)
+      hideTimerRef.current = null
+    }, 120)
   }
+
+  const handleRefDoubleClick =
+    (timelineRef: TimelineRef) => (event: React.MouseEvent) => {
+      event.stopPropagation()
+      onRefDoubleClick?.(event, timelineRef)
+    }
 
   const primaryIsCurrent = primary
     ? isCurrentBranchRef(primary, currentBranch, isHeadCommit, isDetached)
@@ -85,6 +108,7 @@ export function TimelineRefStack({
             timelineRef={primary}
             isCurrent={primaryIsCurrent}
             onContextMenu={onRefContextMenu}
+            onDoubleClick={onRefDoubleClick ? handleRefDoubleClick(primary) : undefined}
           />
         ) : null}
       </span>
@@ -97,6 +121,7 @@ export function TimelineRefStack({
               timelineRef={primary}
               isCurrent={primaryIsCurrent}
               onContextMenu={onRefContextMenu}
+              onDoubleClick={onRefDoubleClick ? handleRefDoubleClick(primary) : undefined}
             />
           ) : null}
           <span className="shrink-0 text-[10px] tabular-nums text-gf-fg-subtle">+{rest.length}</span>
@@ -121,8 +146,8 @@ export function TimelineRefStack({
       {hovered && menuRect
         ? createPortal(
             <div
-              className="fixed z-50 min-w-max"
-              style={{ top: menuRect.bottom + 2, left: menuRect.left }}
+              className="fixed z-50 min-w-max pt-1"
+              style={{ top: menuRect.bottom - 1, left: menuRect.left }}
               onMouseEnter={showMenu}
               onMouseLeave={hideMenu}
               onClick={(event) => event.stopPropagation()}
@@ -139,6 +164,9 @@ export function TimelineRefStack({
                       isDetached
                     )}
                     onContextMenu={onRefContextMenu}
+                    onDoubleClick={
+                      onRefDoubleClick ? handleRefDoubleClick(timelineRef) : undefined
+                    }
                   />
                 ))}
               </div>

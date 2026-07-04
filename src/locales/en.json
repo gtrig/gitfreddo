@@ -232,6 +232,8 @@
     "deleteBranchConfirm": "Delete branch \"{{name}}\"?",
     "deleteRemoteBranch": "Delete remote branch",
     "deleteRemoteBranchConfirm": "Delete remote branch \"{{name}}\"?",
+    "deleteRemote": "Delete remote",
+    "deleteRemoteConfirm": "Remove remote \"{{name}}\"? Remote-tracking branches will be removed from this repository.",
     "pullRequestCreated": "Pull request created",
     "openRepoForPr": "Open a repository to view pull requests.",
     "connectGitHub": "Connect GitHub in Settings → Integrations.",

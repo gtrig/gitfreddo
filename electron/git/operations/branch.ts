@@ -94,7 +94,7 @@ export async function branchCheckout(
   gitBinaryPath: string,
   name: string
 ): Promise<void> {
-  await runGitOrThrow(['checkout', '--end-of-options', name], { cwd, gitBinaryPath })
+  await runGitOrThrow(['switch', '--end-of-options', name], { cwd, gitBinaryPath })
 }
 
 export async function branchCreate(
@@ -158,14 +158,11 @@ export async function branchCheckoutRemote(
   })
 
   if (exists.code === 0) {
-    await runGitOrThrow(['checkout', '--end-of-options', local], { cwd, gitBinaryPath })
+    await runGitOrThrow(['switch', '--end-of-options', local], { cwd, gitBinaryPath })
     return
   }
 
-  await runGitOrThrow(
-    ['checkout', '-b', local, '--track', trackingRef],
-    { cwd, gitBinaryPath }
-  )
+  await runGitOrThrow(['switch', '-c', local, '--track', trackingRef], { cwd, gitBinaryPath })
 }
 
 export async function branchSetUpstream(

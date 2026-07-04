@@ -232,6 +232,8 @@
     "deleteBranchConfirm": "Διαγραφή κλάδου \"{{name}}\";",
     "deleteRemoteBranch": "Διαγραφή απομακρυσμένου κλάδου",
     "deleteRemoteBranchConfirm": "Διαγραφή απομακρυσμένου κλάδου \"{{name}}\";",
+    "deleteRemote": "Διαγραφή remote",
+    "deleteRemoteConfirm": "Αφαίρεση remote \"{{name}}\"; Οι απομακρυσμένοι κλάδοι παρακολούθησης θα αφαιρεθούν από αυτό το αποθετήριο.",
     "pullRequestCreated": "Το pull request δημιουργήθηκε",
     "openRepoForPr": "Ανοίξτε ένα αποθετήριο για προβολή pull requests.",
     "connectGitHub": "Συνδεθείτε στο GitHub από Ρυθμίσεις → Ενσωματώσεις.",
