@@ -14,6 +14,8 @@ import { useToastStore } from '@/stores/toast'
 import { slugifyIssueBranch } from '@/lib/git/github'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { issueContextMenuItems } from '@/lib/context-menus/sidebarContextMenus'
+import { EditIssueModal } from '@/components/GitHub/EditIssueModal'
+import type { GitHubIssue } from '@shared/github'
 
 const FILTER_IDS = ['all', 'mine'] as const
 
@@ -33,6 +35,7 @@ export function SidebarIssuesSection() {
   const { createBranch } = useGitMutations()
   const show = useToastStore((s) => s.show)
   const [createOpen, setCreateOpen] = useState(false)
+  const [editIssue, setEditIssue] = useState<GitHubIssue | null>(null)
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
@@ -54,6 +57,13 @@ export function SidebarIssuesSection() {
     const branchName = `issue-${issueNumber}-${slugifyIssueBranch(issueTitle)}`
     await createBranch.mutateAsync({ name: branchName })
     show(t('sidebar.branchCreated', { name: branchName }), 'success')
+  }
+
+  async function updateIssueState(issue: GitHubIssue, state: 'open' | 'closed') {
+    if (!repoPath) return
+    await window.gitfreddo.githubUpdateIssue(repoPath, issue.number, { state })
+    await invalidate(repoPath)
+    show(t('github.issue.updated'), 'success')
   }
 
   return (
@@ -99,8 +109,16 @@ export function SidebarIssuesSection() {
             {error && <p className="px-2 text-xs text-red-400">{(error as Error).message}</p>}
             <div className="space-y-0.5">
               {(issues ?? []).map((issue) => {
-                const issueMenuItems = issueContextMenuItems(issue, (issueNumber, issueTitle) =>
-                  void branchFromIssue(issueNumber, issueTitle)
+                const issueMenuItems = issueContextMenuItems(
+                  issue,
+                  {
+                    onBranchFromIssue: (issueNumber, issueTitle) =>
+                      void branchFromIssue(issueNumber, issueTitle),
+                    onEdit: setEditIssue,
+                    onClose: (entry) => void updateIssueState(entry, 'closed'),
+                    onReopen: (entry) => void updateIssueState(entry, 'open')
+                  },
+                  t
                 )
                 return (
                   <SidebarTreeRow
@@ -158,6 +176,16 @@ export function SidebarIssuesSection() {
             </div>
           </div>
         </Modal>
+      )}
+
+      {editIssue && repoPath && (
+        <EditIssueModal
+          open
+          issue={editIssue}
+          repoPath={repoPath}
+          onClose={() => setEditIssue(null)}
+          onUpdated={() => invalidate(repoPath)}
+        />
       )}
     </>
   )

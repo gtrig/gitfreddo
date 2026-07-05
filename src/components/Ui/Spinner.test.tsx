@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { LoadingRow, Spinner } from '@/components/Ui/Spinner'
+import { renderWithProviders } from '@/test/render'
 
 describe('Spinner', () => {
   it('renders a status indicator', () => {
-    render(<Spinner size="lg" />)
-    expect(screen.getByRole('status', { name: 'Loading' })).toBeInTheDocument()
+    renderWithProviders(<Spinner size="lg" />)
+    expect(screen.getByRole('status', { name: 'Loading…' })).toBeInTheDocument()
   })
 })
 

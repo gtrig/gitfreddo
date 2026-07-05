@@ -23,7 +23,7 @@ describe('workingTreeFolderContextMenuItems', () => {
       'sep-discard',
       'discard-folder'
     ])
-    expect(items[0]?.label).toBe('Collapse')
+    expect(items.find((item) => item.id === 'toggle')?.label).toBe('Collapse')
     expect(items.find((item) => item.id === 'stage-folder')?.label).toBe('Stage folder contents')
   })
 })
@@ -57,6 +57,7 @@ describe('commitFolderContextMenuItems', () => {
   it('toggles folder labels', () => {
     const onToggle = vi.fn()
     const items = commitFolderContextMenuItems('src', false, onToggle)
+    expect(items[0]?.id).toBe('toggle')
     expect(items[0]?.label).toBe('Expand')
     items[0]?.onClick()
     expect(onToggle).toHaveBeenCalledOnce()

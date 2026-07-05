@@ -12,6 +12,7 @@ import type {
   GitWorkingStatus
 } from '@/lib/types'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { useLogMaxCount } from '@/hooks/useAppSettings'
 
 function useRepoScope() {
   const repoPath = useWorkspaceStore((s) => s.activePath)
@@ -28,8 +29,9 @@ export function useRepoStatus(enabled = true) {
   })
 }
 
-export function useLogGraph(enabled = true, maxCount = 500) {
+export function useLogGraph(enabled = true) {
   const { repoPath, connected } = useRepoScope()
+  const maxCount = useLogMaxCount()
   return useQuery<GitLogGraphResult>({
     queryKey: ['repo', repoPath, 'log.graph', maxCount],
     queryFn: async () =>

@@ -119,15 +119,19 @@ export function WorktreesSection({
             const label = worktreeLabel(entry)
             const pathBasename = entry.path.replace(/[/\\]+$/, '').split(/[/\\]/).pop() || entry.path
             const isCurrentTab = activePath === entry.path
-            const worktreeMenuItems = worktreeContextMenuItems(entry, {
-              onOpenInTab: (path) => void handleOpenInTab(path),
-              onRemove: (wt) => {
-                setForceRemove(false)
-                setRemoveError(null)
-                setPendingRemove(wt)
+            const worktreeMenuItems = worktreeContextMenuItems(
+              entry,
+              {
+                onOpenInTab: (path) => void handleOpenInTab(path),
+                onRemove: (wt) => {
+                  setForceRemove(false)
+                  setRemoveError(null)
+                  setPendingRemove(wt)
+                },
+                onCopyPath: (path) => void copyToClipboard(path)
               },
-              onCopyPath: (path) => void copyToClipboard(path)
-            })
+              t
+            )
             return (
               <SidebarTreeRow
                 key={entry.path}

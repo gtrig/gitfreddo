@@ -70,9 +70,13 @@ export function SidebarPullRequestsSection() {
             {error && <p className="px-2 text-xs text-red-400">{(error as Error).message}</p>}
             <div className="space-y-0.5">
               {(prs ?? []).map((pr) => {
-                const prMenuItems = pullRequestContextMenuItems(pr, {
-                  onMerge: (method) => void mergePullRequest(pr.number, method)
-                })
+                const prMenuItems = pullRequestContextMenuItems(
+                  pr,
+                  {
+                    onMerge: (method) => void mergePullRequest(pr.number, method)
+                  },
+                  t
+                )
                 return (
                   <SidebarTreeRow
                     key={pr.number}

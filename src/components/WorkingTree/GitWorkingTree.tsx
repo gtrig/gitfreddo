@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { MinusIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/solid'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
@@ -89,7 +90,8 @@ function FileRow({
   onRename,
   onFileHistory,
   stageLabel,
-  unstageLabel
+  unstageLabel,
+  t
 }: {
   file: GitFileChange
   onSelect: () => void
@@ -104,6 +106,7 @@ function FileRow({
   onFileHistory?: () => void
   stageLabel: string
   unstageLabel: string
+  t: TFunction
 }) {
   return (
     <div className="flex items-center gap-1">
@@ -113,16 +116,22 @@ function FileRow({
         onContextMenu={(event) =>
           openMenu(
             event,
-            workingTreeFileContextMenuItems(file.path, mode, file.status, {
-              onSelect,
-              onStageToggle: onStage ?? (() => {}),
-              onOpenInEditor: () => void window.gitfreddo.openInEditor(file.path),
-              onFileHistory: onFileHistory,
-              onRename: onRename,
-              onDiscard,
-              onDelete,
-              onRemove
-            })
+            workingTreeFileContextMenuItems(
+              file.path,
+              mode,
+              file.status,
+              {
+                onSelect,
+                onStageToggle: onStage ?? (() => {}),
+                onOpenInEditor: () => void window.gitfreddo.openInEditor(file.path),
+                onFileHistory: onFileHistory,
+                onRename: onRename,
+                onDiscard,
+                onDelete,
+                onRemove
+              },
+              t
+            )
           )
         }
         className={`min-w-0 flex-1 rounded px-2 py-1 text-left text-xs hover:bg-gf-surface-hover ${
@@ -215,7 +224,8 @@ function TreeNode({
   onRename,
   onFileHistory,
   stageLabel,
-  unstageLabel
+  unstageLabel,
+  t
 }: {
   node: FileTreeNode
   depth: number
@@ -236,6 +246,7 @@ function TreeNode({
   onFileHistory?: (path: string) => void
   stageLabel: string
   unstageLabel: string
+  t: TFunction
 }) {
   if (node.type === 'folder') {
     const open = expandedPaths.has(node.path)
@@ -247,13 +258,19 @@ function TreeNode({
           onContextMenu={(event) =>
             openMenu(
               event,
-              workingTreeFolderContextMenuItems(node.path, open, mode, {
-                onToggle: () => toggleExpanded(node.path),
-                onStageFolder: onStageFolder ? () => onStageFolder(node.path) : undefined,
-                onDiscardFolder: onDiscardFolder
-                  ? () => onDiscardFolder(node.path)
-                  : undefined
-              })
+              workingTreeFolderContextMenuItems(
+                node.path,
+                open,
+                mode,
+                {
+                  onToggle: () => toggleExpanded(node.path),
+                  onStageFolder: onStageFolder ? () => onStageFolder(node.path) : undefined,
+                  onDiscardFolder: onDiscardFolder
+                    ? () => onDiscardFolder(node.path)
+                    : undefined
+                },
+                t
+              )
             )
           }
           className="flex w-full items-center gap-2 px-2 py-1 text-left text-xs text-gf-fg-muted hover:bg-gf-surface-hover"
@@ -286,6 +303,7 @@ function TreeNode({
               onFileHistory={onFileHistory}
               stageLabel={stageLabel}
               unstageLabel={unstageLabel}
+              t={t}
             />
           ))}
       </>
@@ -304,16 +322,22 @@ function TreeNode({
         onContextMenu={(event) =>
           openMenu(
             event,
-            workingTreeFileContextMenuItems(file.path, mode, file.status, {
-              onSelect: selectFile,
-              onStageToggle: stageToggle,
-              onOpenInEditor: () => void window.gitfreddo.openInEditor(file.path),
-              onFileHistory: onFileHistory ? () => onFileHistory(file.path) : undefined,
-              onRename: onRename ? () => onRename(file.path) : undefined,
-              onDiscard: onDiscard ? () => onDiscard(file.path, mode === 'staged') : undefined,
-              onDelete: onDelete ? () => onDelete(file.path) : undefined,
-              onRemove: onRemove ? () => onRemove(file.path) : undefined
-            })
+            workingTreeFileContextMenuItems(
+              file.path,
+              mode,
+              file.status,
+              {
+                onSelect: selectFile,
+                onStageToggle: stageToggle,
+                onOpenInEditor: () => void window.gitfreddo.openInEditor(file.path),
+                onFileHistory: onFileHistory ? () => onFileHistory(file.path) : undefined,
+                onRename: onRename ? () => onRename(file.path) : undefined,
+                onDiscard: onDiscard ? () => onDiscard(file.path, mode === 'staged') : undefined,
+                onDelete: onDelete ? () => onDelete(file.path) : undefined,
+                onRemove: onRemove ? () => onRemove(file.path) : undefined
+              },
+              t
+            )
           )
         }
         className={`min-w-0 flex-1 rounded px-2 py-1 text-left text-xs hover:bg-gf-surface-hover ${
@@ -487,6 +511,7 @@ export function GitWorkingTree() {
                   openMenu={openMenu}
                   stageLabel={stageLabel}
                   unstageLabel={unstageLabel}
+                  t={t}
                 />
               ))}
             </div>
@@ -530,6 +555,7 @@ export function GitWorkingTree() {
                     openMenu={openMenu}
                     stageLabel={stageLabel}
                     unstageLabel={unstageLabel}
+                    t={t}
                   />
                 ))}
             </div>

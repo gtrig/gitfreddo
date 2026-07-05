@@ -5,6 +5,7 @@ import { useSelectionStore } from '@/stores/selection'
 import { useLogGraph, useBranches, useRepoStatus, useRemotes, useStashList, useTags, useWorkingStatus, useMergeStatus } from '@/hooks/useGit'
 import { useTimelineColumnSizes } from '@/hooks/useTimelineColumnSizes'
 import { useTimelineColumnVisibility } from '@/hooks/useTimelineColumnVisibility'
+import { useTimelineVirtualWindow } from '@/hooks/useTimelineVirtualWindow'
 import { useCommitContextMenu } from '@/hooks/useCommitContextMenu'
 import { useTimelineRefContextMenu } from '@/hooks/useTimelineRefContextMenu'
 import { useContextMenu } from '@/hooks/useContextMenu'
@@ -55,6 +56,8 @@ import { DeleteCommitModal } from '@/components/DetailPanel/DeleteCommitModal'
 import { DeleteTagModal } from '@/components/Tags/DeleteTagModal'
 import { RemoveStaleBranchesModal } from '@/components/DetailPanel/RemoveStaleBranchesModal'
 import { RewordCommitModal } from '@/components/DetailPanel/RewordCommitModal'
+import { AddNoteModal } from '@/components/DetailPanel/AddNoteModal'
+import { PickMergeParentModal } from '@/components/History/PickMergeParentModal'
 import { ConfirmDialog } from '@/components/Ui/Modal'
 import { parseRemoteBranchName } from '@/lib/workspace/branchTree'
 import type { GitCommit } from '@/lib/types'
@@ -194,6 +197,34 @@ export function CommitTimeline() {
   const selectedHashSet = useMemo(() => new Set(selectedCommitHashes), [selectedCommitHashes])
   const primaryHash = selection?.kind === 'commit' ? selection.id : null
 
+  const handleTimelineKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
+    if (commits.length === 0) return
+
+    event.preventDefault()
+    const currentIndex =
+      primaryHash != null ? commits.findIndex((commit) => commit.hash === primaryHash) : -1
+    const delta = event.key === 'ArrowDown' ? 1 : -1
+    const nextIndex =
+      currentIndex < 0
+        ? event.key === 'ArrowDown'
+          ? 0
+          : commits.length - 1
+        : Math.min(commits.length - 1, Math.max(0, currentIndex + delta))
+    const nextCommit = commits[nextIndex]
+    if (!nextCommit) return
+
+    if (isStashCommit(nextCommit)) {
+      const stashEntry = resolveStashEntry(nextCommit, stashes)
+      if (stashEntry) {
+        selectStash(stashEntry.index, stashEntry.hash)
+      }
+      return
+    }
+
+    selectTimelineNode('commit', nextCommit.hash)
+  }
+
   const handleCommitClick = (commit: GitCommit) => (event: React.MouseEvent) => {
     if (isStashCommit(commit)) {
       const stashEntry = resolveStashEntry(commit, stashes)
@@ -244,6 +275,11 @@ export function CommitTimeline() {
     setCreateBranchAt,
     createTagAt,
     setCreateTagAt,
+    noteCommit,
+    setNoteCommit,
+    mergeParentPick,
+    setMergeParentPick,
+    confirmMergeParentPick,
     deleteModal,
     setDeleteModal,
     removeStaleModal,
@@ -338,12 +374,18 @@ export function CommitTimeline() {
         const label = stashEntry.message || `(stash@{${stashEntry.index}})`
         openStashMenu(
           event,
-          stashContextMenuItems(stashEntry.index, stashEntry.hash, label, {
-            onSelect: selectStash,
-            onApply: (index) => void stashApply.mutateAsync({ index }),
-            onPop: (index) => void stashPop.mutateAsync({ index }),
-            onDrop: (index) => void stashDrop.mutateAsync({ index })
-          })
+          stashContextMenuItems(
+            stashEntry.index,
+            stashEntry.hash,
+            label,
+            {
+              onSelect: selectStash,
+              onApply: (index) => void stashApply.mutateAsync({ index }),
+              onPop: (index) => void stashPop.mutateAsync({ index }),
+              onDrop: (index) => void stashDrop.mutateAsync({ index })
+            },
+            t
+          )
         )
         return
       }
@@ -370,6 +412,16 @@ export function CommitTimeline() {
   const selectedHash = primaryHash
   const relativeNow = useRelativeNow()
   const scrollRef = useRef<HTMLDivElement>(null)
+  const virtualWindow = useTimelineVirtualWindow(
+    scrollRef,
+    commits.length,
+    TIMELINE_ROW_HEIGHT,
+    timelinePrefixHeight
+  )
+  const visibleCommits = useMemo(
+    () => commits.slice(virtualWindow.start, virtualWindow.end),
+    [commits, virtualWindow.end, virtualWindow.start]
+  )
 
   useEffect(() => {
     if (!primaryHash) return
@@ -450,7 +502,10 @@ export function CommitTimeline() {
         >
           {showMergeRow && <div style={{ height: TIMELINE_ROW_HEIGHT }} />}
           {showWorkingRow && <div style={{ height: TIMELINE_ROW_HEIGHT }} />}
-          {commits.map((commit) => {
+          {virtualWindow.topSpacerHeight > 0 && (
+            <div style={{ height: virtualWindow.topSpacerHeight }} aria-hidden />
+          )}
+          {visibleCommits.map((commit) => {
             const { isSelected, isPrimary, searchDimClass } = rowState(commit.hash)
 
             return (
@@ -474,6 +529,9 @@ export function CommitTimeline() {
               />
             )
           })}
+          {virtualWindow.bottomSpacerHeight > 0 && (
+            <div style={{ height: virtualWindow.bottomSpacerHeight }} aria-hidden />
+          )}
         </div>
       )
     }
@@ -496,10 +554,16 @@ export function CommitTimeline() {
               dimmedHashes={searchDimmedHashes}
               rowHeight={TIMELINE_ROW_HEIGHT}
               metrics={metrics}
+              visibleRowRange={virtualWindow}
             />
-            {commits.map((commit, index) => (
+            {visibleCommits.map((commit, sliceIndex) => {
+              const index = virtualWindow.start + sliceIndex
+              return (
               <div
                 key={`graph-hit-${commit.hash}`}
+                role="button"
+                tabIndex={-1}
+                aria-label={t('timeline.selectCommit', { hash: commit.shortHash, subject: commit.subject })}
                 onContextMenu={onRowContextMenu(commit)}
                 onClick={handleCommitClick(commit)}
                 onDoubleClick={handleCommitDoubleClick(commit)}
@@ -509,7 +573,7 @@ export function CommitTimeline() {
                   height: TIMELINE_ROW_HEIGHT
                 }}
               />
-            ))}
+            )})}
           </div>
         </div>
       )
@@ -601,7 +665,11 @@ export function CommitTimeline() {
             </p>
           )}
 
-          {commits.map((commit) => {
+          {virtualWindow.topSpacerHeight > 0 && (
+            <div style={{ height: virtualWindow.topSpacerHeight }} aria-hidden />
+          )}
+
+          {visibleCommits.map((commit) => {
             const { isSelected, isPrimary, searchDimClass } = rowState(commit.hash)
             const stash = isStashCommit(commit)
             return (
@@ -639,6 +707,9 @@ export function CommitTimeline() {
               </button>
             )
           })}
+          {virtualWindow.bottomSpacerHeight > 0 && (
+            <div style={{ height: virtualWindow.bottomSpacerHeight }} aria-hidden />
+          )}
         </div>
       )
     }
@@ -658,6 +729,7 @@ export function CommitTimeline() {
           handleCommitDoubleClick={handleCommitDoubleClick}
           getCellContent={(commit) => formatTimeSince(commit.author.date, relativeNow)}
           getCellTitle={(commit) => formatAuthoredDateTooltip(commit.author.date)}
+          virtualWindow={virtualWindow}
         />
       )
     }
@@ -676,6 +748,7 @@ export function CommitTimeline() {
         onRowContextMenu={onRowContextMenu}
         handleCommitClick={handleCommitClick}
         handleCommitDoubleClick={handleCommitDoubleClick}
+        virtualWindow={virtualWindow}
       />
     )
   }
@@ -780,7 +853,14 @@ export function CommitTimeline() {
   if (error) return <p className="p-4 text-sm text-red-400">{(error as Error).message}</p>
 
   return (
-    <div ref={scrollRef} className={`min-h-0 flex-1 overflow-y-auto ${resizing ? 'select-none' : ''}`}>
+    <div
+      ref={scrollRef}
+      tabIndex={0}
+      role="region"
+      aria-label={t('timeline.commitList')}
+      onKeyDown={handleTimelineKeyDown}
+      className={`min-h-0 flex-1 overflow-y-auto outline-none focus-visible:ring-1 focus-visible:ring-gf-accent/60 ${resizing ? 'select-none' : ''}`}
+    >
       <div className="flex min-w-max flex-col">
         <div
           className="sticky top-0 z-20 flex border-b border-gf-border/70 bg-gf-bg-deep/95 px-2 py-1 text-[10px] uppercase tracking-wide text-gf-fg-subtle backdrop-blur"
@@ -938,6 +1018,21 @@ export function CommitTimeline() {
           commit={rewordCommit}
           open
           onClose={() => setRewordCommit(null)}
+        />
+      )}
+
+      {noteCommit && (
+        <AddNoteModal commit={noteCommit} open onClose={() => setNoteCommit(null)} />
+      )}
+
+      {mergeParentPick && (
+        <PickMergeParentModal
+          open
+          commit={mergeParentPick.commit}
+          commits={commits}
+          action={mergeParentPick.action}
+          onClose={() => setMergeParentPick(null)}
+          onConfirm={confirmMergeParentPick}
         />
       )}
 

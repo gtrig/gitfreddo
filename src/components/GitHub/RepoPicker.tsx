@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useGitHubRepos } from '@/hooks/useGitHubRepos'
 import { useGitHubStatus } from '@/hooks/useGitHubStatus'
 
@@ -9,6 +10,7 @@ interface RepoPickerProps {
 }
 
 export function RepoPicker({ selectedFullName, onSelect, compact = false }: RepoPickerProps) {
+  const { t } = useTranslation()
   const { data: status } = useGitHubStatus()
   const connected = status?.connected ?? false
   const [search, setSearch] = useState('')
@@ -31,9 +33,7 @@ export function RepoPicker({ selectedFullName, onSelect, compact = false }: Repo
 
   if (!connected) {
     return (
-      <p className="text-xs text-gf-fg-subtle">
-        Connect GitHub in Settings → Integrations to browse repositories.
-      </p>
+      <p className="text-xs text-gf-fg-subtle">{t('github.repoPicker.connectFirst')}</p>
     )
   }
 
@@ -43,16 +43,16 @@ export function RepoPicker({ selectedFullName, onSelect, compact = false }: Repo
         type="search"
         value={search}
         onChange={(event) => setSearch(event.target.value)}
-        placeholder="Search repositories…"
+        placeholder={t('github.repoPicker.searchPlaceholder')}
         className="w-full rounded border border-gf-border-strong bg-gf-bg-deep px-3 py-2 text-sm text-gf-fg placeholder:text-gf-fg-subtle focus:border-gf-accent focus:outline-none"
       />
-      {isLoading && <p className="text-xs text-gf-fg-subtle">Loading repositories…</p>}
+      {isLoading && <p className="text-xs text-gf-fg-subtle">{t('github.repoPicker.loading')}</p>}
       {error && <p className="text-xs text-red-400">{(error as Error).message}</p>}
       <ul
         className={`overflow-auto rounded border border-gf-border ${compact ? 'max-h-48' : 'max-h-64'}`}
       >
         {sortedRepos.length === 0 && !isLoading ? (
-          <li className="px-3 py-4 text-center text-xs text-gf-fg-subtle">No repositories found.</li>
+          <li className="px-3 py-4 text-center text-xs text-gf-fg-subtle">{t('github.repoPicker.empty')}</li>
         ) : (
           sortedRepos.map((repo) => (
             <li key={repo.id}>
@@ -72,7 +72,7 @@ export function RepoPicker({ selectedFullName, onSelect, compact = false }: Repo
                   )}
                 </span>
                 <span className="shrink-0 text-[10px] uppercase text-gf-fg-subtle">
-                  {repo.private ? 'private' : 'public'}
+                  {repo.private ? t('github.repoPicker.private') : t('github.repoPicker.public')}
                 </span>
               </button>
             </li>

@@ -3,11 +3,13 @@
     "dismiss": "Απόρριψη",
     "close": "Κλείσιμο",
     "cancel": "Ακύρωση",
+    "confirm": "Επιβεβαίωση",
     "save": "Αποθήκευση",
     "saving": "Αποθήκευση…",
     "loading": "Φόρτωση…",
     "delete": "Διαγραφή",
     "create": "Δημιουργία",
+    "creating": "Δημιουργία…",
     "rename": "Μετονομασία",
     "merge": "Συγχώνευση",
     "checkout": "Checkout",
@@ -281,18 +283,39 @@
       "startAt": "Ο κλάδος θα ξεκινήσει από",
       "branchName": "Όνομα κλάδου"
     },
+    "addNote": {
+      "addTitle": "Προσθήκη σημείωσης",
+      "editTitle": "Επεξεργασία σημείωσης",
+      "description": "Σχολιάστε το commit {{hash}} χωρίς αλλαγή ιστορικού.",
+      "message": "Σημείωση",
+      "placeholder": "Σημειώσεις αναθεώρησης, σύνδεσμοι ή υπενθυμίσεις…",
+      "emptyMessage": "Εισάγετε κείμενο σημείωσης.",
+      "saved": "Η σημείωση αποθηκεύτηκε."
+    },
     "createTag": {
       "title": "Δημιουργία ετικέτας",
       "pointAt": "Η ετικέτα θα δείχνει στο",
       "tagName": "Όνομα ετικέτας",
       "messageOptional": "Μήνυμα (προαιρετικό)",
       "annotatedPlaceholder": "Μήνυμα annotated tag",
-      "lightweightHint": "Αφήστε κενό για lightweight tag ή προσθέστε μήνυμα για annotated tag."
+      "lightweightHint": "Αφήστε κενό για lightweight tag ή προσθέστε μήνυμα για annotated tag.",
+      "signTag": "Υπογραφή tag (GPG)"
     },
     "renameBranch": {
       "title": "Μετονομασία κλάδου",
       "rename": "Μετονομασία",
       "newName": "Νέο όνομα"
+    },
+    "renameRemote": {
+      "title": "Μετονομασία remote",
+      "rename": "Μετονομασία",
+      "newName": "Νέο όνομα"
+    },
+    "mergeParent": {
+      "revertTitle": "Revert merge commit",
+      "cherryPickTitle": "Cherry-pick merge commit",
+      "description": "Επιλέξτε mainline parent για το merge commit {{hash}}.",
+      "parentLine": "Parent {{number}}"
     },
     "renameTag": {
       "title": "Μετονομασία ετικέτας",
@@ -459,7 +482,13 @@
     "noCommitsYet": "Δεν υπάρχουν commits ακόμα.",
     "stash": "stash",
     "merge": "merge",
-    "detachedHead": "Αποσυνδεδεμένο HEAD"
+    "detachedHead": "Αποσυνδεδεμένο HEAD",
+    "commitList": "Ιστορικό commits",
+    "selectCommit": "Επιλογή commit {{hash}}: {{subject}}"
+  },
+  "a11y": {
+    "resizeColumn": "Αλλαγή μεγέθους στήλης",
+    "resizePanel": "Αλλαγή μεγέθους πάνελ"
   },
   "workingTree": {
     "openRepoPrompt": "Ανοίξτε ένα αποθετήριο για προβολή αλλαγών.",
@@ -518,6 +547,10 @@
     "working": "Εργασία…",
     "stashing": "Stash…",
     "createStash": "Δημιουργία stash",
+    "stashCreated": "Το stash δημιουργήθηκε.",
+    "stashMessageOptional": "Μήνυμα (προαιρετικό)",
+    "includeUntracked": "Συμπερίληψη untracked αρχείων",
+    "stashPickPaths": "Stash συγκεκριμένων paths…",
     "cleanUntrackedTitle": "Εκκαθάριση untracked αρχείων",
     "cleanUntrackedDescription": "Οριστική αφαίρεση untracked αρχείων και φακέλων από το working tree. Δεν μπορεί να αναιρεθεί.",
     "includeIgnored": "Συμπερίληψη ignored αρχείων (",
@@ -738,6 +771,8 @@
     "mergeInto": "Συγχώνευση {{source}} στο {{target}}…",
     "createBranchHere": "Δημιουργία κλάδου εδώ…",
     "createTagHere": "Δημιουργία tag εδώ…",
+    "addNote": "Προσθήκη σημείωσης…",
+    "editNote": "Επεξεργασία σημείωσης…",
     "checkoutNewWorktree": "Checkout σε νέο worktree…",
     "rewordOnBranch": "Αλλαγή μηνύματος commit στο {{branch}}…",
     "rewordNotOnBranch": "Αλλαγή μηνύματος commit (εκτός τρέχοντος κλάδου)…",
@@ -796,7 +831,112 @@
     "mergeAborted": "Η συγχώνευση ακυρώθηκε.",
     "cherryPickContinued": "Το cherry-pick συνεχίστηκε.",
     "cherryPickAborted": "Το cherry-pick ακυρώθηκε.",
-    "cherryPickSkipped": "Το cherry-pick παραλείφθηκε."
+    "cherryPickSkipped": "Το cherry-pick παραλείφθηκε.",
+    "revertComplete": "Το revert ολοκληρώθηκε.",
+    "sidebar": {
+      "collapse": "Σύμπτυξη",
+      "expand": "Ανάπτυξη",
+      "copyName": "Αντιγραφή ονόματος",
+      "focusCommit": "Εστίαση commit",
+      "copyBranchName": "Αντιγραφή ονόματος κλάδου",
+      "mergeIntoCurrent": "Συγχώνευση στον τρέχοντα…",
+      "createPullRequest": "Δημιουργία pull request…",
+      "rename": "Μετονομασία…",
+      "deleteBranch": "Διαγραφή κλάδου…",
+      "unsetUpstream": "Αφαίρεση upstream",
+      "setUpstream": "Ορισμός upstream…",
+      "changeUpstream": "Αλλαγή upstream…",
+      "openInTab": "Άνοιγμα σε καρτέλα",
+      "copyPath": "Αντιγραφή διαδρομής",
+      "removeWorktree": "Αφαίρεση worktree…",
+      "fetchFromRemote": "Fetch από remote",
+      "editUrl": "Επεξεργασία URL…",
+      "copyRemoteName": "Αντιγραφή ονόματος remote",
+      "deleteRemote": "Διαγραφή remote…",
+      "checkoutAsLocal": "Checkout ως τοπικός κλάδος…",
+      "copyRemoteRef": "Αντιγραφή remote ref",
+      "deleteRemoteBranch": "Διαγραφή remote κλάδου…",
+      "view": "Προβολή",
+      "apply": "Εφαρμογή",
+      "pop": "Pop",
+      "drop": "Drop",
+      "copyReference": "Αντιγραφή αναφοράς",
+      "copyMessage": "Αντιγραφή μηνύματος",
+      "checkoutTag": "Checkout {{name}}",
+      "pushToRemote": "Push στο {{remote}}",
+      "pushToRemoteDefault": "Push στο remote",
+      "deleteTag": "Διαγραφή tag…",
+      "deleteFromRemote": "Διαγραφή από {{remote}}…",
+      "copyTagName": "Αντιγραφή ονόματος tag",
+      "openOnGitHub": "Άνοιγμα στο GitHub",
+      "copyLink": "Αντιγραφή συνδέσμου",
+      "mergeCommit": "Merge commit",
+      "squashAndMerge": "Squash and merge",
+      "rebaseAndMerge": "Rebase and merge",
+      "branchFromIssue": "Κλάδος από issue"
+    },
+    "detailPanel": {
+      "collapse": "Σύμπτυξη",
+      "expand": "Ανάπτυξη",
+      "copyPath": "Αντιγραφή διαδρομής",
+      "stageFolderContents": "Stage περιεχομένων φακέλου",
+      "unstageFolderContents": "Unstage περιεχομένων φακέλου",
+      "discardChangesInFolder": "Απόρριψη αλλαγών στον φάκελο…",
+      "discardChanges": "Απόρριψη αλλαγών…",
+      "removeFromRepository": "Αφαίρεση από αποθετήριο…",
+      "deleteFile": "Διαγραφή αρχείου…",
+      "rename": "Μετονομασία…",
+      "fileHistory": "Ιστορικό αρχείου…",
+      "copyFileName": "Αντιγραφή ονόματος αρχείου"
+    }
+  },
+  "github": {
+    "fork": {
+      "title": "Fork αποθετηρίου",
+      "description": "Δημιουργήστε fork στον λογαριασμό σας στο GitHub και κλωνοποιήστε το τοπικά.",
+      "owner": "Owner",
+      "repo": "Αποθετήριο",
+      "action": "Fork",
+      "success": "Το αποθετήριο fork-αρίστηκε.",
+      "missingFields": "Εισάγετε owner και όνομα αποθετηρίου.",
+      "connectFirst": "Συνδεθείτε στο GitHub από Ρυθμίσεις → Ενσωματώσεις για fork.",
+      "forkToAccount": "Fork στον λογαριασμό μου…"
+    },
+    "issue": {
+      "editTitle": "Επεξεργασία issue #{{number}}",
+      "titleRequired": "Ο τίτλος issue είναι υποχρεωτικός.",
+      "updated": "Το issue ενημερώθηκε.",
+      "close": "Κλείσιμο issue",
+      "reopen": "Επανάνοιγμα issue",
+      "edit": "Επεξεργασία issue…"
+    },
+    "pr": {
+      "createTitle": "Δημιουργία pull request",
+      "description": "Περιγραφή",
+      "head": "Head",
+      "base": "Base",
+      "squash": "Squash",
+      "rebase": "Rebase"
+    },
+    "repo": {
+      "connectFirst": "Συνδεθείτε στο GitHub από Ρυθμίσεις → Ενσωματώσεις για δημιουργία αποθετηρίων.",
+      "name": "Όνομα αποθετηρίου",
+      "namePlaceholder": "my-new-repo",
+      "descriptionOptional": "Περιγραφή (προαιρετικά)",
+      "descriptionPlaceholder": "Σύντομη περιγραφή",
+      "nameRequired": "Το όνομα αποθετηρίου είναι υποχρεωτικό",
+      "create": "Δημιουργία αποθετηρίου",
+      "public": "Δημόσιο",
+      "private": "Ιδιωτικό"
+    },
+    "repoPicker": {
+      "connectFirst": "Συνδεθείτε στο GitHub από Ρυθμίσεις → Ενσωματώσεις για περιήγηση σε αποθετήρια.",
+      "searchPlaceholder": "Αναζήτηση αποθετηρίων…",
+      "loading": "Φόρτωση αποθετηρίων…",
+      "empty": "Δεν βρέθηκαν αποθετήρια.",
+      "public": "δημόσιο",
+      "private": "ιδιωτικό"
+    }
   },
   "toast": {
     "noRepoConnected": "Δεν υπάρχει συνδεδεμένο αποθετήριο",

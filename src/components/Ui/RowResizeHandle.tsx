@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 export function RowResizeHandle({
   onDrag,
@@ -9,6 +10,7 @@ export function RowResizeHandle({
   onResizeStart?: () => void
   onResizeEnd?: () => void
 }) {
+  const { t } = useTranslation()
   const [resizing, setResizing] = useState(false)
   const lastY = useRef(0)
 
@@ -50,7 +52,7 @@ export function RowResizeHandle({
     <div
       role="separator"
       aria-orientation="horizontal"
-      aria-label="Resize panel"
+      aria-label={t('a11y.resizePanel')}
       onMouseDown={onMouseDown}
       className={`h-1 shrink-0 cursor-row-resize bg-gf-surface/60 hover:bg-gf-surface-hover ${resizing ? 'bg-gf-fg-subtle' : ''}`}
     />

@@ -16,7 +16,6 @@ describe('GlobalOperationOverlay', () => {
       tabs: [],
       activePath: null,
       connected: false,
-      processExited: false,
       workspacePath: null,
       workspacePickerOpen: false
     })
@@ -36,7 +35,7 @@ describe('GlobalOperationOverlay', () => {
 
   it('shows opening message while a tab is connecting', () => {
     useWorkspaceStore.setState({
-      tabs: [{ path: '/repo', connected: false, connecting: true, processExited: false }]
+      tabs: [{ path: '/repo', connected: false, connecting: true }],
     })
     const { container } = renderWithProviders(<GlobalOperationOverlay />)
     expect(container.querySelector('[aria-busy="true"]')).not.toBeNull()

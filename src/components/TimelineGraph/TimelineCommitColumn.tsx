@@ -16,7 +16,8 @@ export function TimelineCommitColumn({
   handleCommitClick,
   handleCommitDoubleClick,
   getCellContent,
-  getCellTitle
+  getCellTitle,
+  virtualWindow
 }: {
   columnId: TimelineColumnId
   width: number
@@ -33,14 +34,27 @@ export function TimelineCommitColumn({
   handleCommitDoubleClick: (commit: GitCommit) => (event: React.MouseEvent) => void
   getCellContent?: (commit: GitCommit) => string
   getCellTitle?: (commit: GitCommit) => string | undefined
+  virtualWindow?: {
+    start: number
+    end: number
+    topSpacerHeight: number
+    bottomSpacerHeight: number
+  }
 }) {
+  const visibleCommits = virtualWindow
+    ? commits.slice(virtualWindow.start, virtualWindow.end)
+    : commits
+  const topSpacer = virtualWindow?.topSpacerHeight ?? 0
+  const bottomSpacer = virtualWindow?.bottomSpacerHeight ?? 0
+
   return (
     <div
       className="shrink-0 border-l border-gf-border/40 bg-gf-bg-deep first:border-l-0"
       style={{ width }}
     >
       {prefixRows > 0 && <div style={{ height: prefixRows * COMPACT_ROW_HEIGHT }} />}
-      {commits.map((commit) => {
+      {topSpacer > 0 && <div style={{ height: topSpacer }} aria-hidden />}
+      {visibleCommits.map((commit) => {
         const { isSelected, isPrimary, searchDimClass } = rowState(commit.hash)
         const title = getCellTitle?.(commit) ?? commitCellTitle(columnId, commit)
         const content = getCellContent?.(commit) ?? commitCellContent(columnId, commit)
@@ -58,6 +72,7 @@ export function TimelineCommitColumn({
           </div>
         )
       })}
+      {bottomSpacer > 0 && <div style={{ height: bottomSpacer }} aria-hidden />}
     </div>
   )
 }

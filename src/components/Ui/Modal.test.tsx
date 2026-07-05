@@ -1,9 +1,14 @@
-import { describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, expect, it, vi, afterEach } from 'vitest'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Modal } from './Modal'
+import { renderWithProviders } from '@/test/render'
 
 describe('Modal', () => {
+  afterEach(() => {
+    cleanup()
+  })
+
   it('renders title and children when open', () => {
     render(
       <Modal open title="Test modal" onClose={() => undefined}>
@@ -27,13 +32,13 @@ describe('Modal', () => {
   it('calls onClose when close button is clicked', async () => {
     const user = userEvent.setup()
     const onClose = vi.fn()
-    render(
+    renderWithProviders(
       <Modal open title="Closable" onClose={onClose}>
         <p>Content</p>
       </Modal>
     )
-    const closeButtons = screen.getAllByLabelText('Close')
-    await user.click(closeButtons[closeButtons.length - 1]!)
+    const dialog = screen.getByRole('dialog')
+    await user.click(within(dialog).getByLabelText(/close/i))
     expect(onClose).toHaveBeenCalledOnce()
   })
 })

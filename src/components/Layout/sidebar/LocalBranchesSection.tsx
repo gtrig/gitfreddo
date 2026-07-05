@@ -36,6 +36,7 @@ import { SetUpstreamModal } from '@/components/Branches/SetUpstreamModal'
 import { CheckoutRemoteModal } from '@/components/Branches/CheckoutRemoteModal'
 import { AddRemoteModal } from '@/components/Remotes/AddRemoteModal'
 import { EditRemoteUrlModal } from '@/components/Remotes/EditRemoteUrlModal'
+import { RenameRemoteModal } from '@/components/Remotes/RenameRemoteModal'
 import { AddWorktreeModal } from '@/components/Worktrees/AddWorktreeModal'
 import {
   folderContextMenuItems,
@@ -104,7 +105,7 @@ function BranchTree({
                 depth={depth}
                 open={open}
                 onToggle={() => toggleFolder(path)}
-                menuItems={folderContextMenuItems(node.name, open, () => toggleFolder(path))}
+                menuItems={folderContextMenuItems(node.name, open, () => toggleFolder(path), t)}
                 openMenu={openMenu}
               />
               {open && node.children && (
@@ -132,17 +133,21 @@ function BranchTree({
 
         const branch = node.branch!
         const displayName = branch.name.includes('/') ? node.name : branch.name
-        const branchMenuItems = localBranchContextMenuItems(branch, {
-          onCheckout,
-          onSelectCommit,
-          onMerge,
-          onRename,
-          onDelete,
-          onCreatePr,
-          onCheckoutInWorktree,
-          onSetUpstream,
-          onUnsetUpstream
-        })
+        const branchMenuItems = localBranchContextMenuItems(
+          branch,
+          {
+            onCheckout,
+            onSelectCommit,
+            onMerge,
+            onRename,
+            onDelete,
+            onCreatePr,
+            onCheckoutInWorktree,
+            onSetUpstream,
+            onUnsetUpstream
+          },
+          t
+        )
         return (
           <SidebarTreeRow
             key={branch.name}
@@ -378,6 +383,7 @@ export function RemoteBranchesSection({
   const [pendingRemoveRemote, setPendingRemoveRemote] = useState<string | null>(null)
   const [addRemoteOpen, setAddRemoteOpen] = useState(false)
   const [editRemote, setEditRemote] = useState<GitRemote | null>(null)
+  const [renameRemote, setRenameRemote] = useState<string | null>(null)
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
   const { fetch, deleteRemoteBranch, remoteRemove } = useGitMutations()
 
@@ -421,12 +427,18 @@ export function RemoteBranchesSection({
                 depth={0}
                 open={open}
                 onToggle={() => toggleRemote(remote)}
-                menuItems={remoteFolderContextMenuItems(remote, open, {
-                  onToggle: () => toggleRemote(remote),
-                  onFetch: (remoteName) => void fetch.mutateAsync({ remote: remoteName }),
-                  onEditUrl: openEditRemote,
-                  onDelete: setPendingRemoveRemote
-                })}
+                menuItems={remoteFolderContextMenuItems(
+                  remote,
+                  open,
+                  {
+                    onToggle: () => toggleRemote(remote),
+                    onFetch: (remoteName) => void fetch.mutateAsync({ remote: remoteName }),
+                    onEditUrl: openEditRemote,
+                    onRename: setRenameRemote,
+                    onDelete: setPendingRemoveRemote
+                  },
+                  t
+                )}
                 openMenu={openMenu}
               />
               {open && list.length === 0 && (
@@ -439,14 +451,18 @@ export function RemoteBranchesSection({
               )}
               {open &&
                 list.map((branch) => {
-                  const remoteBranchMenuItems = remoteBranchContextMenuItems(branch, {
-                    onSelectCommit,
-                    onCheckout: setCheckoutRemote,
-                    onDeleteRemote: (remoteBranch) => {
-                      const match = remoteBranches.find((item) => item.name === remoteBranch)
-                      if (match) setPendingDeleteRemote(match)
-                    }
-                  })
+                  const remoteBranchMenuItems = remoteBranchContextMenuItems(
+                    branch,
+                    {
+                      onSelectCommit,
+                      onCheckout: setCheckoutRemote,
+                      onDeleteRemote: (remoteBranch) => {
+                        const match = remoteBranches.find((item) => item.name === remoteBranch)
+                        if (match) setPendingDeleteRemote(match)
+                      }
+                    },
+                    t
+                  )
                   return (
                     <SidebarTreeRow
                       key={branch.name}
@@ -528,6 +544,14 @@ export function RemoteBranchesSection({
           remoteName={editRemote.name}
           currentUrl={editRemote.url}
           onClose={() => setEditRemote(null)}
+        />
+      )}
+
+      {renameRemote && (
+        <RenameRemoteModal
+          open
+          currentName={renameRemote}
+          onClose={() => setRenameRemote(null)}
         />
       )}
     </SidebarSection>

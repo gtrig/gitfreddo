@@ -71,14 +71,18 @@ export function TagsSection({
             const title = tag.message
               ? `${label} — ${tag.message}`
               : `${label} @ ${tag.target.slice(0, 7)}`
-            const tagMenuItems = tagContextMenuItems(tag, {
-              defaultRemote,
-              onSelectCommit,
-              onCheckout: (name) => void checkout.mutateAsync({ name }),
-              onPush: (name, remote) => void pushTag.mutateAsync({ name, remote }),
-              onRename: (tag) => setRenameTag(tag),
-              onDelete: (tag, remote) => setPendingDelete({ tag, remote })
-            })
+            const tagMenuItems = tagContextMenuItems(
+              tag,
+              {
+                defaultRemote,
+                onSelectCommit,
+                onCheckout: (name) => void checkout.mutateAsync({ name }),
+                onPush: (name, remote) => void pushTag.mutateAsync({ name, remote }),
+                onRename: (tag) => setRenameTag(tag),
+                onDelete: (tag, remote) => setPendingDelete({ tag, remote })
+              },
+              t
+            )
             return (
               <SidebarTreeRow
                 key={`${tag.isRemote ? 'remote' : 'local'}:${tag.name}`}

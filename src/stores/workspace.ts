@@ -15,7 +15,6 @@ import {
 export interface WorkspaceTab {
   path: string
   connected: boolean
-  processExited: boolean
   connecting: boolean
 }
 
@@ -26,7 +25,6 @@ interface WorkspaceState {
   /** @deprecated use activePath */
   workspacePath: string | null
   connected: boolean
-  processExited: boolean
   openWorkspace: (path: string) => Promise<void>
   switchWorkspace: (path: string) => Promise<void>
   closeWorkspace: (path: string) => Promise<void>
@@ -36,13 +34,10 @@ interface WorkspaceState {
   reconnectActive: () => Promise<void>
   restoreWorkspaceSession: () => Promise<void>
   persistWorkspaceSession: () => Promise<void>
-  handleProcessExit: (path: string) => void
   /** @deprecated */
   setWorkspacePath: (path: string | null) => void
   /** @deprecated */
   setConnected: (connected: boolean) => void
-  /** @deprecated */
-  setProcessExited: (exited: boolean) => void
 }
 
 function tabLabel(path: string): string {
@@ -56,8 +51,7 @@ function syncLegacyFields(tabs: WorkspaceTab[], activePath: string | null) {
   const tab = tabs.find((item) => item.path === activePath)
   return {
     workspacePath: activePath,
-    connected: Boolean(tab?.connected && !tab.processExited),
-    processExited: Boolean(tab?.processExited)
+    connected: Boolean(tab?.connected)
   }
 }
 
@@ -107,7 +101,6 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   workspacePickerOpen: false,
   workspacePath: null,
   connected: false,
-  processExited: false,
 
   openWorkspace: async (path) => {
     const canonical = await window.gitfreddo.normalizeRepoPath(path)
@@ -123,10 +116,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       captureSelectionForWorkspace(activePath)
     }
 
-    const nextTabs = [
-      ...tabs,
-      { path: canonical, connected: false, processExited: false, connecting: true }
-    ]
+    const nextTabs = [...tabs, { path: canonical, connected: false, connecting: true }]
     set({ tabs: nextTabs, activePath: canonical, ...syncLegacyFields(nextTabs, canonical) })
     appLog('info', 'Opening workspace', canonical)
 
@@ -135,7 +125,6 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       let currentTabs = remapTabPath(get().tabs, canonical, connectedPath)
       currentTabs = updateTab(currentTabs, connectedPath, {
         connected: true,
-        processExited: false,
         connecting: false
       })
       set({
@@ -187,7 +176,6 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const nextTabs = remapTabPath(tabs, canonical, activeCanonical)
     const connectedTabs = updateTab(nextTabs, activeCanonical, {
       connected: true,
-      processExited: false,
       connecting: false
     })
 
@@ -299,7 +287,6 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       const shells: WorkspaceTab[] = normalizedPaths.map((path) => ({
         path,
         connected: false,
-        processExited: false,
         connecting: true
       }))
       set({
@@ -316,7 +303,6 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
           let tabs = remapTabPath(get().tabs, path, connectedPath)
           tabs = updateTab(tabs, connectedPath, {
             connected: true,
-            processExited: false,
             connecting: false
           })
           set({ tabs, ...syncLegacyFields(tabs, get().activePath) })
@@ -370,20 +356,15 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     await window.gitfreddo.connect(activePath)
     const tabs = updateTab(get().tabs, activePath, {
       connected: true,
-      processExited: false,
       connecting: false
     })
     set({ tabs, ...syncLegacyFields(tabs, activePath) })
     appLog('info', 'Reconnected repository', activePath)
   },
 
-  handleProcessExit: (_path) => {
-    // Git repos do not use long-lived child processes
-  },
-
   setWorkspacePath: (path) => {
     if (!path) {
-      set({ activePath: null, workspacePath: null, connected: false, processExited: false })
+      set({ activePath: null, workspacePath: null, connected: false })
       return
     }
     void get().openWorkspace(path)
@@ -394,18 +375,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     if (!activePath) {
       return
     }
-    const nextTabs = updateTab(tabs, activePath, { connected, processExited: !connected })
+    const nextTabs = updateTab(tabs, activePath, { connected })
     set({ tabs: nextTabs, ...syncLegacyFields(nextTabs, activePath) })
-  },
-
-  setProcessExited: (processExited) => {
-    get().handleProcessExit(get().activePath ?? '')
-    if (!processExited && get().activePath) {
-      const tabs = updateTab(get().tabs, get().activePath!, {
-        processExited: false,
-        connected: true
-      })
-      set({ tabs, ...syncLegacyFields(tabs, get().activePath) })
-    }
   }
 }))

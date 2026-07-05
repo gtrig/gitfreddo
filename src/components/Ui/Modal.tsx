@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { XMarkIcon } from '@heroicons/react/24/solid'
 import { Spinner } from '@/components/Ui/Spinner'
 
@@ -11,6 +12,7 @@ interface ModalProps {
 }
 
 export function Modal({ title, open, onClose, children, size = 'md' }: ModalProps) {
+  const { t } = useTranslation()
   const dialogRef = useRef<HTMLDivElement>(null)
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
@@ -22,10 +24,37 @@ export function Modal({ title, open, onClose, children, size = 'md' }: ModalProp
     const previous = document.activeElement as HTMLElement | null
     dialogRef.current?.focus()
 
+    function focusableElements(): HTMLElement[] {
+      if (!dialogRef.current) return []
+      return Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      )
+    }
+
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         event.preventDefault()
         onCloseRef.current()
+        return
+      }
+
+      if (event.key !== 'Tab' || !dialogRef.current) return
+
+      const elements = focusableElements()
+      if (elements.length === 0) return
+
+      const first = elements[0]!
+      const last = elements[elements.length - 1]!
+      const active = document.activeElement
+
+      if (event.shiftKey && active === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault()
+        first.focus()
       }
     }
 
@@ -65,7 +94,7 @@ export function Modal({ title, open, onClose, children, size = 'md' }: ModalProp
             type="button"
             onClick={onClose}
             className="text-gf-fg-subtle hover:text-gf-fg-muted"
-            aria-label="Close"
+            aria-label={t('common.close')}
           >
             <XMarkIcon className="h-5 w-5" aria-hidden />
           </button>

@@ -3,11 +3,13 @@
     "dismiss": "Dismiss",
     "close": "Close",
     "cancel": "Cancel",
+    "confirm": "Confirm",
     "save": "Save",
     "saving": "Saving…",
     "loading": "Loading…",
     "delete": "Delete",
     "create": "Create",
+    "creating": "Creating…",
     "rename": "Rename",
     "merge": "Merge",
     "checkout": "Checkout",
@@ -281,18 +283,39 @@
       "startAt": "Branch will start at",
       "branchName": "Branch name"
     },
+    "addNote": {
+      "addTitle": "Add note",
+      "editTitle": "Edit note",
+      "description": "Annotate commit {{hash}} without changing history.",
+      "message": "Note",
+      "placeholder": "Review notes, links, or reminders…",
+      "emptyMessage": "Enter a note message.",
+      "saved": "Note saved."
+    },
     "createTag": {
       "title": "Create tag",
       "pointAt": "Tag will point at",
       "tagName": "Tag name",
       "messageOptional": "Message (optional)",
       "annotatedPlaceholder": "Annotated tag message",
-      "lightweightHint": "Leave empty for a lightweight tag, or add a message to create an annotated tag."
+      "lightweightHint": "Leave empty for a lightweight tag, or add a message to create an annotated tag.",
+      "signTag": "Sign tag (GPG)"
     },
     "renameBranch": {
       "title": "Rename branch",
       "rename": "Rename",
       "newName": "New name"
+    },
+    "renameRemote": {
+      "title": "Rename remote",
+      "rename": "Rename",
+      "newName": "New name"
+    },
+    "mergeParent": {
+      "revertTitle": "Revert merge commit",
+      "cherryPickTitle": "Cherry-pick merge commit",
+      "description": "Choose the mainline parent for merge commit {{hash}}.",
+      "parentLine": "Parent {{number}}"
     },
     "renameTag": {
       "title": "Rename tag",
@@ -459,7 +482,13 @@
     "noCommitsYet": "No commits yet.",
     "stash": "stash",
     "merge": "merge",
-    "detachedHead": "Detached HEAD"
+    "detachedHead": "Detached HEAD",
+    "commitList": "Commit history",
+    "selectCommit": "Select commit {{hash}}: {{subject}}"
+  },
+  "a11y": {
+    "resizeColumn": "Resize column",
+    "resizePanel": "Resize panel"
   },
   "workingTree": {
     "openRepoPrompt": "Open a repository to view changes.",
@@ -518,6 +547,10 @@
     "working": "Working…",
     "stashing": "Stashing…",
     "createStash": "Create stash",
+    "stashCreated": "Stash created.",
+    "stashMessageOptional": "Message (optional)",
+    "includeUntracked": "Include untracked files",
+    "stashPickPaths": "Stash specific paths…",
     "cleanUntrackedTitle": "Clean untracked files",
     "cleanUntrackedDescription": "Permanently remove untracked files and directories from the working tree. This cannot be undone.",
     "includeIgnored": "Include ignored files (",
@@ -715,6 +748,54 @@
     "squashed": "Squashed {{count}} commits.",
     "compareLabel": "{{count}} commits ({{oldest}}..{{newest}})"
   },
+  "github": {
+    "fork": {
+      "title": "Fork repository",
+      "description": "Create a fork under your GitHub account, then clone it locally.",
+      "owner": "Owner",
+      "repo": "Repository",
+      "action": "Fork",
+      "success": "Repository forked.",
+      "missingFields": "Enter owner and repository name.",
+      "connectFirst": "Connect GitHub in Settings → Integrations to fork repositories.",
+      "forkToAccount": "Fork to my account…"
+    },
+    "issue": {
+      "editTitle": "Edit issue #{{number}}",
+      "titleRequired": "Issue title is required.",
+      "updated": "Issue updated.",
+      "close": "Close issue",
+      "reopen": "Reopen issue",
+      "edit": "Edit issue…"
+    },
+    "pr": {
+      "createTitle": "Create pull request",
+      "description": "Description",
+      "head": "Head",
+      "base": "Base",
+      "squash": "Squash",
+      "rebase": "Rebase"
+    },
+    "repo": {
+      "connectFirst": "Connect GitHub in Settings → Integrations to create repositories.",
+      "name": "Repository name",
+      "namePlaceholder": "my-new-repo",
+      "descriptionOptional": "Description (optional)",
+      "descriptionPlaceholder": "Short description",
+      "nameRequired": "Repository name is required",
+      "create": "Create repository",
+      "public": "Public",
+      "private": "Private"
+    },
+    "repoPicker": {
+      "connectFirst": "Connect GitHub in Settings → Integrations to browse repositories.",
+      "searchPlaceholder": "Search repositories…",
+      "loading": "Loading repositories…",
+      "empty": "No repositories found.",
+      "public": "public",
+      "private": "private"
+    }
+  },
   "contextMenu": {
     "detachedHead": "detached HEAD",
     "currentBranch": "current branch",
@@ -738,6 +819,8 @@
     "mergeInto": "Merge {{source}} into {{target}}…",
     "createBranchHere": "Create branch here…",
     "createTagHere": "Create tag here…",
+    "addNote": "Add note…",
+    "editNote": "Edit note…",
     "checkoutNewWorktree": "Checkout in new worktree…",
     "rewordOnBranch": "Reword commit on {{branch}}…",
     "rewordNotOnBranch": "Reword commit (not on current branch)…",
@@ -796,7 +879,64 @@
     "mergeAborted": "Merge aborted.",
     "cherryPickContinued": "Cherry-pick continued.",
     "cherryPickAborted": "Cherry-pick aborted.",
-    "cherryPickSkipped": "Cherry-pick skipped."
+    "cherryPickSkipped": "Cherry-pick skipped.",
+    "revertComplete": "Revert complete.",
+    "sidebar": {
+      "collapse": "Collapse",
+      "expand": "Expand",
+      "copyName": "Copy name",
+      "focusCommit": "Focus commit",
+      "copyBranchName": "Copy branch name",
+      "mergeIntoCurrent": "Merge into current…",
+      "createPullRequest": "Create pull request…",
+      "rename": "Rename…",
+      "deleteBranch": "Delete branch…",
+      "unsetUpstream": "Unset upstream",
+      "setUpstream": "Set upstream…",
+      "changeUpstream": "Change upstream…",
+      "openInTab": "Open in tab",
+      "copyPath": "Copy path",
+      "removeWorktree": "Remove worktree…",
+      "fetchFromRemote": "Fetch from remote",
+      "editUrl": "Edit URL…",
+      "copyRemoteName": "Copy remote name",
+      "deleteRemote": "Delete remote…",
+      "checkoutAsLocal": "Checkout as local branch…",
+      "copyRemoteRef": "Copy remote ref",
+      "deleteRemoteBranch": "Delete remote branch…",
+      "view": "View",
+      "apply": "Apply",
+      "pop": "Pop",
+      "drop": "Drop",
+      "copyReference": "Copy reference",
+      "copyMessage": "Copy message",
+      "checkoutTag": "Checkout {{name}}",
+      "pushToRemote": "Push to {{remote}}",
+      "pushToRemoteDefault": "Push to remote",
+      "deleteTag": "Delete tag…",
+      "deleteFromRemote": "Delete from {{remote}}…",
+      "copyTagName": "Copy tag name",
+      "openOnGitHub": "Open on GitHub",
+      "copyLink": "Copy link",
+      "mergeCommit": "Merge commit",
+      "squashAndMerge": "Squash and merge",
+      "rebaseAndMerge": "Rebase and merge",
+      "branchFromIssue": "Branch from issue"
+    },
+    "detailPanel": {
+      "collapse": "Collapse",
+      "expand": "Expand",
+      "copyPath": "Copy path",
+      "stageFolderContents": "Stage folder contents",
+      "unstageFolderContents": "Unstage folder contents",
+      "discardChangesInFolder": "Discard changes in folder…",
+      "discardChanges": "Discard changes…",
+      "removeFromRepository": "Remove from repository…",
+      "deleteFile": "Delete file…",
+      "rename": "Rename…",
+      "fileHistory": "File history…",
+      "copyFileName": "Copy file name"
+    }
   },
   "toast": {
     "noRepoConnected": "No repository connected",

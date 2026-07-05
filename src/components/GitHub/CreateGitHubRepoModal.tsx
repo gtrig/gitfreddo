@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { GitHubRepo } from '@shared/github'
 import { ActionButton, Modal } from '@/components/Ui/Modal'
 import { useGitHubStatus } from '@/hooks/useGitHubStatus'
@@ -17,14 +18,16 @@ export function CreateGitHubRepoModal({
   onClose,
   onCreated,
   autoInit = false,
-  submitLabel = 'Create repository'
+  submitLabel
 }: CreateGitHubRepoModalProps) {
+  const { t } = useTranslation()
   const { data: status } = useGitHubStatus()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [isPrivate, setIsPrivate] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const resolvedSubmitLabel = submitLabel ?? t('github.repo.create')
 
   useEffect(() => {
     if (!open) return
@@ -36,7 +39,7 @@ export function CreateGitHubRepoModal({
 
   async function handleSubmit() {
     if (!name.trim()) {
-      setError('Repository name is required')
+      setError(t('github.repo.nameRequired'))
       return
     }
     setBusy(true)
@@ -59,34 +62,32 @@ export function CreateGitHubRepoModal({
 
   if (!status?.connected) {
     return (
-      <Modal open={open} title="Create on GitHub" onClose={onClose}>
-        <p className="p-4 text-sm text-gf-fg-subtle">
-          Connect GitHub in Settings → Integrations to create repositories.
-        </p>
+      <Modal open={open} title={t('workspace.hub.createGithub.title')} onClose={onClose}>
+        <p className="p-4 text-sm text-gf-fg-subtle">{t('github.repo.connectFirst')}</p>
       </Modal>
     )
   }
 
   return (
-    <Modal open={open} title="Create on GitHub" onClose={onClose}>
+    <Modal open={open} title={t('workspace.hub.createGithub.title')} onClose={onClose}>
       <div className="space-y-3 p-4">
         <label className="block text-sm">
-          <span className="text-gf-fg-muted">Repository name</span>
+          <span className="text-gf-fg-muted">{t('github.repo.name')}</span>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="mt-1 w-full rounded border border-gf-border-strong bg-gf-bg px-2 py-1.5"
-            placeholder="my-new-repo"
+            placeholder={t('github.repo.namePlaceholder')}
             autoFocus
           />
         </label>
         <label className="block text-sm">
-          <span className="text-gf-fg-muted">Description (optional)</span>
+          <span className="text-gf-fg-muted">{t('github.repo.descriptionOptional')}</span>
           <input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             className="mt-1 w-full rounded border border-gf-border-strong bg-gf-bg px-2 py-1.5"
-            placeholder="Short description"
+            placeholder={t('github.repo.descriptionPlaceholder')}
           />
         </label>
         <div className="flex gap-2">
@@ -95,21 +96,21 @@ export function CreateGitHubRepoModal({
               key={visibility}
               type="button"
               onClick={() => setIsPrivate(visibility === 'private')}
-              className={`rounded border px-3 py-1.5 text-xs capitalize ${
+              className={`rounded border px-3 py-1.5 text-xs ${
                 (visibility === 'private') === isPrivate
                   ? 'border-gf-accent bg-gf-accent/10 text-gf-fg'
                   : 'border-gf-border-strong text-gf-fg-muted hover:bg-gf-surface-hover'
               }`}
             >
-              {visibility}
+              {t(`github.repo.${visibility}`)}
             </button>
           ))}
         </div>
         {error && <p className="text-sm text-red-400">{error}</p>}
         <div className="flex justify-end gap-2">
-          <ActionButton onClick={onClose}>Cancel</ActionButton>
+          <ActionButton onClick={onClose}>{t('common.cancel')}</ActionButton>
           <ActionButton variant="primary" onClick={() => void handleSubmit()} disabled={busy}>
-            {busy ? 'Creating…' : submitLabel}
+            {busy ? t('common.creating') : resolvedSubmitLabel}
           </ActionButton>
         </div>
       </div>

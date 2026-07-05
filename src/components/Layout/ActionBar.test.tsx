@@ -7,10 +7,9 @@ import { renderWithProviders } from '@/test/render'
 describe('ActionBar', () => {
   beforeEach(() => {
     useWorkspaceStore.setState({
-      tabs: [{ path: '/tmp/repo', connected: true, processExited: false, connecting: false }],
+      tabs: [{ path: '/tmp/repo', connected: true, connecting: false }],
       activePath: '/tmp/repo',
       connected: true,
-      processExited: false,
       workspacePath: '/tmp/repo',
       workspacePickerOpen: false
     })

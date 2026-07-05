@@ -6,7 +6,6 @@ import { MergeConflictScreen } from '@/components/MergeConflicts/MergeConflictSc
 import { DetailPanel } from '@/components/DetailPanel/DetailPanel'
 import { ActionBar } from '@/components/Layout/ActionBar'
 import { WorkspaceHub } from '@/components/Layout/WorkspaceHub'
-import { WorkspaceBanner } from '@/components/Layout/WorkspaceBanner'
 import { WorkspaceTabs } from '@/components/Layout/WorkspaceTabs'
 import { ToastBanner } from '@/components/Layout/ToastBanner'
 import { LogDrawer, useLogSubscription } from '@/components/Layout/LogDrawer'
@@ -15,7 +14,6 @@ import { ResizableMainLayout } from '@/components/Layout/ResizableMainLayout'
 import { SettingsModal } from '@/components/Settings/SettingsModal'
 import { DocsModal } from '@/components/Help/DocsModal'
 import { GlobalOperationOverlay } from '@/components/Ui/GlobalOperationOverlay'
-import { runGlobalOperation } from '@/stores/operation'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useAutoRefresh, useManualRefresh } from '@/hooks/useAutoRefresh'
 import { useRepoChangeListener } from '@/hooks/useRepoChangeListener'
@@ -33,7 +31,6 @@ export default function App() {
   const closeWorkspacePicker = useWorkspaceStore((s) => s.closeWorkspacePicker)
   const workspacePickerOpen = useWorkspaceStore((s) => s.workspacePickerOpen)
   const openWorkspaceDialog = useWorkspaceStore((s) => s.openWorkspaceDialog)
-  const reconnectActive = useWorkspaceStore((s) => s.reconnectActive)
 
   const [error, setError] = useState<string | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -71,19 +68,6 @@ export default function App() {
     },
     [openWorkspace]
   )
-
-  const reconnect = useCallback(async () => {
-    setError(null)
-    try {
-      await runGlobalOperation(async () => {
-        await reconnectActive()
-        refresh()
-      }, 'Reconnecting…')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
-      throw err
-    }
-  }, [reconnectActive, refresh])
 
   useEffect(() => {
     const unsubscribe = window.gitfreddo.onMenuAction((action: MenuAction) => {
@@ -141,7 +125,6 @@ export default function App() {
 
   return (
     <div className="flex h-screen flex-col bg-gf-bg text-gf-fg">
-      <WorkspaceBanner onReconnect={reconnect} />
       {error && (
         <div className="border-b border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-200">
           {error}

@@ -59,7 +59,7 @@ export function StashPreview({ stash }: StashPreviewProps) {
             onContextMenu={(event) =>
               openMenu(
                 event,
-                commitFolderContextMenuItems(node.path, open, () => toggleExpanded(node.path))
+                commitFolderContextMenuItems(node.path, open, () => toggleExpanded(node.path), t)
               )
             }
             className="flex w-full items-center gap-2 px-2 py-1 text-left text-xs text-gf-fg-muted hover:bg-gf-surface-hover"
@@ -84,7 +84,7 @@ export function StashPreview({ stash }: StashPreviewProps) {
         onContextMenu={(event) =>
           openMenu(
             event,
-            commitFileContextMenuItems(node.path, fileNameFromPath(node.path), select)
+            commitFileContextMenuItems(node.path, fileNameFromPath(node.path), select, undefined, t)
           )
         }
         className={`flex w-full items-center gap-2 rounded px-2 py-1 text-left text-xs hover:bg-gf-surface-hover ${

@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+
 type SpinnerSize = 'sm' | 'md' | 'lg' | 'xl'
 
 const sizeClasses: Record<SpinnerSize, string> = {
@@ -9,15 +11,20 @@ const sizeClasses: Record<SpinnerSize, string> = {
 
 export function Spinner({
   size = 'md',
-  className = ''
+  className = '',
+  label
 }: {
   size?: SpinnerSize
   className?: string
+  label?: string
 }) {
+  const { t } = useTranslation()
+  const ariaLabel = label ?? t('common.loading')
+
   return (
     <span
       role="status"
-      aria-label="Loading"
+      aria-label={ariaLabel}
       className={`inline-block shrink-0 animate-spin rounded-full border-gf-fg-subtle border-t-gf-accent ${sizeClasses[size]} ${className}`}
     />
   )

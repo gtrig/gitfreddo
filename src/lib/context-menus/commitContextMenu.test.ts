@@ -63,6 +63,7 @@ const noopActions = {
   createWorktreeFromCommit: () => {},
   createBranch: () => {},
   createTag: () => {},
+  addNote: () => {},
   reword: () => {},
   rebaseOnto: () => {},
   cherryPick: () => {},

@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useQuery } from '@tanstack/react-query'
 import { Modal, ActionButton } from '@/components/Ui/Modal'
 import { useGitMutations } from '@/hooks/useGitMutations'
+import { useWorkspaceStore } from '@/stores/workspace'
 
 interface CreateTagModalProps {
   open: boolean
@@ -13,11 +15,29 @@ export function CreateTagModal({ open, onClose, target }: CreateTagModalProps) {
   const { t } = useTranslation()
   const [name, setName] = useState('')
   const [message, setMessage] = useState('')
+  const [sign, setSign] = useState(false)
+  const repoPath = useWorkspaceStore((s) => s.activePath)
   const { createTag } = useGitMutations()
+  const gpgSignQuery = useQuery({
+    queryKey: ['repo', repoPath, 'config.get', 'tag.gpgsign'],
+    queryFn: async () =>
+      (
+        await window.gitfreddo.invoke('config.get', {
+          key: 'tag.gpgsign',
+          scope: 'local'
+        })
+      ) as string,
+    enabled: open && Boolean(repoPath)
+  })
+  const defaultSign =
+    gpgSignQuery.data?.trim().toLowerCase() === 'true' ||
+    gpgSignQuery.data?.trim() === '1' ||
+    gpgSignQuery.data?.trim().toLowerCase() === 'if-asked'
 
   const handleClose = () => {
     setName('')
     setMessage('')
+    setSign(false)
     onClose()
   }
 
@@ -50,6 +70,14 @@ export function CreateTagModal({ open, onClose, target }: CreateTagModalProps) {
           />
           <p className="mt-1 text-xs text-gf-fg-subtle">{t('modals.createTag.lightweightHint')}</p>
         </label>
+        <label className="flex items-center gap-2 text-sm text-gf-fg-muted">
+          <input
+            type="checkbox"
+            checked={sign || defaultSign}
+            onChange={(e) => setSign(e.target.checked)}
+          />
+          {t('modals.createTag.signTag')}
+        </label>
         <div className="flex justify-end gap-2">
           <ActionButton onClick={handleClose}>{t('common.cancel')}</ActionButton>
           <ActionButton
@@ -59,7 +87,8 @@ export function CreateTagModal({ open, onClose, target }: CreateTagModalProps) {
               await createTag.mutateAsync({
                 name: name.trim(),
                 ...(target ? { target } : {}),
-                ...(message.trim() ? { message: message.trim() } : {})
+                ...(message.trim() ? { message: message.trim() } : {}),
+                ...((sign || defaultSign) && message.trim() ? { sign: true } : {})
               })
               handleClose()
             }}

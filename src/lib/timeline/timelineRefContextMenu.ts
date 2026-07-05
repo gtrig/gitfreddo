@@ -92,42 +92,54 @@ export function buildTimelineRefContextMenuItems(
   tags: GitTag[],
   currentBranch: string,
   handlers: TimelineRefContextMenuHandlers,
-  _t?: TFunction
+  t?: TFunction
 ): ContextMenuItem[] | null {
   if (timelineRef.kind === 'tag') {
     const tag = findTagForTimelineRef(tags, timelineRef, commitHash)
     if (!tag) return null
 
-    return tagContextMenuItems(tag, {
-      defaultRemote: handlers.defaultRemote,
-      onSelectCommit: handlers.onSelectCommit,
-      onCheckout: handlers.onCheckout,
-      onPush: (name, remote) => handlers.onPushTag?.(name, remote),
-      onRename: handlers.onRenameTag,
-      onDelete: (tag, remote) => handlers.onDeleteTag?.(tag, remote)
-    })
+    return tagContextMenuItems(
+      tag,
+      {
+        defaultRemote: handlers.defaultRemote,
+        onSelectCommit: handlers.onSelectCommit,
+        onCheckout: handlers.onCheckout,
+        onPush: (name, remote) => handlers.onPushTag?.(name, remote),
+        onRename: handlers.onRenameTag,
+        onDelete: (tag, remote) => handlers.onDeleteTag?.(tag, remote)
+      },
+      t
+    )
   }
 
   const branch = findBranchForTimelineRef(branches, timelineRef, commitHash, currentBranch)
   if (!branch) return null
 
   if (timelineRef.kind === 'remote') {
-    return remoteBranchContextMenuItems(branch, {
-      onSelectCommit: handlers.onSelectCommit,
-      onCheckout: handlers.onCheckoutRemote,
-      onDeleteRemote: handlers.onDeleteRemoteBranch
-    })
+    return remoteBranchContextMenuItems(
+      branch,
+      {
+        onSelectCommit: handlers.onSelectCommit,
+        onCheckout: handlers.onCheckoutRemote,
+        onDeleteRemote: handlers.onDeleteRemoteBranch
+      },
+      t
+    )
   }
 
-  return localBranchContextMenuItems(branch, {
-    onCheckout: handlers.onCheckout,
-    onSelectCommit: handlers.onSelectCommit,
-    onMerge: handlers.onMerge,
-    onRename: handlers.onRenameBranch,
-    onDelete: handlers.onDeleteBranch,
-    onCreatePr: handlers.onCreatePr,
-    onCheckoutInWorktree: handlers.onCheckoutInWorktree,
-    onSetUpstream: handlers.onSetUpstream,
-    onUnsetUpstream: handlers.onUnsetUpstream
-  })
+  return localBranchContextMenuItems(
+    branch,
+    {
+      onCheckout: handlers.onCheckout,
+      onSelectCommit: handlers.onSelectCommit,
+      onMerge: handlers.onMerge,
+      onRename: handlers.onRenameBranch,
+      onDelete: handlers.onDeleteBranch,
+      onCreatePr: handlers.onCreatePr,
+      onCheckoutInWorktree: handlers.onCheckoutInWorktree,
+      onSetUpstream: handlers.onSetUpstream,
+      onUnsetUpstream: handlers.onUnsetUpstream
+    },
+    t
+  )
 }

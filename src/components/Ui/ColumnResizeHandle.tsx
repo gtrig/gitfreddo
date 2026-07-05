@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 export function ColumnResizeHandle({
   onDrag,
@@ -9,6 +10,7 @@ export function ColumnResizeHandle({
   onResizeStart?: () => void
   onResizeEnd?: () => void
 }) {
+  const { t } = useTranslation()
   const [resizing, setResizing] = useState(false)
   const lastX = useRef(0)
 
@@ -50,7 +52,7 @@ export function ColumnResizeHandle({
     <div
       role="separator"
       aria-orientation="vertical"
-      aria-label="Resize column"
+      aria-label={t('a11y.resizeColumn')}
       onMouseDown={onMouseDown}
       className={`w-1 shrink-0 cursor-col-resize bg-gf-surface/60 hover:bg-gf-surface-hover ${resizing ? 'bg-gf-fg-subtle' : ''}`}
     />

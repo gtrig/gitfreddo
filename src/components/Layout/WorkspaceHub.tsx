@@ -4,10 +4,12 @@ import { DocumentDuplicateIcon, FolderIcon, FolderPlusIcon } from '@heroicons/re
 import { XMarkIcon } from '@heroicons/react/24/solid'
 import { workspaceTabLabel } from '@/stores/workspace'
 import { repoNameFromUrl } from '@/lib/git/git'
+import { parseGitHubRemote } from '@shared/github'
 import { Spinner } from '@/components/Ui/Spinner'
 
 import { RepoPicker } from '@/components/GitHub/RepoPicker'
 import { CreateGitHubRepoModal } from '@/components/GitHub/CreateGitHubRepoModal'
+import { ForkGitHubRepoModal } from '@/components/GitHub/ForkGitHubRepoModal'
 
 type HubView = 'hub' | 'clone'
 type CloneTab = 'url' | 'github'
@@ -73,6 +75,9 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
   const [cloneTab, setCloneTab] = useState<CloneTab>('url')
   const [selectedRepo, setSelectedRepo] = useState<string | null>(null)
   const [createRepoOpen, setCreateRepoOpen] = useState(false)
+  const [forkOpen, setForkOpen] = useState(false)
+
+  const githubCloneTarget = useMemo(() => parseGitHubRemote(cloneUrl), [cloneUrl])
 
   const loadRecents = useCallback(() => {
     void window.gitfreddo.getRecentRepos().then(setRecents)
@@ -304,18 +309,29 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
               </div>
 
               {cloneTab === 'url' ? (
-                <div>
-                  <label htmlFor="clone-url" className="mb-1 block text-xs font-medium text-gf-fg-muted">
-                    {t('workspace.hub.repoUrl')}
-                  </label>
-                  <input
-                    id="clone-url"
-                    type="url"
-                    value={cloneUrl}
-                    onChange={(event) => setCloneUrl(event.target.value)}
-                    placeholder={t('workspace.hub.repoUrlPlaceholder')}
-                    className="w-full rounded border border-gf-border-strong bg-gf-bg-deep px-3 py-2 text-sm text-gf-fg placeholder:text-gf-fg-subtle focus:border-gf-accent focus:outline-none"
-                  />
+                <div className="space-y-2">
+                  <div>
+                    <label htmlFor="clone-url" className="mb-1 block text-xs font-medium text-gf-fg-muted">
+                      {t('workspace.hub.repoUrl')}
+                    </label>
+                    <input
+                      id="clone-url"
+                      type="url"
+                      value={cloneUrl}
+                      onChange={(event) => setCloneUrl(event.target.value)}
+                      placeholder={t('workspace.hub.repoUrlPlaceholder')}
+                      className="w-full rounded border border-gf-border-strong bg-gf-bg-deep px-3 py-2 text-sm text-gf-fg placeholder:text-gf-fg-subtle focus:border-gf-accent focus:outline-none"
+                    />
+                  </div>
+                  {githubCloneTarget && (
+                    <button
+                      type="button"
+                      onClick={() => setForkOpen(true)}
+                      className="text-xs text-gf-accent hover:underline"
+                    >
+                      {t('github.fork.forkToAccount')}
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -439,6 +455,17 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
     />
   )
 
+  const forkDialog = (
+    <ForkGitHubRepoModal
+      open={forkOpen}
+      initialUrl={cloneUrl}
+      onClose={() => setForkOpen(false)}
+      onForked={(repo) => {
+        setCloneUrl(repo.cloneUrl)
+      }}
+    />
+  )
+
   if (variant === 'page') {
     return (
       <>
@@ -455,6 +482,7 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
           </div>
         </div>
         {createRepoDialog}
+        {forkDialog}
       </>
     )
   }
@@ -477,6 +505,7 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
         </div>
       </div>
       {createRepoDialog}
+      {forkDialog}
     </>
   )
 }

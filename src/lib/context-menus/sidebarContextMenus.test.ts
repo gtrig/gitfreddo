@@ -27,6 +27,7 @@ const branch = (overrides: Partial<GitBranch> = {}): GitBranch => ({
 describe('folderContextMenuItems', () => {
   it('shows collapse when open', () => {
     const items = folderContextMenuItems('origin', true, noop)
+    expect(items[0]?.id).toBe('toggle')
     expect(items[0]?.label).toBe('Collapse')
   })
 })
@@ -224,7 +225,7 @@ describe('issueContextMenuItems', () => {
         body: '',
         labels: []
       },
-      noop
+      { onBranchFromIssue: noop }
     )
 
     expect(items.some((item) => item.id === 'branch')).toBe(true)

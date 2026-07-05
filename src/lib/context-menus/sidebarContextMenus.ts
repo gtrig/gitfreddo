@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next'
 import type { ContextMenuItem } from '@/components/Ui/ContextMenu'
 import type { GitBranch, GitTag, GitWorktreeEntry } from '@/lib/types'
 import type { GitHubIssue, GitHubMergeMethod, GitHubPullRequest } from '@shared/github'
@@ -9,20 +10,28 @@ function separator(id: string): ContextMenuItem {
   return { id, label: '', separator: true, onClick: () => {} }
 }
 
+function toggleLabel(t: TFunction | undefined, open: boolean): string {
+  if (open) {
+    return t ? t('contextMenu.sidebar.collapse') : 'Collapse'
+  }
+  return t ? t('contextMenu.sidebar.expand') : 'Expand'
+}
+
 export function folderContextMenuItems(
   name: string,
   open: boolean,
-  onToggle: () => void
+  onToggle: () => void,
+  t?: TFunction
 ): ContextMenuItem[] {
   return [
     {
       id: 'toggle',
-      label: open ? 'Collapse' : 'Expand',
+      label: toggleLabel(t, open),
       onClick: onToggle
     },
     {
       id: 'copy',
-      label: 'Copy name',
+      label: t ? t('contextMenu.sidebar.copyName') : 'Copy name',
       onClick: () => void copyToClipboard(name)
     }
   ]
@@ -40,12 +49,13 @@ export function localBranchContextMenuItems(
     onUnsetUpstream?: (name: string) => void
     onCreatePr?: (name: string) => void
     onCheckoutInWorktree?: (name: string) => void
-  }
+  },
+  t?: TFunction
 ): ContextMenuItem[] {
   const items: ContextMenuItem[] = [
     {
       id: 'checkout',
-      label: 'Checkout',
+      label: t ? t('common.checkout') : 'Checkout',
       disabled: branch.isCurrent,
       onClick: () => handlers.onCheckout(branch.name)
     },
@@ -53,19 +63,19 @@ export function localBranchContextMenuItems(
       ? [
           {
             id: 'checkout-worktree',
-            label: 'Checkout in new worktree…',
+            label: t ? t('contextMenu.checkoutNewWorktree') : 'Checkout in new worktree…',
             onClick: () => handlers.onCheckoutInWorktree!(branch.name)
           } as ContextMenuItem
         ]
       : []),
     {
       id: 'focus',
-      label: 'Focus commit',
+      label: t ? t('contextMenu.sidebar.focusCommit') : 'Focus commit',
       onClick: () => handlers.onSelectCommit(branch.head)
     },
     {
       id: 'copy',
-      label: 'Copy branch name',
+      label: t ? t('contextMenu.sidebar.copyBranchName') : 'Copy branch name',
       onClick: () => void copyToClipboard(branch.name)
     }
   ]
@@ -74,25 +84,25 @@ export function localBranchContextMenuItems(
     items.push(separator('sep-actions'))
     items.push({
       id: 'merge',
-      label: 'Merge into current…',
+      label: t ? t('contextMenu.sidebar.mergeIntoCurrent') : 'Merge into current…',
       onClick: () => handlers.onMerge(branch.name)
     })
     if (handlers.onCreatePr && branch.ahead > 0) {
       items.push({
         id: 'create-pr',
-        label: 'Create pull request…',
+        label: t ? t('contextMenu.sidebar.createPullRequest') : 'Create pull request…',
         onClick: () => handlers.onCreatePr!(branch.name)
       })
     }
     items.push({
       id: 'rename',
-      label: 'Rename…',
+      label: t ? t('contextMenu.sidebar.rename') : 'Rename…',
       onClick: () => handlers.onRename(branch.name)
     })
     items.push(separator('sep-delete'))
     items.push({
       id: 'delete',
-      label: 'Delete branch…',
+      label: t ? t('contextMenu.sidebar.deleteBranch') : 'Delete branch…',
       danger: true,
       onClick: () => handlers.onDelete(branch.name)
     })
@@ -100,7 +110,7 @@ export function localBranchContextMenuItems(
     items.push(separator('sep-rename'))
     items.push({
       id: 'rename',
-      label: 'Rename…',
+      label: t ? t('contextMenu.sidebar.rename') : 'Rename…',
       onClick: () => handlers.onRename(branch.name)
     })
   }
@@ -110,14 +120,20 @@ export function localBranchContextMenuItems(
     if (branch.upstream && handlers.onUnsetUpstream) {
       items.push({
         id: 'unset-upstream',
-        label: 'Unset upstream',
+        label: t ? t('contextMenu.sidebar.unsetUpstream') : 'Unset upstream',
         onClick: () => handlers.onUnsetUpstream!(branch.name)
       })
     }
     if (handlers.onSetUpstream) {
       items.push({
         id: 'set-upstream',
-        label: branch.upstream ? 'Change upstream…' : 'Set upstream…',
+        label: branch.upstream
+          ? t
+            ? t('contextMenu.sidebar.changeUpstream')
+            : 'Change upstream…'
+          : t
+            ? t('contextMenu.sidebar.setUpstream')
+            : 'Set upstream…',
         onClick: () => handlers.onSetUpstream!(branch.name)
       })
     }
@@ -132,17 +148,18 @@ export function worktreeContextMenuItems(
     onOpenInTab: (path: string) => void
     onRemove: (entry: GitWorktreeEntry) => void
     onCopyPath: (path: string) => void
-  }
+  },
+  t?: TFunction
 ): ContextMenuItem[] {
   const items: ContextMenuItem[] = [
     {
       id: 'open-tab',
-      label: 'Open in tab',
+      label: t ? t('contextMenu.sidebar.openInTab') : 'Open in tab',
       onClick: () => handlers.onOpenInTab(entry.path)
     },
     {
       id: 'copy-path',
-      label: 'Copy path',
+      label: t ? t('contextMenu.sidebar.copyPath') : 'Copy path',
       onClick: () => void copyToClipboard(entry.path)
     }
   ]
@@ -151,7 +168,7 @@ export function worktreeContextMenuItems(
     items.push(separator('sep-remove'))
     items.push({
       id: 'remove',
-      label: 'Remove worktree…',
+      label: t ? t('contextMenu.sidebar.removeWorktree') : 'Remove worktree…',
       danger: true,
       disabled: Boolean(entry.locked),
       onClick: () => handlers.onRemove(entry)
@@ -168,18 +185,20 @@ export function remoteFolderContextMenuItems(
     onToggle: () => void
     onFetch: (remote: string) => void
     onEditUrl?: (remote: string) => void
+    onRename?: (remote: string) => void
     onDelete?: (remote: string) => void
-  }
+  },
+  t?: TFunction
 ): ContextMenuItem[] {
   const items: ContextMenuItem[] = [
     {
       id: 'toggle',
-      label: open ? 'Collapse' : 'Expand',
+      label: toggleLabel(t, open),
       onClick: handlers.onToggle
     },
     {
       id: 'fetch',
-      label: 'Fetch from remote',
+      label: t ? t('contextMenu.sidebar.fetchFromRemote') : 'Fetch from remote',
       onClick: () => handlers.onFetch(remote)
     }
   ]
@@ -187,14 +206,22 @@ export function remoteFolderContextMenuItems(
   if (handlers.onEditUrl) {
     items.push({
       id: 'edit-url',
-      label: 'Edit URL…',
+      label: t ? t('contextMenu.sidebar.editUrl') : 'Edit URL…',
       onClick: () => handlers.onEditUrl!(remote)
+    })
+  }
+
+  if (handlers.onRename) {
+    items.push({
+      id: 'rename-remote',
+      label: t ? t('contextMenu.sidebar.rename') : 'Rename…',
+      onClick: () => handlers.onRename!(remote)
     })
   }
 
   items.push({
     id: 'copy',
-    label: 'Copy remote name',
+    label: t ? t('contextMenu.sidebar.copyRemoteName') : 'Copy remote name',
     onClick: () => void copyToClipboard(remote)
   })
 
@@ -202,7 +229,7 @@ export function remoteFolderContextMenuItems(
     items.push(separator('sep-delete-remote'))
     items.push({
       id: 'delete-remote',
-      label: 'Delete remote…',
+      label: t ? t('contextMenu.sidebar.deleteRemote') : 'Delete remote…',
       danger: true,
       onClick: () => handlers.onDelete!(remote)
     })
@@ -217,28 +244,29 @@ export function remoteBranchContextMenuItems(
     onSelectCommit: (hash: string) => void
     onCheckout?: (remoteBranch: string) => void
     onDeleteRemote?: (remoteBranch: string) => void
-  }
+  },
+  t?: TFunction
 ): ContextMenuItem[] {
   const shortName = remoteBranchShortName(branch.name)
   const items: ContextMenuItem[] = [
     {
       id: 'checkout',
-      label: 'Checkout as local branch…',
+      label: t ? t('contextMenu.sidebar.checkoutAsLocal') : 'Checkout as local branch…',
       onClick: () => handlers.onCheckout?.(branch.name)
     },
     {
       id: 'focus',
-      label: 'Focus commit',
+      label: t ? t('contextMenu.sidebar.focusCommit') : 'Focus commit',
       onClick: () => handlers.onSelectCommit(branch.head)
     },
     {
       id: 'copy-short',
-      label: 'Copy branch name',
+      label: t ? t('contextMenu.sidebar.copyBranchName') : 'Copy branch name',
       onClick: () => void copyToClipboard(shortName)
     },
     {
       id: 'copy-full',
-      label: 'Copy remote ref',
+      label: t ? t('contextMenu.sidebar.copyRemoteRef') : 'Copy remote ref',
       onClick: () => void copyToClipboard(branch.name.replace(/^remotes\//, ''))
     }
   ]
@@ -247,7 +275,7 @@ export function remoteBranchContextMenuItems(
     items.push(separator('sep-delete-remote'))
     items.push({
       id: 'delete-remote',
-      label: 'Delete remote branch…',
+      label: t ? t('contextMenu.sidebar.deleteRemoteBranch') : 'Delete remote branch…',
       danger: true,
       onClick: () => handlers.onDeleteRemote!(branch.name)
     })
@@ -266,31 +294,32 @@ export function stashContextMenuItems(
     onPop: (index: number) => void
     onDrop: (index: number) => void
     onBranch?: (index: number) => void
-  }
+  },
+  t?: TFunction
 ): ContextMenuItem[] {
   const ref = `stash@{${index}}`
   return [
     {
       id: 'view',
-      label: 'View',
+      label: t ? t('contextMenu.sidebar.view') : 'View',
       onClick: () => handlers.onSelect(index, hash)
     },
     separator('sep-ops'),
     {
       id: 'apply',
-      label: 'Apply',
+      label: t ? t('contextMenu.sidebar.apply') : 'Apply',
       onClick: () => handlers.onApply(index)
     },
     {
       id: 'pop',
-      label: 'Pop',
+      label: t ? t('contextMenu.sidebar.pop') : 'Pop',
       onClick: () => handlers.onPop(index)
     },
     ...(handlers.onBranch
       ? [
           {
             id: 'branch',
-            label: 'Create branch from stash…',
+            label: t ? t('modals.stashBranch.title') : 'Create branch from stash',
             onClick: () => handlers.onBranch!(index)
           } as ContextMenuItem
         ]
@@ -298,18 +327,18 @@ export function stashContextMenuItems(
     separator('sep-drop'),
     {
       id: 'drop',
-      label: 'Drop',
+      label: t ? t('contextMenu.sidebar.drop') : 'Drop',
       danger: true,
       onClick: () => handlers.onDrop(index)
     },
     {
       id: 'copy-ref',
-      label: 'Copy reference',
+      label: t ? t('contextMenu.sidebar.copyReference') : 'Copy reference',
       onClick: () => void copyToClipboard(ref)
     },
     {
       id: 'copy-message',
-      label: 'Copy message',
+      label: t ? t('contextMenu.sidebar.copyMessage') : 'Copy message',
       onClick: () => void copyToClipboard(message || ref)
     }
   ]
@@ -324,13 +353,14 @@ export function tagContextMenuItems(
     onPush: (name: string, remote?: string) => void
     onRename?: (tag: GitTag) => void
     onDelete: (tag: GitTag, remote?: string) => void
-  }
+  },
+  t?: TFunction
 ): ContextMenuItem[] {
   const shortName = localTagName(tag.name)
   const items: ContextMenuItem[] = [
     {
       id: 'focus',
-      label: 'Focus commit',
+      label: t ? t('contextMenu.sidebar.focusCommit') : 'Focus commit',
       onClick: () => handlers.onSelectCommit(tag.target)
     }
   ]
@@ -338,29 +368,35 @@ export function tagContextMenuItems(
   if (!tag.isRemote) {
     items.push({
       id: 'checkout',
-      label: `Checkout ${shortName}`,
+      label: t
+        ? t('contextMenu.sidebar.checkoutTag', { name: shortName })
+        : `Checkout ${shortName}`,
       onClick: () => handlers.onCheckout(tagCheckoutRef(tag.name))
     })
     items.push(separator('sep-push'))
     items.push({
       id: 'push',
       label: handlers.defaultRemote
-        ? `Push to ${handlers.defaultRemote}`
-        : 'Push to remote',
+        ? t
+          ? t('contextMenu.sidebar.pushToRemote', { remote: handlers.defaultRemote })
+          : `Push to ${handlers.defaultRemote}`
+        : t
+          ? t('contextMenu.sidebar.pushToRemoteDefault')
+          : 'Push to remote',
       disabled: !handlers.defaultRemote,
       onClick: () => handlers.onPush(shortName, handlers.defaultRemote)
     })
     if (handlers.onRename) {
       items.push({
         id: 'rename',
-        label: 'Rename…',
+        label: t ? t('contextMenu.sidebar.rename') : 'Rename…',
         onClick: () => handlers.onRename!(tag)
       })
     }
     items.push(separator('sep-delete'))
     items.push({
       id: 'delete',
-      label: 'Delete tag…',
+      label: t ? t('contextMenu.sidebar.deleteTag') : 'Delete tag…',
       danger: true,
       onClick: () => handlers.onDelete(tag)
     })
@@ -368,7 +404,9 @@ export function tagContextMenuItems(
     items.push(separator('sep-delete'))
     items.push({
       id: 'delete-remote',
-      label: `Delete from ${tag.remote}…`,
+      label: t
+        ? t('contextMenu.sidebar.deleteFromRemote', { remote: tag.remote })
+        : `Delete from ${tag.remote}…`,
       danger: true,
       onClick: () => handlers.onDelete(tag, tag.remote)
     })
@@ -377,12 +415,12 @@ export function tagContextMenuItems(
   items.push(separator('sep-copy'))
   items.push({
     id: 'copy-name',
-    label: 'Copy tag name',
+    label: t ? t('contextMenu.sidebar.copyTagName') : 'Copy tag name',
     onClick: () => void copyToClipboard(shortName)
   })
   items.push({
     id: 'copy-hash',
-    label: 'Copy commit hash',
+    label: t ? t('contextMenu.copyCommitHash') : 'Copy commit hash',
     onClick: () => void copyToClipboard(tag.target)
   })
 
@@ -393,33 +431,34 @@ export function pullRequestContextMenuItems(
   pr: GitHubPullRequest,
   handlers: {
     onMerge: (method: GitHubMergeMethod) => void
-  }
+  },
+  t?: TFunction
 ): ContextMenuItem[] {
   return [
     {
       id: 'open',
-      label: 'Open on GitHub',
+      label: t ? t('contextMenu.sidebar.openOnGitHub') : 'Open on GitHub',
       onClick: () => window.open(pr.htmlUrl, '_blank', 'noopener,noreferrer')
     },
     {
       id: 'copy',
-      label: 'Copy link',
+      label: t ? t('contextMenu.sidebar.copyLink') : 'Copy link',
       onClick: () => void copyToClipboard(pr.htmlUrl)
     },
     separator('sep-merge'),
     {
       id: 'merge',
-      label: 'Merge commit',
+      label: t ? t('contextMenu.sidebar.mergeCommit') : 'Merge commit',
       onClick: () => handlers.onMerge('merge')
     },
     {
       id: 'squash',
-      label: 'Squash and merge',
+      label: t ? t('contextMenu.sidebar.squashAndMerge') : 'Squash and merge',
       onClick: () => handlers.onMerge('squash')
     },
     {
       id: 'rebase',
-      label: 'Rebase and merge',
+      label: t ? t('contextMenu.sidebar.rebaseAndMerge') : 'Rebase and merge',
       onClick: () => handlers.onMerge('rebase')
     }
   ]
@@ -427,24 +466,57 @@ export function pullRequestContextMenuItems(
 
 export function issueContextMenuItems(
   issue: GitHubIssue,
-  onBranchFromIssue: (issueNumber: number, title: string) => void
+  handlers: {
+    onBranchFromIssue: (issueNumber: number, title: string) => void
+    onEdit?: (issue: GitHubIssue) => void
+    onClose?: (issue: GitHubIssue) => void
+    onReopen?: (issue: GitHubIssue) => void
+  },
+  t?: TFunction
 ): ContextMenuItem[] {
-  return [
+  const items: ContextMenuItem[] = [
     {
       id: 'open',
-      label: 'Open on GitHub',
+      label: t ? t('contextMenu.sidebar.openOnGitHub') : 'Open on GitHub',
       onClick: () => window.open(issue.htmlUrl, '_blank', 'noopener,noreferrer')
     },
     {
       id: 'copy',
-      label: 'Copy link',
+      label: t ? t('contextMenu.sidebar.copyLink') : 'Copy link',
       onClick: () => void copyToClipboard(issue.htmlUrl)
-    },
-    separator('sep-branch'),
-    {
-      id: 'branch',
-      label: 'Branch from issue',
-      onClick: () => onBranchFromIssue(issue.number, issue.title)
     }
   ]
+
+  if (handlers.onEdit) {
+    items.push({
+      id: 'edit',
+      label: t ? t('github.issue.edit') : 'Edit issue…',
+      onClick: () => handlers.onEdit!(issue)
+    })
+  }
+
+  if (issue.state === 'open' && handlers.onClose) {
+    items.push({
+      id: 'close',
+      label: t ? t('github.issue.close') : 'Close issue',
+      onClick: () => handlers.onClose!(issue)
+    })
+  }
+
+  if (issue.state === 'closed' && handlers.onReopen) {
+    items.push({
+      id: 'reopen',
+      label: t ? t('github.issue.reopen') : 'Reopen issue',
+      onClick: () => handlers.onReopen!(issue)
+    })
+  }
+
+  items.push(separator('sep-branch'))
+  items.push({
+    id: 'branch',
+    label: t ? t('contextMenu.sidebar.branchFromIssue') : 'Branch from issue',
+    onClick: () => handlers.onBranchFromIssue(issue.number, issue.title)
+  })
+
+  return items
 }

@@ -56,13 +56,19 @@ export function StashesSection({
       <div className="space-y-0.5">
         {filtered.map((stash) => {
           const label = stash.message || `(stash@{${stash.index}})`
-          const stashMenuItems = stashContextMenuItems(stash.index, stash.hash, label, {
-            onSelect,
-            onApply: (index) => void stashApply.mutateAsync({ index }),
-            onPop: (index) => void stashPop.mutateAsync({ index }),
-            onDrop: (index) => void stashDrop.mutateAsync({ index }),
-            onBranch: (index) => setBranchStashIndex(index)
-          })
+          const stashMenuItems = stashContextMenuItems(
+            stash.index,
+            stash.hash,
+            label,
+            {
+              onSelect,
+              onApply: (index) => void stashApply.mutateAsync({ index }),
+              onPop: (index) => void stashPop.mutateAsync({ index }),
+              onDrop: (index) => void stashDrop.mutateAsync({ index }),
+              onBranch: (index) => setBranchStashIndex(index)
+            },
+            t
+          )
           return (
             <SidebarTreeRow
               key={stash.index}

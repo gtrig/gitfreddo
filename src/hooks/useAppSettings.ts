@@ -20,6 +20,12 @@ export function usePollIntervalMs(): number {
   return interval > 0 ? interval : 0
 }
 
+export function useLogMaxCount(): number {
+  const { data } = useAppSettings()
+  const count = data?.logMaxCount ?? 500
+  return count > 0 ? count : 500
+}
+
 export function useDefaultRemote(): string {
   const { data } = useAppSettings()
   return data?.defaultRemote ?? 'origin'

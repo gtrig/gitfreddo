@@ -1,9 +1,17 @@
+import type { TFunction } from 'i18next'
 import type { ContextMenuItem } from '@/components/Ui/ContextMenu'
 import { copyToClipboard } from '@/lib/clipboard'
 import type { FileChangeStatus } from '@/lib/types'
 
 function separator(id: string): ContextMenuItem {
   return { id, label: '', separator: true, onClick: () => {} }
+}
+
+function toggleLabel(t: TFunction | undefined, open: boolean): string {
+  if (open) {
+    return t ? t('contextMenu.detailPanel.collapse') : 'Collapse'
+  }
+  return t ? t('contextMenu.detailPanel.expand') : 'Expand'
 }
 
 export function workingTreeFolderContextMenuItems(
@@ -14,17 +22,18 @@ export function workingTreeFolderContextMenuItems(
     onToggle: () => void
     onStageFolder?: () => void
     onDiscardFolder?: () => void
-  }
+  },
+  t?: TFunction
 ): ContextMenuItem[] {
   const items: ContextMenuItem[] = [
     {
       id: 'toggle',
-      label: open ? 'Collapse' : 'Expand',
+      label: toggleLabel(t, open),
       onClick: handlers.onToggle
     },
     {
       id: 'copy',
-      label: 'Copy path',
+      label: t ? t('contextMenu.detailPanel.copyPath') : 'Copy path',
       onClick: () => void copyToClipboard(path)
     }
   ]
@@ -32,7 +41,14 @@ export function workingTreeFolderContextMenuItems(
   if (handlers.onStageFolder) {
     items.push({
       id: 'stage-folder',
-      label: mode === 'staged' ? 'Unstage folder contents' : 'Stage folder contents',
+      label:
+        mode === 'staged'
+          ? t
+            ? t('contextMenu.detailPanel.unstageFolderContents')
+            : 'Unstage folder contents'
+          : t
+            ? t('contextMenu.detailPanel.stageFolderContents')
+            : 'Stage folder contents',
       onClick: handlers.onStageFolder
     })
   }
@@ -41,7 +57,7 @@ export function workingTreeFolderContextMenuItems(
     items.push(separator('sep-discard'))
     items.push({
       id: 'discard-folder',
-      label: 'Discard changes in folder…',
+      label: t ? t('contextMenu.detailPanel.discardChangesInFolder') : 'Discard changes in folder…',
       danger: true,
       onClick: handlers.onDiscardFolder
     })
@@ -63,7 +79,8 @@ export function workingTreeFileContextMenuItems(
     onDiscard?: () => void
     onRemove?: () => void
     onDelete?: () => void
-  }
+  },
+  t?: TFunction
 ): ContextMenuItem[] {
   const canDiscard =
     status !== 'untracked' &&
@@ -75,12 +92,19 @@ export function workingTreeFileContextMenuItems(
   const items: ContextMenuItem[] = [
     {
       id: 'view',
-      label: 'View changes',
+      label: t ? t('detail.viewChanges') : 'View changes',
       onClick: handlers.onSelect
     },
     {
       id: 'stage',
-      label: mode === 'working' ? 'Stage' : 'Unstage',
+      label:
+        mode === 'working'
+          ? t
+            ? t('workingTree.stage')
+            : 'Stage'
+          : t
+            ? t('workingTree.unstage')
+            : 'Unstage',
       onClick: handlers.onStageToggle
     }
   ]
@@ -88,7 +112,7 @@ export function workingTreeFileContextMenuItems(
   if (canDiscard && handlers.onDiscard) {
     items.push({
       id: 'discard',
-      label: 'Discard changes…',
+      label: t ? t('contextMenu.detailPanel.discardChanges') : 'Discard changes…',
       danger: true,
       onClick: handlers.onDiscard
     })
@@ -97,7 +121,7 @@ export function workingTreeFileContextMenuItems(
   if (canRemove && handlers.onRemove) {
     items.push({
       id: 'remove',
-      label: 'Remove from repository…',
+      label: t ? t('contextMenu.detailPanel.removeFromRepository') : 'Remove from repository…',
       danger: true,
       onClick: handlers.onRemove
     })
@@ -106,7 +130,7 @@ export function workingTreeFileContextMenuItems(
   if (status === 'untracked' && handlers.onDelete) {
     items.push({
       id: 'delete',
-      label: 'Delete file…',
+      label: t ? t('contextMenu.detailPanel.deleteFile') : 'Delete file…',
       danger: true,
       onClick: handlers.onDelete
     })
@@ -115,7 +139,7 @@ export function workingTreeFileContextMenuItems(
   if (handlers.onRename && status !== 'deleted') {
     items.push({
       id: 'rename',
-      label: 'Rename…',
+      label: t ? t('contextMenu.detailPanel.rename') : 'Rename…',
       onClick: handlers.onRename
     })
   }
@@ -123,7 +147,7 @@ export function workingTreeFileContextMenuItems(
   if (handlers.onFileHistory) {
     items.push({
       id: 'history',
-      label: 'File history…',
+      label: t ? t('contextMenu.detailPanel.fileHistory') : 'File history…',
       onClick: handlers.onFileHistory
     })
   }
@@ -132,12 +156,12 @@ export function workingTreeFileContextMenuItems(
     separator('sep-editor'),
     {
       id: 'open',
-      label: 'Open in editor',
+      label: t ? t('diff.openInEditor') : 'Open in editor',
       onClick: handlers.onOpenInEditor
     },
     {
       id: 'copy',
-      label: 'Copy path',
+      label: t ? t('contextMenu.detailPanel.copyPath') : 'Copy path',
       onClick: () => void copyToClipboard(path)
     }
   )
@@ -148,17 +172,18 @@ export function workingTreeFileContextMenuItems(
 export function commitFolderContextMenuItems(
   path: string,
   open: boolean,
-  onToggle: () => void
+  onToggle: () => void,
+  t?: TFunction
 ): ContextMenuItem[] {
   return [
     {
       id: 'toggle',
-      label: open ? 'Collapse' : 'Expand',
+      label: toggleLabel(t, open),
       onClick: onToggle
     },
     {
       id: 'copy',
-      label: 'Copy path',
+      label: t ? t('contextMenu.detailPanel.copyPath') : 'Copy path',
       onClick: () => void copyToClipboard(path)
     }
   ]
@@ -168,19 +193,20 @@ export function commitFileContextMenuItems(
   path: string,
   fileName: string,
   onSelect: () => void,
-  onFileHistory?: () => void
+  onFileHistory?: () => void,
+  t?: TFunction
 ): ContextMenuItem[] {
   return [
     {
       id: 'view',
-      label: 'View changes',
+      label: t ? t('detail.viewChanges') : 'View changes',
       onClick: onSelect
     },
     ...(onFileHistory
       ? [
           {
             id: 'history',
-            label: 'File history…',
+            label: t ? t('contextMenu.detailPanel.fileHistory') : 'File history…',
             onClick: onFileHistory
           } as ContextMenuItem
         ]
@@ -188,12 +214,12 @@ export function commitFileContextMenuItems(
     separator('sep-copy'),
     {
       id: 'copy-path',
-      label: 'Copy path',
+      label: t ? t('contextMenu.detailPanel.copyPath') : 'Copy path',
       onClick: () => void copyToClipboard(path)
     },
     {
       id: 'copy-name',
-      label: 'Copy file name',
+      label: t ? t('contextMenu.detailPanel.copyFileName') : 'Copy file name',
       onClick: () => void copyToClipboard(fileName)
     }
   ]

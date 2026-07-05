@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowsUpDownIcon, MinusIcon, PencilSquareIcon, PlusIcon } from '@heroicons/react/24/solid'
 import { useAiEnabled } from '@/hooks/useAppSettings'
@@ -157,13 +158,15 @@ function PathFileRow({
   selected,
   onSelect,
   openMenu,
-  onFileHistory
+  onFileHistory,
+  t
 }: {
   file: CommitFileItem
   selected: boolean
   onSelect: () => void
   openMenu: OpenContextMenu
   onFileHistory: (path: string) => void
+  t: TFunction
 }) {
   return (
     <button
@@ -176,7 +179,8 @@ function PathFileRow({
             file.path,
             file.path.split('/').pop() ?? file.path,
             onSelect,
-            () => onFileHistory(file.path)
+            () => onFileHistory(file.path),
+            t
           )
         )
       }
@@ -215,7 +219,7 @@ function TreeNodeRow({
   isExpanded: (path: string) => boolean
   openMenu: OpenContextMenu
   onFileHistory: (path: string) => void
-  t: (key: string, options?: Record<string, unknown>) => string
+  t: TFunction
 }) {
   if (node.type === 'folder') {
     const open = isExpanded(node.path)
@@ -227,7 +231,7 @@ function TreeNodeRow({
           onContextMenu={(event) =>
             openMenu(
               event,
-              commitFolderContextMenuItems(node.path, open, () => onToggleFolder(node.path))
+              commitFolderContextMenuItems(node.path, open, () => onToggleFolder(node.path), t)
             )
           }
           className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-gf-fg-muted hover:bg-gf-surface-hover"
@@ -264,8 +268,12 @@ function TreeNodeRow({
       onContextMenu={(event) =>
         openMenu(
           event,
-          commitFileContextMenuItems(node.path, node.name, () => onSelectFile(node.path), () =>
-            onFileHistory(node.path)
+          commitFileContextMenuItems(
+            node.path,
+            node.name,
+            () => onSelectFile(node.path),
+            () => onFileHistory(node.path),
+            t
           )
         )
       }
@@ -301,7 +309,7 @@ function FileTreeList({
   onToggleFolder: (path: string) => void
   openMenu: OpenContextMenu
   onFileHistory: (path: string) => void
-  t: (key: string, options?: Record<string, unknown>) => string
+  t: TFunction
 }) {
   const isExpanded = (path: string) => expandedPaths.has(path)
 
@@ -550,6 +558,7 @@ export function CommitPreview({
                 onSelect={() => setSelectedCommitFile(file.path)}
                 openMenu={openMenu}
                 onFileHistory={setFileHistoryPath}
+                t={t}
               />
             ))}
           </div>

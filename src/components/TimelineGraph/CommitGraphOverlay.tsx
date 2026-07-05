@@ -25,7 +25,8 @@ export function CommitGraphOverlay({
   selectedHashes,
   dimmedHashes,
   rowHeight = GRAPH_ROW_HEIGHT,
-  metrics = DEFAULT_GRAPH_METRICS
+  metrics = DEFAULT_GRAPH_METRICS,
+  visibleRowRange
 }: {
   layout: GitGraphLayout
   prefixRows?: number
@@ -36,6 +37,7 @@ export function CommitGraphOverlay({
   dimmedHashes?: ReadonlySet<string> | null
   rowHeight?: number
   metrics?: GraphMetrics
+  visibleRowRange?: { start: number; end: number }
 }) {
   const colors = useGraphColors()
   const rowCount = layout.rows.length + prefixRows
@@ -43,6 +45,18 @@ export function CommitGraphOverlay({
   const width = graphWidth(layout.laneCount, metrics)
   const rowByKey = new Map(layout.rows.map((row) => [row.key, row]))
   const headRow = layout.rows.find((row) => row.isHead)
+
+  const rowInWindow = (rowIndex: number) => {
+    if (!visibleRowRange) return true
+    return rowIndex >= visibleRowRange.start && rowIndex < visibleRowRange.end
+  }
+
+  const edgeInWindow = (fromIndex: number, toIndex: number) => {
+    if (!visibleRowRange) return true
+    const low = Math.min(fromIndex, toIndex)
+    const high = Math.max(fromIndex, toIndex)
+    return high >= visibleRowRange.start && low < visibleRowRange.end
+  }
 
   const wipX = columnCenterX(WORKING_TREE_COLUMN, metrics)
   const wipRow = !showWorkingRow ? -1 : prefixRows >= 2 ? 1 : 0
@@ -98,6 +112,7 @@ export function CommitGraphOverlay({
           const fromRow = rowByKey.get(edge.fromKey)
           const toRow = rowByKey.get(edge.toKey)
           if (!fromRow || !toRow) return null
+          if (!edgeInWindow(fromRow.rowIndex, toRow.rowIndex)) return null
 
           const x1 = columnCenterX(edge.fromColumn, metrics)
           const y1 = rowCenter(fromRow.rowIndex)
@@ -136,6 +151,7 @@ export function CommitGraphOverlay({
       )}
 
       {layout.rows.map((row) => {
+        if (!rowInWindow(row.rowIndex)) return null
         const x = columnCenterX(row.column, metrics)
         const y = rowCenter(row.rowIndex)
         const isPrimary = selectedHash === row.key
@@ -196,6 +212,7 @@ export function CommitGraphOverlay({
           const fromRow = rowByKey.get(edge.fromKey)
           const toRow = rowByKey.get(edge.toKey)
           if (!fromRow || !toRow) return null
+          if (!edgeInWindow(fromRow.rowIndex, toRow.rowIndex)) return null
 
           const anchorX = columnCenterX(edge.fromColumn, metrics)
           const anchorY = rowCenter(fromRow.rowIndex)

@@ -11,6 +11,7 @@ import { useWorkingStatus } from '@/hooks/useGit'
 import { useSelectionStore } from '@/stores/selection'
 import { useToastStore } from '@/stores/toast'
 import type { GitCommit } from '@/lib/types'
+import type { MergeParentAction } from '@/components/History/PickMergeParentModal'
 
 interface MenuState {
   commit: GitCommit
@@ -52,12 +53,19 @@ function mutationError(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
 
+interface MergeParentPickState {
+  commit: GitCommit
+  action: MergeParentAction
+}
+
 export function useCommitContextMenu(connected: boolean, options: CommitContextMenuOptions) {
   const { t } = useTranslation()
   const [menu, setMenu] = useState<MenuState | null>(null)
   const [rewordCommit, setRewordCommit] = useState<GitCommit | null>(null)
   const [createBranchAt, setCreateBranchAt] = useState<string | null>(null)
   const [createTagAt, setCreateTagAt] = useState<string | null>(null)
+  const [noteCommit, setNoteCommit] = useState<GitCommit | null>(null)
+  const [mergeParentPick, setMergeParentPick] = useState<MergeParentPickState | null>(null)
   const [deleteModal, setDeleteModal] = useState<DeleteModalState | null>(null)
   const [removeStaleModal, setRemoveStaleModal] = useState<RemoveStaleModalState | null>(null)
   const [interactiveRebaseModal, setInteractiveRebaseModal] =
@@ -81,6 +89,7 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
     cherryPickContinue,
     cherryPickAbort,
     cherryPickSkip,
+    revertCommit,
     reset
   } = useGitMutations()
   const { data: working } = useWorkingStatus(connected)
@@ -114,6 +123,39 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
   )
 
   const closeMenu = useCallback(() => setMenu(null), [])
+
+  const openMergeParentPick = useCallback(
+    (commit: GitCommit, action: MergeParentAction) => {
+      closeMenu()
+      setMergeParentPick({ commit, action })
+    },
+    [closeMenu]
+  )
+
+  const confirmMergeParentPick = useCallback(
+    (mainline: number) => {
+      if (!mergeParentPick) return
+      const { commit, action } = mergeParentPick
+      if (action === 'revert') {
+        runMutation(
+          revertCommit.mutateAsync({ hash: commit.hash, mainline }),
+          t('contextMenu.revertComplete')
+        )
+      } else if (action === 'cherry-pick') {
+        runMutation(
+          cherryPick.mutateAsync({ hash: commit.hash, mainline }),
+          t('contextMenu.cherryPickComplete')
+        )
+      } else {
+        runMutation(
+          cherryPick.mutateAsync({ hash: commit.hash, noCommit: true, mainline }),
+          t('contextMenu.cherryPickAppliedNoCommit')
+        )
+      }
+      setMergeParentPick(null)
+    },
+    [mergeParentPick, revertCommit, cherryPick, runMutation, t]
+  )
 
   const openDeleteModal = useCallback(
     (state: DeleteModalState) => {
@@ -203,22 +245,44 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
         },
         createBranch: (hash) => setCreateBranchAt(hash),
         createTag: (hash) => setCreateTagAt(hash),
+        addNote: (commit) => {
+          closeMenu()
+          setNoteCommit(commit)
+        },
         reword: (commit) => setRewordCommit(commit),
         rebaseOnto: (hash) =>
           runMutation(rebaseStart.mutateAsync({ onto: hash }), t('contextMenu.rebaseStarted')),
-        cherryPick: (hash) =>
-          runMutation(cherryPick.mutateAsync({ hash }), t('contextMenu.cherryPickComplete')),
-        cherryPickNoCommit: (hash) =>
+        cherryPick: (hash) => {
+          const target = options.commits.find((entry) => entry.hash === hash)
+          if (target && target.parents.length > 1) {
+            openMergeParentPick(target, 'cherry-pick')
+            return
+          }
+          runMutation(cherryPick.mutateAsync({ hash }), t('contextMenu.cherryPickComplete'))
+        },
+        cherryPickNoCommit: (hash) => {
+          const target = options.commits.find((entry) => entry.hash === hash)
+          if (target && target.parents.length > 1) {
+            openMergeParentPick(target, 'cherry-pick-no-commit')
+            return
+          }
           runMutation(
             cherryPick.mutateAsync({ hash, noCommit: true }),
             t('contextMenu.cherryPickAppliedNoCommit')
-          ),
+          )
+        },
         reset: (mode, hash) =>
           runMutation(reset.mutateAsync({ mode, ref: hash }), t('contextMenu.resetComplete', { mode })),
         deleteHead: (mode) =>
           openDeleteModal({ action: 'deleteHead', commits: [menu.commit], initialMode: mode }),
         dropCommits: (commits) => openDeleteModal({ action: 'drop', commits }),
-        revertCommit: (commit) => openDeleteModal({ action: 'revert', commits: [commit] }),
+        revertCommit: (commit) => {
+          if (commit.parents.length > 1) {
+            openMergeParentPick(commit, 'revert')
+            return
+          }
+          openDeleteModal({ action: 'revert', commits: [commit] })
+        },
         removeStaleHistory: (commit) => openRemoveStaleModal({ seedHash: commit.hash }),
         rebaseContinue: () =>
           runMutation(rebaseContinue.mutateAsync(undefined), t('contextMenu.rebaseContinued')),
@@ -248,6 +312,7 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
     runMutation,
     openDeleteModal,
     openRemoveStaleModal,
+    openMergeParentPick,
     checkout,
     rebaseStart,
     cherryPick,
@@ -260,8 +325,10 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
     mergeAbort,
     cherryPickContinue,
     cherryPickAbort,
-    cherryPickSkip
-  , t])
+    cherryPickSkip,
+    revertCommit,
+    t
+  ])
 
   return {
     menu,
@@ -274,6 +341,11 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
     setCreateBranchAt,
     createTagAt,
     setCreateTagAt,
+    noteCommit,
+    setNoteCommit,
+    mergeParentPick,
+    setMergeParentPick,
+    confirmMergeParentPick,
     deleteModal,
     setDeleteModal,
     removeStaleModal,

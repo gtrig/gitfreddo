@@ -21,6 +21,7 @@ export interface CommitContextMenuActions extends MultiCommitContextMenuActions 
   createWorktreeFromCommit: (commit: GitCommit) => void
   createBranch: (hash: string) => void
   createTag: (hash: string) => void
+  addNote: (commit: GitCommit) => void
   reword: (commit: GitCommit) => void
   rebaseOnto: (hash: string) => void
   cherryPick: (hash: string) => void
@@ -302,6 +303,19 @@ export function buildCommitContextMenuItems({
     onClick: () => actions.createTag(commit.hash)
   })
 
+  items.push({
+    id: 'note',
+    label: commit.notes.trim()
+      ? t
+        ? t('contextMenu.editNote')
+        : 'Edit note…'
+      : t
+        ? t('contextMenu.addNote')
+        : 'Add note…',
+    disabled: gitBusy,
+    onClick: () => actions.addNote(commit)
+  })
+
   if (selectedCount === 1) {
     items.push({
       id: 'worktree',
@@ -415,7 +429,7 @@ export function buildCommitContextMenuItems({
       })
     }
 
-    const revertBlocked = isMerge || gitBusy || !inHistory
+    const revertBlocked = gitBusy || !inHistory
     if (inHistory) {
       items.push({
         id: 'revert',

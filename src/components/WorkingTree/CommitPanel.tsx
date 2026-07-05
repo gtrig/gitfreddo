@@ -18,6 +18,7 @@ import { RowResizeHandle } from '@/components/Ui/RowResizeHandle'
 import { SidebarIconChevron } from '@/components/Layout/sidebar/SidebarIcons'
 import { PushForceConfirm } from '@/components/Layout/PushForceConfirm'
 import { ComposeCommitsModal } from '@/components/WorkingTree/ComposeCommitsModal'
+import { StashPushModal } from '@/components/Stash/StashPushModal'
 import { parseComposeCommitsResponse, type AiComposeCommitProposal } from '@shared/ai'
 
 const SUBJECT_MAX = 72
@@ -69,6 +70,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
   const [description, setDescription] = useState('')
   const [composeOpen, setComposeOpen] = useState(false)
   const [composeProposals, setComposeProposals] = useState<AiComposeCommitProposal[]>([])
+  const [stashOpen, setStashOpen] = useState(false)
   const [sign, setSign] = useState(false)
 
   const gpgSignQuery = useQuery({
@@ -183,18 +185,12 @@ export function CommitPanel({ working }: CommitPanelProps) {
     }
   }
 
-  async function handleCreateStash() {
+  function handleCreateStash() {
     if (!hasChanges) {
       showToast(t('workingTree.noChangesToStash'), 'error')
       return
     }
-
-    const message = summary.trim() || undefined
-    await stashPush.mutateAsync({ message })
-    if (message) {
-      setSummary('')
-      setDescription('')
-    }
+    setStashOpen(true)
   }
 
   const wantsStage = !hasStaged && hasUnstaged
@@ -350,6 +346,18 @@ export function CommitPanel({ working }: CommitPanelProps) {
         onCancel={cancelForcePush}
       />
 
+      <StashPushModal
+        open={stashOpen}
+        initialMessage={summary.trim()}
+        onClose={() => {
+          setStashOpen(false)
+          if (summary.trim()) {
+            setSummary('')
+            setDescription('')
+          }
+        }}
+      />
+
       <div className="shrink-0 space-y-2 border-t border-gf-border px-3 py-2">
         <button
           type="button"
@@ -367,7 +375,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
         <button
           type="button"
           disabled={busy || !hasChanges}
-          onClick={() => void handleCreateStash()}
+          onClick={() => handleCreateStash()}
           className="inline-flex w-full items-center justify-center gap-2 rounded border border-gf-border-strong bg-gf-bg px-3 py-1.5 text-xs font-medium text-gf-fg-muted hover:bg-gf-surface-hover disabled:cursor-not-allowed disabled:opacity-40"
         >
           {stashPush.isPending ? (

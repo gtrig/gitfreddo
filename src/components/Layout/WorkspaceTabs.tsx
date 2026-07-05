@@ -43,13 +43,11 @@ export function WorkspaceTabs() {
         {tabs.map((tab) => {
           const active = tab.path === activePath
           const label = workspaceTabLabel(tab.path)
-          const statusClass = tab.processExited
-            ? 'text-red-400'
-            : tab.connecting
-              ? 'text-gf-fg-subtle'
-              : tab.connected
-                ? 'text-gf-fg-muted'
-                : 'text-gf-fg-subtle'
+          const statusClass = tab.connecting
+            ? 'text-gf-fg-subtle'
+            : tab.connected
+              ? 'text-gf-fg-muted'
+              : 'text-gf-fg-subtle'
 
           return (
             <div

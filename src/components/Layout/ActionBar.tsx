@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   ArchiveBoxIcon,
@@ -12,6 +13,7 @@ import { usePushRemote } from '@/hooks/usePushRemote'
 import { useResolvedRemote, useAppSettings } from '@/hooks/useAppSettings'
 import { Spinner } from '@/components/Ui/Spinner'
 import { PushForceConfirm } from '@/components/Layout/PushForceConfirm'
+import { StashPushModal } from '@/components/Stash/StashPushModal'
 
 const iconClass = 'h-3.5 w-3.5 shrink-0'
 
@@ -53,6 +55,7 @@ function ActionBarButton({
 export function ActionBar() {
   const { t } = useTranslation()
   const connected = useWorkspaceStore((s) => s.connected)
+  const [stashOpen, setStashOpen] = useState(false)
   const { fetch, pull, stashPush } = useGitMutations()
   const { pushRemote, isPushPending, forceConfirm, confirmForcePush, cancelForcePush } =
     usePushRemote()
@@ -66,7 +69,7 @@ export function ActionBar() {
       <div className="flex flex-wrap items-center justify-center gap-2">
         <ActionBarButton
           loading={stashPush.isPending}
-          onClick={() => void stashPush.mutateAsync({})}
+          onClick={() => setStashOpen(true)}
           icon={<ArchiveBoxIcon aria-hidden className={iconClass} />}
         >
           {t('actions.stash')}
@@ -101,6 +104,7 @@ export function ActionBar() {
         onConfirm={confirmForcePush}
         onCancel={cancelForcePush}
       />
+      <StashPushModal open={stashOpen} onClose={() => setStashOpen(false)} />
     </>
   )
 }
