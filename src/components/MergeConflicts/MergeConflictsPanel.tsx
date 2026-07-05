@@ -201,7 +201,9 @@ export function MergeConflictsPanel() {
   async function verifyNoMarkers(paths: string[]): Promise<boolean> {
     if (!repoPath) return false
     for (const path of paths) {
-      const content = String(await window.gitfreddo.invoke('working.read', { path }, repoPath))
+      const { content } = (await window.gitfreddo.invoke('working.read', { path }, repoPath)) as {
+        content: string
+      }
       if (parseConflictMarkers(content).length > 0 || hasUnresolvedMarkers(content)) {
         return false
       }
@@ -239,7 +241,9 @@ export function MergeConflictsPanel() {
         branch: mergeStatus?.currentBranch
       }
     })
-    const working = String(await window.gitfreddo.invoke('working.read', { path }, repoPath))
+    const { content: working } = (await window.gitfreddo.invoke('working.read', { path }, repoPath)) as {
+      content: string
+    }
     const hunks = parseConflictMarkers(working)
     const proposals = parseConflictResolveResponse(text, hunks.length)
     setPendingAiProposals(path, proposals)

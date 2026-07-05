@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
+import type { WorkingReadResult } from '@shared/working'
 import { ActionButton, FieldLabel, TextArea } from '@/components/Ui/Modal'
 import { LoadingRow } from '@/components/Ui/Spinner'
 import { useWorkspaceStore } from '@/stores/workspace'
@@ -19,17 +20,20 @@ export function RepoFilesPanel() {
   const showToast = useToastStore((s) => s.show)
   const [selected, setSelected] = useState<(typeof REPO_FILES)[number]['path']>('.gitignore')
   const [draft, setDraft] = useState('')
+  const [creating, setCreating] = useState(false)
   const [saving, setSaving] = useState(false)
 
   const fileQuery = useQuery({
     queryKey: ['repo', repoPath, 'working.read', selected],
-    queryFn: async () => (await window.gitfreddo.invoke('working.read', { path: selected })) as string,
+    queryFn: async () =>
+      (await window.gitfreddo.invoke('working.read', { path: selected })) as WorkingReadResult,
     enabled: connected && Boolean(repoPath)
   })
 
   useEffect(() => {
     if (fileQuery.data !== undefined) {
-      setDraft(fileQuery.data)
+      setDraft(fileQuery.data.content)
+      setCreating(false)
     }
   }, [fileQuery.data, selected])
 
@@ -50,7 +54,9 @@ export function RepoFilesPanel() {
     }
   }
 
-  const dirty = fileQuery.data !== undefined && draft !== fileQuery.data
+  const fileExists = fileQuery.data?.exists ?? false
+  const showEditor = fileExists || creating
+  const dirty = showEditor && (!fileExists || draft !== fileQuery.data?.content)
 
   return (
     <div className="space-y-3">
@@ -79,7 +85,19 @@ export function RepoFilesPanel() {
           {fileQuery.error instanceof Error ? fileQuery.error.message : t('settings.repoFiles.loadFailed')}
         </p>
       )}
-      {fileQuery.data !== undefined && (
+      {fileQuery.data && !fileExists && !creating && (
+        <div className="rounded border border-gf-border-strong bg-gf-surface px-4 py-3">
+          <p className="text-sm text-gf-fg-muted">
+            {t('settings.repoFiles.missing', { file: selected })}
+          </p>
+          <div className="mt-3">
+            <ActionButton variant="primary" onClick={() => setCreating(true)}>
+              {t('settings.repoFiles.create', { file: selected })}
+            </ActionButton>
+          </div>
+        </div>
+      )}
+      {showEditor && fileQuery.data !== undefined && (
         <>
           <div>
             <FieldLabel>{selected}</FieldLabel>
@@ -97,7 +115,9 @@ export function RepoFilesPanel() {
               disabled={!dirty}
               onClick={() => void handleSave()}
             >
-              {t('settings.repoFiles.save', { file: selected })}
+              {fileExists
+                ? t('settings.repoFiles.save', { file: selected })
+                : t('settings.repoFiles.create', { file: selected })}
             </ActionButton>
           </div>
         </>

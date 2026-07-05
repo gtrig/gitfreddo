@@ -33,7 +33,9 @@ async function loadConflictStages(
     manager.invoke(repoPath, 'file.readStage', { stage: 1, path: filePath }) as Promise<string>,
     manager.invoke(repoPath, 'file.readStage', { stage: 2, path: filePath }) as Promise<string>,
     manager.invoke(repoPath, 'file.readStage', { stage: 3, path: filePath }) as Promise<string>,
-    manager.invoke(repoPath, 'working.read', { path: filePath }) as Promise<string>
+    manager.invoke(repoPath, 'working.read', { path: filePath }).then(
+      (result) => (result as { content: string }).content
+    ) as Promise<string>
   ])
   return {
     sideBase: truncateText(sideBase, MAX_STAGE_CHARS),
