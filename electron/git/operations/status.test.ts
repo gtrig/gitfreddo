@@ -1,5 +1,14 @@
+import { execSync } from 'node:child_process'
+import { mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { parseCleanPreviewOutput, parsePorcelainV2Line } from './status'
+import {
+  classifyPorcelainV2Line,
+  parseCleanPreviewOutput,
+  parsePorcelainV2Line,
+  workingStatus
+} from './status'
 
 describe('parseCleanPreviewOutput', () => {
   it('parses would-remove lines', () => {
@@ -68,5 +77,68 @@ describe('parsePorcelainV2Line', () => {
 
   it('returns null for malformed lines', () => {
     expect(parsePorcelainV2Line('bad line')).toBeNull()
+  })
+})
+
+describe('classifyPorcelainV2Line', () => {
+  const modifiedLine =
+    '1 M. N... 100644 100644 100644 abc def src/App.tsx'
+  const unstagedOnlyLine =
+    '1 .M N... 100644 100644 100644 abc def src/App.tsx'
+  const stagedAndUnstagedLine =
+    '1 MM N... 100644 100644 100644 abc def src/App.tsx'
+  const addedThenModifiedLine =
+    '1 AM N... 100644 100644 100644 abc def src/new.ts'
+
+  it('puts staged-only changes in staged', () => {
+    expect(classifyPorcelainV2Line(modifiedLine)).toEqual({
+      staged: { path: 'src/App.tsx', status: 'modified' },
+      unstaged: null,
+      conflicted: null
+    })
+  })
+
+  it('puts unstaged-only changes in unstaged', () => {
+    expect(classifyPorcelainV2Line(unstagedOnlyLine)).toEqual({
+      staged: null,
+      unstaged: { path: 'src/App.tsx', status: 'modified' },
+      conflicted: null
+    })
+  })
+
+  it('puts partially staged files in both staged and unstaged', () => {
+    expect(classifyPorcelainV2Line(stagedAndUnstagedLine)).toEqual({
+      staged: { path: 'src/App.tsx', status: 'modified' },
+      unstaged: { path: 'src/App.tsx', status: 'modified' },
+      conflicted: null
+    })
+  })
+
+  it('uses side-specific status when index and worktree differ', () => {
+    expect(classifyPorcelainV2Line(addedThenModifiedLine)).toEqual({
+      staged: { path: 'src/new.ts', status: 'added' },
+      unstaged: { path: 'src/new.ts', status: 'modified' },
+      conflicted: null
+    })
+  })
+})
+
+describe('workingStatus integration', () => {
+  it('lists staged and unstaged entries when a staged file is edited again', async () => {
+    const repo = mkdtempSync(join(tmpdir(), 'gf-status-'))
+    execSync('git init', { cwd: repo, stdio: 'ignore' })
+    execSync('git config user.email "t@e.com"', { cwd: repo, stdio: 'ignore' })
+    execSync('git config user.name "T"', { cwd: repo, stdio: 'ignore' })
+    writeFileSync(join(repo, 'foo.txt'), 'line1\n')
+    execSync('git add foo.txt', { cwd: repo, stdio: 'ignore' })
+    execSync('git commit -m init', { cwd: repo, stdio: 'ignore' })
+    writeFileSync(join(repo, 'foo.txt'), 'line1\nline2\n')
+    execSync('git add foo.txt', { cwd: repo, stdio: 'ignore' })
+    writeFileSync(join(repo, 'foo.txt'), 'line1\nline2\nline3\n')
+
+    const status = await workingStatus(repo, 'git')
+
+    expect(status.staged).toEqual([{ path: 'foo.txt', status: 'modified' }])
+    expect(status.unstaged).toEqual([{ path: 'foo.txt', status: 'modified' }])
   })
 })

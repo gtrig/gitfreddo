@@ -2,6 +2,17 @@ import { runGit, runGitOrThrow } from '../git-runner'
 import { gitMetadataExists, rebaseInProgress } from '../git-dir'
 import type { GitFileChange, GitWorkingStatus } from '../types'
 
+function singleStatusCharToKind(char: string): GitFileChange['status'] | null {
+  if (char === 'U') return 'conflicted'
+  if (char === '?') return 'untracked'
+  if (char === 'A') return 'added'
+  if (char === 'D') return 'deleted'
+  if (char === 'R') return 'renamed'
+  if (char === 'C') return 'copied'
+  if (char === 'M') return 'modified'
+  return null
+}
+
 function statusCharToKind(
   indexStatus: string,
   workTreeStatus: string
@@ -61,14 +72,12 @@ export async function workingStatus(
       ahead = Math.max(0, Number(parts[1]) || 0)
       behind = Math.max(0, Math.abs(Number(parts[0]) || 0))
     } else if (line.startsWith('1 ') || line.startsWith('2 ')) {
-      const change = parsePorcelainV2Line(line)
-      if (!change) continue
-      if (change.status === 'conflicted') {
-        conflicted.push(change)
-      } else if (line[2] !== '.' && line[2] !== ' ') {
-        staged.push(change)
-      } else if (line[3] !== '.' && line[3] !== ' ') {
-        unstaged.push(change)
+      const classified = classifyPorcelainV2Line(line)
+      if (classified.conflicted) {
+        conflicted.push(classified.conflicted)
+      } else {
+        if (classified.staged) staged.push(classified.staged)
+        if (classified.unstaged) unstaged.push(classified.unstaged)
       }
     } else if (line.startsWith('? ')) {
       const path = line.slice(2).trim()
@@ -139,6 +148,41 @@ export function parsePorcelainV2Line(line: string): GitFileChange | null {
 
   const path = parts.slice(8).join(' ')
   return path ? { path, status } : null
+}
+
+export interface PorcelainV2Classification {
+  staged: GitFileChange | null
+  unstaged: GitFileChange | null
+  conflicted: GitFileChange | null
+}
+
+/** Split a porcelain v2 `1`/`2` line into staged and/or unstaged entries. Exported for unit tests. */
+export function classifyPorcelainV2Line(line: string): PorcelainV2Classification {
+  const change = parsePorcelainV2Line(line)
+  if (!change) return { staged: null, unstaged: null, conflicted: null }
+
+  if (change.status === 'conflicted') {
+    return { staged: null, unstaged: null, conflicted: change }
+  }
+
+  const xy = line.split(' ')[1] ?? ''
+  const indexStatus = xy[0] ?? '.'
+  const workTreeStatus = xy[1] ?? '.'
+
+  const stagedStatus = singleStatusCharToKind(indexStatus)
+  const unstagedStatus = singleStatusCharToKind(workTreeStatus)
+
+  return {
+    staged:
+      stagedStatus && indexStatus !== '.'
+        ? { ...change, status: stagedStatus }
+        : null,
+    unstaged:
+      unstagedStatus && workTreeStatus !== '.'
+        ? { ...change, status: unstagedStatus }
+        : null,
+    conflicted: null
+  }
 }
 
 export async function stageAdd(
