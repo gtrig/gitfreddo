@@ -1,9 +1,25 @@
-export type AiFillPurpose = 'commit_message' | 'stash_message' | 'compose_commits' | 'resolve_conflict'
+export type AiFillPurpose =
+  | 'commit_message'
+  | 'stash_message'
+  | 'compose_commits'
+  | 'resolve_conflict'
+  | 'analyze_changes'
 
 export interface AiComposeCommitProposal {
   summary: string
   description: string
   files: string[]
+}
+
+export interface AiAnalyzeCommitProposal extends AiComposeCommitProposal {
+  rationale: string
+}
+
+export interface AiAnalyzeChangesResult {
+  summary: string
+  keyChanges: string
+  risks: string
+  commits: AiAnalyzeCommitProposal[]
 }
 
 export interface AiConflictResolutionProposal {
@@ -18,6 +34,8 @@ export type AiProvider = 'local' | 'api'
 export interface AiFillContext {
   branch?: string
   filePaths?: string[]
+  stagedFilePaths?: string[]
+  unstagedFilePaths?: string[]
   currentText?: string
   diffText?: string
   filePath?: string
@@ -69,6 +87,14 @@ export function buildAiMessages(
     context.filePaths && context.filePaths.length > 0
       ? context.filePaths.map((p) => `- ${p}`).join('\n')
       : null
+  const stagedFiles =
+    context.stagedFilePaths && context.stagedFilePaths.length > 0
+      ? context.stagedFilePaths.map((p) => `- ${p}`).join('\n')
+      : null
+  const unstagedFiles =
+    context.unstagedFilePaths && context.unstagedFilePaths.length > 0
+      ? context.unstagedFilePaths.map((p) => `- ${p}`).join('\n')
+      : null
   const seed = context.currentText?.trim()
   const branch = context.branch?.trim()
   const diffBlock = context.diffText?.trim()
@@ -76,7 +102,9 @@ export function buildAiMessages(
     : ''
 
   const system = appendCustomInstructions(
-  purpose === 'compose_commits' || purpose === 'resolve_conflict'
+  purpose === 'compose_commits' ||
+  purpose === 'analyze_changes' ||
+  purpose === 'resolve_conflict'
     ? 'You write concise, technical text for git workflows. ' +
         'Respond with only valid JSON — no quotes around the whole payload, markdown fences, or preamble.'
     : 'You write concise, technical text for git workflows. ' +
@@ -130,6 +158,38 @@ export function buildAiMessages(
           '- Use exact file paths from the staged files list\n' +
           '- Order commits logically (foundational changes before dependents)\n' +
           '- If all changes belong together, return a single-element array',
+        instructions.commitMessage
+      )
+      break
+    case 'analyze_changes':
+      user = appendCustomInstructions(
+        'Analyze the uncommitted working tree changes and propose an ordered commit plan.\n' +
+          (branch ? `Branch: ${branch}\n` : '') +
+          (stagedFiles ? `Staged files:\n${stagedFiles}\n` : '') +
+          (unstagedFiles ? `Unstaged files:\n${unstagedFiles}\n` : '') +
+          (!stagedFiles && !unstagedFiles && files ? `Changed files:\n${files}\n` : '') +
+          diffBlock +
+          'Return ONLY JSON with this shape:\n' +
+          '{\n' +
+          '  "summary": "One short paragraph of what changed overall",\n' +
+          '  "keyChanges": "Bullet-style notes grouped by area or concern",\n' +
+          '  "risks": "Review notes or risks; say briefly if none",\n' +
+          '  "commits": [\n' +
+          '    {\n' +
+          '      "message": "imperative subject (≤72 chars)\\n\\noptional body",\n' +
+          '      "files": ["exact/path/from/changed/list"],\n' +
+          '      "rationale": "Why this commit is self-contained and its place in the sequence"\n' +
+          '    }\n' +
+          '  ]\n' +
+          '}\n' +
+          'Rules:\n' +
+          '- Propose one or more commits split by feature, fix, or concern when that improves history\n' +
+          '- Each commit must be self-contained: after each commit in order, the repo should still build and behave correctly\n' +
+          '- Order commits with dependencies first (shared types/utilities before consumers, refactors before features that rely on them)\n' +
+          '- Every changed file must appear in exactly one commit files array\n' +
+          '- Use exact file paths from the changed files lists\n' +
+          '- If all changes belong together, return a single-element commits array\n' +
+          '- Base analysis and commit messages on the diff when provided',
         instructions.commitMessage
       )
       break
@@ -213,36 +273,32 @@ function resolveStagedPath(candidate: string, stagedPaths: string[]): string | u
   return stagedPaths.find((path) => path === candidate.trim() || path.endsWith(`/${normalized}`))
 }
 
-export function parseComposeCommitsResponse(
-  text: string,
-  stagedPaths: string[]
-): AiComposeCommitProposal[] {
-  const cleaned = stripJsonFences(text)
-  let parsed: unknown
+type RawCommitEntry = {
+  message?: unknown
+  files?: unknown
+  summary?: unknown
+  description?: unknown
+  rationale?: unknown
+}
 
-  try {
-    parsed = JSON.parse(cleaned)
-  } catch {
-    throw new Error('AI response was not valid JSON. Try again or adjust your AI settings.')
-  }
-
-  if (!Array.isArray(parsed) || parsed.length === 0) {
-    throw new Error('AI returned no commit proposals.')
-  }
-
+function parseCommitProposalEntries(
+  entries: unknown[],
+  availablePaths: string[],
+  options: { includeRationale?: boolean } = {}
+): AiAnalyzeCommitProposal[] {
   const assigned = new Set<string>()
-  const proposals: AiComposeCommitProposal[] = []
+  const proposals: AiAnalyzeCommitProposal[] = []
 
-  for (const entry of parsed) {
+  for (const entry of entries) {
     if (!entry || typeof entry !== 'object') continue
 
-    const raw = entry as { message?: unknown; files?: unknown; summary?: unknown; description?: unknown }
+    const raw = entry as RawCommitEntry
     const filesInput = Array.isArray(raw.files) ? raw.files : []
     const resolvedFiles: string[] = []
 
     for (const file of filesInput) {
       if (typeof file !== 'string') continue
-      const resolved = resolveStagedPath(file, stagedPaths)
+      const resolved = resolveStagedPath(file, availablePaths)
       if (resolved && !assigned.has(resolved)) {
         resolvedFiles.push(resolved)
         assigned.add(resolved)
@@ -267,23 +323,105 @@ export function parseComposeCommitsResponse(
       summary = `Update ${resolvedFiles.length === 1 ? resolvedFiles[0] : `${resolvedFiles.length} files`}`
     }
 
-    proposals.push({ summary, description, files: resolvedFiles })
+    proposals.push({
+      summary,
+      description,
+      files: resolvedFiles,
+      rationale:
+        options.includeRationale && typeof raw.rationale === 'string' ? raw.rationale.trim() : ''
+    })
   }
 
-  const unassigned = stagedPaths.filter((path) => !assigned.has(path))
+  const unassigned = availablePaths.filter((path) => !assigned.has(path))
   if (unassigned.length > 0) {
     proposals.push({
       summary: `Update ${unassigned.length === 1 ? unassigned[0] : `${unassigned.length} files`}`,
       description: '',
-      files: unassigned
+      files: unassigned,
+      rationale: ''
     })
   }
+
+  return proposals
+}
+
+function normalizeAnalysisText(value: unknown): string {
+  if (typeof value === 'string') {
+    return value.trim()
+  }
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .filter(Boolean)
+      .join('\n')
+  }
+  return ''
+}
+
+export function parseAnalyzeChangesResponse(
+  text: string,
+  changedPaths: string[]
+): AiAnalyzeChangesResult {
+  const cleaned = stripJsonFences(text)
+  let parsed: unknown
+
+  try {
+    parsed = JSON.parse(cleaned)
+  } catch {
+    throw new Error('AI response was not valid JSON. Try again or adjust your AI settings.')
+  }
+
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('AI response was not a JSON object.')
+  }
+
+  const raw = parsed as {
+    summary?: unknown
+    keyChanges?: unknown
+    risks?: unknown
+    commits?: unknown
+  }
+
+  const commits = Array.isArray(raw.commits)
+    ? parseCommitProposalEntries(raw.commits, changedPaths, { includeRationale: true })
+    : []
+
+  if (commits.length === 0) {
+    throw new Error('AI returned no usable commit proposals for the changed files.')
+  }
+
+  return {
+    summary: normalizeAnalysisText(raw.summary),
+    keyChanges: normalizeAnalysisText(raw.keyChanges),
+    risks: normalizeAnalysisText(raw.risks),
+    commits
+  }
+}
+
+export function parseComposeCommitsResponse(
+  text: string,
+  stagedPaths: string[]
+): AiComposeCommitProposal[] {
+  const cleaned = stripJsonFences(text)
+  let parsed: unknown
+
+  try {
+    parsed = JSON.parse(cleaned)
+  } catch {
+    throw new Error('AI response was not valid JSON. Try again or adjust your AI settings.')
+  }
+
+  if (!Array.isArray(parsed) || parsed.length === 0) {
+    throw new Error('AI returned no commit proposals.')
+  }
+
+  const proposals = parseCommitProposalEntries(parsed, stagedPaths)
 
   if (proposals.length === 0) {
     throw new Error('AI returned no usable commit proposals for the staged files.')
   }
 
-  return proposals
+  return proposals.map(({ rationale: _rationale, ...proposal }) => proposal)
 }
 
 export function clampConfidence(value: unknown): number {

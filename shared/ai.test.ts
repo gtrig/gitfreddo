@@ -6,6 +6,7 @@ import {
   extractChatCompletionContent,
   isNonChatModelId,
   normalizeBaseUrl,
+  parseAnalyzeChangesResponse,
   parseComposeCommitsResponse,
   parseConflictResolveResponse,
   pickChatModelId,
@@ -71,6 +72,78 @@ describe('buildAiMessages', () => {
     expect(user).toContain('JSON array')
     expect(user).toContain('src/a.ts')
     expect(user).toContain('docs/b.md')
+  })
+
+  it('asks for structured JSON analysis with ordered commit proposals', () => {
+    const { system, user } = buildAiMessages('analyze_changes', {
+      branch: 'feature/auth',
+      filePaths: ['src/auth.ts', 'README.md'],
+      stagedFilePaths: ['src/auth.ts'],
+      unstagedFilePaths: ['README.md'],
+      diffText: '+++ b/src/auth.ts\n+export function login() {}'
+    })
+    expect(system).toContain('valid JSON')
+    expect(user).toContain('feature/auth')
+    expect(user).toContain('Staged files')
+    expect(user).toContain('src/auth.ts')
+    expect(user).toContain('Unstaged files')
+    expect(user).toContain('README.md')
+    expect(user).toContain('+++ b/src/auth.ts')
+    expect(user).toContain('self-contained')
+    expect(user).toContain('"commits"')
+  })
+})
+
+describe('parseAnalyzeChangesResponse', () => {
+  const changed = ['src/auth.ts', 'src/login.tsx', 'README.md']
+
+  it('parses analysis sections and ordered commit proposals', () => {
+    const result = parseAnalyzeChangesResponse(
+      JSON.stringify({
+        summary: 'Auth flow and docs updated.',
+        keyChanges: '- Added login helper\n- Updated readme',
+        risks: 'None',
+        commits: [
+          {
+            message: 'feat: add auth core\n\nLogin helper.',
+            files: ['src/auth.ts'],
+            rationale: 'Foundation for login UI.'
+          },
+          {
+            message: 'feat: add login form',
+            files: ['src/login.tsx'],
+            rationale: 'Depends on auth core.'
+          },
+          { message: 'docs: update readme', files: ['README.md'], rationale: 'Documents new flow.' }
+        ]
+      }),
+      changed
+    )
+
+    expect(result.summary).toBe('Auth flow and docs updated.')
+    expect(result.keyChanges).toContain('login helper')
+    expect(result.risks).toBe('None')
+    expect(result.commits).toHaveLength(3)
+    expect(result.commits[0]?.summary).toBe('feat: add auth core')
+    expect(result.commits[0]?.rationale).toContain('Foundation')
+    expect(result.commits[1]?.files).toEqual(['src/login.tsx'])
+  })
+
+  it('adds unassigned changed files to a fallback commit', () => {
+    const result = parseAnalyzeChangesResponse(
+      JSON.stringify({
+        summary: 'Partial plan',
+        commits: [{ message: 'feat: auth', files: ['src/auth.ts'] }]
+      }),
+      changed
+    )
+
+    expect(result.commits).toHaveLength(2)
+    expect(result.commits[1]?.files).toEqual(['src/login.tsx', 'README.md'])
+  })
+
+  it('throws on invalid JSON', () => {
+    expect(() => parseAnalyzeChangesResponse('not json', changed)).toThrow('valid JSON')
   })
 })
 
