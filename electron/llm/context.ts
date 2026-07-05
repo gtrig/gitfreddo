@@ -5,7 +5,8 @@ import type { GitDiffResult, GitWorkingStatus } from '../git/types'
 const DIFF_PURPOSES = new Set<AiFillParams['purpose']>([
   'commit_message',
   'stash_message',
-  'compose_commits'
+  'compose_commits',
+  'analyze_changes'
 ])
 const MAX_DIFF_CHARS = 8000
 const MAX_STAGE_CHARS = 12000
@@ -124,6 +125,54 @@ export async function enrichAiContext(
       if (filePaths.length > 0) {
         const diff = (await manager.invoke(repoPath, 'diff.working')) as GitDiffResult
         diffText = diff.unified?.trim() || undefined
+      }
+    } else if (params.purpose === 'analyze_changes') {
+      const unstaged = [...status.unstaged, ...status.untracked, ...status.conflicted]
+      const stagedPaths = status.staged.map((f) => f.path)
+      const unstagedPaths = unstaged.map((f) => f.path)
+      filePaths = filePaths ?? [...stagedPaths, ...unstagedPaths]
+
+      const diffParts: string[] = []
+      if (stagedPaths.length > 0) {
+        const stagedDiff = (await manager.invoke(repoPath, 'diff.staged')) as GitDiffResult
+        const stagedText = stagedDiff.unified?.trim()
+        if (stagedText) {
+          diffParts.push(`--- Staged changes ---\n${stagedText}`)
+        }
+      }
+      if (unstagedPaths.length > 0) {
+        const workingDiff = (await manager.invoke(repoPath, 'diff.working')) as GitDiffResult
+        const workingText = workingDiff.unified?.trim()
+        if (workingText) {
+          diffParts.push(`--- Unstaged changes ---\n${workingText}`)
+        }
+      }
+      diffText = diffParts.length > 0 ? diffParts.join('\n\n') : undefined
+
+      let analyzeBranch = params.context?.branch
+      if (!analyzeBranch) {
+        try {
+          const repoStatus = (await manager.invoke(repoPath, 'repo.status')) as { branch: string }
+          analyzeBranch = repoStatus.branch
+        } catch {
+          analyzeBranch = status.branch
+        }
+      }
+
+      if (!diffText && filePaths.length === 0) {
+        return params
+      }
+
+      return {
+        ...params,
+        context: {
+          ...params.context,
+          branch: analyzeBranch,
+          filePaths,
+          stagedFilePaths: stagedPaths,
+          unstagedFilePaths: unstagedPaths,
+          diffText: diffText ? truncateDiff(diffText) : undefined
+        }
       }
     }
 
