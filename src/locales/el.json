@@ -113,7 +113,8 @@
       "loadingConfig": "Φόρτωση ρυθμίσεων…",
       "configLoadFailed": "Αποτυχία φόρτωσης ρυθμίσεων.",
       "configSaved": "Αποθηκεύτηκε {{key}}.",
-      "repoFiles": "Αρχεία αποθετηρίου"
+      "repoFiles": "Αρχεία αποθετηρίου",
+      "repoHooks": "Git hooks"
     },
     "ai": {
       "intro": "Ο βοηθός AI συμπληρώνει μηνύματα commit και stash από τις αλλαγές σας και μπορεί να επιλύει συγκρούσεις συγχώνευσης. Υποστηρίζει OpenAI-compatible endpoints (LM Studio, Ollama, OpenAI, OpenRouter).",
@@ -198,6 +199,27 @@
       "loadFailed": "Αποτυχία φόρτωσης αρχείου.",
       "save": "Αποθήκευση {{file}}",
       "saved": "Αποθηκεύτηκε {{file}}."
+    },
+    "repoHooks": {
+      "connectRequired": "Ανοίξτε αποθετήριο για διαχείριση git hooks.",
+      "description": "Προβολή, επεξεργασία, ενεργοποίηση και απενεργοποίηση hook scripts.",
+      "hooksPath": "Φάκελος hooks: {{path}}",
+      "loading": "Φόρτωση hooks…",
+      "loadingHook": "Φόρτωση {{name}}…",
+      "loadFailed": "Αποτυχία φόρτωσης hooks.",
+      "empty": "Δεν βρέθηκαν hooks στον φάκελο hooks.",
+      "enabled": "ενεργό",
+      "disabled": "ανενεργό",
+      "sample": "δείγμα",
+      "enable": "Ενεργοποίηση",
+      "disable": "Απενεργοποίηση",
+      "delete": "Διαγραφή",
+      "deleteConfirm": "Διαγραφή hook \"{{name}}\" και όλων των παραλλαγών του;",
+      "save": "Αποθήκευση {{name}}",
+      "saved": "Αποθηκεύτηκε {{name}}.",
+      "enabledToast": "Ενεργοποιήθηκε {{name}}.",
+      "disabledToast": "Απενεργοποιήθηκε {{name}}.",
+      "deleted": "Διαγράφηκε {{name}}."
     },
     "integrations": {
       "intro": "Συνδέστε εξωτερικές υπηρεσίες στο GitFreddo για πιστοποιημένες git λειτουργίες και μελλοντικές δυνατότητες."

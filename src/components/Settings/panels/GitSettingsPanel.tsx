@@ -7,6 +7,7 @@ import type { AppSettings } from '@/hooks/useAppSettings'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
 import { RepoFilesPanel } from '@/components/Settings/panels/RepoFilesPanel'
+import { RepoHooksPanel } from '@/components/Settings/panels/RepoHooksPanel'
 
 interface PanelProps {
   form: AppSettings
@@ -167,6 +168,11 @@ export function GitSettingsPanel({ form, onChange, onPickGit }: PanelProps) {
       <div className="space-y-3 border-t border-gf-border pt-4">
         <h3 className="text-sm font-semibold text-gf-fg">{t('settings.git.repoFiles')}</h3>
         <RepoFilesPanel />
+      </div>
+
+      <div className="space-y-3 border-t border-gf-border pt-4">
+        <h3 className="text-sm font-semibold text-gf-fg">{t('settings.git.repoHooks')}</h3>
+        <RepoHooksPanel />
       </div>
     </div>
   )

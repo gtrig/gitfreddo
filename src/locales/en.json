@@ -113,7 +113,8 @@
       "loadingConfig": "Loading repo config…",
       "configLoadFailed": "Failed to load config.",
       "configSaved": "Saved {{key}}.",
-      "repoFiles": "Repository files"
+      "repoFiles": "Repository files",
+      "repoHooks": "Git hooks"
     },
     "ai": {
       "intro": "AI assist fills commit and stash messages from your staged or working-tree changes, and can auto-resolve merge conflicts. Supports OpenAI-compatible endpoints (LM Studio, Ollama, OpenAI, OpenRouter).",
@@ -198,6 +199,27 @@
       "loadFailed": "Failed to load file.",
       "save": "Save {{file}}",
       "saved": "Saved {{file}}."
+    },
+    "repoHooks": {
+      "connectRequired": "Open a repository to manage git hooks.",
+      "description": "View, edit, enable, and disable git hook scripts.",
+      "hooksPath": "Hooks directory: {{path}}",
+      "loading": "Loading hooks…",
+      "loadingHook": "Loading {{name}}…",
+      "loadFailed": "Failed to load hooks.",
+      "empty": "No hooks found in the hooks directory.",
+      "enabled": "enabled",
+      "disabled": "disabled",
+      "sample": "sample",
+      "enable": "Enable",
+      "disable": "Disable",
+      "delete": "Delete",
+      "deleteConfirm": "Delete hook \"{{name}}\" and all its variants?",
+      "save": "Save {{name}}",
+      "saved": "Saved {{name}}.",
+      "enabledToast": "Enabled {{name}}.",
+      "disabledToast": "Disabled {{name}}.",
+      "deleted": "Deleted {{name}}."
     },
     "integrations": {
       "intro": "Connect external services to GitFreddo for authenticated git operations and future features."
