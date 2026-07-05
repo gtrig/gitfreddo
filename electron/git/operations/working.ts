@@ -1,6 +1,7 @@
-import { writeFile, mkdir } from 'fs/promises'
+import { writeFile, mkdir, readFile, access } from 'fs/promises'
 import { resolve, dirname } from 'path'
 import { appendGitignoreEntry } from '../../../shared/gitignore'
+import type { WorkingReadResult } from '../../../shared/working'
 import { runGit, runGitOrThrow } from '../git-runner'
 
 const GITIGNORE_PATH = '.gitignore'
@@ -24,14 +25,19 @@ export async function workingRead(
   cwd: string,
   gitBinaryPath: string,
   relativePath: string
-): Promise<string> {
+): Promise<WorkingReadResult> {
   const root = (await runGitOrThrow(['rev-parse', '--show-toplevel'], { cwd, gitBinaryPath })).trim()
   const target = resolve(root, relativePath)
   if (!target.startsWith(root + '/') && target !== root) {
     throw new Error('Path escapes repository root.')
   }
-  const { readFile } = await import('fs/promises')
-  return readFile(target, 'utf8')
+  try {
+    await access(target)
+  } catch {
+    return { exists: false, content: '' }
+  }
+  const content = await readFile(target, 'utf8')
+  return { exists: true, content }
 }
 
 export async function workingRename(
@@ -82,11 +88,8 @@ export async function workingAddToGitignore(
   }
 
   let content = ''
-  try {
-    content = await workingRead(cwd, gitBinaryPath, GITIGNORE_PATH)
-  } catch {
-    content = ''
-  }
+  const readResult = await workingRead(cwd, gitBinaryPath, GITIGNORE_PATH)
+  content = readResult.content
 
   const updated = appendGitignoreEntry(content, normalized, directory)
   if (updated !== content) {

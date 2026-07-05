@@ -3,13 +3,36 @@ import { mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { workingAddToGitignore } from './working'
+import { workingAddToGitignore, workingRead } from './working'
 
 function initRepo(dir: string) {
   execSync('git init -b main', { cwd: dir, stdio: 'ignore' })
   execSync('git config user.email "test@example.com"', { cwd: dir, stdio: 'ignore' })
   execSync('git config user.name "Test"', { cwd: dir, stdio: 'ignore' })
 }
+
+describe('workingRead', () => {
+  it('returns exists false when the file is missing', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'gf-working-read-'))
+    initRepo(dir)
+
+    await expect(workingRead(dir, 'git', '.gitattributes')).resolves.toEqual({
+      exists: false,
+      content: ''
+    })
+  })
+
+  it('returns file content when the file exists', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'gf-working-read-'))
+    initRepo(dir)
+    execSync('echo "*.txt text" > .gitattributes', { cwd: dir, shell: '/bin/bash' })
+
+    await expect(workingRead(dir, 'git', '.gitattributes')).resolves.toEqual({
+      exists: true,
+      content: '*.txt text\n'
+    })
+  })
+})
 
 describe('workingAddToGitignore', () => {
   it('creates .gitignore and ignores an untracked file', async () => {
