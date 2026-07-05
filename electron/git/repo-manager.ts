@@ -20,6 +20,7 @@ import * as bisectOps from './operations/bisect'
 import * as notesOps from './operations/notes'
 import * as workingOps from './operations/working'
 import * as configOps from './operations/config'
+import * as hooksOps from './operations/hooks'
 import * as submoduleOps from './operations/submodule'
 import { loadSettings } from '../settings'
 
@@ -326,6 +327,18 @@ export class RepoManager {
         )
       case 'config.list':
         return configOps.configList(cwd, git, (p.scope as 'local' | 'global') ?? 'local')
+      case 'hooks.list':
+        return hooksOps.hooksList(cwd, git)
+      case 'hooks.read':
+        return hooksOps.hooksRead(cwd, git, p.name as string)
+      case 'hooks.write':
+        return hooksOps.hooksWrite(cwd, git, p.name as string, p.content as string)
+      case 'hooks.enable':
+        return hooksOps.hooksEnable(cwd, git, p.name as string)
+      case 'hooks.disable':
+        return hooksOps.hooksDisable(cwd, git, p.name as string)
+      case 'hooks.delete':
+        return hooksOps.hooksDelete(cwd, git, p.name as string)
       case 'remote.list':
         return remoteOps.remoteList(cwd, git)
       case 'remote.add':
