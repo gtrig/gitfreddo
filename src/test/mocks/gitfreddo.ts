@@ -119,6 +119,7 @@ export function createGitFreddoMock(overrides: Partial<GitFreddoAPI> = {}): GitF
     zoomIn: vi.fn(async () => 1.1),
     zoomOut: vi.fn(async () => 0.9),
     onZoomChanged: vi.fn(() => () => undefined),
+    onRepoChanged: vi.fn(() => () => undefined),
     ...overrides
   }
 }

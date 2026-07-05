@@ -32,10 +32,14 @@ import {
   uploadGitHubSshKey
 } from '../github/service'
 import type { AiFillParams } from '../../shared/ai'
-import type { AppSettings, LogEntry } from '../../shared/ipc'
+import type { AppSettings, LogEntry, RepoChangeEvent } from '../../shared/ipc'
 import { THEME_BG_COLORS } from '../../shared/themes'
+import { RepoWatcherManager } from '../git/repo-watcher'
 
 const repoManager = new RepoManager()
+const repoWatcherManager = new RepoWatcherManager({
+  onChange: broadcastRepoChange
+})
 
 if (process.platform === 'linux') {
   const linuxApp = app as typeof app & { setDesktopName?: (name: string) => void }
@@ -127,6 +131,14 @@ function broadcastZoomFactor(factor: number): void {
   }
 }
 
+function broadcastRepoChange(event: RepoChangeEvent): void {
+  for (const window of BrowserWindow.getAllWindows()) {
+    if (!window.isDestroyed()) {
+      window.webContents.send('gitfreddo:repo-changed', event)
+    }
+  }
+}
+
 async function persistZoomFactor(factor: number): Promise<void> {
   const rounded = Math.min(2, Math.max(0.5, Math.round(factor * 10) / 10))
   if (settings.uiZoomFactor === rounded) {
@@ -183,6 +195,7 @@ function registerIpc(): void {
     }
     applyGitConfig()
     const connectedPath = await repoManager.connect(normalized)
+    repoWatcherManager.watch(connectedPath)
     settings = await saveSettings(addRecentRepo(settings, connectedPath))
     return connectedPath
   })
@@ -192,13 +205,16 @@ function registerIpc(): void {
   })
 
   ipcMain.handle('gitfreddo:disconnect-workspace', async (_event, repoPath: string) => {
-    await repoManager.disconnectRepo(repoPath)
+    const normalized = normalizeRepoPath(repoPath)
+    await repoManager.disconnectRepo(normalized)
+    repoWatcherManager.unwatch(normalized)
   })
 
   ipcMain.handle('gitfreddo:list-workspaces', async () => repoManager.listRepos())
 
   ipcMain.handle('gitfreddo:disconnect', async () => {
     await repoManager.disconnectAll()
+    repoWatcherManager.unwatchAll()
   })
 
   ipcMain.handle(
@@ -385,6 +401,7 @@ app.whenReady().then(async () => {
 })
 
 app.on('window-all-closed', async () => {
+  repoWatcherManager.dispose()
   await repoManager.disconnectAll()
   if (process.platform !== 'darwin') {
     app.quit()

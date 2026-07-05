@@ -1,4 +1,4 @@
-import { existsSync } from 'fs'
+import { existsSync, readFileSync, statSync } from 'fs'
 import { resolve } from 'path'
 
 export function normalizeRepoPath(repoPath: string): string {
@@ -8,4 +8,25 @@ export function normalizeRepoPath(repoPath: string): string {
 export function hasGitDir(repoPath: string): boolean {
   const normalized = normalizeRepoPath(repoPath)
   return existsSync(resolve(normalized, '.git'))
+}
+
+/** Resolve the absolute git directory without spawning git. */
+export function resolveGitDirSync(repoPath: string): string {
+  const normalized = normalizeRepoPath(repoPath)
+  const dotGit = resolve(normalized, '.git')
+  if (!existsSync(dotGit)) {
+    throw new Error(`No .git found at ${normalized}`)
+  }
+
+  if (statSync(dotGit).isDirectory()) {
+    return dotGit
+  }
+
+  const content = readFileSync(dotGit, 'utf8').trim()
+  const match = content.match(/^gitdir:\s*(.+)$/m)
+  if (!match?.[1]) {
+    throw new Error(`Invalid .git file at ${dotGit}`)
+  }
+
+  return resolve(normalized, match[1])
 }

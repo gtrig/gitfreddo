@@ -60,6 +60,7 @@ describe('buildAiMessages', () => {
     )
     expect(system).toContain('Always write in Spanish.')
     expect(user).toContain('Include the JIRA ticket')
+    expect(user).toContain('Commit message instructions:')
     expect(user).toContain('fix bug')
   })
 
@@ -91,6 +92,21 @@ describe('buildAiMessages', () => {
     expect(user).toContain('+++ b/src/auth.ts')
     expect(user).toContain('self-contained')
     expect(user).toContain('"commits"')
+  })
+
+  it('appends commit message instructions when analyzing uncommitted changes', () => {
+    const { user } = buildAiMessages(
+      'analyze_changes',
+      {
+        branch: 'feature/auth',
+        filePaths: ['src/auth.ts'],
+        stagedFilePaths: ['src/auth.ts']
+      },
+      { commitMessage: 'Use Conventional Commits with a scope.' }
+    )
+    expect(user).toContain('Commit message instructions:')
+    expect(user).toContain('Use Conventional Commits with a scope.')
+    expect(user).toContain('commit message instructions below')
   })
 })
 

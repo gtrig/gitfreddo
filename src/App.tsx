@@ -18,6 +18,7 @@ import { GlobalOperationOverlay } from '@/components/Ui/GlobalOperationOverlay'
 import { runGlobalOperation } from '@/stores/operation'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useAutoRefresh, useManualRefresh } from '@/hooks/useAutoRefresh'
+import { useRepoChangeListener } from '@/hooks/useRepoChangeListener'
 import { useAppLogger } from '@/hooks/useAppLogger'
 import { useWorkspaceSessionPersistence } from '@/hooks/useWorkspaceSessionPersistence'
 import { useSelectionStore } from '@/stores/selection'
@@ -53,6 +54,7 @@ export default function App() {
       diffMode === 'commit-range'
   )
   useAutoRefresh()
+  useRepoChangeListener()
   useLogSubscription()
   useAppLogger()
   useLocale()

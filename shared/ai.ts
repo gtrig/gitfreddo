@@ -67,6 +67,20 @@ function appendCustomInstructions(base: string, custom?: string): string {
   return `${base}\n\n${extra}`
 }
 
+const COMMIT_MESSAGE_INSTRUCTIONS_LABEL = 'Commit message instructions:'
+
+function appendCommitMessageInstructions(base: string, custom?: string): string {
+  return appendLabeledInstructions(base, COMMIT_MESSAGE_INSTRUCTIONS_LABEL, custom)
+}
+
+function appendLabeledInstructions(base: string, label: string, custom?: string): string {
+  const extra = custom?.trim()
+  if (!extra) {
+    return base
+  }
+  return `${base}\n\n${label}\n${extra}`
+}
+
 export function normalizeBaseUrl(url: string): string {
   const trimmed = url.trim().replace(/\/+$/, '')
   if (!trimmed) {
@@ -116,7 +130,7 @@ export function buildAiMessages(
 
   switch (purpose) {
     case 'commit_message':
-      user = appendCustomInstructions(
+      user = appendCommitMessageInstructions(
         'Write a git commit message for the staged changes.\n' +
           'Use an imperative subject line (≤72 chars) and an optional body separated by a blank line.\n' +
           (branch ? `Branch: ${branch}\n` : '') +
@@ -139,7 +153,7 @@ export function buildAiMessages(
       )
       break
     case 'compose_commits':
-      user = appendCustomInstructions(
+      user = appendCommitMessageInstructions(
         'Analyze the staged changes and split them into one or more logical commits.\n' +
           'Each commit should represent a single coherent feature, fix, or concern.\n' +
           'Separate unrelated changes into different commits when appropriate.\n' +
@@ -157,12 +171,13 @@ export function buildAiMessages(
           '- Every staged file must appear in exactly one commit files array\n' +
           '- Use exact file paths from the staged files list\n' +
           '- Order commits logically (foundational changes before dependents)\n' +
+          '- Follow the commit message instructions below for every proposed commit message\n' +
           '- If all changes belong together, return a single-element array',
         instructions.commitMessage
       )
       break
     case 'analyze_changes':
-      user = appendCustomInstructions(
+      user = appendCommitMessageInstructions(
         'Analyze the uncommitted working tree changes and propose an ordered commit plan.\n' +
           (branch ? `Branch: ${branch}\n` : '') +
           (stagedFiles ? `Staged files:\n${stagedFiles}\n` : '') +
@@ -189,7 +204,8 @@ export function buildAiMessages(
           '- Every changed file must appear in exactly one commit files array\n' +
           '- Use exact file paths from the changed files lists\n' +
           '- If all changes belong together, return a single-element commits array\n' +
-          '- Base analysis and commit messages on the diff when provided',
+          '- Base analysis and commit messages on the diff when provided\n' +
+          '- Follow the commit message instructions below for every proposed commit subject and body',
         instructions.commitMessage
       )
       break

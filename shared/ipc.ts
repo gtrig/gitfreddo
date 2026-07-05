@@ -1,3 +1,11 @@
+import type { RepoChangeEvent } from './repo-change'
+
+export type { RepoChangeEvent, RepoChangeScope } from './repo-change'
+export {
+  REPO_CHANGE_REFS_QUERY_SUFFIXES,
+  REPO_CHANGE_WORKING_QUERY_SUFFIXES
+} from './repo-change'
+
 export interface CliResult {
   stdout: string
   stderr: string
@@ -117,6 +125,7 @@ export interface GitFreddoAPI {
   zoomIn: () => Promise<number>
   zoomOut: () => Promise<number>
   onZoomChanged: (callback: (factor: number) => void) => () => void
+  onRepoChanged: (callback: (event: RepoChangeEvent) => void) => () => void
 }
 
 declare global {

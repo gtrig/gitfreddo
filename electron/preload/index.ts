@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { AiFillParams } from '../../shared/ai'
-import type { AppSettings, GitFreddoAPI, LogEntry, MenuAction } from '../../shared/ipc'
+import type { AppSettings, GitFreddoAPI, LogEntry, MenuAction, RepoChangeEvent } from '../../shared/ipc'
 
 const api: GitFreddoAPI = {
   openWorkspace: () => ipcRenderer.invoke('gitfreddo:open-workspace'),
@@ -66,6 +66,12 @@ const api: GitFreddoAPI = {
     const listener = (_event: Electron.IpcRendererEvent, factor: number) => callback(factor)
     ipcRenderer.on('gitfreddo:zoom-changed', listener)
     return () => ipcRenderer.removeListener('gitfreddo:zoom-changed', listener)
+  },
+  onRepoChanged: (callback) => {
+    const listener = (_event: Electron.IpcRendererEvent, payload: RepoChangeEvent) =>
+      callback(payload)
+    ipcRenderer.on('gitfreddo:repo-changed', listener)
+    return () => ipcRenderer.removeListener('gitfreddo:repo-changed', listener)
   },
   onGitHubConnectProgress: (callback) => {
     const listener = (

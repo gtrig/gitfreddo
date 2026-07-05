@@ -2,17 +2,7 @@ import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { usePollIntervalMs } from './useAppSettings'
-
-const REFRESH_SUFFIXES = [
-  'status',
-  'working.status',
-  'branch.list',
-  'log.graph',
-  'remote.list',
-  'stash.list',
-  'tag.list',
-  'merge.status'
-] as const
+import { REPO_CHANGE_REFS_QUERY_SUFFIXES } from '@shared/repo-change'
 
 export function useAutoRefresh() {
   const connected = useWorkspaceStore((s) => s.connected)
@@ -24,7 +14,7 @@ export function useAutoRefresh() {
     if (!connected || !repoPath || pollIntervalMs <= 0) return
 
     const id = window.setInterval(() => {
-      for (const suffix of REFRESH_SUFFIXES) {
+      for (const suffix of REPO_CHANGE_REFS_QUERY_SUFFIXES) {
         void queryClient.invalidateQueries({ queryKey: ['repo', repoPath, suffix] })
       }
     }, pollIntervalMs)
