@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { MinusIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/solid'
 import { useWorkspaceStore } from '@/stores/workspace'
@@ -11,6 +11,7 @@ import { buildFileTree, collectFolderPaths, countCommitFiles, type FileTreeNode 
 import type { CommitFileItem } from '@/lib/types'
 import { LoadingRow, Spinner } from '@/components/Ui/Spinner'
 import { SidebarIconChevron } from '@/components/Layout/sidebar/SidebarIcons'
+import { AnalyzeChangesWithAi } from '@/components/WorkingTree/AnalyzeChangesWithAi'
 import { CommitPanel } from '@/components/WorkingTree/CommitPanel'
 import { CleanUntrackedModal } from '@/components/WorkingTree/CleanUntrackedModal'
 import { ConfirmDialog } from '@/components/Ui/Modal'
@@ -369,6 +370,11 @@ export function GitWorkingTree() {
     ...(!gitOpInProgress ? (data?.conflicted ?? []) : [])
   ]
   const stagedFiles = data?.staged ?? []
+  const unstagedPaths = useMemo(
+    () => changesFiles.map((file) => file.path),
+    [changesFiles]
+  )
+  const stagedPaths = useMemo(() => stagedFiles.map((file) => file.path), [stagedFiles])
   const unstagedDiscardable = discardablePaths(data?.unstaged ?? [])
   const stagedDiscardable = discardablePaths(stagedFiles)
   const totalChangeCount =
@@ -562,6 +568,12 @@ export function GitWorkingTree() {
           )}
         </div>
         <div className="flex flex-wrap items-center gap-1">
+          <AnalyzeChangesWithAi
+            branch={data?.branch ?? ''}
+            stagedPaths={stagedPaths}
+            unstagedPaths={unstagedPaths}
+            disabled={busy}
+          />
           {(data?.untracked.length ?? 0) > 0 && (
             <WorkingTreeActionButton
               variant="clear"

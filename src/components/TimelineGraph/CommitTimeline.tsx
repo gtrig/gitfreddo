@@ -30,6 +30,7 @@ import {
   useRelativeNow
 } from '@/lib/format/formatTimeSince'
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
+import { AnalyzeChangesWithAi } from '@/components/WorkingTree/AnalyzeChangesWithAi'
 import { SidebarIconStash } from '@/components/Layout/sidebar/SidebarIcons'
 import { CommitGraphOverlay } from './CommitGraphOverlay'
 import { TimelineCommitColumn, TIMELINE_ROW_HEIGHT } from './TimelineCommitColumn'
@@ -163,6 +164,16 @@ export function CommitTimeline() {
     () => (workingStatus ? countWorkingChanges(workingStatus) : null),
     [workingStatus]
   )
+  const workingStagedPaths = useMemo(
+    () => workingStatus?.staged.map((file) => file.path) ?? [],
+    [workingStatus?.staged]
+  )
+  const workingUnstagedPaths = useMemo(() => {
+    if (!workingStatus) return []
+    return [...workingStatus.unstaged, ...workingStatus.untracked, ...workingStatus.conflicted].map(
+      (file) => file.path
+    )
+  }, [workingStatus])
   const selection = useSelectionStore((s) => s.timelineSelection)
   const selectedCommitHashes = useSelectionStore((s) => s.selectedCommitHashes)
   const selectedStashIndex = useSelectionStore((s) => s.selectedStashIndex)
@@ -529,40 +540,56 @@ export function CommitTimeline() {
             </button>
           )}
           {showWorkingRow && (
-            <button
-              type="button"
-              onClick={() => selectTimelineNode('working', 'changes')}
+            <div
               style={{ height: TIMELINE_ROW_HEIGHT }}
-              className={`flex w-full items-center justify-between gap-3 border-b border-gf-border/40 px-2.5 text-left text-[11px] hover:bg-gf-bg/50 ${
+              className={`flex w-full items-center justify-between gap-2 border-b border-gf-border/40 px-2.5 text-[11px] ${
                 selection?.kind === 'working' ? 'bg-gf-accent/20' : ''
               }`}
             >
-              <span className="flex min-w-0 items-center gap-2">
-                <span className="font-medium text-amber-300">{t('timeline.uncommittedChanges')}</span>
-                {changeCounts && (
-                  <span className="flex flex-wrap items-center gap-2 text-[10px]">
-                    {changeCounts.modified > 0 && (
-                      <span className="text-amber-400">
-                        {t('timeline.modified', { count: changeCounts.modified })}
-                      </span>
-                    )}
-                    {changeCounts.added > 0 && (
-                      <span className="text-emerald-400">
-                        {t('timeline.added', { count: changeCounts.added })}
-                      </span>
-                    )}
-                    {changeCounts.deleted > 0 && (
-                      <span className="text-rose-400">
-                        {t('timeline.deleted', { count: changeCounts.deleted })}
-                      </span>
-                    )}
-                  </span>
-                )}
-              </span>
-              <span className="shrink-0 rounded border border-gf-border-strong px-1.5 py-0.5 text-[10px] text-gf-fg-subtle">
-                {t('timeline.viewChanges')}
-              </span>
-            </button>
+              <button
+                type="button"
+                onClick={() => selectTimelineNode('working', 'changes')}
+                className="flex min-w-0 flex-1 items-center gap-2 text-left hover:bg-gf-bg/50"
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="font-medium text-amber-300">{t('timeline.uncommittedChanges')}</span>
+                  {changeCounts && (
+                    <span className="flex flex-wrap items-center gap-2 text-[10px]">
+                      {changeCounts.modified > 0 && (
+                        <span className="text-amber-400">
+                          {t('timeline.modified', { count: changeCounts.modified })}
+                        </span>
+                      )}
+                      {changeCounts.added > 0 && (
+                        <span className="text-emerald-400">
+                          {t('timeline.added', { count: changeCounts.added })}
+                        </span>
+                      )}
+                      {changeCounts.deleted > 0 && (
+                        <span className="text-rose-400">
+                          {t('timeline.deleted', { count: changeCounts.deleted })}
+                        </span>
+                      )}
+                    </span>
+                  )}
+                </span>
+              </button>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <AnalyzeChangesWithAi
+                  branch={workingStatus?.branch ?? currentBranch}
+                  stagedPaths={workingStagedPaths}
+                  unstagedPaths={workingUnstagedPaths}
+                  variant="pill"
+                />
+                <button
+                  type="button"
+                  onClick={() => selectTimelineNode('working', 'changes')}
+                  className="shrink-0 rounded border border-gf-border-strong px-1.5 py-0.5 text-[10px] text-gf-fg-subtle hover:bg-gf-bg/50"
+                >
+                  {t('timeline.viewChanges')}
+                </button>
+              </div>
+            </div>
           )}
 
           {commits.length === 0 && (
