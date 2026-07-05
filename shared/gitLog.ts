@@ -72,6 +72,7 @@ export function buildLogGraphArgs(maxCount: number): string[] {
     `--max-count=${maxCount}`,
     `--format=${format}${LOG_RECORD_SEPARATOR}`,
     '--shortstat',
+    '--show-notes',
     '--topo-order'
   ]
 }

@@ -44,6 +44,7 @@ describe('buildLogGraphArgs', () => {
     expect(args).toContain('--all')
     expect(args).toContain('--topo-order')
     expect(args).toContain('--shortstat')
+    expect(args).toContain('--show-notes')
     expect(args).not.toContain('--date-order')
     expect(args).toContain('--max-count=500')
   })
