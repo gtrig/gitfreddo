@@ -194,9 +194,11 @@
     },
     "repoFiles": {
       "connectRequired": "Open a repository to edit repository files.",
-      "description": "Edit .gitignore and .gitattributes in the repository.",
+      "description": "Edit .gitignore, .gitattributes, and .gitmodules in the repository.",
       "loading": "Loading {{file}}…",
       "loadFailed": "Failed to load file.",
+      "missing": "{{file}} does not exist in this repository yet.",
+      "create": "Create {{file}}",
       "save": "Save {{file}}",
       "saved": "Saved {{file}}."
     },

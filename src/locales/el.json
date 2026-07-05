@@ -194,9 +194,11 @@
     },
     "repoFiles": {
       "connectRequired": "Ανοίξτε αποθετήριο για επεξεργασία αρχείων.",
-      "description": "Επεξεργασία .gitignore και .gitattributes στο αποθετήριο.",
+      "description": "Επεξεργασία .gitignore, .gitattributes και .gitmodules στο αποθετήριο.",
       "loading": "Φόρτωση {{file}}…",
       "loadFailed": "Αποτυχία φόρτωσης αρχείου.",
+      "missing": "Το {{file}} δεν υπάρχει ακόμα σε αυτό το αποθετήριο.",
+      "create": "Δημιουργία {{file}}",
       "save": "Αποθήκευση {{file}}",
       "saved": "Αποθηκεύτηκε {{file}}."
     },

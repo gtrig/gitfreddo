@@ -74,12 +74,12 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
   }
 
   return (
-    <Modal title={t('settings.title')} open={open} onClose={onClose} size="lg">
+    <Modal title={t('settings.title')} open={open} onClose={onClose} size="xl">
       {loading || !form ? (
         <LoadingRow />
       ) : (
         <>
-          <div className="flex max-h-[min(60vh,32rem)] min-h-[280px] gap-4">
+          <div className="flex max-h-[min(75vh,40rem)] min-h-[320px] gap-4">
             <SettingsSidebar active={section} onSelect={selectSection} />
             <div className="min-h-0 min-w-0 flex-1 overflow-y-auto pr-1">
               {section === 'git' && (
