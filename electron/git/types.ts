@@ -122,6 +122,18 @@ export interface GitWorktreeEntry {
 
 export type { GitSubmoduleEntry, SubmoduleEntryStatus } from '../../shared/submodule'
 
+export interface GitHook {
+  name: string
+  filename: string
+  enabled: boolean
+  executable: boolean
+}
+
+export interface GitHooksListResult {
+  hooks: GitHook[]
+  hooksDir: string
+}
+
 export interface GitDiffResult {
   unified: string
   path: string

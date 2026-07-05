@@ -218,6 +218,18 @@ export interface GitNote {
   note: string
 }
 
+export interface GitHook {
+  name: string
+  filename: string
+  enabled: boolean
+  executable: boolean
+}
+
+export interface GitHooksListResult {
+  hooks: GitHook[]
+  hooksDir: string
+}
+
 export interface GitLogGraphResult {
   commits: GitCommit[]
   maxCount: number
