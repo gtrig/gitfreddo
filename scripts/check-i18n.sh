@@ -9,6 +9,8 @@ DIRS=(
   "$ROOT/src/components/DiffViewer"
   "$ROOT/src/components/MergeConflicts"
   "$ROOT/src/components/DetailPanel"
+  "$ROOT/src/components/GitHub"
+  "$ROOT/src/components/Layout"
 )
 
 violations=0
@@ -43,6 +45,10 @@ for dir in "${DIRS[@]}"; do
         || [[ "$match" == *"src=\""* ]] \
         || [[ "$match" == *"import "* ]] \
         || [[ "$match" == *"from \""* ]] \
+        || [[ "$match" == *"interface "* ]] \
+        || [[ "$match" == *"Promise<"* ]] \
+        || [[ "$match" == *"Promise<void>"* ]] \
+        || [[ "$match" == *"=> void"* ]] \
         || [[ "$match" == *"//"* ]] \
         || [[ "$match" == *"/*"* ]]; then
         continue
