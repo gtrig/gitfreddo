@@ -26,7 +26,10 @@ export const defaultMockSettings: AppSettings = {
   pushSubmoduleRecursion: 'check',
   diffViewMode: 'unified',
   locale: 'en',
-  uiZoomFactor: 1
+  uiZoomFactor: 1,
+  updateChannel: 'stable',
+  autoDownloadUpdates: false,
+  checkForUpdatesOnStartup: true
 }
 
 export function createGitFreddoMock(overrides: Partial<GitFreddoAPI> = {}): GitFreddoAPI {
@@ -122,6 +125,11 @@ export function createGitFreddoMock(overrides: Partial<GitFreddoAPI> = {}): GitF
     zoomOut: vi.fn(async () => 0.9),
     onZoomChanged: vi.fn(() => () => undefined),
     onRepoChanged: vi.fn(() => () => undefined),
+    getAppVersion: vi.fn(async () => '0.2.8'),
+    checkForUpdates: vi.fn(async () => undefined),
+    downloadUpdate: vi.fn(async () => undefined),
+    installUpdate: vi.fn(() => undefined),
+    onUpdateEvent: vi.fn(() => () => undefined),
     ...overrides
   }
 }

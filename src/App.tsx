@@ -8,6 +8,7 @@ import { ActionBar } from '@/components/Layout/ActionBar'
 import { WorkspaceHub } from '@/components/Layout/WorkspaceHub'
 import { WorkspaceTabs } from '@/components/Layout/WorkspaceTabs'
 import { ToastBanner } from '@/components/Layout/ToastBanner'
+import { UpdateBanner } from '@/components/Layout/UpdateBanner'
 import { LogDrawer, useLogSubscription } from '@/components/Layout/LogDrawer'
 import { HeaderToolsMenu } from '@/components/Layout/HeaderToolsMenu'
 import { ResizableMainLayout } from '@/components/Layout/ResizableMainLayout'
@@ -22,6 +23,7 @@ import { useWorkspaceSessionPersistence } from '@/hooks/useWorkspaceSessionPersi
 import { useSelectionStore } from '@/stores/selection'
 import { appLog, useLogStore } from '@/stores/logs'
 import { useLocale } from '@/hooks/useLocale'
+import { useAppUpdate } from '@/hooks/useAppUpdate'
 import type { MenuAction } from '@shared/ipc'
 
 export default function App() {
@@ -56,6 +58,7 @@ export default function App() {
   useAppLogger()
   useLocale()
   useWorkspaceSessionPersistence()
+  const appUpdate = useAppUpdate()
 
   const connectWorkspace = useCallback(
     async (path: string) => {
@@ -78,10 +81,13 @@ export default function App() {
         appLog('info', 'Manual refresh')
         refresh()
       }
+      if (action === 'check-for-updates') {
+        void appUpdate.checkForUpdates(true)
+      }
       if (action === 'quit') void window.gitfreddo.disconnect()
     })
     return unsubscribe
-  }, [openWorkspaceDialog, refresh])
+  }, [appUpdate, openWorkspaceDialog, refresh])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -119,6 +125,13 @@ export default function App() {
         <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
         <DocsModal open={docsOpen} onClose={() => setDocsOpen(false)} />
         <LogDrawer />
+        <UpdateBanner
+          state={appUpdate.state}
+          visible={appUpdate.bannerVisible}
+          onDownload={() => void appUpdate.downloadUpdate()}
+          onInstall={appUpdate.installUpdate}
+          onDismiss={appUpdate.dismissBanner}
+        />
       </>
     )
   }
@@ -176,6 +189,13 @@ export default function App() {
       />
       <LogDrawer />
       <ToastBanner />
+      <UpdateBanner
+        state={appUpdate.state}
+        visible={appUpdate.bannerVisible}
+        onDownload={() => void appUpdate.downloadUpdate()}
+        onInstall={appUpdate.installUpdate}
+        onDismiss={appUpdate.dismissBanner}
+      />
     </div>
   )
 }

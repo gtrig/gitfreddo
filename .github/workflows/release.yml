@@ -108,4 +108,7 @@ jobs:
             artifacts/*.AppImage
             artifacts/*.deb
             artifacts/*.dmg
+            artifacts/*.zip
             artifacts/*.exe
+            artifacts/*.yml
+            artifacts/*.blockmap

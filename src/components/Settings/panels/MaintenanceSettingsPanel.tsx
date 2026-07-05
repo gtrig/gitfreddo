@@ -1,10 +1,17 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ActionButton, ConfirmDialog } from '@/components/Ui/Modal'
+import { ActionButton, ConfirmDialog, FieldLabel } from '@/components/Ui/Modal'
 import { RemoveStaleBranchesModal } from '@/components/DetailPanel/RemoveStaleBranchesModal'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
+import type { AppSettings } from '@/hooks/useAppSettings'
+import { useAppUpdate } from '@/hooks/useAppUpdate'
 import type { MaintenancePruneResult, UnreachableSummary } from '@/lib/types'
+
+interface PanelProps {
+  form: AppSettings
+  onChange: (patch: Partial<AppSettings>) => void
+}
 
 function formatAuthorDate(iso: string): string {
   if (!iso) return ''
@@ -15,8 +22,9 @@ function formatAuthorDate(iso: string): string {
   }
 }
 
-export function MaintenanceSettingsPanel() {
+export function MaintenanceSettingsPanel({ form, onChange }: PanelProps) {
   const { t } = useTranslation()
+  const { state, checkForUpdates } = useAppUpdate()
   const repoPath = useWorkspaceStore((s) => s.activePath)
   const connected = useWorkspaceStore((s) => s.connected)
   const showToast = useToastStore((s) => s.show)
@@ -79,6 +87,48 @@ export function MaintenanceSettingsPanel() {
 
   return (
     <div className="space-y-4">
+      <div className="space-y-3 border-b border-gf-border pb-4">
+        <div>
+          <h3 className="text-sm font-medium text-gf-fg">{t('settings.maintenance.updates')}</h3>
+          <p className="mt-1 text-xs text-gf-fg-muted">{t('settings.maintenance.updatesDesc')}</p>
+        </div>
+        <p className="text-xs text-gf-fg-subtle">
+          {t('settings.maintenance.currentVersion', { version: state.currentVersion || '…' })}
+        </p>
+        <div className="space-y-2">
+          <FieldLabel>{t('settings.maintenance.updateChannel')}</FieldLabel>
+          <select
+            value={form.updateChannel}
+            onChange={(e) =>
+              onChange({ updateChannel: e.target.value as AppSettings['updateChannel'] })
+            }
+            className="w-full rounded border border-gf-border-strong bg-gf-bg px-2 py-1.5 text-sm text-gf-fg"
+          >
+            <option value="stable">{t('settings.maintenance.channelStable')}</option>
+            <option value="beta">{t('settings.maintenance.channelBeta')}</option>
+          </select>
+        </div>
+        <label className="flex items-center gap-2 text-sm text-gf-fg-muted">
+          <input
+            type="checkbox"
+            checked={form.checkForUpdatesOnStartup}
+            onChange={(e) => onChange({ checkForUpdatesOnStartup: e.target.checked })}
+          />
+          {t('settings.maintenance.checkOnStartup')}
+        </label>
+        <label className="flex items-center gap-2 text-sm text-gf-fg-muted">
+          <input
+            type="checkbox"
+            checked={form.autoDownloadUpdates}
+            onChange={(e) => onChange({ autoDownloadUpdates: e.target.checked })}
+          />
+          {t('settings.maintenance.autoDownload')}
+        </label>
+        <ActionButton onClick={() => void checkForUpdates(true)}>
+          {t('settings.maintenance.checkForUpdates')}
+        </ActionButton>
+      </div>
+
       <p className="text-xs leading-relaxed text-gf-fg-subtle">
         {t('settings.maintenance.intro')}
       </p>

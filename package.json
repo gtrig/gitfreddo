@@ -36,6 +36,7 @@
     "@tanstack/react-virtual": "^3.14.5",
     "@xyflow/react": "^12.11.1",
     "chokidar": "^5.0.0",
+    "electron-updater": "^6.8.9",
     "i18next": "^26.3.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -78,6 +79,13 @@
     "directories": {
       "output": "release"
     },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "gtrig",
+        "repo": "gitfreddo"
+      }
+    ],
     "files": [
       "out/**/*",
       "package.json",
@@ -94,7 +102,8 @@
     },
     "mac": {
       "target": [
-        "dmg"
+        "dmg",
+        "zip"
       ],
       "icon": "assets/logo.png",
       "category": "public.app-category.developer-tools"

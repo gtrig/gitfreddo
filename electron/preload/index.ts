@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { AiFillParams } from '../../shared/ai'
-import type { AppSettings, GitFreddoAPI, LogEntry, MenuAction, RepoChangeEvent } from '../../shared/ipc'
+import type { AppSettings, GitFreddoAPI, LogEntry, MenuAction, RepoChangeEvent, UpdateEvent } from '../../shared/ipc'
 
 const api: GitFreddoAPI = {
   openWorkspace: () => ipcRenderer.invoke('gitfreddo:open-workspace'),
@@ -72,6 +72,17 @@ const api: GitFreddoAPI = {
       callback(payload)
     ipcRenderer.on('gitfreddo:repo-changed', listener)
     return () => ipcRenderer.removeListener('gitfreddo:repo-changed', listener)
+  },
+  getAppVersion: () => ipcRenderer.invoke('gitfreddo:get-app-version'),
+  checkForUpdates: () => ipcRenderer.invoke('gitfreddo:check-for-updates'),
+  downloadUpdate: () => ipcRenderer.invoke('gitfreddo:download-update'),
+  installUpdate: () => {
+    ipcRenderer.invoke('gitfreddo:install-update')
+  },
+  onUpdateEvent: (callback) => {
+    const listener = (_event: Electron.IpcRendererEvent, payload: UpdateEvent) => callback(payload)
+    ipcRenderer.on('gitfreddo:update-event', listener)
+    return () => ipcRenderer.removeListener('gitfreddo:update-event', listener)
   },
   onGitHubConnectProgress: (callback) => {
     const listener = (

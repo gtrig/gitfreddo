@@ -165,6 +165,15 @@
       "tokenHint": "Token is stored locally in settings."
     },
     "maintenance": {
+      "updates": "Application updates",
+      "updatesDesc": "GitFreddo checks GitHub Releases for new versions when the app starts.",
+      "currentVersion": "Current version: {{version}}",
+      "updateChannel": "Update channel",
+      "channelStable": "Stable",
+      "channelBeta": "Beta (prereleases)",
+      "checkOnStartup": "Check for updates on startup",
+      "autoDownload": "Download updates automatically",
+      "checkForUpdates": "Check for updates now",
       "intro": "Scan for unreachable commits and stale refs, then prune unreachable objects.",
       "openRepoFirst": "Open a repository to run maintenance.",
       "unreachableCommits": "Unreachable commits",
@@ -1001,6 +1010,17 @@
       "updateAll": "Update all",
       "syncAll": "Sync all"
     }
+  },
+  "update": {
+    "available": "GitFreddo {{version}} is available",
+    "readyToInstall": "GitFreddo {{version}} is ready to install",
+    "downloading": "Downloading… {{percent}}%",
+    "downloadingAction": "Downloading…",
+    "download": "Download update",
+    "restartToInstall": "Restart to update",
+    "upToDate": "GitFreddo is up to date ({{version}})",
+    "error": "Update check failed",
+    "waitForGitOperations": "Wait for git operations to finish before restarting"
   },
   "toast": {
     "noRepoConnected": "No repository connected",

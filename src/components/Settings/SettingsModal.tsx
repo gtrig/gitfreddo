@@ -90,7 +90,9 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
               )}
               {section === 'ai' && <AiSettingsPanel form={form} onChange={updateForm} />}
               {section === 'integrations' && <IntegrationsSettingsPanel />}
-              {section === 'maintenance' && <MaintenanceSettingsPanel />}
+              {section === 'maintenance' && (
+                <MaintenanceSettingsPanel form={form} onChange={updateForm} />
+              )}
             </div>
           </div>
           <div className="mt-4 flex justify-end gap-2 border-t border-gf-border pt-4">

@@ -165,6 +165,15 @@
       "tokenHint": "Το token αποθηκεύεται τοπικά στις ρυθμίσεις."
     },
     "maintenance": {
+      "updates": "Ενημερώσεις εφαρμογής",
+      "updatesDesc": "Το GitFreddo ελέγχει το GitHub Releases για νέες εκδόσεις κατά την εκκίνηση.",
+      "currentVersion": "Τρέχουσα έκδοση: {{version}}",
+      "updateChannel": "Κανάλι ενημέρωσης",
+      "channelStable": "Σταθερό",
+      "channelBeta": "Beta (prereleases)",
+      "checkOnStartup": "Έλεγχος ενημερώσεων κατά την εκκίνηση",
+      "autoDownload": "Αυτόματη λήψη ενημερώσεων",
+      "checkForUpdates": "Έλεγχος ενημερώσεων τώρα",
       "intro": "Σάρωση για μη προσβάσιμα commits και παλιές αναφορές, μετά εκκαθάριση.",
       "openRepoFirst": "Ανοίξτε αποθετήριο για συντήρηση.",
       "unreachableCommits": "Μη προσβάσιμα commits",
@@ -1001,6 +1010,17 @@
       "public": "δημόσιο",
       "private": "ιδιωτικό"
     }
+  },
+  "update": {
+    "available": "Διαθέσιμο GitFreddo {{version}}",
+    "readyToInstall": "Το GitFreddo {{version}} είναι έτοιμο για εγκατάσταση",
+    "downloading": "Λήψη… {{percent}}%",
+    "downloadingAction": "Λήψη…",
+    "download": "Λήψη ενημέρωσης",
+    "restartToInstall": "Επανεκκίνηση για ενημέρωση",
+    "upToDate": "Το GitFreddo είναι ενημερωμένο ({{version}})",
+    "error": "Αποτυχία ελέγχου ενημέρωσης",
+    "waitForGitOperations": "Περιμένετε να ολοκληρωθούν οι git λειτουργίες πριν την επανεκκίνηση"
   },
   "toast": {
     "noRepoConnected": "Δεν υπάρχει συνδεδεμένο αποθετήριο",

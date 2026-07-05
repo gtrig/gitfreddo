@@ -1,6 +1,7 @@
 import { BrowserWindow, Menu, app, dialog, shell } from 'electron'
+import type { MenuAction } from '../shared/ipc'
 
-export type MenuAction = 'open-workspace' | 'open-settings' | 'open-docs' | 'refresh' | 'quit'
+export type { MenuAction }
 
 let mainWindow: BrowserWindow | null = null
 
@@ -83,6 +84,10 @@ export function buildAppMenu(): void {
           label: 'Documentation',
           accelerator: 'F1',
           click: () => sendMenuAction('open-docs')
+        },
+        {
+          label: 'Check for Updates…',
+          click: () => sendMenuAction('check-for-updates')
         },
         { type: 'separator' },
         {

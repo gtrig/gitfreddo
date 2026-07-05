@@ -29,7 +29,7 @@ The renderer calls `window.gitfreddo.invoke(method, params)` for git operations:
 | `maintenance.unreachable`, `maintenance.staleBranches`, `config.get`, `config.list` | `cherry-pick` (-n), `cherry-pick.continue`, `cherry-pick.abort`, `cherry-pick.skip`, `config.set` |
 | | `reset`, `reset.head`, `maintenance.prune`, `maintenance.removeStaleBranches`, `bisect.start`, `bisect.good`, `bisect.bad`, `bisect.reset`, `notes.add` |
 
-Workspace helpers: `connect`, `switchWorkspace`, `cloneRepository`, `openWorkspace`, `deleteWorkspaceFile`, `openInEditor`, settings.
+Workspace helpers: `connect`, `switchWorkspace`, `cloneRepository`, `openWorkspace`, `deleteWorkspaceFile`, `openInEditor`, settings, **auto-update** (`checkForUpdates`, `downloadUpdate`, `installUpdate`).
 
 ## UI layout
 

@@ -1,4 +1,8 @@
 import type { RepoChangeEvent } from './repo-change'
+import type { UpdateEvent } from './update'
+
+export type { UpdateEvent, UpdateChannel, UpdateUiState, UpdateUiStatus } from './update'
+import type { UpdateChannel } from './update'
 
 export type { RepoChangeEvent, RepoChangeScope } from './repo-change'
 export {
@@ -48,6 +52,9 @@ export interface AppSettings {
   pushSubmoduleRecursion: PushSubmoduleRecursion
   diffViewMode: 'unified' | 'split' | 'word'
   uiZoomFactor: number
+  updateChannel: UpdateChannel
+  autoDownloadUpdates: boolean
+  checkForUpdatesOnStartup: boolean
 }
 
 export interface GitHubStatus {
@@ -56,7 +63,13 @@ export interface GitHubStatus {
   avatarUrl: string | null
 }
 
-export type MenuAction = 'open-workspace' | 'open-settings' | 'open-docs' | 'refresh' | 'quit'
+export type MenuAction =
+  | 'open-workspace'
+  | 'open-settings'
+  | 'open-docs'
+  | 'refresh'
+  | 'check-for-updates'
+  | 'quit'
 
 export type LogLevel = 'info' | 'warn' | 'error' | 'debug'
 export type LogStream = 'git' | 'app'
@@ -131,6 +144,11 @@ export interface GitFreddoAPI {
   zoomOut: () => Promise<number>
   onZoomChanged: (callback: (factor: number) => void) => () => void
   onRepoChanged: (callback: (event: RepoChangeEvent) => void) => () => void
+  getAppVersion: () => Promise<string>
+  checkForUpdates: () => Promise<void>
+  downloadUpdate: () => Promise<void>
+  installUpdate: () => void
+  onUpdateEvent: (callback: (event: UpdateEvent) => void) => () => void
 }
 
 declare global {

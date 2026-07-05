@@ -7,6 +7,15 @@ import { deleteRepoFile, resolveRepoFile } from '../git/workspace-files'
 import { normalizeRepoPath } from '../git/repo-path'
 import { addRecentRepo, loadSettings, saveSettings } from '../settings'
 import { buildAppMenu, pickGitBinary, setMainWindow } from '../menu'
+import {
+  applyUpdaterSettings,
+  checkForUpdates,
+  downloadUpdate,
+  getAppVersion,
+  initAutoUpdater,
+  installUpdate,
+  scheduleStartupCheck
+} from '../update/auto-update'
 import { registerExternalLinkHandlers } from '../external-links'
 import { onLog } from '../git/log-bus'
 import { cloneRepository } from '../git/clone'
@@ -71,7 +80,10 @@ let settings: AppSettings = {
   submoduleRecursion: 'on-demand',
   pushSubmoduleRecursion: 'check',
   diffViewMode: 'unified',
-  uiZoomFactor: 1
+  uiZoomFactor: 1,
+  updateChannel: 'stable',
+  autoDownloadUpdates: false,
+  checkForUpdatesOnStartup: true
 }
 
 function applyGitConfig(): void {
@@ -238,6 +250,14 @@ function registerIpc(): void {
     if (patch.theme) {
       applyWindowTheme(settings.theme)
     }
+    if (
+      patch.updateChannel !== undefined ||
+      patch.autoDownloadUpdates !== undefined ||
+      patch.checkForUpdatesOnStartup !== undefined
+    ) {
+      applyUpdaterSettings(settings)
+      scheduleStartupCheck(() => settings)
+    }
     return settings
   })
 
@@ -359,6 +379,20 @@ function registerIpc(): void {
   ipcMain.handle('gitfreddo:zoom-in', async () => zoomIn())
 
   ipcMain.handle('gitfreddo:zoom-out', async () => zoomOut())
+
+  ipcMain.handle('gitfreddo:get-app-version', async () => getAppVersion())
+
+  ipcMain.handle('gitfreddo:check-for-updates', async () => {
+    await checkForUpdates()
+  })
+
+  ipcMain.handle('gitfreddo:download-update', async () => {
+    await downloadUpdate()
+  })
+
+  ipcMain.handle('gitfreddo:install-update', async () => {
+    installUpdate()
+  })
 }
 
 function registerProtocolHandler(): void {
@@ -393,6 +427,7 @@ app.whenReady().then(async () => {
   registerProtocolHandler()
   buildAppMenu()
   registerIpc()
+  initAutoUpdater(() => settings)
   createWindow()
 
   app.on('activate', () => {

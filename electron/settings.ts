@@ -32,7 +32,10 @@ const DEFAULT_SETTINGS: AppSettings = {
   submoduleRecursion: 'on-demand',
   pushSubmoduleRecursion: 'check',
   diffViewMode: 'unified',
-  uiZoomFactor: 1
+  uiZoomFactor: 1,
+  updateChannel: 'stable',
+  autoDownloadUpdates: false,
+  checkForUpdatesOnStartup: true
 }
 
 export async function loadSettings(): Promise<AppSettings> {
@@ -76,7 +79,13 @@ export async function loadSettings(): Promise<AppSettings> {
       uiZoomFactor:
         typeof parsed.uiZoomFactor === 'number' && Number.isFinite(parsed.uiZoomFactor)
           ? Math.min(2, Math.max(0.5, Math.round(parsed.uiZoomFactor * 10) / 10))
-          : DEFAULT_SETTINGS.uiZoomFactor
+          : DEFAULT_SETTINGS.uiZoomFactor,
+      updateChannel: parsed.updateChannel === 'beta' ? 'beta' : 'stable',
+      autoDownloadUpdates: Boolean(parsed.autoDownloadUpdates),
+      checkForUpdatesOnStartup:
+        parsed.checkForUpdatesOnStartup === undefined
+          ? DEFAULT_SETTINGS.checkForUpdatesOnStartup
+          : Boolean(parsed.checkForUpdatesOnStartup)
     }
   } catch {
     return { ...DEFAULT_SETTINGS }
