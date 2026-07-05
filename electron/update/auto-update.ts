@@ -1,8 +1,10 @@
 import { app, BrowserWindow } from 'electron'
-import { autoUpdater } from 'electron-updater'
+import electronUpdater from 'electron-updater'
 import type { AppSettings } from '../../shared/ipc'
 import { applyUpdateChannel, type UpdateEvent } from '../../shared/update'
 import { emitLog } from '../git/log-bus'
+
+const { autoUpdater } = electronUpdater
 
 const STARTUP_CHECK_DELAY_MS = 10_000
 

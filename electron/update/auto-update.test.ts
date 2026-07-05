@@ -12,7 +12,7 @@ const mockAutoUpdater = {
 }
 
 vi.mock('electron-updater', () => ({
-  autoUpdater: mockAutoUpdater
+  default: { autoUpdater: mockAutoUpdater }
 }))
 
 vi.mock('electron', () => ({

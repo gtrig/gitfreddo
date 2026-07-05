@@ -22,7 +22,13 @@ test.describe('app smoke', () => {
       const page = await electronApp.firstWindow()
       await page.waitForLoadState('domcontentloaded')
 
-      await expect(page.getByRole('button', { name: 'main', exact: true })).toBeVisible({
+      await expect(
+        page.getByRole('button', {
+          name: 'main',
+          exact: true,
+          description: 'Click to focus commit · Double-click to checkout'
+        })
+      ).toBeVisible({
         timeout: 15_000
       })
     } finally {

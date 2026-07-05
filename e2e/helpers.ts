@@ -40,6 +40,11 @@ export function seedWorkspaceSettings(settingsDir: string, repoPath: string, ove
         aiModel: '',
         diffViewMode: 'unified',
         pullRebase: false,
+        submoduleRecursion: 'on-demand',
+        pushSubmoduleRecursion: 'check',
+        updateChannel: 'stable',
+        autoDownloadUpdates: false,
+        checkForUpdatesOnStartup: false,
         ...overrides
       },
       null,
@@ -50,7 +55,7 @@ export function seedWorkspaceSettings(settingsDir: string, repoPath: string, ove
 
 export async function launchApp(settingsDir: string): Promise<ElectronApplication> {
   return electron.launch({
-    args: [mainPath],
+    args: [mainPath, '--no-sandbox'],
     env: {
       ...process.env,
       NO_SANDBOX: '1',
