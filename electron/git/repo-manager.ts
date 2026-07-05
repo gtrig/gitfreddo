@@ -1,5 +1,6 @@
 import { emitLog } from './log-bus'
 import { normalizeRepoPath, hasGitDir } from './repo-path'
+import { resolve } from 'path'
 import * as repoOps from './operations/repo'
 import * as branchOps from './operations/branch'
 import * as logOps from './operations/log'
@@ -19,6 +20,8 @@ import * as bisectOps from './operations/bisect'
 import * as notesOps from './operations/notes'
 import * as workingOps from './operations/working'
 import * as configOps from './operations/config'
+import * as submoduleOps from './operations/submodule'
+import { loadSettings } from '../settings'
 
 const MAX_PARAM_CHARS = 240
 
@@ -339,14 +342,18 @@ export class RepoManager {
           p.url as string,
           Boolean(p.push)
         )
-      case 'fetch':
+      case 'fetch': {
+        const settings = await loadSettings()
         return remoteOps.fetchRemote(cwd, git, {
           remote: p.remote as string | undefined,
           tags: Boolean(p.tags),
           tagsOnly: Boolean(p.tagsOnly),
-          refspec: p.refspec as string | undefined
+          refspec: p.refspec as string | undefined,
+          submoduleRecursion: settings.submoduleRecursion
         })
-      case 'push':
+      }
+      case 'push': {
+        const settings = await loadSettings()
         return remoteOps.pushRemote(
           cwd,
           git,
@@ -354,16 +361,21 @@ export class RepoManager {
           p.branch as string | undefined,
           Boolean(p.setUpstream),
           Boolean(p.force),
-          Boolean(p.pushAll)
+          Boolean(p.pushAll),
+          settings.pushSubmoduleRecursion
         )
-      case 'pull':
+      }
+      case 'pull': {
+        const settings = await loadSettings()
         return remoteOps.pullRemote(
           cwd,
           git,
           p.remote as string | undefined,
           p.branch as string | undefined,
-          Boolean(p.rebase)
+          Boolean(p.rebase),
+          settings.submoduleRecursion
         )
+      }
       case 'stash.list':
         return stashOps.stashList(cwd, git)
       case 'stash.show':
@@ -409,6 +421,55 @@ export class RepoManager {
       }
       case 'worktree.prune':
         return worktreeOps.worktreePrune(cwd, git)
+      case 'submodule.list':
+        return submoduleOps.submoduleList(cwd, git)
+      case 'submodule.add':
+        return submoduleOps.submoduleAdd(cwd, git, {
+          url: p.url as string,
+          path: p.path as string,
+          branch: p.branch as string | undefined
+        })
+      case 'submodule.init':
+        return submoduleOps.submoduleInit(
+          cwd,
+          git,
+          p.paths as string[] | undefined,
+          Boolean(p.recursive)
+        )
+      case 'submodule.update':
+        return submoduleOps.submoduleUpdate(cwd, git, {
+          paths: p.paths as string[] | undefined,
+          init: Boolean(p.init),
+          recursive: Boolean(p.recursive),
+          remote: Boolean(p.remote),
+          merge: Boolean(p.merge),
+          rebase: Boolean(p.rebase)
+        })
+      case 'submodule.sync':
+        return submoduleOps.submoduleSync(
+          cwd,
+          git,
+          p.paths as string[] | undefined,
+          Boolean(p.recursive)
+        )
+      case 'submodule.deinit': {
+        const deinitPath = normalizeRepoPath(resolve(cwd, p.path as string))
+        await submoduleOps.submoduleDeinit(cwd, git, p.path as string, Boolean(p.force))
+        if (this.repos.has(deinitPath)) {
+          await this.disconnectRepo(deinitPath)
+        }
+        return
+      }
+      case 'submodule.remove': {
+        const removePath = normalizeRepoPath(resolve(cwd, p.path as string))
+        await submoduleOps.submoduleRemove(cwd, git, p.path as string, Boolean(p.force))
+        if (this.repos.has(removePath)) {
+          await this.disconnectRepo(removePath)
+        }
+        return
+      }
+      case 'submodule.setUrl':
+        return submoduleOps.submoduleSetUrl(cwd, git, p.path as string, p.url as string)
       case 'merge.status':
         return mergeOps.mergeStatus(cwd, git)
       case 'merge.start':

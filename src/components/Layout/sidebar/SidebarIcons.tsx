@@ -33,6 +33,10 @@ export function SidebarIconWorktree(props: IconProps) {
   return <Squares2X2Icon aria-hidden {...props} />
 }
 
+export function SidebarIconSubmodule(props: IconProps) {
+  return <FolderIcon aria-hidden {...props} />
+}
+
 export function SidebarIconTag(props: IconProps) {
   return <TagIcon aria-hidden {...props} />
 }

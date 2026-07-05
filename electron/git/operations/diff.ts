@@ -1,4 +1,5 @@
 import { resolveGitRef, runGit, runGitOrThrow } from '../git-runner'
+import { isSubmodulePath } from './submodule'
 import type { GitDiffResult } from '../types'
 
 const NULL_DEVICE = process.platform === 'win32' ? 'NUL' : '/dev/null'
@@ -46,6 +47,15 @@ export async function diffWorking(
   path?: string,
   wordDiff = false
 ): Promise<GitDiffResult> {
+  if (path && (await isSubmodulePath(cwd, gitBinaryPath, path))) {
+    const args = withWordDiff(['diff', '--submodule=log', '--', path], wordDiff)
+    const result = await runGit(args, { cwd, gitBinaryPath })
+    if (result.code !== 0) {
+      throw new Error(result.stderr.trim() || `git diff exited with code ${result.code}`)
+    }
+    return { unified: result.stdout, path }
+  }
+
   const args = withWordDiff(['diff', '--'], wordDiff)
   if (path) args.push(path)
   const result = await runGit(args, { cwd, gitBinaryPath })
@@ -67,6 +77,12 @@ export async function diffStaged(
   path?: string,
   wordDiff = false
 ): Promise<GitDiffResult> {
+  if (path && (await isSubmodulePath(cwd, gitBinaryPath, path))) {
+    const args = withWordDiff(['diff', '--cached', '--submodule=log', '--', path], wordDiff)
+    const unified = await runGitOrThrow(args, { cwd, gitBinaryPath })
+    return { unified, path }
+  }
+
   const args = withWordDiff(['diff', '--cached', '--'], wordDiff)
   if (path) args.push(path)
   const unified = await runGitOrThrow(args, { cwd, gitBinaryPath })

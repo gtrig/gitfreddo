@@ -68,6 +68,8 @@ let settings: AppSettings = {
   githubLogin: '',
   githubConnectedAt: null,
   pullRebase: false,
+  submoduleRecursion: 'on-demand',
+  pushSubmoduleRecursion: 'check',
   diffViewMode: 'unified',
   uiZoomFactor: 1
 }
@@ -168,7 +170,7 @@ function registerIpc(): void {
   })
 
   ipcMain.handle('gitfreddo:clone-repository', async (_event, url: string, parentDir: string) => {
-    return cloneRepository(url, parentDir, settings.gitBinaryPath)
+    return cloneRepository(url, parentDir, settings.gitBinaryPath, settings.submoduleRecursion)
   })
 
   ipcMain.handle('gitfreddo:init-repository', async () => {

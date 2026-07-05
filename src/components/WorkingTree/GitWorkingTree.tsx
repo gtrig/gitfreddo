@@ -4,11 +4,12 @@ import type { TFunction } from 'i18next'
 import { MinusIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/solid'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
-import { useWorkingStatus } from '@/hooks/useGit'
+import { useWorkingStatus, useRepoStatus } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useInvalidateGit } from '@/hooks/useInvalidateGit'
 import { useToastStore } from '@/stores/toast'
 import { statusColor, statusLabel, type GitFileChange } from '@/lib/types'
+import { submoduleStatusColor, submoduleStatusLabel } from '@/lib/git/submoduleStatus'
 import { buildFileTree, collectFolderPaths, countCommitFiles, type FileTreeNode } from '@/lib/workspace/fileTree'
 import type { CommitFileItem } from '@/lib/types'
 import { LoadingRow, Spinner } from '@/components/Ui/Spinner'
@@ -78,6 +79,16 @@ function WorkingTreeActionButton({
   )
 }
 
+function fileStatusBadge(file: GitFileChange): { label: string; color: string } {
+  if (file.isSubmodule && file.submoduleStatus) {
+    return {
+      label: submoduleStatusLabel(file.submoduleStatus),
+      color: submoduleStatusColor(file.submoduleStatus)
+    }
+  }
+  return { label: statusLabel(file.status), color: statusColor(file.status) }
+}
+
 function FileRow({
   file,
   onSelect,
@@ -91,6 +102,9 @@ function FileRow({
   onRename,
   onFileHistory,
   onAddToGitignore,
+  onOpenSubmodule,
+  onUpdateSubmodule,
+  onSyncSubmodule,
   stageLabel,
   unstageLabel,
   t
@@ -107,10 +121,14 @@ function FileRow({
   onRename?: () => void
   onFileHistory?: () => void
   onAddToGitignore?: () => void
+  onOpenSubmodule?: () => void
+  onUpdateSubmodule?: () => void
+  onSyncSubmodule?: () => void
   stageLabel: string
   unstageLabel: string
   t: TFunction
 }) {
+  const badge = fileStatusBadge(file)
   return (
     <div className="flex items-center gap-1">
       <button
@@ -128,12 +146,16 @@ function FileRow({
                 onStageToggle: onStage ?? (() => {}),
                 onOpenInEditor: () => void window.gitfreddo.openInEditor(file.path),
                 onFileHistory: onFileHistory,
-                onRename: onRename,
-                onDiscard,
-                onDelete,
-                onRemove,
-                onAddToGitignore
+                onRename: file.isSubmodule ? undefined : onRename,
+                onDiscard: file.isSubmodule ? undefined : onDiscard,
+                onDelete: file.isSubmodule ? undefined : onDelete,
+                onRemove: file.isSubmodule ? undefined : onRemove,
+                onAddToGitignore: file.isSubmodule ? undefined : onAddToGitignore,
+                onOpenSubmodule,
+                onUpdateSubmodule,
+                onSyncSubmodule
               },
+              { isSubmodule: file.isSubmodule },
               t
             )
           )
@@ -142,8 +164,8 @@ function FileRow({
           selected ? 'bg-gf-surface text-white' : 'text-gf-fg-muted'
         }`}
       >
-        <span className={`mr-2 inline-block w-3 text-center font-mono text-[11px] ${statusColor(file.status)}`}>
-          {statusLabel(file.status)}
+        <span className={`mr-2 inline-block w-3 text-center font-mono text-[11px] ${badge.color}`}>
+          {badge.label}
         </span>
         <FileChangePath file={file} />
       </button>
@@ -228,6 +250,9 @@ function TreeNode({
   onRename,
   onFileHistory,
   onAddToGitignore,
+  onOpenSubmodule,
+  onUpdateSubmodule,
+  onSyncSubmodule,
   stageLabel,
   unstageLabel,
   t
@@ -250,6 +275,9 @@ function TreeNode({
   onRename?: (path: string) => void
   onFileHistory?: (path: string) => void
   onAddToGitignore?: (path: string, directory?: boolean) => void
+  onOpenSubmodule?: (path: string) => void
+  onUpdateSubmodule?: (path: string) => void
+  onSyncSubmodule?: (path: string) => void
   stageLabel: string
   unstageLabel: string
   t: TFunction
@@ -311,6 +339,9 @@ function TreeNode({
               onRename={onRename}
               onFileHistory={onFileHistory}
               onAddToGitignore={onAddToGitignore}
+              onOpenSubmodule={onOpenSubmodule}
+              onUpdateSubmodule={onUpdateSubmodule}
+              onSyncSubmodule={onSyncSubmodule}
               stageLabel={stageLabel}
               unstageLabel={unstageLabel}
               t={t}
@@ -324,6 +355,7 @@ function TreeNode({
   if (!file) return null
   const selectFile = () => setSelectedFile(file.path, mode)
   const stageToggle = () => onStage?.(file.path)
+  const badge = fileStatusBadge(file)
   return (
     <div className="flex items-center gap-1" style={{ paddingLeft: 22 + depth * 12 }}>
       <button
@@ -341,14 +373,25 @@ function TreeNode({
                 onStageToggle: stageToggle,
                 onOpenInEditor: () => void window.gitfreddo.openInEditor(file.path),
                 onFileHistory: onFileHistory ? () => onFileHistory(file.path) : undefined,
-                onRename: onRename ? () => onRename(file.path) : undefined,
-                onDiscard: onDiscard ? () => onDiscard(file.path, mode === 'staged') : undefined,
-                onDelete: onDelete ? () => onDelete(file.path) : undefined,
-                onRemove: onRemove ? () => onRemove(file.path) : undefined,
-                onAddToGitignore: onAddToGitignore
-                  ? () => onAddToGitignore(file.path)
-                  : undefined
+                onRename: onRename && !file.isSubmodule ? () => onRename(file.path) : undefined,
+                onDiscard: onDiscard && !file.isSubmodule
+                  ? () => onDiscard(file.path, mode === 'staged')
+                  : undefined,
+                onDelete: onDelete && !file.isSubmodule ? () => onDelete(file.path) : undefined,
+                onRemove: onRemove && !file.isSubmodule ? () => onRemove(file.path) : undefined,
+                onAddToGitignore:
+                  onAddToGitignore && !file.isSubmodule
+                    ? () => onAddToGitignore(file.path)
+                    : undefined,
+                onOpenSubmodule: onOpenSubmodule
+                  ? () => onOpenSubmodule(file.path)
+                  : undefined,
+                onUpdateSubmodule: onUpdateSubmodule
+                  ? () => onUpdateSubmodule(file.path)
+                  : undefined,
+                onSyncSubmodule: onSyncSubmodule ? () => onSyncSubmodule(file.path) : undefined
               },
+              { isSubmodule: file.isSubmodule },
               t
             )
           )
@@ -357,8 +400,8 @@ function TreeNode({
           selectedFile === file.path ? 'bg-gf-surface text-white' : 'text-gf-fg-muted'
         }`}
       >
-        <span className={`mr-2 inline-block w-3 text-center font-mono text-[11px] ${statusColor(file.status)}`}>
-          {statusLabel(file.status)}
+        <span className={`mr-2 inline-block w-3 text-center font-mono text-[11px] ${badge.color}`}>
+          {badge.label}
         </span>
         <span className="truncate font-mono">{fileNameFromPath(file.path)}</span>
       </button>
@@ -379,9 +422,18 @@ export function GitWorkingTree() {
   const stageLabel = t('workingTree.stage')
   const unstageLabel = t('workingTree.unstage')
   const connected = useWorkspaceStore((s) => s.connected)
+  const openWorkspace = useWorkspaceStore((s) => s.openWorkspace)
   const { data, isLoading, error } = useWorkingStatus(connected)
-  const { stageAdd, stageReset, workingDiscard, workingRemove, workingAddToGitignore } =
-    useGitMutations()
+  const { data: repoStatus } = useRepoStatus(connected)
+  const {
+    stageAdd,
+    stageReset,
+    workingDiscard,
+    workingRemove,
+    workingAddToGitignore,
+    submoduleUpdate,
+    submoduleSync
+  } = useGitMutations()
   const invalidate = useInvalidateGit()
   const showToast = useToastStore((s) => s.show)
   const selectedFile = useSelectionStore((s) => s.selectedWorkingFile)
@@ -482,6 +534,28 @@ export function GitWorkingTree() {
       })
   }
 
+  async function openSubmodule(path: string) {
+    if (!repoStatus?.root) return
+    const absolute = await window.gitfreddo.normalizeRepoPath(
+      `${repoStatus.root.replace(/[/\\]+$/, '')}/${path}`
+    )
+    const tabs = useWorkspaceStore.getState().tabs
+    const existing = tabs.find((tab) => tab.path === absolute)
+    if (existing) {
+      await useWorkspaceStore.getState().switchWorkspace(absolute)
+    } else {
+      await openWorkspace(absolute)
+    }
+  }
+
+  function updateSubmodule(path: string) {
+    void submoduleUpdate.mutateAsync({ paths: [path], init: true })
+  }
+
+  function syncSubmodule(path: string) {
+    void submoduleSync.mutateAsync({ paths: [path] })
+  }
+
   const busy =
     stageAdd.isPending ||
     stageReset.isPending ||
@@ -541,6 +615,13 @@ export function GitWorkingTree() {
                   onRename={() => setRenamePath(file.path)}
                   onFileHistory={() => setFileHistoryPath(file.path)}
                   onAddToGitignore={() => requestAddToGitignore(file.path)}
+                  onOpenSubmodule={
+                    file.isSubmodule ? () => void openSubmodule(file.path) : undefined
+                  }
+                  onUpdateSubmodule={
+                    file.isSubmodule ? () => updateSubmodule(file.path) : undefined
+                  }
+                  onSyncSubmodule={file.isSubmodule ? () => syncSubmodule(file.path) : undefined}
                   openMenu={openMenu}
                   stageLabel={stageLabel}
                   unstageLabel={unstageLabel}
@@ -586,6 +667,9 @@ export function GitWorkingTree() {
                     onRename={setRenamePath}
                     onFileHistory={setFileHistoryPath}
                     onAddToGitignore={requestAddToGitignore}
+                    onOpenSubmodule={(path) => void openSubmodule(path)}
+                    onUpdateSubmodule={updateSubmodule}
+                    onSyncSubmodule={syncSubmodule}
                     openMenu={openMenu}
                     stageLabel={stageLabel}
                     unstageLabel={unstageLabel}

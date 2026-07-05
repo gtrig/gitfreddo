@@ -2,6 +2,8 @@ import { spawn } from 'child_process'
 import { existsSync } from 'fs'
 import { join } from 'path'
 import { repoNameFromUrl } from '../../shared/git'
+import type { SubmoduleRecursion } from '../../shared/submodule'
+import { submoduleRecursionCloneArgs } from '../../shared/submodule'
 import { emitLog } from './log-bus'
 import { buildGitEnv } from './credentials'
 
@@ -10,7 +12,8 @@ export { repoNameFromUrl }
 export async function cloneRepository(
   url: string,
   parentDir: string,
-  gitBinaryPath = 'git'
+  gitBinaryPath = 'git',
+  submoduleRecursion: SubmoduleRecursion = 'on-demand'
 ): Promise<string> {
   const trimmedUrl = url.trim()
   if (!trimmedUrl) {
@@ -29,10 +32,14 @@ export async function cloneRepository(
   const env = await buildGitEnv()
 
   return new Promise((resolve, reject) => {
-    const child = spawn(gitBinaryPath, ['clone', '--', trimmedUrl, targetPath], {
+    const child = spawn(
+      gitBinaryPath,
+      ['clone', ...submoduleRecursionCloneArgs(submoduleRecursion), '--', trimmedUrl, targetPath],
+      {
       env,
       stdio: ['ignore', 'pipe', 'pipe']
-    })
+    }
+    )
 
     let stderr = ''
     child.stderr.on('data', (chunk: Buffer) => {

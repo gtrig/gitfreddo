@@ -1,5 +1,10 @@
 import { runGit, runGitOrThrow } from '../git-runner'
 import type { GitRemote } from '../types'
+import type { PushSubmoduleRecursion, SubmoduleRecursion } from '../../../shared/submodule'
+import {
+  pushSubmoduleRecursionArgs,
+  submoduleRecursionFetchArgs
+} from '../../../shared/submodule'
 
 export function remoteNameFromUpstream(upstream: string): string {
   const slash = upstream.indexOf('/')
@@ -96,6 +101,7 @@ export interface FetchParams {
   tags?: boolean
   tagsOnly?: boolean
   refspec?: string
+  submoduleRecursion?: SubmoduleRecursion
 }
 
 export async function fetchRemote(
@@ -118,6 +124,7 @@ export async function fetchRemote(
 
   args.push('--prune')
   if (params.tags) args.push('--tags')
+  args.push(...submoduleRecursionFetchArgs(params.submoduleRecursion ?? 'none'))
   args.push(await resolveRemoteName(cwd, gitBinaryPath, params.remote))
   if (params.refspec?.trim()) {
     args.push(params.refspec.trim())
@@ -132,11 +139,13 @@ export async function pushRemote(
   branch?: string,
   setUpstream = false,
   force = false,
-  pushAll = false
+  pushAll = false,
+  pushSubmoduleRecursion: PushSubmoduleRecursion = 'no'
 ): Promise<void> {
   const pushRemoteName = await resolveRemoteName(cwd, gitBinaryPath, remote)
   const args = ['push']
   if (force) args.push('--force-with-lease')
+  args.push(...pushSubmoduleRecursionArgs(pushSubmoduleRecursion))
 
   if (pushAll) {
     args.push('--all', pushRemoteName)
@@ -164,11 +173,13 @@ export async function pullRemote(
   gitBinaryPath: string,
   remote?: string,
   branch?: string,
-  rebase = false
+  rebase = false,
+  submoduleRecursion: SubmoduleRecursion = 'none'
 ): Promise<void> {
   const pullRemoteName = await resolveRemoteName(cwd, gitBinaryPath, remote)
   const args = ['pull']
   if (rebase) args.push('--rebase')
+  args.push(...submoduleRecursionFetchArgs(submoduleRecursion))
   args.push(pullRemoteName)
   if (branch?.trim()) {
     args.push(branch.trim())

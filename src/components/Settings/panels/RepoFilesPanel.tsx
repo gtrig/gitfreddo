@@ -8,7 +8,8 @@ import { useToastStore } from '@/stores/toast'
 
 const REPO_FILES = [
   { path: '.gitignore', label: '.gitignore' },
-  { path: '.gitattributes', label: '.gitattributes' }
+  { path: '.gitattributes', label: '.gitattributes' },
+  { path: '.gitmodules', label: '.gitmodules' }
 ] as const
 
 export function RepoFilesPanel() {

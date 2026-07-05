@@ -65,6 +65,8 @@ export interface GitFileChange {
   path: string
   status: FileChangeStatus
   oldPath?: string
+  isSubmodule?: boolean
+  submoduleStatus?: import('@shared/submodule').SubmoduleEntryStatus
 }
 
 export interface GitWorkingStatus {
@@ -160,6 +162,13 @@ export interface GitRepoStatus {
   commonDir: string
   isLinkedWorktree: boolean
 }
+
+export type {
+  GitSubmoduleEntry,
+  SubmoduleEntryStatus,
+  SubmoduleRecursion,
+  PushSubmoduleRecursion
+} from '@shared/submodule'
 
 export interface GitWorktreeEntry {
   path: string

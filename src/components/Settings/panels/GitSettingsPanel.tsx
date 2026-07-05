@@ -91,6 +91,42 @@ export function GitSettingsPanel({ form, onChange, onPickGit }: PanelProps) {
         </label>
       </div>
 
+      <div className="space-y-3 border-t border-gf-border pt-4">
+        <h3 className="text-sm font-semibold text-gf-fg">{t('settings.git.submodules')}</h3>
+        <div>
+          <FieldLabel>{t('settings.git.submoduleRecursion')}</FieldLabel>
+          <select
+            value={form.submoduleRecursion}
+            onChange={(e) =>
+              onChange({
+                submoduleRecursion: e.target.value as AppSettings['submoduleRecursion']
+              })
+            }
+            className="w-full rounded border border-gf-border-strong bg-gf-bg px-2 py-1.5 text-sm text-gf-fg"
+          >
+            <option value="none">{t('settings.git.submoduleRecursionNone')}</option>
+            <option value="on-demand">{t('settings.git.submoduleRecursionOnDemand')}</option>
+            <option value="always">{t('settings.git.submoduleRecursionAlways')}</option>
+          </select>
+        </div>
+        <div>
+          <FieldLabel>{t('settings.git.pushSubmoduleRecursion')}</FieldLabel>
+          <select
+            value={form.pushSubmoduleRecursion}
+            onChange={(e) =>
+              onChange({
+                pushSubmoduleRecursion: e.target.value as AppSettings['pushSubmoduleRecursion']
+              })
+            }
+            className="w-full rounded border border-gf-border-strong bg-gf-bg px-2 py-1.5 text-sm text-gf-fg"
+          >
+            <option value="no">{t('settings.git.pushSubmoduleRecursionNo')}</option>
+            <option value="check">{t('settings.git.pushSubmoduleRecursionCheck')}</option>
+            <option value="on-demand">{t('settings.git.pushSubmoduleRecursionOnDemand')}</option>
+          </select>
+        </div>
+      </div>
+
       {connected && (
         <div className="space-y-3 border-t border-gf-border pt-4">
           <h3 className="text-sm font-semibold text-gf-fg">{t('settings.git.repoConfig')}</h3>

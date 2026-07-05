@@ -22,6 +22,8 @@ export const defaultMockSettings: AppSettings = {
   githubLogin: '',
   githubConnectedAt: null,
   pullRebase: false,
+  submoduleRecursion: 'on-demand',
+  pushSubmoduleRecursion: 'check',
   diffViewMode: 'unified',
   locale: 'en',
   uiZoomFactor: 1

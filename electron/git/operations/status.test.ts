@@ -48,11 +48,20 @@ describe('parsePorcelainV2Line', () => {
   })
 
   it('parses paths that contain spaces', () => {
-    const line =
-      '1 M. N... 100644 100644 100644 abc def docs/my file.md'
+    const line = '1 M. N... 100644 100644 100644 abc def docs/my file.md'
     expect(parsePorcelainV2Line(line)).toEqual({
       path: 'docs/my file.md',
       status: 'modified'
+    })
+  })
+
+  it('marks gitlink entries as submodules', () => {
+    const line = '1 M. N... 160000 160000 160000 abc def vendor/lib'
+    expect(parsePorcelainV2Line(line)).toEqual({
+      path: 'vendor/lib',
+      status: 'modified',
+      isSubmodule: true,
+      submoduleStatus: 'ahead'
     })
   })
 

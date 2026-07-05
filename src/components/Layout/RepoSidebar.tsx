@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
-import { useBranches, useRemotes, useRepoStatus, useStashList, useTags, useWorktreeList } from '@/hooks/useGit'
+import { useBranches, useRemotes, useRepoStatus, useStashList, useSubmoduleList, useTags, useWorktreeList } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { CreateBranchModal } from '@/components/Branches/CreateBranchModal'
 import { SidebarFilter } from '@/components/Layout/sidebar/SidebarFilter'
@@ -12,6 +12,7 @@ import {
 } from '@/components/Layout/sidebar/LocalBranchesSection'
 import { StashesSection } from '@/components/Layout/sidebar/StashesSection'
 import { WorktreesSection } from '@/components/Layout/sidebar/WorktreesSection'
+import { SubmodulesSection } from '@/components/Layout/sidebar/SubmodulesSection'
 import { TagsSection } from '@/components/Layout/sidebar/TagsSection'
 import { SidebarPullRequestsSection } from '@/components/Layout/sidebar/SidebarPullRequestsSection'
 import { SidebarIssuesSection } from '@/components/Layout/sidebar/SidebarIssuesSection'
@@ -34,6 +35,11 @@ export function RepoSidebar() {
     isLoading: worktreesLoading,
     error: worktreesError
   } = useWorktreeList(connected)
+  const {
+    data: submodules,
+    isLoading: submodulesLoading,
+    error: submodulesError
+  } = useSubmoduleList(connected)
   const { data: tags, isLoading: tagsLoading, error: tagsError } = useTags(connected)
   const { checkout } = useGitMutations()
   const selectTimelineNode = useSelectionStore((s) => s.selectTimelineNode)
@@ -60,9 +66,12 @@ export function RepoSidebar() {
       const label = wt.branch ?? (wt.isDetached ? '(detached)' : wt.path)
       return matchesFilter(label, filter) || matchesFilter(wt.path, filter)
     }).length
+    const submoduleCount = (submodules ?? []).filter((sm) =>
+      matchesFilter(sm.path, filter) || matchesFilter(sm.url, filter)
+    ).length
     const tagCount = (tags ?? []).filter((tag) => matchesFilter(tag.name, filter)).length
-    return localCount + remoteCount + stashCount + worktreeCount + tagCount
-  }, [branches, connected, filter, repoStatus?.isDetached, stashes, tags, worktrees])
+    return localCount + remoteCount + stashCount + worktreeCount + submoduleCount + tagCount
+  }, [branches, connected, filter, repoStatus?.isDetached, stashes, submodules, tags, worktrees])
 
   if (!connected) {
     return (
@@ -109,6 +118,12 @@ export function RepoSidebar() {
           filter={filter}
           isLoading={worktreesLoading}
           error={worktreesError as Error | null}
+        />
+        <SubmodulesSection
+          submodules={submodules}
+          filter={filter}
+          isLoading={submodulesLoading}
+          error={submodulesError as Error | null}
         />
         <StashesSection
           stashes={stashes}

@@ -29,6 +29,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   githubLogin: '',
   githubConnectedAt: null,
   pullRebase: false,
+  submoduleRecursion: 'on-demand',
+  pushSubmoduleRecursion: 'check',
   diffViewMode: 'unified',
   uiZoomFactor: 1
 }
@@ -57,6 +59,14 @@ export async function loadSettings(): Promise<AppSettings> {
       githubLogin: parsed.githubLogin ?? '',
       githubConnectedAt: parsed.githubConnectedAt ?? null,
       pullRebase: Boolean(parsed.pullRebase),
+      submoduleRecursion:
+        parsed.submoduleRecursion === 'always' || parsed.submoduleRecursion === 'none'
+          ? parsed.submoduleRecursion
+          : 'on-demand',
+      pushSubmoduleRecursion:
+        parsed.pushSubmoduleRecursion === 'no' || parsed.pushSubmoduleRecursion === 'on-demand'
+          ? parsed.pushSubmoduleRecursion
+          : 'check',
       diffViewMode:
         parsed.diffViewMode === 'split' || parsed.diffViewMode === 'word'
           ? parsed.diffViewMode

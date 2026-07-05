@@ -28,7 +28,8 @@ Near-term direction for GitFreddo. Not a commitment — priorities may shift.
 
 ## Longer term
 
-- [ ] Submodule and subtree workflows
+- [x] Submodule workflows (v1: list, CRUD, settings-driven recurse, working-tree integration)
+- [ ] Subtree workflows
 - [ ] Partial clone and sparse checkout support
 - [ ] Plugin or extension API
 

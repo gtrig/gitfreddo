@@ -19,6 +19,9 @@ export { normalizeAppTheme } from './themes'
 
 export type AppLocale = 'en' | 'el'
 
+export type SubmoduleRecursion = 'none' | 'on-demand' | 'always'
+export type PushSubmoduleRecursion = 'no' | 'check' | 'on-demand'
+
 export interface AppSettings {
   theme: AppTheme
   locale: AppLocale
@@ -41,6 +44,8 @@ export interface AppSettings {
   githubLogin: string
   githubConnectedAt: number | null
   pullRebase: boolean
+  submoduleRecursion: SubmoduleRecursion
+  pushSubmoduleRecursion: PushSubmoduleRecursion
   diffViewMode: 'unified' | 'split' | 'word'
   uiZoomFactor: number
 }

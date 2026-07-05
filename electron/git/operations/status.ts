@@ -1,3 +1,4 @@
+import type { SubmoduleEntryStatus } from '../../../shared/submodule'
 import { runGit, runGitOrThrow } from '../git-runner'
 import { gitMetadataExists, rebaseInProgress } from '../git-dir'
 import type { GitFileChange, GitWorkingStatus } from '../types'
@@ -63,6 +64,7 @@ export async function workingStatus(
   const unstaged: GitFileChange[] = []
   const untracked: GitFileChange[] = []
   const conflicted: GitFileChange[] = []
+  const submoduleModified = new Set<string>()
 
   for (const line of lines) {
     if (line.startsWith('# branch.head ')) {
@@ -71,6 +73,9 @@ export async function workingStatus(
       const parts = line.slice('# branch.ab '.length).trim().split(' ')
       ahead = Math.max(0, Number(parts[1]) || 0)
       behind = Math.max(0, Math.abs(Number(parts[0]) || 0))
+    } else if (line.startsWith('# submodule.')) {
+      const path = line.slice(line.indexOf(' ') + 1).trim()
+      if (path) submoduleModified.add(path)
     } else if (line.startsWith('1 ') || line.startsWith('2 ')) {
       const classified = classifyPorcelainV2Line(line)
       if (classified.conflicted) {
@@ -86,6 +91,19 @@ export async function workingStatus(
       const change = parsePorcelainV2Line(line)
       if (change) conflicted.push(change)
     }
+  }
+
+  if (submoduleModified.size > 0) {
+    const enrich = (change: GitFileChange): GitFileChange =>
+      submoduleModified.has(change.path)
+        ? {
+            ...change,
+            isSubmodule: true,
+            submoduleStatus: change.submoduleStatus ?? 'dirty'
+          }
+        : change
+    for (let i = 0; i < staged.length; i++) staged[i] = enrich(staged[i]!)
+    for (let i = 0; i < unstaged.length; i++) unstaged[i] = enrich(unstaged[i]!)
   }
 
   if (ahead === 0 && behind === 0) {
@@ -127,27 +145,38 @@ export function parsePorcelainV2Line(line: string): GitFileChange | null {
   const workTreeStatus = xy[1] ?? '.'
   const status = statusCharToKind(indexStatus, workTreeStatus)
   if (!status) return null
+  const isSubmodule = parts[3] === '160000' || parts[4] === '160000'
+  const submoduleStatus: SubmoduleEntryStatus | undefined = isSubmodule
+    ? status === 'added'
+      ? 'uninitialized'
+      : status === 'modified'
+        ? 'ahead'
+        : 'initialized'
+    : undefined
+
+  const withSubmodule = (change: GitFileChange): GitFileChange =>
+    isSubmodule ? { ...change, isSubmodule: true, submoduleStatus } : change
 
   if (recordType === '2') {
     // rename/copy: <score> <newPath>\t<oldPath>
     if (parts.length < 10) return null
     const pathField = parts.slice(9).join(' ')
     const tabIndex = pathField.indexOf('\t')
-    if (tabIndex === -1) return { path: pathField, status }
-    return {
+    if (tabIndex === -1) return withSubmodule({ path: pathField, status })
+    return withSubmodule({
       path: pathField.slice(0, tabIndex),
       oldPath: pathField.slice(tabIndex + 1),
       status
-    }
+    })
   }
 
   if (recordType === 'u') {
     const path = parts.slice(10).join(' ')
-    return path ? { path, status } : null
+    return path ? withSubmodule({ path, status }) : null
   }
 
   const path = parts.slice(8).join(' ')
-  return path ? { path, status } : null
+  return path ? withSubmodule({ path, status }) : null
 }
 
 export interface PorcelainV2Classification {

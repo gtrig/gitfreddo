@@ -90,6 +90,32 @@ describe('workingTreeFileContextMenuItems', () => {
     expect(deleted.some((item) => item.id === 'gitignore')).toBe(false)
     expect(conflicted.some((item) => item.id === 'gitignore')).toBe(false)
   })
+
+  it('uses submodule actions instead of file editor actions', () => {
+    const items = workingTreeFileContextMenuItems(
+      'vendor/lib',
+      'working',
+      'modified',
+      {
+        onSelect: noop,
+        onStageToggle: noop,
+        onOpenInEditor: noop,
+        onOpenSubmodule: noop,
+        onUpdateSubmodule: noop,
+        onSyncSubmodule: noop,
+        onRename: noop,
+        onDiscard: noop,
+        onAddToGitignore: noop
+      },
+      { isSubmodule: true }
+    )
+
+    expect(items.some((item) => item.id === 'open-submodule')).toBe(true)
+    expect(items.some((item) => item.id === 'open')).toBe(false)
+    expect(items.some((item) => item.id === 'discard')).toBe(false)
+    expect(items.some((item) => item.id === 'gitignore')).toBe(false)
+    expect(items.some((item) => item.id === 'submodule-update')).toBe(true)
+  })
 })
 
 describe('commitFolderContextMenuItems', () => {

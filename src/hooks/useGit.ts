@@ -7,6 +7,7 @@ import type {
   GitRemote,
   GitRepoStatus,
   GitStashEntry,
+  GitSubmoduleEntry,
   GitTag,
   GitWorktreeEntry,
   GitWorkingStatus
@@ -92,6 +93,16 @@ export function useWorktreeList(enabled = true) {
     queryKey: ['repo', repoPath, 'worktree.list'],
     queryFn: async () =>
       (await window.gitfreddo.invoke('worktree.list')) as GitWorktreeEntry[],
+    enabled: enabled && connected && Boolean(repoPath)
+  })
+}
+
+export function useSubmoduleList(enabled = true) {
+  const { repoPath, connected } = useRepoScope()
+  return useQuery<GitSubmoduleEntry[]>({
+    queryKey: ['repo', repoPath, 'submodule.list'],
+    queryFn: async () =>
+      (await window.gitfreddo.invoke('submodule.list')) as GitSubmoduleEntry[],
     enabled: enabled && connected && Boolean(repoPath)
   })
 }

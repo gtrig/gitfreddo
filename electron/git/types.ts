@@ -56,6 +56,8 @@ export interface GitFileChange {
   path: string
   status: 'added' | 'modified' | 'deleted' | 'renamed' | 'copied' | 'untracked' | 'conflicted'
   oldPath?: string
+  isSubmodule?: boolean
+  submoduleStatus?: import('../../shared/submodule').SubmoduleEntryStatus
 }
 
 export interface GitWorkingStatus {
@@ -117,6 +119,8 @@ export interface GitWorktreeEntry {
   locked?: string
   prunable?: string
 }
+
+export type { GitSubmoduleEntry, SubmoduleEntryStatus } from '../../shared/submodule'
 
 export interface GitDiffResult {
   unified: string

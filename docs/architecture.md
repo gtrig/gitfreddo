@@ -24,6 +24,7 @@ The renderer calls `window.gitfreddo.invoke(method, params)` for git operations:
 | `diff.working`, `diff.staged`, `diff.commits`, `diff.show` | `stash.push`, `stash.pop`, `stash.apply`, `stash.drop`, `stash.branch` |
 | `stash.list`, `stash.show`, `stash.files` | `merge.start` (no-ff/squash), `merge.abort`, `merge.continue` |
 | `worktree.list`, `file.read`, `file.blame`, `file.readStage` | `worktree.add`, `worktree.remove`, `worktree.prune` |
+| `submodule.list` | `submodule.add`, `submodule.init`, `submodule.update`, `submodule.sync`, `submodule.deinit`, `submodule.remove`, `submodule.setUrl` |
 | `merge.status`, `bisect.status`, `notes.list` | `rebase.start` (--onto), `rebase.interactive`, `rebase.abort`, `rebase.continue`, `rebase.skip`, `rebase.squash`, `rebase.drop` |
 | `maintenance.unreachable`, `maintenance.staleBranches`, `config.get`, `config.list` | `cherry-pick` (-n), `cherry-pick.continue`, `cherry-pick.abort`, `cherry-pick.skip`, `config.set` |
 | | `reset`, `reset.head`, `maintenance.prune`, `maintenance.removeStaleBranches`, `bisect.start`, `bisect.good`, `bisect.bad`, `bisect.reset`, `notes.add` |

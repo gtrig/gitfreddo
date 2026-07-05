@@ -14,6 +14,7 @@ export const REPO_CHANGE_REFS_QUERY_SUFFIXES = [
   'remote.list',
   'stash.list',
   'tag.list',
+  'submodule.list',
   'merge.status'
 ] as const
 

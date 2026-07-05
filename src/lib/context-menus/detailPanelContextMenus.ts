@@ -89,15 +89,21 @@ export function workingTreeFileContextMenuItems(
     onRemove?: () => void
     onDelete?: () => void
     onAddToGitignore?: () => void
+    onOpenSubmodule?: () => void
+    onUpdateSubmodule?: () => void
+    onSyncSubmodule?: () => void
   },
+  options?: { isSubmodule?: boolean },
   t?: TFunction
 ): ContextMenuItem[] {
+  const isSubmodule = Boolean(options?.isSubmodule)
   const canDiscard =
+    !isSubmodule &&
     status !== 'untracked' &&
     status !== 'conflicted' &&
     (status === 'modified' || status === 'deleted' || status === 'added' || mode === 'staged')
 
-  const canRemove = status !== 'untracked' && status !== 'conflicted'
+  const canRemove = !isSubmodule && status !== 'untracked' && status !== 'conflicted'
 
   const items: ContextMenuItem[] = [
     {
@@ -146,7 +152,7 @@ export function workingTreeFileContextMenuItems(
     })
   }
 
-  if (handlers.onRename && status !== 'deleted') {
+  if (handlers.onRename && status !== 'deleted' && !isSubmodule) {
     items.push({
       id: 'rename',
       label: t ? t('contextMenu.detailPanel.rename') : 'Rename…',
@@ -156,6 +162,7 @@ export function workingTreeFileContextMenuItems(
 
   if (
     handlers.onAddToGitignore &&
+    !isSubmodule &&
     path !== '.gitignore' &&
     status !== 'deleted' &&
     status !== 'conflicted'
@@ -175,19 +182,41 @@ export function workingTreeFileContextMenuItems(
     })
   }
 
-  items.push(
-    separator('sep-editor'),
-    {
+  if (handlers.onUpdateSubmodule) {
+    items.push({
+      id: 'submodule-update',
+      label: t ? t('contextMenu.submodule.update') : 'Update submodule',
+      onClick: handlers.onUpdateSubmodule
+    })
+  }
+
+  if (handlers.onSyncSubmodule) {
+    items.push({
+      id: 'submodule-sync',
+      label: t ? t('contextMenu.submodule.sync') : 'Sync submodule',
+      onClick: handlers.onSyncSubmodule
+    })
+  }
+
+  items.push(separator('sep-editor'))
+  if (isSubmodule && handlers.onOpenSubmodule) {
+    items.push({
+      id: 'open-submodule',
+      label: t ? t('contextMenu.submodule.open') : 'Open submodule',
+      onClick: handlers.onOpenSubmodule
+    })
+  } else {
+    items.push({
       id: 'open',
       label: t ? t('diff.openInEditor') : 'Open in editor',
       onClick: handlers.onOpenInEditor
-    },
-    {
-      id: 'copy',
-      label: t ? t('contextMenu.detailPanel.copyPath') : 'Copy path',
-      onClick: () => void copyToClipboard(path)
-    }
-  )
+    })
+  }
+  items.push({
+    id: 'copy',
+    label: t ? t('contextMenu.detailPanel.copyPath') : 'Copy path',
+    onClick: () => void copyToClipboard(path)
+  })
 
   return items
 }
