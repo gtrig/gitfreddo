@@ -87,7 +87,8 @@ export async function tagCreate(
   gitBinaryPath: string,
   name: string,
   target?: string,
-  message?: string
+  message?: string,
+  sign = false
 ): Promise<void> {
   const trimmedName = name.trim()
   if (!trimmedName) {
@@ -95,10 +96,14 @@ export async function tagCreate(
   }
 
   const args = ['tag']
+  if (sign) args.push('-s')
   const trimmedMessage = message?.trim()
   if (trimmedMessage) {
     args.push('-a', trimmedName, '-m', trimmedMessage)
   } else {
+    if (sign) {
+      throw new Error('Signing requires an annotated tag message.')
+    }
     args.push(trimmedName)
   }
 

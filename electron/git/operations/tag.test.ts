@@ -1,5 +1,9 @@
-import { describe, expect, it } from 'vitest'
-import { parseTagLine, parseTagRef } from './tag'
+import { resolve } from 'path'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { parseTagLine, parseTagRef, tagCreate } from './tag'
+import * as gitRunner from '../git-runner'
+
+const FIXTURE_REPO = resolve(__dirname, '../../../test/fixtures/minimal-repo')
 
 describe('parseTagRef', () => {
   it('parses local tags', () => {
@@ -86,5 +90,26 @@ describe('parseTagLine', () => {
       remote: 'origin',
       createdAt: '2024-01-15 10:00:00 +0000'
     })
+  })
+})
+
+describe('tagCreate', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('passes -s when signing an annotated tag', async () => {
+    const spy = vi.spyOn(gitRunner, 'runGitOrThrow').mockResolvedValue('')
+    await tagCreate(FIXTURE_REPO, 'git', 'v-sign-test', 'HEAD', 'Signed release', true)
+    expect(spy).toHaveBeenCalledWith(
+      ['tag', '-s', '-a', 'v-sign-test', '-m', 'Signed release', 'HEAD'],
+      expect.objectContaining({ cwd: FIXTURE_REPO })
+    )
+  })
+
+  it('rejects signing without a message', async () => {
+    await expect(tagCreate(FIXTURE_REPO, 'git', 'v-sign-light', 'HEAD', undefined, true)).rejects.toThrow(
+      /annotated tag message/i
+    )
   })
 })

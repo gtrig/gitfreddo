@@ -260,11 +260,20 @@ export async function cherryPick(
   cwd: string,
   gitBinaryPath: string,
   hash: string,
-  noCommit = false
+  noCommit = false,
+  mainline?: number
 ): Promise<void> {
+  const fullHash = await resolveFullHash(cwd, gitBinaryPath, hash)
+  const parentCount = await mergeParentCount(cwd, gitBinaryPath, fullHash)
   const args = ['cherry-pick']
   if (noCommit) args.push('-n')
-  args.push(hash)
+  if (parentCount > 1) {
+    if (!mainline) {
+      throw new Error('Select a parent line when cherry-picking a merge commit.')
+    }
+    args.push('-m', String(mainline))
+  }
+  args.push(fullHash)
   await runGitOrThrow(args, { cwd, gitBinaryPath })
 }
 
@@ -272,18 +281,27 @@ export async function cherryPickMultiple(
   cwd: string,
   gitBinaryPath: string,
   hashes: string[],
-  noCommit = false
+  noCommit = false,
+  mainline?: number
 ): Promise<void> {
   if (hashes.length === 0) return
 
   await assertCanRewriteHistory(cwd, gitBinaryPath)
 
   for (const hash of hashes) {
-    const args = ['cherry-pick']
-    if (noCommit) args.push('-n')
-    args.push(hash)
-    await runGitOrThrow(args, { cwd, gitBinaryPath })
+    await cherryPick(cwd, gitBinaryPath, hash, noCommit, mainline)
   }
+}
+
+async function mergeParentCount(
+  cwd: string,
+  gitBinaryPath: string,
+  fullHash: string
+): Promise<number> {
+  const parentLine = (
+    await runGitOrThrow(['rev-list', '--parents', '-n', '1', fullHash], { cwd, gitBinaryPath })
+  ).trim()
+  return parentLine.split(/\s+/).length - 1
 }
 
 export async function rebaseSquash(
@@ -427,7 +445,8 @@ export async function resetToParent(
 export async function revertCommit(
   cwd: string,
   gitBinaryPath: string,
-  hash: string
+  hash: string,
+  mainline?: number
 ): Promise<void> {
   const ws = await workingStatus(cwd, gitBinaryPath)
   if (ws.rebaseInProgress || ws.mergeInProgress || ws.cherryPickInProgress) {
@@ -435,15 +454,16 @@ export async function revertCommit(
   }
 
   const fullHash = await resolveFullHash(cwd, gitBinaryPath, hash)
-
-  const parentLine = (
-    await runGitOrThrow(['rev-list', '--parents', '-n', '1', fullHash], { cwd, gitBinaryPath })
-  ).trim()
-  if (parentLine.split(/\s+/).length - 1 > 1) {
-    throw new Error('Reverting merge commits is not supported.')
+  const parentCount = await mergeParentCount(cwd, gitBinaryPath, fullHash)
+  const args = ['revert', '--no-edit']
+  if (parentCount > 1) {
+    if (!mainline) {
+      throw new Error('Select a parent line when reverting a merge commit.')
+    }
+    args.push('-m', String(mainline))
   }
-
-  await runGitOrThrow(['revert', '--no-edit', fullHash], { cwd, gitBinaryPath })
+  args.push(fullHash)
+  await runGitOrThrow(args, { cwd, gitBinaryPath })
 }
 
 export async function rebaseDrop(

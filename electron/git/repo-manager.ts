@@ -149,7 +149,8 @@ export class RepoManager {
           git,
           p.name as string,
           p.target as string | undefined,
-          p.message as string | undefined
+          p.message as string | undefined,
+          Boolean(p.sign)
         )
       case 'tag.delete':
         return tagOps.tagDelete(
@@ -267,7 +268,9 @@ export class RepoManager {
       case 'notes.list':
         return notesOps.notesList(cwd, git, p.hash as string | undefined)
       case 'notes.add':
-        return notesOps.notesAdd(cwd, git, p.hash as string, p.message as string)
+        return notesOps.notesAdd(cwd, git, p.hash as string, p.message as string, {
+          force: Boolean(p.force)
+        })
       case 'bisect.status':
         return bisectOps.bisectStatus(cwd, git)
       case 'bisect.start':
@@ -442,16 +445,28 @@ export class RepoManager {
             cwd,
             git,
             p.hashes as string[],
-            Boolean(p.noCommit)
+            Boolean(p.noCommit),
+            typeof p.mainline === 'number' ? p.mainline : undefined
           )
         }
-        return rebaseOps.cherryPick(cwd, git, p.hash as string, Boolean(p.noCommit))
+        return rebaseOps.cherryPick(
+          cwd,
+          git,
+          p.hash as string,
+          Boolean(p.noCommit),
+          typeof p.mainline === 'number' ? p.mainline : undefined
+        )
       case 'rebase.squash':
         return rebaseOps.rebaseSquash(cwd, git, p.hashes as string[])
       case 'rebase.drop':
         return rebaseOps.rebaseDrop(cwd, git, p.hashes as string[])
       case 'commit.revert':
-        return rebaseOps.revertCommit(cwd, git, p.hash as string)
+        return rebaseOps.revertCommit(
+          cwd,
+          git,
+          p.hash as string,
+          typeof p.mainline === 'number' ? p.mainline : undefined
+        )
       case 'reset':
         return rebaseOps.resetRepo(cwd, git, p.mode as 'soft' | 'mixed' | 'hard', p.ref as string | undefined)
       case 'reset.head':

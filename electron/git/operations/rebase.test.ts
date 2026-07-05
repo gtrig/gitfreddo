@@ -1,5 +1,99 @@
-import { describe, expect, it } from 'vitest'
+import { mkdtempSync, rmSync, writeFileSync } from 'fs'
+import { tmpdir } from 'os'
+import { join } from 'path'
+import { afterEach, describe, expect, it } from 'vitest'
 import { markCommitForReword, markCommitsForDrop, markCommitsForSquash } from './rebase'
+import { cherryPick, revertCommit } from './rebase'
+import { runGitOrThrow } from '../git-runner'
+
+async function createMergeCommitRepo(): Promise<{ cwd: string; mergeHash: string }> {
+  const cwd = mkdtempSync(join(tmpdir(), 'gitfreddo-merge-'))
+  const run = (args: string[]) =>
+    runGitOrThrow(args, { cwd, gitBinaryPath: 'git' })
+
+  await run(['init', '-b', 'main'])
+  await run(['config', 'user.email', 'test@example.com'])
+  await run(['config', 'user.name', 'Test'])
+  writeFileSync(join(cwd, 'main.txt'), 'main\n')
+  await run(['add', 'main.txt'])
+  await run(['commit', '-m', 'initial'])
+  await run(['branch', 'side'])
+  writeFileSync(join(cwd, 'main.txt'), 'main updated\n')
+  await run(['commit', '-am', 'main change'])
+  await run(['switch', 'side'])
+  writeFileSync(join(cwd, 'side.txt'), 'side\n')
+  await run(['add', 'side.txt'])
+  await run(['commit', '-m', 'side change'])
+  await run(['switch', 'main'])
+  await run(['merge', 'side', '-m', 'merge commit'])
+  const mergeHash = (await run(['rev-parse', 'HEAD'])).trim()
+  return { cwd, mergeHash }
+}
+
+describe('cherryPick mainline', () => {
+  let tempDir: string | null = null
+
+  afterEach(() => {
+    if (tempDir) {
+      rmSync(tempDir, { recursive: true, force: true })
+      tempDir = null
+    }
+  })
+
+  it('requires mainline when cherry-picking a merge commit', async () => {
+    const repo = await createMergeCommitRepo()
+    tempDir = repo.cwd
+    await runGitOrThrow(['reset', '--hard', 'HEAD~1'], { cwd: repo.cwd, gitBinaryPath: 'git' })
+
+    await expect(cherryPick(repo.cwd, 'git', repo.mergeHash)).rejects.toThrow(/parent line/i)
+  })
+
+  it('cherry-picks a merge commit with -m', async () => {
+    const repo = await createMergeCommitRepo()
+    tempDir = repo.cwd
+    await runGitOrThrow(['reset', '--hard', 'HEAD~1'], { cwd: repo.cwd, gitBinaryPath: 'git' })
+
+    await cherryPick(repo.cwd, 'git', repo.mergeHash, false, 1)
+    const subject = (
+      await runGitOrThrow(['log', '-1', '--format=%s'], { cwd: repo.cwd, gitBinaryPath: 'git' })
+    ).trim()
+    expect(subject).toBe('merge commit')
+  })
+})
+
+describe('revertCommit mainline', () => {
+  let tempDir: string | null = null
+
+  afterEach(() => {
+    if (tempDir) {
+      rmSync(tempDir, { recursive: true, force: true })
+      tempDir = null
+    }
+  })
+
+  it('requires mainline when reverting a merge commit', async () => {
+    const repo = await createMergeCommitRepo()
+    tempDir = repo.cwd
+
+    await expect(revertCommit(repo.cwd, 'git', repo.mergeHash)).rejects.toThrow(/parent line/i)
+  })
+
+  it('reverts a merge commit with -m', async () => {
+    const repo = await createMergeCommitRepo()
+    tempDir = repo.cwd
+
+    await revertCommit(repo.cwd, 'git', repo.mergeHash, 1)
+    const parents = (
+      await runGitOrThrow(['rev-list', '--parents', '-n', '1', 'HEAD'], {
+        cwd: repo.cwd,
+        gitBinaryPath: 'git'
+      })
+    )
+      .trim()
+      .split(/\s+/)
+    expect(parents.length).toBeGreaterThan(1)
+  })
+})
 
 describe('markCommitForReword', () => {
   const hash = '125c15ed41cf1b761557e592b83bf2f856c1070e'

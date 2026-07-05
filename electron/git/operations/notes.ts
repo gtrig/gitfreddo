@@ -44,7 +44,11 @@ export async function notesAdd(
   cwd: string,
   gitBinaryPath: string,
   commitHash: string,
-  message: string
+  message: string,
+  options: { force?: boolean } = {}
 ): Promise<void> {
-  await runGitOrThrow(['notes', 'add', '-m', message, commitHash], { cwd, gitBinaryPath })
+  const args = ['notes', 'add']
+  if (options.force) args.push('-f')
+  args.push('-m', message, commitHash)
+  await runGitOrThrow(args, { cwd, gitBinaryPath })
 }
