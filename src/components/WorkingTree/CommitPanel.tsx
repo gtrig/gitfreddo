@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { ArchiveBoxIcon, SparklesIcon } from '@heroicons/react/24/outline'
@@ -9,10 +9,12 @@ import { useGitMutations } from '@/hooks/useGitMutations'
 import { usePushRemote } from '@/hooks/usePushRemote'
 import { useLogGraph } from '@/hooks/useGit'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { useLayoutStore } from '@/stores/layout'
 import { useToastStore } from '@/stores/toast'
 import { commitMessageBody } from '@/lib/workspace/fileTree'
 import type { GitWorkingStatus } from '@/lib/types'
 import { Spinner } from '@/components/Ui/Spinner'
+import { RowResizeHandle } from '@/components/Ui/RowResizeHandle'
 import { SidebarIconChevron } from '@/components/Layout/sidebar/SidebarIcons'
 import { PushForceConfirm } from '@/components/Layout/PushForceConfirm'
 import { ComposeCommitsModal } from '@/components/WorkingTree/ComposeCommitsModal'
@@ -55,8 +57,11 @@ export function CommitPanel({ working }: CommitPanelProps) {
   const aiEnabled = useAiEnabled()
   const aiFill = useAiFill()
   const showToast = useToastStore((s) => s.show)
+  const commitPanelHeight = useLayoutStore((s) => s.commitPanelHeight)
+  const adjustCommitPanelHeight = useLayoutStore((s) => s.adjustCommitPanelHeight)
 
   const [expanded, setExpanded] = useState(true)
+  const [resizing, setResizing] = useState(false)
   const [optionsOpen, setOptionsOpen] = useState(false)
   const [amend, setAmend] = useState(false)
   const [pushAfterCommit, setPushAfterCommit] = useState(false)
@@ -205,20 +210,40 @@ export function CommitPanel({ working }: CommitPanelProps) {
 
   const primaryDisabled = busy || (!wantsStage && !wantsCommit) || (wantsCommit && !wantsStage && !summary.trim())
 
+  const onCommitPanelResize = useCallback(
+    (delta: number) => {
+      adjustCommitPanelHeight(delta)
+    },
+    [adjustCommitPanelHeight]
+  )
+
   return (
-    <div className="shrink-0 border-t border-gf-border bg-gf-bg-deep">
+    <div
+      data-testid="commit-panel"
+      className={`flex shrink-0 flex-col border-t border-gf-border bg-gf-bg-deep ${
+        resizing ? 'select-none' : ''
+      }`}
+      style={expanded ? { height: commitPanelHeight } : undefined}
+    >
+      {expanded && (
+        <RowResizeHandle
+          onDrag={onCommitPanelResize}
+          onResizeStart={() => setResizing(true)}
+          onResizeEnd={() => setResizing(false)}
+        />
+      )}
       <button
         type="button"
         onClick={() => setExpanded((open) => !open)}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-gf-fg-muted hover:bg-gf-surface-hover/50"
+        className="flex w-full shrink-0 items-center gap-2 px-3 py-2 text-left text-xs font-medium text-gf-fg-muted hover:bg-gf-surface-hover/50"
       >
         <Chevron open={expanded} />
         <span>{t('workingTree.commit')}</span>
       </button>
 
       {expanded && (
-        <div className="max-h-[min(40vh,280px)] space-y-2 overflow-y-auto px-3 pb-2">
-          <label className="flex items-center gap-2 text-xs text-gf-fg-muted">
+        <div className="flex min-h-0 flex-1 flex-col gap-2 px-3 pb-2">
+          <label className="flex shrink-0 items-center gap-2 text-xs text-gf-fg-muted">
             <input
               type="checkbox"
               checked={amend}
@@ -228,7 +253,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
             {t('workingTree.amendPrevious')}
           </label>
 
-          <div className="relative">
+          <div className="relative shrink-0">
             <input
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
@@ -260,21 +285,20 @@ export function CommitPanel({ working }: CommitPanelProps) {
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder={t('workingTree.description')}
-            rows={3}
-            className="w-full resize-none rounded border border-gf-border-strong bg-gf-bg px-2.5 py-1.5 text-sm text-gf-fg outline-none placeholder:text-gf-fg-subtle focus:border-gf-accent"
+            className="min-h-16 w-full flex-1 resize-none rounded border border-gf-border-strong bg-gf-bg px-2.5 py-1.5 text-sm text-gf-fg outline-none placeholder:text-gf-fg-subtle focus:border-gf-accent"
           />
 
           <button
             type="button"
             onClick={() => setOptionsOpen((open) => !open)}
-            className="flex items-center gap-1 text-[11px] text-gf-fg-subtle hover:text-gf-fg-muted"
+            className="flex shrink-0 items-center gap-1 text-[11px] text-gf-fg-subtle hover:text-gf-fg-muted"
           >
             <Chevron open={optionsOpen} />
             {t('workingTree.commitOptions')}
           </button>
 
           {optionsOpen && (
-            <div className="space-y-1.5 pl-4">
+            <div className="shrink-0 space-y-1.5 pl-4">
               <label className="flex items-center gap-2 text-[11px] text-gf-fg-muted">
                 <input
                   type="checkbox"
@@ -297,7 +321,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
           )}
 
           {aiEnabled && hasStaged && (
-            <div className="flex justify-end">
+            <div className="flex shrink-0 justify-end">
               <button
                 type="button"
                 disabled={aiFill.isPending}
@@ -326,7 +350,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
         onCancel={cancelForcePush}
       />
 
-      <div className="space-y-2 border-t border-gf-border px-3 py-2">
+      <div className="shrink-0 space-y-2 border-t border-gf-border px-3 py-2">
         <button
           type="button"
           disabled={primaryDisabled}

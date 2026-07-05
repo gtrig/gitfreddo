@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  COMMIT_PANEL_DEFAULT,
+  COMMIT_PANEL_MAX,
+  COMMIT_PANEL_MIN,
   LEFT_DEFAULT,
   LEFT_MAX,
   LEFT_MIN,
@@ -28,7 +31,11 @@ function stubLocalStorage() {
 describe('useLayoutStore', () => {
   beforeEach(() => {
     stubLocalStorage()
-    useLayoutStore.setState({ leftWidth: LEFT_DEFAULT, rightWidth: RIGHT_DEFAULT })
+    useLayoutStore.setState({
+      leftWidth: LEFT_DEFAULT,
+      rightWidth: RIGHT_DEFAULT,
+      commitPanelHeight: COMMIT_PANEL_DEFAULT
+    })
   })
 
   afterEach(() => {
@@ -55,5 +62,18 @@ describe('useLayoutStore', () => {
   it('persists layout to localStorage', () => {
     useLayoutStore.getState().setLeftWidth(300)
     expect(localStorage.getItem('gitfreddo:sidebar-layout')).toContain('"leftWidth":300')
+  })
+
+  it('clamps commit panel height', () => {
+    useLayoutStore.getState().setCommitPanelHeight(50)
+    expect(useLayoutStore.getState().commitPanelHeight).toBe(COMMIT_PANEL_MIN)
+    useLayoutStore.getState().setCommitPanelHeight(999)
+    expect(useLayoutStore.getState().commitPanelHeight).toBe(COMMIT_PANEL_MAX)
+  })
+
+  it('adjusts commit panel height by delta', () => {
+    useLayoutStore.getState().setCommitPanelHeight(COMMIT_PANEL_DEFAULT)
+    useLayoutStore.getState().adjustCommitPanelHeight(40)
+    expect(useLayoutStore.getState().commitPanelHeight).toBe(COMMIT_PANEL_DEFAULT + 40)
   })
 })
