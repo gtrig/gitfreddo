@@ -62,6 +62,7 @@ export function useGitMutations() {
     workingRemove: wrap('working.remove', ['working.status']),
     workingClean: wrap('working.clean', ['working.status']),
     workingRename: wrap('working.rename', ['working.status']),
+    workingAddToGitignore: wrap('working.addToGitignore', ['working.status']),
     stageApplyPatch: wrap('stage.applyPatch', ['working.status']),
     commit: wrap('commit.create', ['working.status', 'log.graph', 'status']),
     rewordCommit: wrap('commit.reword', ['working.status', 'log.graph', 'status']),

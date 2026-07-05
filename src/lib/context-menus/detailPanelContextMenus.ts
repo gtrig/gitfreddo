@@ -22,6 +22,7 @@ export function workingTreeFolderContextMenuItems(
     onToggle: () => void
     onStageFolder?: () => void
     onDiscardFolder?: () => void
+    onAddToGitignore?: () => void
   },
   t?: TFunction
 ): ContextMenuItem[] {
@@ -53,6 +54,14 @@ export function workingTreeFolderContextMenuItems(
     })
   }
 
+  if (handlers.onAddToGitignore) {
+    items.push({
+      id: 'gitignore',
+      label: t ? t('contextMenu.detailPanel.addPathToGitignore') : 'Add path to .gitignore',
+      onClick: handlers.onAddToGitignore
+    })
+  }
+
   if (handlers.onDiscardFolder) {
     items.push(separator('sep-discard'))
     items.push({
@@ -79,6 +88,7 @@ export function workingTreeFileContextMenuItems(
     onDiscard?: () => void
     onRemove?: () => void
     onDelete?: () => void
+    onAddToGitignore?: () => void
   },
   t?: TFunction
 ): ContextMenuItem[] {
@@ -141,6 +151,19 @@ export function workingTreeFileContextMenuItems(
       id: 'rename',
       label: t ? t('contextMenu.detailPanel.rename') : 'Rename…',
       onClick: handlers.onRename
+    })
+  }
+
+  if (
+    handlers.onAddToGitignore &&
+    path !== '.gitignore' &&
+    status !== 'deleted' &&
+    status !== 'conflicted'
+  ) {
+    items.push({
+      id: 'gitignore',
+      label: t ? t('contextMenu.detailPanel.addToGitignore') : 'Add to .gitignore',
+      onClick: handlers.onAddToGitignore
     })
   }
 

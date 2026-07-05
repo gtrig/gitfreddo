@@ -505,6 +505,8 @@
     "changes": "Αλλαγές",
     "staged": "Staged",
     "discardAll": "Απόρριψη όλων…",
+    "addedToGitignore": "Προστέθηκε το \"{{path}}\" στο .gitignore",
+    "addedPathToGitignore": "Προστέθηκε το \"{{path}}/\" στο .gitignore",
     "discardChanges": "Απόρριψη αλλαγών",
     "discardChangesOne": "Απόρριψη τοπικών αλλαγών στο \"{{path}}\"; Δεν μπορεί να αναιρεθεί.",
     "discardChangesMany": "Απόρριψη τοπικών αλλαγών σε {{count}} αρχεία; Δεν μπορεί να αναιρεθεί.",
@@ -886,6 +888,8 @@
       "removeFromRepository": "Αφαίρεση από αποθετήριο…",
       "deleteFile": "Διαγραφή αρχείου…",
       "rename": "Μετονομασία…",
+      "addToGitignore": "Προσθήκη στο .gitignore",
+      "addPathToGitignore": "Προσθήκη διαδρομής στο .gitignore",
       "fileHistory": "Ιστορικό αρχείου…",
       "copyFileName": "Αντιγραφή ονόματος αρχείου"
     }

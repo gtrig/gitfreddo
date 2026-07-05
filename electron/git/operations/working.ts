@@ -1,6 +1,9 @@
 import { writeFile, mkdir } from 'fs/promises'
 import { resolve, dirname } from 'path'
+import { appendGitignoreEntry } from '../../../shared/gitignore'
 import { runGit, runGitOrThrow } from '../git-runner'
+
+const GITIGNORE_PATH = '.gitignore'
 
 export async function workingWrite(
   cwd: string,
@@ -65,4 +68,45 @@ export async function fileReadStage(
   path: string
 ): Promise<string> {
   return runGitOrThrow(['show', `:${stage}:${path}`], { cwd, gitBinaryPath })
+}
+
+export async function workingAddToGitignore(
+  cwd: string,
+  gitBinaryPath: string,
+  relativePath: string,
+  directory = false
+): Promise<void> {
+  const normalized = relativePath.replace(/^\//, '').replace(/\/+$/, '')
+  if (!normalized || normalized === GITIGNORE_PATH) {
+    throw new Error('Cannot add .gitignore to itself.')
+  }
+
+  let content = ''
+  try {
+    content = await workingRead(cwd, gitBinaryPath, GITIGNORE_PATH)
+  } catch {
+    content = ''
+  }
+
+  const updated = appendGitignoreEntry(content, normalized, directory)
+  if (updated !== content) {
+    await workingWrite(cwd, gitBinaryPath, GITIGNORE_PATH, updated)
+  }
+
+  if (directory) {
+    const prefix = `${normalized}/`
+    const listed = await runGit(['ls-files', '--', prefix], { cwd, gitBinaryPath })
+    if (listed.stdout.trim()) {
+      await runGitOrThrow(['rm', '--cached', '-r', '-f', '--', prefix], { cwd, gitBinaryPath })
+    }
+    return
+  }
+
+  const tracked = await runGit(['ls-files', '--error-unmatch', '--', normalized], {
+    cwd,
+    gitBinaryPath
+  })
+  if (tracked.code === 0) {
+    await runGitOrThrow(['rm', '--cached', '-f', '--', normalized], { cwd, gitBinaryPath })
+  }
 }

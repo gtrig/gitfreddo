@@ -26,6 +26,16 @@ describe('workingTreeFolderContextMenuItems', () => {
     expect(items.find((item) => item.id === 'toggle')?.label).toBe('Collapse')
     expect(items.find((item) => item.id === 'stage-folder')?.label).toBe('Stage folder contents')
   })
+
+  it('includes add path to gitignore when handler is provided', () => {
+    const items = workingTreeFolderContextMenuItems('build', false, 'working', {
+      onToggle: noop,
+      onAddToGitignore: noop
+    })
+
+    expect(items.some((item) => item.id === 'gitignore')).toBe(true)
+    expect(items.find((item) => item.id === 'gitignore')?.label).toBe('Add path to .gitignore')
+  })
 })
 
 describe('workingTreeFileContextMenuItems', () => {
@@ -50,6 +60,35 @@ describe('workingTreeFileContextMenuItems', () => {
     })
 
     expect(items.some((item) => item.id === 'discard')).toBe(true)
+  })
+
+  it('includes add to gitignore when handler is provided', () => {
+    const items = workingTreeFileContextMenuItems('noise.log', 'working', 'untracked', {
+      onSelect: noop,
+      onStageToggle: noop,
+      onOpenInEditor: noop,
+      onAddToGitignore: noop
+    })
+
+    expect(items.some((item) => item.id === 'gitignore')).toBe(true)
+  })
+
+  it('omits add to gitignore for deleted and conflicted files', () => {
+    const deleted = workingTreeFileContextMenuItems('gone.ts', 'working', 'deleted', {
+      onSelect: noop,
+      onStageToggle: noop,
+      onOpenInEditor: noop,
+      onAddToGitignore: noop
+    })
+    const conflicted = workingTreeFileContextMenuItems('conflict.ts', 'working', 'conflicted', {
+      onSelect: noop,
+      onStageToggle: noop,
+      onOpenInEditor: noop,
+      onAddToGitignore: noop
+    })
+
+    expect(deleted.some((item) => item.id === 'gitignore')).toBe(false)
+    expect(conflicted.some((item) => item.id === 'gitignore')).toBe(false)
   })
 })
 

@@ -505,6 +505,8 @@
     "changes": "Changes",
     "staged": "Staged",
     "discardAll": "Discard all…",
+    "addedToGitignore": "Added \"{{path}}\" to .gitignore",
+    "addedPathToGitignore": "Added \"{{path}}/\" to .gitignore",
     "discardChanges": "Discard changes",
     "discardChangesOne": "Discard local changes to \"{{path}}\"? This cannot be undone.",
     "discardChangesMany": "Discard local changes to {{count}} files? This cannot be undone.",
@@ -934,6 +936,8 @@
       "removeFromRepository": "Remove from repository…",
       "deleteFile": "Delete file…",
       "rename": "Rename…",
+      "addToGitignore": "Add to .gitignore",
+      "addPathToGitignore": "Add path to .gitignore",
       "fileHistory": "File history…",
       "copyFileName": "Copy file name"
     }

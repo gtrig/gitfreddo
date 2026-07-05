@@ -292,6 +292,13 @@ export class RepoManager {
         return workingOps.workingRead(cwd, git, p.path as string)
       case 'working.rename':
         return workingOps.workingRename(cwd, git, p.oldPath as string, p.newPath as string)
+      case 'working.addToGitignore':
+        return workingOps.workingAddToGitignore(
+          cwd,
+          git,
+          p.path as string,
+          Boolean(p.directory)
+        )
       case 'stage.applyPatch':
         return workingOps.stageApplyPatch(
           cwd,

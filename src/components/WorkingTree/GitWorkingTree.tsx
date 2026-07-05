@@ -7,6 +7,7 @@ import { useSelectionStore } from '@/stores/selection'
 import { useWorkingStatus } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useInvalidateGit } from '@/hooks/useInvalidateGit'
+import { useToastStore } from '@/stores/toast'
 import { statusColor, statusLabel, type GitFileChange } from '@/lib/types'
 import { buildFileTree, collectFolderPaths, countCommitFiles, type FileTreeNode } from '@/lib/workspace/fileTree'
 import type { CommitFileItem } from '@/lib/types'
@@ -89,6 +90,7 @@ function FileRow({
   onRemove,
   onRename,
   onFileHistory,
+  onAddToGitignore,
   stageLabel,
   unstageLabel,
   t
@@ -104,6 +106,7 @@ function FileRow({
   onRemove?: () => void
   onRename?: () => void
   onFileHistory?: () => void
+  onAddToGitignore?: () => void
   stageLabel: string
   unstageLabel: string
   t: TFunction
@@ -128,7 +131,8 @@ function FileRow({
                 onRename: onRename,
                 onDiscard,
                 onDelete,
-                onRemove
+                onRemove,
+                onAddToGitignore
               },
               t
             )
@@ -223,6 +227,7 @@ function TreeNode({
   onStageFolder,
   onRename,
   onFileHistory,
+  onAddToGitignore,
   stageLabel,
   unstageLabel,
   t
@@ -244,6 +249,7 @@ function TreeNode({
   onStageFolder?: (folderPath: string) => void
   onRename?: (path: string) => void
   onFileHistory?: (path: string) => void
+  onAddToGitignore?: (path: string, directory?: boolean) => void
   stageLabel: string
   unstageLabel: string
   t: TFunction
@@ -267,6 +273,9 @@ function TreeNode({
                   onStageFolder: onStageFolder ? () => onStageFolder(node.path) : undefined,
                   onDiscardFolder: onDiscardFolder
                     ? () => onDiscardFolder(node.path)
+                    : undefined,
+                  onAddToGitignore: onAddToGitignore
+                    ? () => onAddToGitignore(node.path, true)
                     : undefined
                 },
                 t
@@ -301,6 +310,7 @@ function TreeNode({
               onStageFolder={onStageFolder}
               onRename={onRename}
               onFileHistory={onFileHistory}
+              onAddToGitignore={onAddToGitignore}
               stageLabel={stageLabel}
               unstageLabel={unstageLabel}
               t={t}
@@ -334,7 +344,10 @@ function TreeNode({
                 onRename: onRename ? () => onRename(file.path) : undefined,
                 onDiscard: onDiscard ? () => onDiscard(file.path, mode === 'staged') : undefined,
                 onDelete: onDelete ? () => onDelete(file.path) : undefined,
-                onRemove: onRemove ? () => onRemove(file.path) : undefined
+                onRemove: onRemove ? () => onRemove(file.path) : undefined,
+                onAddToGitignore: onAddToGitignore
+                  ? () => onAddToGitignore(file.path)
+                  : undefined
               },
               t
             )
@@ -367,8 +380,10 @@ export function GitWorkingTree() {
   const unstageLabel = t('workingTree.unstage')
   const connected = useWorkspaceStore((s) => s.connected)
   const { data, isLoading, error } = useWorkingStatus(connected)
-  const { stageAdd, stageReset, workingDiscard, workingRemove } = useGitMutations()
+  const { stageAdd, stageReset, workingDiscard, workingRemove, workingAddToGitignore } =
+    useGitMutations()
   const invalidate = useInvalidateGit()
+  const showToast = useToastStore((s) => s.show)
   const selectedFile = useSelectionStore((s) => s.selectedWorkingFile)
   const setSelectedWorkingFile = useSelectionStore((s) => s.setSelectedWorkingFile)
   const [viewMode, setViewMode] = useState<'path' | 'tree'>('tree')
@@ -451,11 +466,28 @@ export function GitWorkingTree() {
     setPendingRemove(path)
   }
 
+  function requestAddToGitignore(path: string, directory = false) {
+    void workingAddToGitignore
+      .mutateAsync({ path, directory })
+      .then(() => {
+        showToast(
+          t(directory ? 'workingTree.addedPathToGitignore' : 'workingTree.addedToGitignore', {
+            path
+          }),
+          'success'
+        )
+      })
+      .catch((error) => {
+        showToast(error instanceof Error ? error.message : String(error), 'error')
+      })
+  }
+
   const busy =
     stageAdd.isPending ||
     stageReset.isPending ||
     workingDiscard.isPending ||
     workingRemove.isPending ||
+    workingAddToGitignore.isPending ||
     deleteBusy
 
   if (!connected) {
@@ -508,6 +540,7 @@ export function GitWorkingTree() {
                   }
                   onRename={() => setRenamePath(file.path)}
                   onFileHistory={() => setFileHistoryPath(file.path)}
+                  onAddToGitignore={() => requestAddToGitignore(file.path)}
                   openMenu={openMenu}
                   stageLabel={stageLabel}
                   unstageLabel={unstageLabel}
@@ -552,6 +585,7 @@ export function GitWorkingTree() {
                     }
                     onRename={setRenamePath}
                     onFileHistory={setFileHistoryPath}
+                    onAddToGitignore={requestAddToGitignore}
                     openMenu={openMenu}
                     stageLabel={stageLabel}
                     unstageLabel={unstageLabel}
