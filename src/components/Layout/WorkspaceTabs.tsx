@@ -29,7 +29,16 @@ export function WorkspaceTabs() {
   }
 
   return (
-    <div className="flex min-w-0 items-end gap-0 border-b border-gf-border bg-gf-bg-deep px-2 pt-2">
+    <div className="flex min-w-0 items-end gap-1 border-b border-gf-border bg-gf-bg-deep px-2 pt-2">
+      <button
+        type="button"
+        aria-label={t('workspace.tabs.openWorkspace')}
+        title={t('workspace.tabs.openWorkspace')}
+        onClick={() => void openWorkspaceDialog()}
+        className="mb-1 shrink-0 rounded border border-gf-border px-2.5 py-1.5 text-sm text-gf-fg-muted hover:border-gf-border-strong hover:bg-gf-bg hover:text-gf-fg"
+      >
+        <PlusIcon className="h-4 w-4" aria-hidden />
+      </button>
       <div className="flex min-w-0 flex-1 items-end gap-0.5 overflow-x-auto">
         {tabs.map((tab) => {
           const active = tab.path === activePath
@@ -79,15 +88,6 @@ export function WorkspaceTabs() {
           )
         })}
       </div>
-      <button
-        type="button"
-        aria-label={t('workspace.tabs.openWorkspace')}
-        title={t('workspace.tabs.openWorkspace')}
-        onClick={() => void openWorkspaceDialog()}
-        className="mb-1 shrink-0 rounded border border-gf-border px-2.5 py-1.5 text-sm text-gf-fg-muted hover:border-gf-border-strong hover:bg-gf-bg hover:text-gf-fg"
-      >
-        <PlusIcon className="h-4 w-4" aria-hidden />
-      </button>
     </div>
   )
 }
