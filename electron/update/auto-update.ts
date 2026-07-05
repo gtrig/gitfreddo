@@ -1,7 +1,7 @@
 import { app, BrowserWindow } from 'electron'
 import electronUpdater from 'electron-updater'
 import type { AppSettings } from '../../shared/ipc'
-import { applyUpdateChannel, type UpdateEvent } from '../../shared/update'
+import { applyUpdateChannel, type UpdateEvent, sanitizeUpdateErrorMessage } from '../../shared/update'
 import { emitLog } from '../git/log-bus'
 
 const { autoUpdater } = electronUpdater
@@ -33,6 +33,12 @@ export function initAutoUpdater(getSettings: () => AppSettings): void {
 
   enabled = true
   autoUpdater.autoInstallOnAppQuit = true
+  const githubToken = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN
+  if (githubToken) {
+    autoUpdater.requestHeaders = {
+      Authorization: `Bearer ${githubToken}`
+    }
+  }
   applyUpdaterSettings(getSettings())
 
   autoUpdater.on('checking-for-update', () => {
@@ -69,8 +75,9 @@ export function initAutoUpdater(getSettings: () => AppSettings): void {
   })
 
   autoUpdater.on('error', (error) => {
-    const message = error.message || String(error)
-    emitLog('app', 'error', `Update error: ${message}`)
+    const raw = error.message || String(error)
+    const message = sanitizeUpdateErrorMessage(raw)
+    emitLog('app', 'error', `Update error: ${raw}`)
     broadcast({ type: 'error', message })
   })
 

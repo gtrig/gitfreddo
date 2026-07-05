@@ -8,6 +8,7 @@ import { useToastStore } from '@/stores/toast'
 import { useOperationStore } from '@/stores/operation'
 
 import { createGitFreddoMock } from '@/test/mocks/gitfreddo'
+import type { UpdateEvent } from '@shared/update'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -45,5 +46,32 @@ describe('useAppUpdate', () => {
 
     expect(show).toHaveBeenCalled()
     expect(window.gitfreddo.installUpdate).not.toHaveBeenCalled()
+  })
+
+  it('shows a friendly message when the GitHub release feed is missing', async () => {
+    const show = vi.fn()
+    useToastStore.setState({ message: null, tone: 'info', show, clear: vi.fn() })
+    let listener: ((event: UpdateEvent) => void) | undefined
+    vi.mocked(window.gitfreddo.onUpdateEvent).mockImplementation((callback) => {
+      listener = callback
+      return () => undefined
+    })
+
+    const { result } = renderHook(() => useAppUpdate())
+    await act(async () => {
+      await result.current.checkForUpdates(true)
+    })
+    await act(async () => {
+      listener?.({
+        type: 'error',
+        message:
+          '404 "method: GET url: https://github.com/gtrig/gitfreddo/releases.atom\\n\\nPlease double check that your authentication token is correct."'
+      })
+    })
+
+    expect(show).toHaveBeenCalledWith(
+      'update.repoNotFound:{"repo":"gtrig/gitfreddo"}',
+      'error'
+    )
   })
 })

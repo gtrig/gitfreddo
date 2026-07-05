@@ -1042,6 +1042,9 @@
     "restartToInstall": "Restart to update",
     "upToDate": "GitFreddo is up to date ({{version}})",
     "error": "Update check failed",
+    "repoNotFound": "Could not check for updates at github.com/{{repo}}. The repository may not be published yet, may be private, or may have no releases.",
+    "authFailed": "Update check failed because GitHub rejected the request. If the release repository is private, sign in to GitHub in GitFreddo settings.",
+    "networkFailed": "Could not reach GitHub to check for updates. Check your network connection and try again.",
     "waitForGitOperations": "Wait for git operations to finish before restarting"
   },
   "toast": {

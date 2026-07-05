@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { applyUpdateChannel, reduceUpdateState } from './update'
+import {
+  applyUpdateChannel,
+  classifyUpdateError,
+  reduceUpdateState,
+  sanitizeUpdateErrorMessage
+} from './update'
 
 describe('reduceUpdateState', () => {
   const base = { status: 'idle' as const, currentVersion: '0.2.8' }
@@ -30,5 +35,31 @@ describe('applyUpdateChannel', () => {
   it('enables prerelease only for beta', () => {
     expect(applyUpdateChannel('stable').allowPrerelease).toBe(false)
     expect(applyUpdateChannel('beta').allowPrerelease).toBe(true)
+  })
+})
+
+describe('classifyUpdateError', () => {
+  it('detects missing GitHub release feeds', () => {
+    const message =
+      '404 "method: GET url: https://github.com/gtrig/gitfreddo/releases.atom\\n\\nPlease double check that your authentication token is correct."'
+    expect(classifyUpdateError(message)).toBe('repo_not_found')
+  })
+
+  it('detects auth failures', () => {
+    expect(classifyUpdateError('401 authentication token is invalid')).toBe('auth')
+  })
+
+  it('detects network failures', () => {
+    expect(classifyUpdateError('getaddrinfo ENOTFOUND github.com')).toBe('network')
+  })
+})
+
+describe('sanitizeUpdateErrorMessage', () => {
+  it('strips verbose updater response details', () => {
+    const message =
+      '404 "method: GET url: https://github.com/gtrig/gitfreddo/releases.atom\\n\\nPlease double check..." Headers: { "cache-control": "no-cache" }'
+    expect(sanitizeUpdateErrorMessage(message)).toBe(
+      '404 — https://github.com/gtrig/gitfreddo/releases.atom'
+    )
   })
 })

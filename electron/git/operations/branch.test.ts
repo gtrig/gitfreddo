@@ -1,9 +1,18 @@
-import { resolve } from 'path'
-import { describe, expect, it, afterEach } from 'vitest'
+import { execSync } from 'node:child_process'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'os'
+import { join } from 'path'
+import { describe, expect, it } from 'vitest'
 import { branchCheckout, parseBranchLine, parseRemoteBranchRef, stripAnsi } from './branch'
 import { runGitOrThrow } from '../git-runner'
 
-const FIXTURE_REPO = resolve(__dirname, '../../../test/fixtures/minimal-repo')
+function initRepo(dir: string) {
+  execSync('git init -b main', { cwd: dir, stdio: 'ignore' })
+  execSync('git config user.email "test@example.com"', { cwd: dir, stdio: 'ignore' })
+  execSync('git config user.name "Test"', { cwd: dir, stdio: 'ignore' })
+  execSync('echo initial > README.md', { cwd: dir, shell: '/bin/bash' })
+  execSync('git add README.md && git commit -m "initial"', { cwd: dir, shell: '/bin/bash' })
+}
 
 describe('stripAnsi', () => {
   it('removes ANSI color sequences', () => {
@@ -71,20 +80,20 @@ describe('parseRemoteBranchRef', () => {
 })
 
 describe('branchCheckout', () => {
-  const slashBranch = 'topic/sub'
-
-  afterEach(async () => {
-    await runGitOrThrow(['switch', 'main'], { cwd: FIXTURE_REPO })
-    await runGitOrThrow(['branch', '-D', slashBranch], { cwd: FIXTURE_REPO }).catch(() => {})
-  })
-
   it('checks out local branches whose names contain slashes', async () => {
-    await runGitOrThrow(['branch', slashBranch, 'main'], { cwd: FIXTURE_REPO })
-    await runGitOrThrow(['switch', 'main'], { cwd: FIXTURE_REPO })
+    const repoDir = mkdtempSync(join(tmpdir(), 'gf-branch-'))
+    const slashBranch = 'topic/sub'
+    try {
+      initRepo(repoDir)
+      await runGitOrThrow(['branch', slashBranch, 'main'], { cwd: repoDir })
+      await runGitOrThrow(['switch', 'main'], { cwd: repoDir })
 
-    await branchCheckout(FIXTURE_REPO, 'git', slashBranch)
+      await branchCheckout(repoDir, 'git', slashBranch)
 
-    const current = (await runGitOrThrow(['branch', '--show-current'], { cwd: FIXTURE_REPO })).trim()
-    expect(current).toBe(slashBranch)
+      const current = (await runGitOrThrow(['branch', '--show-current'], { cwd: repoDir })).trim()
+      expect(current).toBe(slashBranch)
+    } finally {
+      rmSync(repoDir, { recursive: true, force: true })
+    }
   })
 })

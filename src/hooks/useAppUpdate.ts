@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { UpdateEvent, UpdateUiState } from '@shared/update'
-import { reduceUpdateState } from '@shared/update'
+import {
+  classifyUpdateError,
+  DEFAULT_UPDATE_REPOSITORY,
+  reduceUpdateState,
+  sanitizeUpdateErrorMessage
+} from '@shared/update'
 import { useToastStore } from '@/stores/toast'
 import { useOperationStore } from '@/stores/operation'
 import { useTranslation } from 'react-i18next'
@@ -33,7 +38,19 @@ export function useAppUpdate() {
         setManualCheckPending(false)
       }
       if (event.type === 'error' && manualCheckPending) {
-        showToast(event.message || t('update.error'), 'error')
+        const kind = classifyUpdateError(event.message)
+        if (kind === 'repo_not_found') {
+          showToast(
+            t('update.repoNotFound', { repo: DEFAULT_UPDATE_REPOSITORY }),
+            'error'
+          )
+        } else if (kind === 'auth') {
+          showToast(t('update.authFailed'), 'error')
+        } else if (kind === 'network') {
+          showToast(t('update.networkFailed'), 'error')
+        } else {
+          showToast(sanitizeUpdateErrorMessage(event.message) || t('update.error'), 'error')
+        }
         setManualCheckPending(false)
       }
     })
