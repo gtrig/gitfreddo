@@ -1,0 +1,124 @@
+import { execSync } from 'node:child_process'
+import { chmodSync, existsSync, mkdtempSync, statSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { describe, expect, it } from 'vitest'
+import {
+  hooksDelete,
+  hooksDisable,
+  hooksEnable,
+  hooksList,
+  hooksRead,
+  hooksWrite
+} from './hooks'
+
+function initRepo(dir: string) {
+  execSync('git init -b main', { cwd: dir, stdio: 'ignore' })
+  execSync('git config user.email "test@example.com"', { cwd: dir, stdio: 'ignore' })
+  execSync('git config user.name "Test"', { cwd: dir, stdio: 'ignore' })
+}
+
+function isExecutable(filePath: string): boolean {
+  return (statSync(filePath).mode & 0o111) !== 0
+}
+
+describe('hooks', () => {
+  it('lists sample hooks from a fresh git init repo', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'gf-hooks-'))
+    initRepo(dir)
+
+    const result = await hooksList(dir, 'git')
+
+    expect(result.hooksDir).toContain('hooks')
+    expect(result.hooks.length).toBeGreaterThan(0)
+    const preCommit = result.hooks.find((hook) => hook.name === 'pre-commit')
+    expect(preCommit).toBeDefined()
+    expect(preCommit?.enabled).toBe(false)
+    expect(preCommit?.filename).toBe('pre-commit.sample')
+  })
+
+  it('enables a sample hook by renaming it', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'gf-hooks-'))
+    initRepo(dir)
+
+    await hooksEnable(dir, 'git', 'pre-commit')
+
+    const result = await hooksList(dir, 'git')
+    const preCommit = result.hooks.find((hook) => hook.name === 'pre-commit')
+    expect(preCommit?.enabled).toBe(true)
+    expect(preCommit?.filename).toBe('pre-commit')
+    expect(existsSync(join(result.hooksDir, 'pre-commit'))).toBe(true)
+    expect(existsSync(join(result.hooksDir, 'pre-commit.sample'))).toBe(false)
+  })
+
+  it('reads and writes hook content with executable permissions', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'gf-hooks-'))
+    initRepo(dir)
+    const script = '#!/bin/sh\necho "hello"\n'
+
+    await hooksWrite(dir, 'git', 'commit-msg', script)
+
+    const content = await hooksRead(dir, 'git', 'commit-msg')
+    expect(content).toBe(script)
+    const { hooksDir } = await hooksList(dir, 'git')
+    expect(isExecutable(join(hooksDir, 'commit-msg'))).toBe(true)
+  })
+
+  it('disables an active hook by renaming to .disabled', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'gf-hooks-'))
+    initRepo(dir)
+    await hooksEnable(dir, 'git', 'pre-commit')
+
+    await hooksDisable(dir, 'git', 'pre-commit')
+
+    const result = await hooksList(dir, 'git')
+    const preCommit = result.hooks.find((hook) => hook.name === 'pre-commit')
+    expect(preCommit?.enabled).toBe(false)
+    expect(preCommit?.filename).toBe('pre-commit.disabled')
+    expect(existsSync(join(result.hooksDir, 'pre-commit'))).toBe(false)
+    expect(existsSync(join(result.hooksDir, 'pre-commit.disabled'))).toBe(true)
+  })
+
+  it('deletes all hook variants', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'gf-hooks-'))
+    initRepo(dir)
+    await hooksWrite(dir, 'git', 'pre-push', '#!/bin/sh\n')
+    const { hooksDir } = await hooksList(dir, 'git')
+    execSync(`cp ${join(hooksDir, 'pre-push')} ${join(hooksDir, 'pre-push.sample')}`, {
+      shell: '/bin/bash'
+    })
+
+    await hooksDelete(dir, 'git', 'pre-push')
+
+    const result = await hooksList(dir, 'git')
+    expect(result.hooks.some((hook) => hook.name === 'pre-push')).toBe(false)
+    expect(existsSync(join(hooksDir, 'pre-push'))).toBe(false)
+    expect(existsSync(join(hooksDir, 'pre-push.sample'))).toBe(false)
+  })
+
+  it('uses core.hooksPath when set', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'gf-hooks-'))
+    initRepo(dir)
+    const customDir = join(dir, 'custom-hooks')
+    execSync(`mkdir -p "${customDir}"`, { shell: '/bin/bash' })
+    execSync(`git config core.hooksPath "${customDir}"`, { cwd: dir, stdio: 'ignore' })
+    execSync(`echo '#!/bin/sh' > "${join(customDir, 'pre-commit')}"`, { shell: '/bin/bash' })
+    chmodSync(join(customDir, 'pre-commit'), 0o755)
+
+    const result = await hooksList(dir, 'git')
+
+    expect(result.hooksDir).toBe(customDir)
+    const preCommit = result.hooks.find((hook) => hook.name === 'pre-commit')
+    expect(preCommit?.enabled).toBe(true)
+    const content = await hooksRead(dir, 'git', 'pre-commit')
+    expect(content).toContain('#!/bin/sh')
+  })
+
+  it('rejects invalid hook names', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'gf-hooks-'))
+    initRepo(dir)
+
+    await expect(hooksRead(dir, 'git', '../evil')).rejects.toThrow(/Invalid hook name/)
+    await expect(hooksWrite(dir, 'git', 'foo.sample', 'x')).rejects.toThrow(/Invalid hook name/)
+  })
+})

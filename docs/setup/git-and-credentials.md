@@ -52,6 +52,19 @@ The Git settings panel also links to edit:
 
 These open in the in-app editor when a repository is connected.
 
+## Git hooks
+
+With a repository connected, the **Git hooks** section lists hook scripts in the repository hooks directory. By default this is `.git/hooks/`; if `core.hooksPath` is set (local or global config), that directory is used instead.
+
+You can:
+
+- View and edit hook script content
+- **Enable** a hook (activates a `.sample` hook or re-enables a `.disabled` hook)
+- **Disable** an active hook (renames it to `.disabled`)
+- **Delete** a hook and all its variants
+
+Hooks run automatically when GitFreddo performs the corresponding git operations (commit, push, etc.).
+
 ## Next
 
 - [Interface and themes](interface-and-themes.md) — themes, poll interval, diff defaults
