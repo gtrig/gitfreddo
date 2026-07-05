@@ -191,7 +191,8 @@ export function buildAiMessages(
           '  "risks": "Review notes or risks; say briefly if none",\n' +
           '  "commits": [\n' +
           '    {\n' +
-          '      "message": "imperative subject (≤72 chars)\\n\\noptional body",\n' +
+          '      "summary": "imperative subject line (≤72 chars)",\n' +
+          '      "description": "1-3 sentences explaining what changed and why",\n' +
           '      "files": ["exact/path/from/changed/list"],\n' +
           '      "rationale": "Why this commit is self-contained and its place in the sequence"\n' +
           '    }\n' +
@@ -205,7 +206,9 @@ export function buildAiMessages(
           '- Use exact file paths from the changed files lists\n' +
           '- If all changes belong together, return a single-element commits array\n' +
           '- Base analysis and commit messages on the diff when provided\n' +
-          '- Follow the commit message instructions below for every proposed commit subject and body',
+          '- Every commit must include a non-empty description explaining the change\n' +
+          '- Follow the commit message instructions below for every proposed commit subject and body\n' +
+          '- You may use a single "message" field instead of summary/description if it contains subject, blank line, then body',
         instructions.commitMessage
       )
       break
@@ -273,10 +276,23 @@ function stripJsonFences(text: string): string {
 
 function parseCommitMessageText(message: string): { summary: string; description: string } {
   const trimmed = message.trim()
-  const split = trimmed.split(/\n\n/)
-  const summary = split[0]?.trim() ?? ''
-  const description = split.slice(1).join('\n\n').trim()
-  return { summary, description }
+  const paragraphs = trimmed.split(/\n\n/)
+  if (paragraphs.length > 1) {
+    return {
+      summary: paragraphs[0]?.trim() ?? '',
+      description: paragraphs.slice(1).join('\n\n').trim()
+    }
+  }
+
+  const lines = trimmed.split('\n')
+  if (lines.length > 1) {
+    return {
+      summary: lines[0]?.trim() ?? '',
+      description: lines.slice(1).join('\n').trim()
+    }
+  }
+
+  return { summary: trimmed, description: '' }
 }
 
 function resolveStagedPath(candidate: string, stagedPaths: string[]): string | undefined {

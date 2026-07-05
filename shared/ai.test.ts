@@ -141,8 +141,57 @@ describe('parseAnalyzeChangesResponse', () => {
     expect(result.risks).toBe('None')
     expect(result.commits).toHaveLength(3)
     expect(result.commits[0]?.summary).toBe('feat: add auth core')
+    expect(result.commits[0]?.description).toBe('Login helper.')
     expect(result.commits[0]?.rationale).toContain('Foundation')
     expect(result.commits[1]?.files).toEqual(['src/login.tsx'])
+  })
+
+  it('parses explicit summary and description fields on commit proposals', () => {
+    const result = parseAnalyzeChangesResponse(
+      JSON.stringify({
+        summary: 'Auth updates',
+        commits: [
+          {
+            summary: 'feat(auth): add login helper',
+            description: 'Introduce session handling and token validation.',
+            files: ['src/auth.ts'],
+            rationale: 'Foundation for login UI.'
+          }
+        ]
+      }),
+      ['src/auth.ts']
+    )
+
+    expect(result.commits[0]?.summary).toBe('feat(auth): add login helper')
+    expect(result.commits[0]?.description).toBe(
+      'Introduce session handling and token validation.'
+    )
+  })
+
+  it('splits a single-line-break message into subject and description', () => {
+    const result = parseAnalyzeChangesResponse(
+      JSON.stringify({
+        summary: 'Docs',
+        commits: [
+          {
+            message: 'docs: update readme\nDocument the new authentication flow.',
+            files: ['README.md']
+          }
+        ]
+      }),
+      ['README.md']
+    )
+
+    expect(result.commits[0]?.summary).toBe('docs: update readme')
+    expect(result.commits[0]?.description).toBe('Document the new authentication flow.')
+  })
+
+  it('asks for commit descriptions in the analyze_changes prompt', () => {
+    const { user } = buildAiMessages('analyze_changes', {
+      filePaths: ['src/a.ts']
+    })
+    expect(user).toContain('"description"')
+    expect(user).not.toContain('optional body')
   })
 
   it('adds unassigned changed files to a fallback commit', () => {
