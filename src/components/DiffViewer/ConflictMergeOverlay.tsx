@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ExclamationTriangleIcon, SparklesIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { ExclamationTriangleIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { AiActionButton } from '@/components/Ui/AiActionButton'
 import { useConflictFileStages } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useMergeStatus } from '@/hooks/useGit'
@@ -352,17 +353,14 @@ export function ConflictMergeOverlay({ path, onClose }: ConflictMergeOverlayProp
         <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-orange-400" aria-hidden />
         <h2 className="min-w-0 flex-1 truncate text-sm font-medium text-gf-fg">{conflictLabel}</h2>
         {aiEnabled && hunks.length > 0 && (
-          <button
-            type="button"
+          <AiActionButton
+            variant="detail"
             disabled={aiBusy || isLoading}
+            loading={aiBusy}
             onClick={() => void handleAiResolve()}
-            className="inline-flex items-center gap-1.5 rounded bg-violet-600/80 px-2.5 py-1 text-xs text-white hover:bg-violet-500 disabled:opacity-50"
           >
-            {aiBusy ? <Spinner size="sm" className="border-white/30 border-t-white" /> : (
-              <SparklesIcon className="h-3.5 w-3.5" aria-hidden />
-            )}
             {t('diff.autoResolveWithAi')}
-          </button>
+          </AiActionButton>
         )}
         <button
           type="button"

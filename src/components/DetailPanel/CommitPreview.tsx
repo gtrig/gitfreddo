@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowsUpDownIcon, MinusIcon, PencilSquareIcon, PlusIcon } from '@heroicons/react/24/solid'
+import { AiActionButton } from '@/components/Ui/AiActionButton'
 import { useAiEnabled } from '@/hooks/useAppSettings'
 import { useAiFill } from '@/hooks/useAiFill'
 import { useToastStore } from '@/stores/toast'
@@ -123,10 +124,14 @@ function CommitAiButton({
 
   if (!aiEnabled) return null
 
+  const label = aiFill.isPending ? t('detail.recomposing') : t('detail.recomposeWithAi')
+
   return (
-    <button
-      type="button"
+    <AiActionButton
+      variant="detail"
       disabled={aiFill.isPending}
+      loading={aiFill.isPending}
+      title={label}
       onClick={() =>
         void aiFill
           .mutateAsync({
@@ -146,10 +151,9 @@ function CommitAiButton({
             pushToast(error instanceof Error ? error.message : t('detail.aiSuggestionFailed'), 'error')
           })
       }
-      className="rounded-md border border-transparent bg-gf-bg-deep px-3 py-1 text-xs text-gf-fg-muted [background-image:linear-gradient(var(--gf-bg-deep),var(--gf-bg-deep)),linear-gradient(90deg,#a78bfa,#38bdf8)] [background-origin:border-box] [background-clip:padding-box,border-box] hover:text-gf-fg disabled:opacity-50"
     >
-      {aiFill.isPending ? t('detail.recomposing') : t('detail.recomposeWithAi')}
-    </button>
+      {label}
+    </AiActionButton>
   )
 }
 

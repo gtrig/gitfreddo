@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { ArchiveBoxIcon, SparklesIcon } from '@heroicons/react/24/outline'
+import { ArchiveBoxIcon } from '@heroicons/react/24/outline'
+import { AiActionButton } from '@/components/Ui/AiActionButton'
 import { ChevronDoubleRightIcon } from '@heroicons/react/24/solid'
 import { useAiEnabled, useResolvedRemote } from '@/hooks/useAppSettings'
 import { useAiFill } from '@/hooks/useAiFill'
@@ -263,16 +264,14 @@ export function CommitPanel({ working }: CommitPanelProps) {
                 {subjectRemaining}
               </span>
               {aiEnabled && (
-                <button
-                  type="button"
+                <AiActionButton
+                  variant="icon"
                   onClick={() => void handleAiFillSummary()}
                   disabled={aiFill.isPending}
+                  loading={aiFill.isPending}
                   aria-label={t('workingTree.fillSummaryWithAi')}
                   title={t('workingTree.fillWithAi')}
-                  className="flex h-5 w-5 items-center justify-center rounded text-violet-400 hover:bg-gf-surface-hover disabled:opacity-40"
-                >
-                  <SparklesIcon className={`h-3 w-3 ${aiFill.isPending ? 'animate-pulse' : ''}`} aria-hidden />
-                </button>
+                />
               )}
             </div>
           </div>
@@ -318,15 +317,14 @@ export function CommitPanel({ working }: CommitPanelProps) {
 
           {aiEnabled && hasStaged && (
             <div className="flex shrink-0 justify-end">
-              <button
-                type="button"
+              <AiActionButton
+                variant="detail"
                 disabled={aiFill.isPending}
+                loading={aiFill.isPending}
                 onClick={() => void handleComposeWithAi()}
-                className="inline-flex items-center gap-1.5 rounded-md border border-transparent bg-gf-bg px-3 py-1 text-xs text-gf-fg-muted [background-image:linear-gradient(var(--gf-bg),var(--gf-bg)),linear-gradient(90deg,#a78bfa,#38bdf8)] [background-origin:border-box] [background-clip:padding-box,border-box] hover:text-gf-fg disabled:opacity-50"
               >
-                <SparklesIcon className="h-3 w-3 text-violet-400" aria-hidden />
                 {aiFill.isPending ? t('workingTree.composing') : t('workingTree.composeCommitsWithAi')}
-              </button>
+              </AiActionButton>
             </div>
           )}
         </div>

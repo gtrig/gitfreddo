@@ -225,7 +225,7 @@ export function buildCommitContextMenuItems({
   if (aiEnabled && selectedCount <= 1) {
     items.push({
       id: 'explain-commit',
-      label: t ? t('contextMenu.explainCommitWithAi') : 'Explain commit with AI…',
+      label: t ? t('contextMenu.explainCommitWithAi') : 'Explain…',
       onClick: () => actions.explainCommits([commit])
     })
   }

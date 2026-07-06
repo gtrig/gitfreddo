@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ExclamationTriangleIcon, SparklesIcon } from '@heroicons/react/24/outline'
+import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
+import { AiActionButton } from '@/components/Ui/AiActionButton'
 import { useMergeStatus, useWorkingStatus } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useSelectionStore } from '@/stores/selection'
@@ -15,7 +16,7 @@ import { hasUnresolvedMarkers } from '@/lib/conflicts/threeWayMerge'
 import { averageConfidence, parseConflictResolveResponse } from '@shared/ai'
 import type { GitMergeStatus } from '@/lib/types'
 import { confidenceBadgeClass } from '@/components/DiffViewer/ConflictAiProposalCard'
-import { LoadingRow, Spinner } from '@/components/Ui/Spinner'
+import { LoadingRow } from '@/components/Ui/Spinner'
 import { MergeCommitFooter } from '@/components/MergeConflicts/MergeCommitFooter'
 import { SidebarIconChevron } from '@/components/Layout/sidebar/SidebarIcons'
 
@@ -324,19 +325,14 @@ export function MergeConflictsPanel() {
             </h3>
             <div className="flex flex-wrap gap-1">
               {aiEnabled && conflictedPaths.length > 0 && (
-                <button
-                  type="button"
+                <AiActionButton
+                  variant="pill"
                   disabled={busy}
+                  loading={aiBulkBusy}
                   onClick={() => void handleAiResolveAll()}
-                  className="inline-flex items-center gap-1 rounded border border-violet-500/40 px-2 py-0.5 text-[10px] text-violet-300 hover:bg-violet-500/10 disabled:opacity-50"
                 >
-                  {aiBulkBusy ? (
-                    <Spinner size="sm" />
-                  ) : (
-                    <SparklesIcon className="h-3 w-3" aria-hidden />
-                  )}
                   {t('conflicts.autoResolveAllWithAi')}
-                </button>
+                </AiActionButton>
               )}
               {conflictedPaths.length > 0 && (
                 <button

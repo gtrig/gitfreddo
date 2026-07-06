@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { SparklesIcon } from '@heroicons/react/24/outline'
+import { AiActionButton } from '@/components/Ui/AiActionButton'
 import { ActionButton, FieldLabel, Modal, TextArea, TextInput } from '@/components/Ui/Modal'
 import { Spinner } from '@/components/Ui/Spinner'
 import { useAiEnabled } from '@/hooks/useAppSettings'
@@ -131,31 +131,22 @@ export function AnalyzeChangesWithAi({
   const gitBusy = commit.isPending || stageAdd.isPending || stageReset.isPending
   const busy = aiBusy || gitBusy
 
-  const buttonClassName =
-    variant === 'pill'
-      ? 'inline-flex shrink-0 items-center gap-1 rounded border border-violet-500/40 px-1.5 py-0.5 text-[10px] text-violet-300 hover:bg-violet-500/10 disabled:opacity-50'
-      : 'inline-flex items-center gap-1.5 rounded-md border border-transparent bg-gf-bg px-2.5 py-1 text-[11px] text-gf-fg-muted [background-image:linear-gradient(var(--gf-bg),var(--gf-bg)),linear-gradient(90deg,#a78bfa,#38bdf8)] [background-origin:border-box] [background-clip:padding-box,border-box] hover:text-gf-fg disabled:opacity-50'
+  const label = aiBusy ? t('workingTree.analyzing') : t('workingTree.analyzeWithAi')
 
   return (
     <>
-      <button
-        type="button"
+      <AiActionButton
+        variant={variant === 'pill' ? 'pill' : 'toolbar'}
         disabled={disabled || aiBusy}
+        loading={aiBusy}
         onClick={(event) => {
           event.stopPropagation()
           void runAnalysis()
         }}
-        className={buttonClassName}
-        title={t('workingTree.analyzeWithAi')}
+        title={label}
       >
-        {aiBusy ? (
-          <Spinner size="sm" />
-        ) : (
-          <SparklesIcon className="h-3 w-3 text-violet-400" aria-hidden />
-        )}
-        {variant === 'toolbar' && (aiBusy ? t('workingTree.analyzing') : t('workingTree.analyzeWithAi'))}
-        {variant === 'pill' && (aiBusy ? t('workingTree.analyzing') : t('workingTree.analyzeWithAiShort'))}
-      </button>
+        {label}
+      </AiActionButton>
 
       <Modal
         open={open}

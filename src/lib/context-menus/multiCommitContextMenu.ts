@@ -137,7 +137,7 @@ export function buildMultiCommitContextMenuItems({
             id: 'explain-selected',
             label: t
               ? t('contextMenu.explainCommitsWithAi', { count })
-              : `Explain ${count} commits with AI…`,
+              : `Explain (${count})…`,
             onClick: () => actions.explainCommits(chronological)
           }
         ]
