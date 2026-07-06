@@ -1,5 +1,6 @@
 import type { GitCommit } from '@/lib/types'
 import { useTranslation } from 'react-i18next'
+import { ExplainCommitButton } from '@/components/DetailPanel/ExplainCommitWithAi'
 import {
   allSelectedOnBranchHistory,
   anySelectedOnBranchHistory,
@@ -88,6 +89,7 @@ export function MultiCommitSelectionBar({
           >
             {t('detail.compare')}
           </button>
+          <ExplainCommitButton commits={chronological} variant="pill" disabled={gitBusy} />
           <button
             type="button"
             disabled={cherryPickDisabled}

@@ -9,6 +9,7 @@ import { useToastStore } from '@/stores/toast'
 import { useSelectionStore } from '@/stores/selection'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { RewordCommitModal } from '@/components/DetailPanel/RewordCommitModal'
+import { ExplainCommitButton } from '@/components/DetailPanel/ExplainCommitWithAi'
 import { FileHistoryModal } from '@/components/History/FileHistoryModal'
 import {
   buildFileTree,
@@ -448,6 +449,11 @@ export function CommitPreview({
               setRewordDraft({ summary, description })
               setRewordOpen(true)
             }}
+          />
+          <ExplainCommitButton
+            commits={[commit]}
+            filePathsByHash={{ [commit.hash]: changedFiles.map((file) => file.path) }}
+            variant="detail"
           />
         </div>
       </div>
