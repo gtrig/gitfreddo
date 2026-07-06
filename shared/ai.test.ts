@@ -9,6 +9,7 @@ import {
   parseAnalyzeChangesResponse,
   parseComposeCommitsResponse,
   parseConflictResolveResponse,
+  parseExplainCommitResponse,
   pickChatModelId,
   proposalsToResolutionMap
 } from './ai'
@@ -107,6 +108,101 @@ describe('buildAiMessages', () => {
     expect(user).toContain('Commit message instructions:')
     expect(user).toContain('Use Conventional Commits with a scope.')
     expect(user).toContain('commit message instructions below')
+  })
+
+  it('asks for structured JSON when explaining commits', () => {
+    const { system, user } = buildAiMessages('explain_commit', {
+      branch: 'main',
+      commits: [
+        {
+          hash: 'abc123def456',
+          shortHash: 'abc123d',
+          subject: 'Add login helper',
+          message: 'Add login helper\n\nExpose shared auth utility.',
+          author: 'Ada Lovelace',
+          date: '2026-01-01T00:00:00Z',
+          filePaths: ['src/auth.ts']
+        }
+      ],
+      diffText: '+++ b/src/auth.ts\n+export function login() {}'
+    })
+    expect(system).toContain('valid JSON')
+    expect(user).toContain('main')
+    expect(user).toContain('abc123d')
+    expect(user).toContain('Add login helper')
+    expect(user).toContain('src/auth.ts')
+    expect(user).toContain('+++ b/src/auth.ts')
+    expect(user).toContain('"rationale"')
+  })
+})
+
+describe('parseExplainCommitResponse', () => {
+  const commits = [
+    { hash: 'abc123def456', shortHash: 'abc123d' },
+    { hash: 'def456abc789', shortHash: 'def456a' }
+  ]
+
+  it('parses summary and per-commit explanations', () => {
+    const result = parseExplainCommitResponse(
+      JSON.stringify({
+        summary: 'Auth and docs updated across two commits.',
+        commits: [
+          {
+            shortHash: 'abc123d',
+            summary: 'Added login helper.',
+            keyChanges: '- New login() export',
+            rationale: 'Centralizes authentication for upcoming UI work.'
+          },
+          {
+            shortHash: 'def456a',
+            summary: 'Documented login flow.',
+            keyChanges: '- README section',
+            rationale: 'Helps contributors understand the new auth API.'
+          }
+        ]
+      }),
+      commits
+    )
+
+    expect(result.summary).toBe('Auth and docs updated across two commits.')
+    expect(result.commits).toHaveLength(2)
+    expect(result.commits[0]).toMatchObject({
+      hash: 'abc123def456',
+      shortHash: 'abc123d',
+      summary: 'Added login helper.',
+      keyChanges: '- New login() export',
+      rationale: 'Centralizes authentication for upcoming UI work.'
+    })
+  })
+
+  it('rejects invalid JSON', () => {
+    expect(() => parseExplainCommitResponse('not json', commits)).toThrow(/valid JSON/)
+  })
+
+  it('requires at least one commit explanation', () => {
+    expect(() =>
+      parseExplainCommitResponse(JSON.stringify({ summary: 'Nothing useful', commits: [] }), commits)
+    ).toThrow(/no usable commit explanations/)
+  })
+
+  it('accepts full hash when short hash is omitted', () => {
+    const result = parseExplainCommitResponse(
+      JSON.stringify({
+        summary: 'One commit explained.',
+        commits: [
+          {
+            hash: 'abc123def456',
+            summary: 'Added login helper.',
+            keyChanges: '- login()',
+            rationale: 'Shared auth entry point.'
+          }
+        ]
+      }),
+      [{ hash: 'abc123def456', shortHash: 'abc123d' }]
+    )
+
+    expect(result.commits[0]?.hash).toBe('abc123def456')
+    expect(result.commits[0]?.shortHash).toBe('abc123d')
   })
 })
 

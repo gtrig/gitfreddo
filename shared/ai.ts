@@ -4,6 +4,7 @@ export type AiFillPurpose =
   | 'compose_commits'
   | 'resolve_conflict'
   | 'analyze_changes'
+  | 'explain_commit'
 
 export interface AiComposeCommitProposal {
   summary: string
@@ -22,6 +23,29 @@ export interface AiAnalyzeChangesResult {
   commits: AiAnalyzeCommitProposal[]
 }
 
+export interface AiExplainCommitInput {
+  hash: string
+  shortHash: string
+  subject: string
+  message?: string
+  author?: string
+  date?: string
+  filePaths?: string[]
+}
+
+export interface AiExplainCommitEntry {
+  hash: string
+  shortHash: string
+  summary: string
+  keyChanges: string
+  rationale: string
+}
+
+export interface AiExplainCommitResult {
+  summary: string
+  commits: AiExplainCommitEntry[]
+}
+
 export interface AiConflictResolutionProposal {
   hunkId: number
   text: string
@@ -38,6 +62,7 @@ export interface AiFillContext {
   unstagedFilePaths?: string[]
   currentText?: string
   diffText?: string
+  commits?: AiExplainCommitInput[]
   filePath?: string
   sideA?: string
   sideB?: string
@@ -118,6 +143,7 @@ export function buildAiMessages(
   const system = appendCustomInstructions(
   purpose === 'compose_commits' ||
   purpose === 'analyze_changes' ||
+  purpose === 'explain_commit' ||
   purpose === 'resolve_conflict'
     ? 'You write concise, technical text for git workflows. ' +
         'Respond with only valid JSON — no quotes around the whole payload, markdown fences, or preamble.'
@@ -212,6 +238,51 @@ export function buildAiMessages(
         instructions.commitMessage
       )
       break
+    case 'explain_commit': {
+      const explainCommits = context.commits ?? []
+      const commitsBlock =
+        explainCommits.length > 0
+          ? explainCommits
+              .map((commit) => {
+                const lines = [
+                  `Commit ${commit.shortHash}: ${commit.subject}`,
+                  commit.author ? `Author: ${commit.author}` : null,
+                  commit.date ? `Date: ${commit.date}` : null,
+                  commit.message?.trim() ? `Message:\n${commit.message.trim()}` : null,
+                  commit.filePaths && commit.filePaths.length > 0
+                    ? `Files:\n${commit.filePaths.map((path) => `- ${path}`).join('\n')}`
+                    : null
+                ].filter(Boolean)
+                return lines.join('\n')
+              })
+              .join('\n\n')
+          : null
+      user = appendCustomInstructions(
+        'Analyze the provided git commit(s) and explain what changed and why.\n' +
+          (branch ? `Branch context: ${branch}\n` : '') +
+          (commitsBlock ? `Commits:\n${commitsBlock}\n` : '') +
+          diffBlock +
+          'Return ONLY JSON with this shape:\n' +
+          '{\n' +
+          '  "summary": "Overall summary in one short paragraph",\n' +
+          '  "commits": [\n' +
+          '    {\n' +
+          '      "shortHash": "first 7 characters of the commit hash",\n' +
+          '      "summary": "One sentence overview of this commit",\n' +
+          '      "keyChanges": "Bullet-style notes on what changed",\n' +
+          '      "rationale": "Likely motivation or reason for the changes based on code, message, and context"\n' +
+          '    }\n' +
+          '  ]\n' +
+          '}\n' +
+          'Rules:\n' +
+          '- Base explanations on the diff when provided\n' +
+          '- Include one entry per commit listed, in the same order\n' +
+          '- rationale should explain likely intent; say briefly when uncertain\n' +
+          '- keyChanges should group by area or file when helpful',
+        instructions.system
+      )
+      break
+    }
     case 'resolve_conflict': {
       const filePath = context.filePath?.trim()
       const op = context.operationKind ?? 'merge'
@@ -427,6 +498,89 @@ export function parseAnalyzeChangesResponse(
     keyChanges: normalizeAnalysisText(raw.keyChanges),
     risks: normalizeAnalysisText(raw.risks),
     commits
+  }
+}
+
+function resolveExplainCommitHash(
+  shortHash: string,
+  commits: Array<Pick<AiExplainCommitInput, 'hash' | 'shortHash'>>
+): string | undefined {
+  const normalized = shortHash.trim()
+  if (!normalized) return undefined
+
+  const exact = commits.find(
+    (commit) => commit.shortHash === normalized || commit.hash.startsWith(normalized)
+  )
+  if (exact) return exact.hash
+
+  return commits.find((commit) => commit.hash.startsWith(normalized.slice(0, 7)))?.hash
+}
+
+export function parseExplainCommitResponse(
+  text: string,
+  commits: Array<Pick<AiExplainCommitInput, 'hash' | 'shortHash'>>
+): AiExplainCommitResult {
+  const cleaned = stripJsonFences(text)
+  let parsed: unknown
+
+  try {
+    parsed = JSON.parse(cleaned)
+  } catch {
+    throw new Error('AI response was not valid JSON. Try again or adjust your AI settings.')
+  }
+
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('AI response was not a JSON object.')
+  }
+
+  const raw = parsed as {
+    summary?: unknown
+    commits?: unknown
+  }
+
+  const entries = Array.isArray(raw.commits) ? raw.commits : []
+  const explanations: AiExplainCommitEntry[] = []
+
+  for (const entry of entries) {
+    if (!entry || typeof entry !== 'object') continue
+    const item = entry as {
+      shortHash?: unknown
+      hash?: unknown
+      summary?: unknown
+      keyChanges?: unknown
+      rationale?: unknown
+    }
+
+    const shortHash =
+      typeof item.shortHash === 'string'
+        ? item.shortHash.trim()
+        : typeof item.hash === 'string'
+          ? item.hash.trim().slice(0, 7)
+          : ''
+    const hash = shortHash ? resolveExplainCommitHash(shortHash, commits) : undefined
+    if (!hash || !shortHash) continue
+
+    const summary = normalizeAnalysisText(item.summary)
+    const keyChanges = normalizeAnalysisText(item.keyChanges)
+    const rationale = normalizeAnalysisText(item.rationale)
+    if (!summary && !keyChanges && !rationale) continue
+
+    explanations.push({
+      hash,
+      shortHash,
+      summary,
+      keyChanges,
+      rationale
+    })
+  }
+
+  if (explanations.length === 0) {
+    throw new Error('AI returned no usable commit explanations.')
+  }
+
+  return {
+    summary: normalizeAnalysisText(raw.summary),
+    commits: explanations
   }
 }
 

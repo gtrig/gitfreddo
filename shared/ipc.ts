@@ -68,6 +68,7 @@ export type MenuAction =
   | 'open-settings'
   | 'open-docs'
   | 'refresh'
+  | 'undo'
   | 'check-for-updates'
   | 'quit'
 

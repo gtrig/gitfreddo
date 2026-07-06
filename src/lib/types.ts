@@ -205,6 +205,13 @@ export interface GitReflogEntry {
   timestamp: string
 }
 
+export interface GitUndoResult {
+  targetHash: string
+  targetShortHash: string
+  subject: string
+  mode: 'soft' | 'mixed' | 'hard'
+}
+
 export interface GitBisectStatus {
   active: boolean
   good?: string

@@ -1,12 +1,13 @@
 import type { RepoManager } from '../git/repo-manager'
-import type { AiFillContext, AiFillParams } from '../../shared/ai'
+import type { AiExplainCommitInput, AiFillContext, AiFillParams } from '../../shared/ai'
 import type { GitDiffResult, GitWorkingStatus } from '../git/types'
 
 const DIFF_PURPOSES = new Set<AiFillParams['purpose']>([
   'commit_message',
   'stash_message',
   'compose_commits',
-  'analyze_changes'
+  'analyze_changes',
+  'explain_commit'
 ])
 const MAX_DIFF_CHARS = 8000
 const MAX_STAGE_CHARS = 12000
@@ -42,6 +43,63 @@ async function loadConflictStages(
     sideA: truncateText(sideA, MAX_STAGE_CHARS),
     sideB: truncateText(sideB, MAX_STAGE_CHARS),
     conflictContent: truncateText(conflictContent, MAX_STAGE_CHARS)
+  }
+}
+
+async function loadExplainCommitContext(
+  manager: RepoManager,
+  repoPath: string,
+  commits: AiExplainCommitInput[]
+): Promise<Pick<AiFillContext, 'branch' | 'commits' | 'diffText' | 'filePaths'>> {
+  const perCommitBudget = Math.max(500, Math.floor(MAX_DIFF_CHARS / Math.max(commits.length, 1)))
+  const enrichedCommits: AiExplainCommitInput[] = []
+  const diffParts: string[] = []
+
+  for (const commit of commits) {
+    let message = commit.message?.trim()
+    if (!message) {
+      message = String(
+        await manager.invoke(repoPath, 'log.message', { hash: commit.hash })
+      ).trim()
+    }
+
+    const diff = (await manager.invoke(repoPath, 'diff.show', { ref: commit.hash })) as GitDiffResult
+    const diffText = truncateText(diff.unified?.trim() ?? '', perCommitBudget)
+
+    enrichedCommits.push({
+      ...commit,
+      message
+    })
+
+    const section = [
+      `--- Commit ${commit.shortHash}: ${commit.subject} ---`,
+      message ? `Message:\n${message}` : null,
+      commit.filePaths && commit.filePaths.length > 0
+        ? `Files:\n${commit.filePaths.map((path) => `- ${path}`).join('\n')}`
+        : null,
+      diffText ? `Diff:\n${diffText}` : null
+    ]
+      .filter(Boolean)
+      .join('\n\n')
+
+    if (section.trim()) {
+      diffParts.push(section)
+    }
+  }
+
+  let branch: string | undefined
+  try {
+    const repoStatus = (await manager.invoke(repoPath, 'repo.status')) as { branch: string }
+    branch = repoStatus.branch
+  } catch {
+    branch = undefined
+  }
+
+  return {
+    branch,
+    commits: enrichedCommits,
+    filePaths: enrichedCommits.flatMap((commit) => commit.filePaths ?? []),
+    diffText: diffParts.length > 0 ? truncateDiff(diffParts.join('\n\n')) : undefined
   }
 }
 
@@ -99,6 +157,30 @@ export async function enrichAiContext(
           operationKind,
           incomingLabel,
           ...stages
+        }
+      }
+    } catch {
+      return params
+    }
+  }
+
+  if (params.purpose === 'explain_commit') {
+    const commits = params.context?.commits
+    if (!commits || commits.length === 0 || params.context?.diffText) {
+      return params
+    }
+
+    try {
+      const loaded = await loadExplainCommitContext(manager, repoPath, commits)
+      if (!loaded.diffText && (!loaded.commits || loaded.commits.length === 0)) {
+        return params
+      }
+
+      return {
+        ...params,
+        context: {
+          ...params.context,
+          ...loaded
         }
       }
     } catch {
