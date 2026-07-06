@@ -1,33 +1,56 @@
-import { execSync } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
+import { runGitOrThrow } from '../git-runner'
 import { submoduleAdd, submoduleList, submoduleRemove, submoduleUpdate } from './submodule'
 
-function initRepo(dir: string) {
-  execSync('git init -b main', { cwd: dir, stdio: 'ignore' })
-  execSync('git config user.email "test@example.com"', { cwd: dir, stdio: 'ignore' })
-  execSync('git config user.name "Test"', { cwd: dir, stdio: 'ignore' })
-  execSync('git config protocol.file.allow always', { cwd: dir, stdio: 'ignore' })
-}
+const SUBMODULE_TEST_TIMEOUT_MS = 30_000
 
-describe('submodule operations', () => {
-  it('lists submodules after add', async () => {
-    const parent = mkdtempSync(join(tmpdir(), 'gf-sub-parent-'))
-    const child = mkdtempSync(join(tmpdir(), 'gf-sub-child-'))
-    initRepo(parent)
-    initRepo(child)
+describe('submodule operations', { timeout: SUBMODULE_TEST_TIMEOUT_MS }, () => {
+  const tempDirs: string[] = []
+
+  afterEach(() => {
+    for (const dir of tempDirs.splice(0)) {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  function trackDir(dir: string): string {
+    tempDirs.push(dir)
+    return dir
+  }
+
+  async function initRepo(dir: string): Promise<void> {
+    const run = (args: string[]) => runGitOrThrow(args, { cwd: dir, gitBinaryPath: 'git' })
+    await run(['init', '-b', 'main'])
+    await run(['config', 'user.email', 'test@example.com'])
+    await run(['config', 'user.name', 'Test'])
+    await run(['config', 'protocol.file.allow', 'always'])
+  }
+
+  async function createChildRepo(): Promise<string> {
+    const child = trackDir(mkdtempSync(join(tmpdir(), 'gf-sub-child-')))
+    await initRepo(child)
     writeFileSync(join(child, 'README.md'), 'child\n')
-    execSync('git add README.md', { cwd: child, stdio: 'ignore' })
-    execSync('git commit -m "child"', { cwd: child, stdio: 'ignore' })
+    const run = (args: string[]) => runGitOrThrow(args, { cwd: child, gitBinaryPath: 'git' })
+    await run(['add', 'README.md'])
+    await run(['commit', '-m', 'child'])
+    return child
+  }
+
+  it('lists submodules after add', async () => {
+    const parent = trackDir(mkdtempSync(join(tmpdir(), 'gf-sub-parent-')))
+    const child = await createChildRepo()
+    await initRepo(parent)
 
     await submoduleAdd(parent, 'git', {
       url: child,
       path: 'vendor/lib'
     })
-    execSync('git add .gitmodules vendor/lib', { cwd: parent, stdio: 'ignore' })
-    execSync('git commit -m "add submodule"', { cwd: parent, stdio: 'ignore' })
+    const run = (args: string[]) => runGitOrThrow(args, { cwd: parent, gitBinaryPath: 'git' })
+    await run(['add', '.gitmodules', 'vendor/lib'])
+    await run(['commit', '-m', 'add submodule'])
 
     const list = await submoduleList(parent, 'git')
     expect(list).toHaveLength(1)
@@ -37,24 +60,21 @@ describe('submodule operations', () => {
   })
 
   it('updates and removes a submodule', async () => {
-    const parent = mkdtempSync(join(tmpdir(), 'gf-sub-parent-'))
-    const child = mkdtempSync(join(tmpdir(), 'gf-sub-child-'))
-    initRepo(parent)
-    initRepo(child)
-    writeFileSync(join(child, 'README.md'), 'child\n')
-    execSync('git add README.md', { cwd: child, stdio: 'ignore' })
-    execSync('git commit -m "child"', { cwd: child, stdio: 'ignore' })
+    const parent = trackDir(mkdtempSync(join(tmpdir(), 'gf-sub-parent-')))
+    const child = await createChildRepo()
+    await initRepo(parent)
 
     await submoduleAdd(parent, 'git', { url: child, path: 'vendor/lib' })
-    execSync('git add .gitmodules vendor/lib', { cwd: parent, stdio: 'ignore' })
-    execSync('git commit -m "add submodule"', { cwd: parent, stdio: 'ignore' })
+    const run = (args: string[]) => runGitOrThrow(args, { cwd: parent, gitBinaryPath: 'git' })
+    await run(['add', '.gitmodules', 'vendor/lib'])
+    await run(['commit', '-m', 'add submodule'])
 
     rmSync(join(parent, 'vendor/lib'), { recursive: true, force: true })
     await submoduleUpdate(parent, 'git', { paths: ['vendor/lib'], init: true })
     expect(await submoduleList(parent, 'git')).toHaveLength(1)
 
     await submoduleRemove(parent, 'git', 'vendor/lib', true)
-    execSync('git commit -am "remove submodule"', { cwd: parent, stdio: 'ignore' })
+    await run(['commit', '-am', 'remove submodule'])
     expect(await submoduleList(parent, 'git')).toHaveLength(0)
   })
 })
