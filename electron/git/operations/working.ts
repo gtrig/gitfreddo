@@ -1,8 +1,9 @@
 import { writeFile, mkdir, readFile, access } from 'fs/promises'
-import { resolve, dirname } from 'path'
+import { dirname } from 'path'
 import { appendGitignoreEntry } from '../../../shared/gitignore'
 import type { WorkingReadResult } from '../../../shared/working'
 import { runGit, runGitOrThrow } from '../git-runner'
+import { resolveRepoFile } from '../workspace-files'
 
 const GITIGNORE_PATH = '.gitignore'
 
@@ -13,10 +14,7 @@ export async function workingWrite(
   content: string
 ): Promise<void> {
   const root = (await runGitOrThrow(['rev-parse', '--show-toplevel'], { cwd, gitBinaryPath })).trim()
-  const target = resolve(root, relativePath)
-  if (!target.startsWith(root + '/') && target !== root) {
-    throw new Error('Path escapes repository root.')
-  }
+  const target = resolveRepoFile(root, relativePath)
   await mkdir(dirname(target), { recursive: true })
   await writeFile(target, content, 'utf8')
 }
@@ -27,10 +25,7 @@ export async function workingRead(
   relativePath: string
 ): Promise<WorkingReadResult> {
   const root = (await runGitOrThrow(['rev-parse', '--show-toplevel'], { cwd, gitBinaryPath })).trim()
-  const target = resolve(root, relativePath)
-  if (!target.startsWith(root + '/') && target !== root) {
-    throw new Error('Path escapes repository root.')
-  }
+  const target = resolveRepoFile(root, relativePath)
   try {
     await access(target)
   } catch {

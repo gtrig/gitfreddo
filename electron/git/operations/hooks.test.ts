@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process'
-import { chmodSync, existsSync, mkdtempSync, statSync } from 'node:fs'
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -61,7 +61,9 @@ describe('hooks', () => {
     const content = await hooksRead(dir, 'git', 'commit-msg')
     expect(content).toBe(script)
     const { hooksDir } = await hooksList(dir, 'git')
-    expect(isExecutable(join(hooksDir, 'commit-msg'))).toBe(true)
+    if (process.platform !== 'win32') {
+      expect(isExecutable(join(hooksDir, 'commit-msg'))).toBe(true)
+    }
   })
 
   it('disables an active hook by renaming to .disabled', async () => {
@@ -84,9 +86,7 @@ describe('hooks', () => {
     initRepo(dir)
     await hooksWrite(dir, 'git', 'pre-push', '#!/bin/sh\n')
     const { hooksDir } = await hooksList(dir, 'git')
-    execSync(`cp ${join(hooksDir, 'pre-push')} ${join(hooksDir, 'pre-push.sample')}`, {
-      shell: '/bin/bash'
-    })
+    copyFileSync(join(hooksDir, 'pre-push'), join(hooksDir, 'pre-push.sample'))
 
     await hooksDelete(dir, 'git', 'pre-push')
 
@@ -100,9 +100,9 @@ describe('hooks', () => {
     const dir = mkdtempSync(join(tmpdir(), 'gf-hooks-'))
     initRepo(dir)
     const customDir = join(dir, 'custom-hooks')
-    execSync(`mkdir -p "${customDir}"`, { shell: '/bin/bash' })
+    mkdirSync(customDir, { recursive: true })
     execSync(`git config core.hooksPath "${customDir}"`, { cwd: dir, stdio: 'ignore' })
-    execSync(`echo '#!/bin/sh' > "${join(customDir, 'pre-commit')}"`, { shell: '/bin/bash' })
+    writeFileSync(join(customDir, 'pre-commit'), '#!/bin/sh\n')
     chmodSync(join(customDir, 'pre-commit'), 0o755)
 
     const result = await hooksList(dir, 'git')

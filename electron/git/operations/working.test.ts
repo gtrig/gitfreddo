@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process'
-import { mkdtempSync, readFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -25,7 +25,7 @@ describe('workingRead', () => {
   it('returns file content when the file exists', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'gf-working-read-'))
     initRepo(dir)
-    execSync('echo "*.txt text" > .gitattributes', { cwd: dir, shell: '/bin/bash' })
+    writeFileSync(join(dir, '.gitattributes'), '*.txt text\n')
 
     await expect(workingRead(dir, 'git', '.gitattributes')).resolves.toEqual({
       exists: true,
@@ -38,8 +38,8 @@ describe('workingAddToGitignore', () => {
   it('creates .gitignore and ignores an untracked file', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'gf-gitignore-'))
     initRepo(dir)
-    execSync('echo secret > tracked.txt', { cwd: dir, shell: '/bin/bash' })
-    execSync('echo noise > noise.log', { cwd: dir, shell: '/bin/bash' })
+    writeFileSync(join(dir, 'tracked.txt'), 'secret\n')
+    writeFileSync(join(dir, 'noise.log'), 'noise\n')
 
     await workingAddToGitignore(dir, 'git', 'noise.log')
 
@@ -53,9 +53,10 @@ describe('workingAddToGitignore', () => {
   it('stops tracking a tracked file without deleting it', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'gf-gitignore-'))
     initRepo(dir)
-    execSync('echo keep > keep.me', { cwd: dir, shell: '/bin/bash' })
-    execSync('git add keep.me && git commit -m "add"', { cwd: dir, shell: '/bin/bash' })
-    execSync('echo changed > keep.me', { cwd: dir, shell: '/bin/bash' })
+    writeFileSync(join(dir, 'keep.me'), 'keep\n')
+    execSync('git add keep.me', { cwd: dir, stdio: 'ignore' })
+    execSync('git commit -m "add"', { cwd: dir, stdio: 'ignore' })
+    writeFileSync(join(dir, 'keep.me'), 'changed\n')
 
     await workingAddToGitignore(dir, 'git', 'keep.me')
 
@@ -69,11 +70,9 @@ describe('workingAddToGitignore', () => {
   it('ignores an untracked folder and its contents', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'gf-gitignore-'))
     initRepo(dir)
-    execSync('mkdir -p build/output && echo artifact > build/output/app.bin', {
-      cwd: dir,
-      shell: '/bin/bash'
-    })
-    execSync('echo tracked > tracked.txt', { cwd: dir, shell: '/bin/bash' })
+    mkdirSync(join(dir, 'build/output'), { recursive: true })
+    writeFileSync(join(dir, 'build/output/app.bin'), 'artifact\n')
+    writeFileSync(join(dir, 'tracked.txt'), 'tracked\n')
 
     await workingAddToGitignore(dir, 'git', 'build', true)
 
@@ -87,12 +86,12 @@ describe('workingAddToGitignore', () => {
   it('stops tracking files inside a tracked folder without deleting them', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'gf-gitignore-'))
     initRepo(dir)
-    execSync('mkdir -p dist && echo one > dist/a.txt && echo two > dist/b.txt', {
-      cwd: dir,
-      shell: '/bin/bash'
-    })
-    execSync('git add dist && git commit -m "add dist"', { cwd: dir, shell: '/bin/bash' })
-    execSync('echo changed > dist/a.txt', { cwd: dir, shell: '/bin/bash' })
+    mkdirSync(join(dir, 'dist'), { recursive: true })
+    writeFileSync(join(dir, 'dist/a.txt'), 'one\n')
+    writeFileSync(join(dir, 'dist/b.txt'), 'two\n')
+    execSync('git add dist', { cwd: dir, stdio: 'ignore' })
+    execSync('git commit -m "add dist"', { cwd: dir, stdio: 'ignore' })
+    writeFileSync(join(dir, 'dist/a.txt'), 'changed\n')
 
     await workingAddToGitignore(dir, 'git', 'dist', true)
 

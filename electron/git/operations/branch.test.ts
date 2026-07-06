@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { describe, expect, it } from 'vitest'
@@ -10,8 +10,9 @@ function initRepo(dir: string) {
   execSync('git init -b main', { cwd: dir, stdio: 'ignore' })
   execSync('git config user.email "test@example.com"', { cwd: dir, stdio: 'ignore' })
   execSync('git config user.name "Test"', { cwd: dir, stdio: 'ignore' })
-  execSync('echo initial > README.md', { cwd: dir, shell: '/bin/bash' })
-  execSync('git add README.md && git commit -m "initial"', { cwd: dir, shell: '/bin/bash' })
+  writeFileSync(join(dir, 'README.md'), 'initial\n')
+  execSync('git add README.md', { cwd: dir, stdio: 'ignore' })
+  execSync('git commit -m "initial"', { cwd: dir, stdio: 'ignore' })
 }
 
 describe('stripAnsi', () => {
