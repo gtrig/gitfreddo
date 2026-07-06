@@ -18,7 +18,7 @@ The renderer calls `window.gitfreddo.invoke(method, params)` for git operations:
 |------|-------|
 | `repo.status` | `branch.checkout`, `branch.checkoutRemote`, `branch.create`, `branch.delete`, `branch.rename`, `branch.setUpstream`, `branch.unsetUpstream`, `branch.deleteRemote` |
 | `log.graph`, `log.show`, `log.message`, `log.file`, `log.pickaxe`, `log.search` | `stage.add`, `stage.reset`, `stage.applyPatch`, `commit.create`, `commit.reword`, `commit.revert` |
-| `branch.list`, `tag.list`, `reflog.list` | `tag.create`, `tag.delete`, `tag.push`, `tag.rename` |
+| `branch.list`, `tag.list`, `reflog.list`, `undo.peek` | `tag.create`, `tag.delete`, `tag.push`, `tag.rename`, `undo.last` |
 | `working.status`, `working.cleanPreview`, `working.read` | `working.discard`, `working.remove`, `working.clean`, `working.write`, `working.rename` |
 | `remote.list` | `remote.add`, `remote.remove`, `remote.rename`, `remote.setUrl`, `fetch`, `push`, `pull` |
 | `diff.working`, `diff.staged`, `diff.commits`, `diff.show` | `stash.push`, `stash.pop`, `stash.apply`, `stash.drop`, `stash.branch` |

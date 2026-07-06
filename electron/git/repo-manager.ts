@@ -22,6 +22,7 @@ import * as workingOps from './operations/working'
 import * as configOps from './operations/config'
 import * as hooksOps from './operations/hooks'
 import * as submoduleOps from './operations/submodule'
+import * as undoOps from './operations/undo'
 import { loadSettings } from '../settings'
 
 const MAX_PARAM_CHARS = 240
@@ -269,6 +270,10 @@ export class RepoManager {
         })
       case 'reflog.list':
         return reflogOps.reflogList(cwd, git, (p.maxCount as number) ?? 200)
+      case 'undo.peek':
+        return undoOps.peekUndoAction(cwd, git)
+      case 'undo.last':
+        return undoOps.undoLastAction(cwd, git)
       case 'notes.list':
         return notesOps.notesList(cwd, git, p.hash as string | undefined)
       case 'notes.add':
