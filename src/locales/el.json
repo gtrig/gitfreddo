@@ -770,6 +770,17 @@
     "deleted": "{{count}} διαγράφηκαν",
     "recomposing": "Επανασύνθεση…",
     "recomposeWithAi": "Επανασύνθεση commit με AI",
+    "explainWithAi": "Εξήγηση με AI",
+    "explainCommitsWithAi": "Εξήγηση {{count}} commits με AI",
+    "explaining": "Εξήγηση…",
+    "explainCommitTitle": "Εξήγηση commit",
+    "explainCommitsTitle": "Εξήγηση {{count}} commits",
+    "explainingCommits": "Ανάλυση αλλαγών commit…",
+    "explainSummary": "Περίληψη",
+    "explainCommitOverview": "Επισκόπηση",
+    "explainKeyChanges": "Τι άλλαξε",
+    "explainRationale": "Γιατί πιθανότατα άλλαξε",
+    "explainAgain": "Εξήγηση ξανά",
     "aiSuggestionFailed": "Η πρόταση AI απέτυχε.",
     "deleteLatestCommit": "Διαγραφή τελευταίου commit",
     "dropCommitFromHistory": "Αφαίρεση commit από ιστορικό",
@@ -845,6 +856,8 @@
     "viewCommitMulti": "Προβολή commit ({{count}} επιλεγμένα)",
     "copyCommitHash": "Αντιγραφή hash commit",
     "copyShortHash": "Αντιγραφή σύντομου hash",
+    "explainCommitWithAi": "Εξήγηση commit με AI…",
+    "explainCommitsWithAi": "Εξήγηση {{count}} commits με AI…",
     "checkedOutAtHead": "Checked out στο HEAD",
     "checkedOutAtHeadBranch": "Checked out στο HEAD ({{branch}})",
     "checkoutBranch": "Checkout {{branch}}",
@@ -1066,6 +1079,10 @@
     "tagPush": {
       "success": "Η ετικέτα στάλθηκε",
       "error": "Αποτυχία αποστολής ετικέτας"
+    },
+    "undo": {
+      "success": "Αναίρεση: {{subject}}",
+      "error": "Αποτυχία αναίρεσης"
     },
     "github": {
       "connected": "Σύνδεση με GitHub ως @{{login}}",

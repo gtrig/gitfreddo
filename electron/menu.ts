@@ -50,6 +50,16 @@ export function buildAppMenu(): void {
       ]
     },
     {
+      label: 'Edit',
+      submenu: [
+        {
+          label: 'Undo Last Git Action',
+          accelerator: 'CmdOrCtrl+Z',
+          click: () => sendMenuAction('undo')
+        }
+      ]
+    },
+    {
       label: 'View',
       submenu: [
         {

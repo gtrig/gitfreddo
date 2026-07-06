@@ -24,6 +24,7 @@ import { useSelectionStore } from '@/stores/selection'
 import { appLog, useLogStore } from '@/stores/logs'
 import { useLocale } from '@/hooks/useLocale'
 import { useAppUpdate } from '@/hooks/useAppUpdate'
+import { useUndoLast } from '@/hooks/useUndoLast'
 import type { MenuAction } from '@shared/ipc'
 
 export default function App() {
@@ -59,6 +60,7 @@ export default function App() {
   useLocale()
   useWorkspaceSessionPersistence()
   const appUpdate = useAppUpdate()
+  const { performUndo, handleUndoKeyDown } = useUndoLast()
 
   const connectWorkspace = useCallback(
     async (path: string) => {
@@ -81,16 +83,20 @@ export default function App() {
         appLog('info', 'Manual refresh')
         refresh()
       }
+      if (action === 'undo') {
+        void performUndo()
+      }
       if (action === 'check-for-updates') {
         void appUpdate.checkForUpdates(true)
       }
       if (action === 'quit') void window.gitfreddo.disconnect()
     })
     return unsubscribe
-  }, [appUpdate, openWorkspaceDialog, refresh])
+  }, [appUpdate, openWorkspaceDialog, performUndo, refresh])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      handleUndoKeyDown(event)
       const mod = event.metaKey || event.ctrlKey
       if (!mod) return
       if (event.key === 'r' || event.key === 'R') {
@@ -116,7 +122,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [openWorkspaceDialog, refresh])
+  }, [handleUndoKeyDown, openWorkspaceDialog, refresh])
 
   if (tabs.length === 0) {
     return (

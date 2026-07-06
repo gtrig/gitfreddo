@@ -19,6 +19,7 @@ export interface MultiCommitContextMenuActions {
   dropSelected: (commits: GitCommit[]) => void
   removeStaleSelected: (commits: GitCommit[]) => void
   compareSelected: (oldestHash: string, newestHash: string, label: string) => void
+  explainCommits: (commits: GitCommit[]) => void
 }
 
 export interface MultiCommitContextMenuContext {
@@ -29,6 +30,7 @@ export interface MultiCommitContextMenuContext {
   allCommits: GitCommit[]
   working: GitWorkingStatus | undefined
   actions: MultiCommitContextMenuActions
+  aiEnabled?: boolean
   t?: TFunction
 }
 
@@ -40,6 +42,7 @@ export function buildMultiCommitContextMenuItems({
   allCommits,
   working,
   actions,
+  aiEnabled = false,
   t
 }: MultiCommitContextMenuContext): ContextMenuItem[] {
   if (selectedCommits.length < 2) return []
@@ -128,6 +131,17 @@ export function buildMultiCommitContextMenuItems({
             : `${count} commits (${oldest.shortHash}..${newest.shortHash})`
         )
     },
+    ...(aiEnabled
+      ? [
+          {
+            id: 'explain-selected',
+            label: t
+              ? t('contextMenu.explainCommitsWithAi', { count })
+              : `Explain ${count} commits with AI…`,
+            onClick: () => actions.explainCommits(chronological)
+          }
+        ]
+      : []),
     {
       id: 'cherry-pick-all',
       label: anyOnHistory

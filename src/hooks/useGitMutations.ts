@@ -93,6 +93,7 @@ export function useGitMutations() {
     revertCommit: wrap('commit.revert', ['working.status', 'log.graph', 'status', 'branch.list']),
     reset: wrap('reset', ['working.status', 'log.graph', 'status']),
     resetHead: wrap('reset.head', ['working.status', 'log.graph', 'status', 'branch.list']),
+    undoLast: wrap('undo.last', ['working.status', 'log.graph', 'status', 'branch.list']),
     stashPush: wrap('stash.push', ['working.status', 'stash.list']),
     stashPop: wrap('stash.pop', ['working.status', 'stash.list']),
     stashApply: wrap('stash.apply', ['working.status']),

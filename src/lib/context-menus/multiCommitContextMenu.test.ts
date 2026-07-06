@@ -28,7 +28,8 @@ const actions = {
   squashSelected: vi.fn(),
   dropSelected: vi.fn(),
   removeStaleSelected: vi.fn(),
-  compareSelected: vi.fn()
+  compareSelected: vi.fn(),
+  explainCommits: vi.fn()
 }
 
 const cleanWorking = {
@@ -90,5 +91,20 @@ describe('buildMultiCommitContextMenuItems', () => {
     })
 
     expect(items.find((item) => item.id === 'drop-selected')?.disabled).toBe(false)
+  })
+
+  it('includes explain action when AI is enabled', () => {
+    const items = buildMultiCommitContextMenuItems({
+      selectedCommits: [allCommits[1]!, allCommits[2]!],
+      head: 'c3',
+      branch: 'feature',
+      isDetached: false,
+      allCommits,
+      working: cleanWorking,
+      actions,
+      aiEnabled: true
+    })
+
+    expect(items.find((item) => item.id === 'explain-selected')).toBeDefined()
   })
 })

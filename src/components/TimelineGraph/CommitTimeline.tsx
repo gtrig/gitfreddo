@@ -56,6 +56,7 @@ import { DeleteCommitModal } from '@/components/DetailPanel/DeleteCommitModal'
 import { DeleteTagModal } from '@/components/Tags/DeleteTagModal'
 import { RemoveStaleBranchesModal } from '@/components/DetailPanel/RemoveStaleBranchesModal'
 import { RewordCommitModal } from '@/components/DetailPanel/RewordCommitModal'
+import { ExplainCommitModal } from '@/components/DetailPanel/ExplainCommitWithAi'
 import { AddNoteModal } from '@/components/DetailPanel/AddNoteModal'
 import { PickMergeParentModal } from '@/components/History/PickMergeParentModal'
 import { ConfirmDialog } from '@/components/Ui/Modal'
@@ -289,7 +290,9 @@ export function CommitTimeline() {
     mergeSource,
     setMergeSource,
     worktreeFromCommit,
-    setWorktreeFromCommit
+    setWorktreeFromCommit,
+    explainCommits,
+    setExplainCommits
   } = useCommitContextMenu(connected, {
     head,
     branch: repoStatus?.branch ?? workingStatus?.branch ?? '',
@@ -1018,6 +1021,14 @@ export function CommitTimeline() {
           commit={rewordCommit}
           open
           onClose={() => setRewordCommit(null)}
+        />
+      )}
+
+      {explainCommits && explainCommits.length > 0 && (
+        <ExplainCommitModal
+          commits={explainCommits}
+          open
+          onClose={() => setExplainCommits(null)}
         />
       )}
 

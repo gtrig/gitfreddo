@@ -6,6 +6,7 @@ import type {
 } from '@/components/DetailPanel/DeleteCommitModal'
 import { buildCommitContextMenuItems } from '@/lib/context-menus/commitContextMenu'
 import { timelineRefs } from '@/lib/timeline/timelineRefs'
+import { useAiEnabled } from '@/hooks/useAppSettings'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useWorkingStatus } from '@/hooks/useGit'
 import { useSelectionStore } from '@/stores/selection'
@@ -72,7 +73,9 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
     useState<InteractiveRebaseModalState | null>(null)
   const [mergeSource, setMergeSource] = useState<string | null>(null)
   const [worktreeFromCommit, setWorktreeFromCommit] = useState<WorktreeFromCommitState | null>(null)
+  const [explainCommits, setExplainCommits] = useState<GitCommit[] | null>(null)
 
+  const aiEnabled = useAiEnabled()
   const selectTimelineNode = useSelectionStore((s) => s.selectTimelineNode)
   const setPrimaryCommit = useSelectionStore((s) => s.setPrimaryCommit)
   const showCompareCommitRange = useSelectionStore((s) => s.showCompareCommitRange)
@@ -189,8 +192,13 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
       selectedCount: selectedCommitHashes.length,
       selectedHashes: selectedCommitHashes,
       t,
+      aiEnabled,
       actions: {
         selectCommit: (hash) => selectTimelineNode('commit', hash),
+        explainCommits: (commits) => {
+          closeMenu()
+          setExplainCommits(commits)
+        },
         copyHash: (hash) => {
           void navigator.clipboard.writeText(hash)
           showToast(t('contextMenu.hashCopied'), 'info')
@@ -327,7 +335,8 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
     cherryPickAbort,
     cherryPickSkip,
     revertCommit,
-    t
+    t,
+    aiEnabled
   ])
 
   return {
@@ -335,6 +344,8 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
     items,
     openMenu,
     closeMenu,
+    explainCommits,
+    setExplainCommits,
     rewordCommit,
     setRewordCommit,
     createBranchAt,

@@ -50,6 +50,7 @@ const noopActions = {
   selectCommit: () => {},
   copyHash: () => {},
   copyShortHash: () => {},
+  explainCommits: () => {},
   copyAllHashes: () => {},
   compareSelected: () => {},
   cherryPickAll: () => {},
@@ -236,5 +237,23 @@ describe('buildCommitContextMenuItems', () => {
 
     expect(items.find((item) => item.id === 'worktree')?.label).toBe('Checkout in new worktree…')
     expect(items.find((item) => item.id === 'worktree')?.disabled).toBe(false)
+  })
+
+  it('includes explain action for a single commit when AI is enabled', () => {
+    const items = buildCommitContextMenuItems({
+      commit: parentCommit,
+      head: baseCommit.hash,
+      branch: 'main',
+      isDetached: false,
+      commits: [baseCommit, parentCommit],
+      working: cleanWorking,
+      selectedCommitId: parentCommit.hash,
+      selectedCount: 1,
+      selectedHashes: [parentCommit.hash],
+      actions: noopActions,
+      aiEnabled: true
+    })
+
+    expect(items.find((item) => item.id === 'explain-commit')).toBeDefined()
   })
 })

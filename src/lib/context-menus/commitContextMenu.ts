@@ -16,6 +16,7 @@ export interface CommitContextMenuActions extends MultiCommitContextMenuActions 
   selectCommit: (hash: string) => void
   copyHash: (hash: string) => void
   copyShortHash: (shortHash: string) => void
+  explainCommits: (commits: GitCommit[]) => void
   checkout: (ref: string) => void
   mergeBranch: (branchName: string) => void
   createWorktreeFromCommit: (commit: GitCommit) => void
@@ -52,6 +53,7 @@ export interface CommitContextMenuContext {
   selectedCount: number
   selectedHashes: string[]
   actions: CommitContextMenuActions
+  aiEnabled?: boolean
   t?: TFunction
 }
 
@@ -101,6 +103,7 @@ export function buildCommitContextMenuItems({
   selectedCount,
   selectedHashes,
   actions,
+  aiEnabled = false,
   t
 }: CommitContextMenuContext): ContextMenuItem[] {
   if (isStashCommit(commit)) {
@@ -219,6 +222,14 @@ export function buildCommitContextMenuItems({
     { id: 'sep-copy', label: '', separator: true, onClick: () => {} }
   )
 
+  if (aiEnabled && selectedCount <= 1) {
+    items.push({
+      id: 'explain-commit',
+      label: t ? t('contextMenu.explainCommitWithAi') : 'Explain commit with AI…',
+      onClick: () => actions.explainCommits([commit])
+    })
+  }
+
   if (selectedCount > 1) {
     const selectedCommits = selectedCommitsInTimeline(commits, selectedHashes)
     items.push(
@@ -230,6 +241,7 @@ export function buildCommitContextMenuItems({
         allCommits: commits,
         working,
         actions,
+        aiEnabled,
         t
       })
     )

@@ -770,6 +770,17 @@
     "deleted": "{{count}} deleted",
     "recomposing": "Recomposing…",
     "recomposeWithAi": "Recompose commit with AI",
+    "explainWithAi": "Explain with AI",
+    "explainCommitsWithAi": "Explain {{count}} commits with AI",
+    "explaining": "Explaining…",
+    "explainCommitTitle": "Explain commit",
+    "explainCommitsTitle": "Explain {{count}} commits",
+    "explainingCommits": "Analyzing commit changes…",
+    "explainSummary": "Summary",
+    "explainCommitOverview": "Overview",
+    "explainKeyChanges": "What changed",
+    "explainRationale": "Why it likely changed",
+    "explainAgain": "Explain again",
     "aiSuggestionFailed": "AI suggestion failed.",
     "deleteLatestCommit": "Delete latest commit",
     "dropCommitFromHistory": "Drop commit from history",
@@ -893,6 +904,8 @@
     "viewCommitMulti": "View commit ({{count}} selected)",
     "copyCommitHash": "Copy commit hash",
     "copyShortHash": "Copy short hash",
+    "explainCommitWithAi": "Explain commit with AI…",
+    "explainCommitsWithAi": "Explain {{count}} commits with AI…",
     "checkedOutAtHead": "Checked out at HEAD",
     "checkedOutAtHeadBranch": "Checked out at HEAD ({{branch}})",
     "checkoutBranch": "Checkout {{branch}}",
@@ -1066,6 +1079,10 @@
     "tagPush": {
       "success": "Tag pushed",
       "error": "Tag push failed"
+    },
+    "undo": {
+      "success": "Undid: {{subject}}",
+      "error": "Undo failed"
     },
     "github": {
       "connected": "Connected to GitHub as @{{login}}",
