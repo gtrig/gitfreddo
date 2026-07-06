@@ -17,6 +17,7 @@ describe('ActionBar', () => {
 
   it('renders push and pull when connected', () => {
     renderWithProviders(<ActionBar />)
+    expect(screen.getByRole('button', { name: /undo/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /push/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /pull/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /fetch/i })).toBeInTheDocument()
