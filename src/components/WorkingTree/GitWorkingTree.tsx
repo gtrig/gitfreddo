@@ -18,7 +18,6 @@ import { AnalyzeChangesWithAi } from '@/components/WorkingTree/AnalyzeChangesWit
 import { CommitPanel } from '@/components/WorkingTree/CommitPanel'
 import { CleanUntrackedModal } from '@/components/WorkingTree/CleanUntrackedModal'
 import { ConfirmDialog } from '@/components/Ui/Modal'
-import { FileHistoryModal } from '@/components/History/FileHistoryModal'
 import { RenameFileModal } from '@/components/WorkingTree/RenameFileModal'
 import { ContextMenu } from '@/components/Ui/ContextMenu'
 import { useContextMenu, type OpenContextMenu } from '@/hooks/useContextMenu'
@@ -438,6 +437,7 @@ export function GitWorkingTree() {
   const showToast = useToastStore((s) => s.show)
   const selectedFile = useSelectionStore((s) => s.selectedWorkingFile)
   const setSelectedWorkingFile = useSelectionStore((s) => s.setSelectedWorkingFile)
+  const openFileHistory = useSelectionStore((s) => s.openFileHistory)
   const [viewMode, setViewMode] = useState<'path' | 'tree'>('tree')
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set())
   const [pendingDiscard, setPendingDiscard] = useState<{ paths: string[]; staged: boolean } | null>(
@@ -448,7 +448,6 @@ export function GitWorkingTree() {
   const [deleteBusy, setDeleteBusy] = useState(false)
   const [cleanOpen, setCleanOpen] = useState(false)
   const [renamePath, setRenamePath] = useState<string | null>(null)
-  const [fileHistoryPath, setFileHistoryPath] = useState<string | null>(null)
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
 
   const gitOpInProgress = Boolean(
@@ -613,7 +612,7 @@ export function GitWorkingTree() {
                     file.status === 'untracked' ? () => requestDelete(file.path) : undefined
                   }
                   onRename={() => setRenamePath(file.path)}
-                  onFileHistory={() => setFileHistoryPath(file.path)}
+                  onFileHistory={() => openFileHistory(file.path)}
                   onAddToGitignore={() => requestAddToGitignore(file.path)}
                   onOpenSubmodule={
                     file.isSubmodule ? () => void openSubmodule(file.path) : undefined
@@ -665,7 +664,7 @@ export function GitWorkingTree() {
                       requestFolderStage(folderPath, files, mode === 'staged')
                     }
                     onRename={setRenamePath}
-                    onFileHistory={setFileHistoryPath}
+                    onFileHistory={openFileHistory}
                     onAddToGitignore={requestAddToGitignore}
                     onOpenSubmodule={(path) => void openSubmodule(path)}
                     onUpdateSubmodule={updateSubmodule}
@@ -802,14 +801,6 @@ export function GitWorkingTree() {
           open
           oldPath={renamePath}
           onClose={() => setRenamePath(null)}
-        />
-      )}
-
-      {fileHistoryPath && (
-        <FileHistoryModal
-          open
-          path={fileHistoryPath}
-          onClose={() => setFileHistoryPath(null)}
         />
       )}
 

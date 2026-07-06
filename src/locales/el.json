@@ -507,7 +507,9 @@
       "title": "Ιστορικό — {{path}}",
       "loading": "Φόρτωση ιστορικού αρχείου…",
       "loadFailed": "Αποτυχία φόρτωσης ιστορικού αρχείου.",
-      "noCommits": "Δεν βρέθηκαν commits για αυτό το αρχείο."
+      "noCommits": "Δεν βρέθηκαν commits για αυτό το αρχείο.",
+      "selectCommit": "Επιλέξτε commit για να δείτε τις αλλαγές του.",
+      "diffFailed": "Αποτυχία φόρτωσης diff αρχείου."
     },
     "rebaseSequence": {
       "title": "Διαδραστικό rebase",

@@ -13,6 +13,7 @@ interface SelectionState {
   selectedConflictFile: string | null
   selectedStashIndex: number | null
   selectedStashFile: string | null
+  fileHistoryPath: string | null
   diffMode: 'working' | 'staged' | 'commit' | 'commit-range' | 'stash' | 'conflict' | null
   compareCommitRange: { oldestHash: string; newestHash: string; label: string } | null
   pendingAiProposals: Record<string, AiConflictResolutionProposal[]>
@@ -28,6 +29,8 @@ interface SelectionState {
   setSelectedStashFile: (path: string | null) => void
   setPendingAiProposals: (path: string, proposals: AiConflictResolutionProposal[]) => void
   clearPendingAiProposals: (path: string) => void
+  openFileHistory: (path: string) => void
+  closeFileHistory: () => void
   closeDiffOverlay: () => void
 }
 
@@ -62,6 +65,7 @@ export const useSelectionStore = create<SelectionState>((set) => ({
   selectedConflictFile: null,
   selectedStashIndex: null,
   selectedStashFile: null,
+  fileHistoryPath: null,
   diffMode: null,
   compareCommitRange: null,
   pendingAiProposals: {},
@@ -196,6 +200,18 @@ export const useSelectionStore = create<SelectionState>((set) => ({
       delete next[path]
       return { pendingAiProposals: next }
     }),
+  openFileHistory: (path) =>
+    set({
+      fileHistoryPath: path,
+      selectedWorkingFile: null,
+      selectedConflictFile: null,
+      selectedCommitFile: null,
+      selectedStashFile: null,
+      selectedStashIndex: null,
+      compareCommitRange: null,
+      diffMode: null
+    }),
+  closeFileHistory: () => set({ fileHistoryPath: null }),
   closeDiffOverlay: () =>
     set({
       selectedWorkingFile: null,
@@ -218,6 +234,7 @@ interface SelectionSnapshot {
   selectedConflictFile: string | null
   selectedStashIndex: number | null
   selectedStashFile: string | null
+  fileHistoryPath: string | null
   diffMode: SelectionState['diffMode']
   compareCommitRange: SelectionState['compareCommitRange']
 }
@@ -232,6 +249,7 @@ const EMPTY_SNAPSHOT: SelectionSnapshot = {
   selectedConflictFile: null,
   selectedStashIndex: null,
   selectedStashFile: null,
+  fileHistoryPath: null,
   diffMode: null,
   compareCommitRange: null
 }
@@ -249,6 +267,7 @@ function snapshotFromState(state: SelectionState): SelectionSnapshot {
     selectedConflictFile: state.selectedConflictFile,
     selectedStashIndex: state.selectedStashIndex,
     selectedStashFile: state.selectedStashFile,
+    fileHistoryPath: state.fileHistoryPath,
     diffMode: state.diffMode,
     compareCommitRange: state.compareCommitRange
   }

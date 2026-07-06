@@ -38,6 +38,7 @@ describe('useSelectionStore', () => {
       selectedConflictFile: null,
       selectedStashIndex: null,
       selectedStashFile: null,
+      fileHistoryPath: null,
       diffMode: null,
       compareCommitRange: null,
       pendingAiProposals: {}
@@ -66,6 +67,18 @@ describe('useSelectionStore', () => {
     const state = useSelectionStore.getState()
     expect(state.diffMode).toBe('conflict')
     expect(state.selectedWorkingFile).toBeNull()
+  })
+
+  it('opens file history and clears diff overlay state', () => {
+    useSelectionStore.getState().setSelectedWorkingFile('src/app.ts', 'working')
+    useSelectionStore.getState().openFileHistory('README.md')
+    const state = useSelectionStore.getState()
+    expect(state.fileHistoryPath).toBe('README.md')
+    expect(state.selectedWorkingFile).toBeNull()
+    expect(state.diffMode).toBeNull()
+
+    useSelectionStore.getState().closeFileHistory()
+    expect(useSelectionStore.getState().fileHistoryPath).toBeNull()
   })
 })
 

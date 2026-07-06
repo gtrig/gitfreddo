@@ -10,7 +10,6 @@ import { useSelectionStore } from '@/stores/selection'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { RewordCommitModal } from '@/components/DetailPanel/RewordCommitModal'
 import { ExplainCommitButton } from '@/components/DetailPanel/ExplainCommitWithAi'
-import { FileHistoryModal } from '@/components/History/FileHistoryModal'
 import {
   buildFileTree,
   collectFolderPaths,
@@ -352,6 +351,7 @@ export function CommitPreview({
   const selectTimelineNode = useSelectionStore((s) => s.selectTimelineNode)
   const selectedCommitFile = useSelectionStore((s) => s.selectedCommitFile)
   const setSelectedCommitFile = useSelectionStore((s) => s.setSelectedCommitFile)
+  const openFileHistory = useSelectionStore((s) => s.openFileHistory)
 
   const [viewMode, setViewMode] = useState<'path' | 'tree'>('tree')
   const [sortAscending, setSortAscending] = useState(true)
@@ -360,7 +360,6 @@ export function CommitPreview({
   const [rewordDraft, setRewordDraft] = useState<{ summary: string; description: string } | null>(
     null
   )
-  const [fileHistoryPath, setFileHistoryPath] = useState<string | null>(null)
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
 
   const fullMessageQuery = useQuery({
@@ -563,7 +562,7 @@ export function CommitPreview({
                 selected={selectedCommitFile === file.path}
                 onSelect={() => setSelectedCommitFile(file.path)}
                 openMenu={openMenu}
-                onFileHistory={setFileHistoryPath}
+                onFileHistory={openFileHistory}
                 t={t}
               />
             ))}
@@ -577,19 +576,11 @@ export function CommitPreview({
             expandedPaths={expandedPaths}
             onToggleFolder={toggleFolder}
             openMenu={openMenu}
-            onFileHistory={setFileHistoryPath}
+            onFileHistory={openFileHistory}
             t={t}
           />
         )}
       </div>
-
-      {fileHistoryPath && (
-        <FileHistoryModal
-          open
-          path={fileHistoryPath}
-          onClose={() => setFileHistoryPath(null)}
-        />
-      )}
 
       {menuState && (
         <ContextMenu

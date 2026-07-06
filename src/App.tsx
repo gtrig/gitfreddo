@@ -3,6 +3,7 @@ import { RepoSidebar } from '@/components/Layout/RepoSidebar'
 import { TimelinePanel } from '@/components/TimelineGraph/TimelinePanel'
 import { DiffOverlay } from '@/components/DiffViewer/DiffOverlay'
 import { MergeConflictScreen } from '@/components/MergeConflicts/MergeConflictScreen'
+import { FileHistoryScreen } from '@/components/History/FileHistoryScreen'
 import { DetailPanel } from '@/components/DetailPanel/DetailPanel'
 import { ActionBar } from '@/components/Layout/ActionBar'
 import { WorkspaceHub } from '@/components/Layout/WorkspaceHub'
@@ -176,6 +177,7 @@ export default function App() {
 
       <GlobalOperationOverlay />
       <MergeConflictScreen />
+      <FileHistoryScreen />
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <DocsModal open={docsOpen} onClose={() => setDocsOpen(false)} />
       <WorkspaceHub
