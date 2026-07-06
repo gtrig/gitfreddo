@@ -118,6 +118,7 @@
     },
     "ai": {
       "intro": "AI assist fills commit and stash messages from your staged or working-tree changes, and can auto-resolve merge conflicts. Supports OpenAI-compatible endpoints (LM Studio, Ollama, OpenAI, OpenRouter).",
+      "enabled": "Enable AI assist",
       "provider": "Provider",
       "providerLocal": "Local LLM",
       "providerApi": "Cloud API",

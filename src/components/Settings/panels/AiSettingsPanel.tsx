@@ -45,6 +45,19 @@ export function AiSettingsPanel({ form, onChange }: PanelProps) {
         {t('settings.ai.intro')}
       </p>
 
+      <label className="flex items-center gap-2 text-xs text-gf-fg-muted">
+        <input
+          id="ai-enabled"
+          type="checkbox"
+          checked={form.aiEnabled}
+          onChange={(e) => onChange({ aiEnabled: e.target.checked })}
+          className="rounded border-gf-border-strong bg-gf-bg"
+        />
+        {t('settings.ai.enabled')}
+      </label>
+
+      {form.aiEnabled && (
+        <>
       <div>
         <FieldLabel>{t('settings.ai.provider')}</FieldLabel>
         <div className="flex gap-2">
@@ -137,6 +150,8 @@ export function AiSettingsPanel({ form, onChange }: PanelProps) {
           />
         </div>
       </div>
+        </>
+      )}
     </div>
   )
 }

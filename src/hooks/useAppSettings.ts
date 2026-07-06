@@ -43,5 +43,5 @@ export function useResolvedRemote(): string {
 
 export function useAiEnabled(): boolean {
   const { data } = useAppSettings()
-  return Boolean(data?.aiBaseUrl?.trim())
+  return Boolean(data?.aiEnabled)
 }

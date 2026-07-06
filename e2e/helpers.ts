@@ -77,6 +77,7 @@ export function seedWorkspaceSettings(settingsDir: string, repoPath: string, ove
         defaultRemote: 'origin',
         editorCommand: '',
         logMaxCount: 500,
+        aiEnabled: false,
         aiProvider: 'local',
         aiBaseUrl: 'http://localhost:1234',
         aiApiKey: '',

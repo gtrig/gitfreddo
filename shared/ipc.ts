@@ -37,6 +37,7 @@ export interface AppSettings {
   defaultRemote: string
   editorCommand: string
   logMaxCount: number
+  aiEnabled: boolean
   aiProvider: 'local' | 'api'
   aiBaseUrl: string
   aiApiKey: string

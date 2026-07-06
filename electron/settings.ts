@@ -18,6 +18,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   defaultRemote: 'origin',
   editorCommand: '',
   logMaxCount: 500,
+  aiEnabled: false,
   aiProvider: 'local',
   aiBaseUrl: 'http://localhost:1234',
   aiApiKey: '',
@@ -51,6 +52,10 @@ export async function loadSettings(): Promise<AppSettings> {
       defaultRemote: parsed.defaultRemote ?? DEFAULT_SETTINGS.defaultRemote,
       editorCommand: parsed.editorCommand ?? '',
       logMaxCount: parsed.logMaxCount ?? DEFAULT_SETTINGS.logMaxCount,
+      aiEnabled:
+        parsed.aiEnabled !== undefined
+          ? Boolean(parsed.aiEnabled)
+          : Boolean((parsed.aiBaseUrl ?? DEFAULT_SETTINGS.aiBaseUrl)?.trim()),
       aiProvider: parsed.aiProvider === 'api' ? 'api' : 'local',
       aiBaseUrl: parsed.aiBaseUrl ?? DEFAULT_SETTINGS.aiBaseUrl,
       aiApiKey: parsed.aiApiKey ?? '',

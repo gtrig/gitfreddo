@@ -66,6 +66,7 @@ let settings: AppSettings = {
   defaultRemote: 'origin',
   editorCommand: '',
   logMaxCount: 500,
+  aiEnabled: false,
   aiProvider: 'local',
   aiBaseUrl: 'http://localhost:1234',
   aiApiKey: '',
@@ -235,6 +236,9 @@ function registerIpc(): void {
     'gitfreddo:invoke',
     async (_event, method: string, params?: unknown, repoPath?: string) => {
       if (method === 'ai.fill') {
+        if (!settings.aiEnabled) {
+          throw new Error('AI assist is disabled in settings.')
+        }
         const enriched = await enrichAiContext(repoManager, params as AiFillParams)
         return aiFill(aiConfigFromSettings(settings), enriched)
       }
@@ -262,6 +266,9 @@ function registerIpc(): void {
   })
 
   ipcMain.handle('gitfreddo:ai-fill', async (_event, params: AiFillParams) => {
+    if (!settings.aiEnabled) {
+      throw new Error('AI assist is disabled in settings.')
+    }
     const enriched = await enrichAiContext(repoManager, params)
     return aiFill(aiConfigFromSettings(settings), enriched)
   })

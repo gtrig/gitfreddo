@@ -118,6 +118,7 @@
     },
     "ai": {
       "intro": "Ο βοηθός AI συμπληρώνει μηνύματα commit και stash από τις αλλαγές σας και μπορεί να επιλύει συγκρούσεις συγχώνευσης. Υποστηρίζει OpenAI-compatible endpoints (LM Studio, Ollama, OpenAI, OpenRouter).",
+      "enabled": "Ενεργοποίηση βοηθού AI",
       "provider": "Πάροχος",
       "providerLocal": "Τοπικό LLM",
       "providerApi": "Cloud API",
