@@ -5,12 +5,14 @@ import {
   ArchiveBoxIcon,
   ArrowDownTrayIcon,
   ArrowPathIcon,
+  ArrowUturnLeftIcon,
   ArrowUpTrayIcon
 } from '@heroicons/react/24/outline'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { usePushRemote } from '@/hooks/usePushRemote'
 import { useResolvedRemote, useAppSettings } from '@/hooks/useAppSettings'
+import { useUndoLast } from '@/hooks/useUndoLast'
 import { Spinner } from '@/components/Ui/Spinner'
 import { PushForceConfirm } from '@/components/Layout/PushForceConfirm'
 import { StashPushModal } from '@/components/Stash/StashPushModal'
@@ -22,13 +24,15 @@ function ActionBarButton({
   loading,
   icon,
   children,
-  variant = 'secondary'
+  variant = 'secondary',
+  title
 }: {
   onClick: () => void
   loading?: boolean
   icon?: ReactNode
   children: ReactNode
   variant?: 'primary' | 'secondary'
+  title?: string
 }) {
   const base =
     variant === 'primary'
@@ -40,6 +44,7 @@ function ActionBarButton({
       type="button"
       onClick={onClick}
       disabled={loading}
+      title={title}
       className={`inline-flex items-center justify-center gap-1.5 rounded px-3 py-1 text-xs font-medium disabled:opacity-50 ${base}`}
     >
       {loading ? (
@@ -61,6 +66,7 @@ export function ActionBar() {
     usePushRemote()
   const defaultRemote = useResolvedRemote()
   const { data: settings } = useAppSettings()
+  const { performUndo, isUndoing } = useUndoLast()
 
   if (!connected) return null
 
@@ -68,18 +74,19 @@ export function ActionBar() {
     <>
       <div className="flex flex-wrap items-center justify-center gap-2">
         <ActionBarButton
-          loading={stashPush.isPending}
-          onClick={() => setStashOpen(true)}
-          icon={<ArchiveBoxIcon aria-hidden className={iconClass} />}
+          loading={isUndoing}
+          onClick={() => void performUndo()}
+          icon={<ArrowUturnLeftIcon aria-hidden className={iconClass} />}
+          title={t('actions.undoShortcut')}
         >
-          {t('actions.stash')}
+          {t('actions.undo')}
         </ActionBarButton>
         <ActionBarButton
-          loading={fetch.isPending}
-          onClick={() => void fetch.mutateAsync({ remote: defaultRemote })}
-          icon={<ArrowPathIcon aria-hidden className={iconClass} />}
+          loading={isPushPending}
+          onClick={() => pushRemote({ remote: defaultRemote })}
+          icon={<ArrowUpTrayIcon aria-hidden className={iconClass} />}
         >
-          {t('actions.fetch')}
+          {t('actions.push')}
         </ActionBarButton>
         <ActionBarButton
           loading={pull.isPending}
@@ -91,11 +98,18 @@ export function ActionBar() {
           {t('actions.pull')}
         </ActionBarButton>
         <ActionBarButton
-          loading={isPushPending}
-          onClick={() => pushRemote({ remote: defaultRemote })}
-          icon={<ArrowUpTrayIcon aria-hidden className={iconClass} />}
+          loading={fetch.isPending}
+          onClick={() => void fetch.mutateAsync({ remote: defaultRemote })}
+          icon={<ArrowPathIcon aria-hidden className={iconClass} />}
         >
-          {t('actions.push')}
+          {t('actions.fetch')}
+        </ActionBarButton>
+        <ActionBarButton
+          loading={stashPush.isPending}
+          onClick={() => setStashOpen(true)}
+          icon={<ArchiveBoxIcon aria-hidden className={iconClass} />}
+        >
+          {t('actions.stash')}
         </ActionBarButton>
       </div>
       <PushForceConfirm

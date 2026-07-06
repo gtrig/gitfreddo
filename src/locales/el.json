@@ -534,6 +534,8 @@
     }
   },
   "actions": {
+    "undo": "Αναίρεση",
+    "undoShortcut": "Αναίρεση τελευταίας ενέργειας git (Ctrl+Z)",
     "stash": "Stash",
     "fetch": "Fetch",
     "pull": "Pull",

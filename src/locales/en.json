@@ -534,6 +534,8 @@
     }
   },
   "actions": {
+    "undo": "Undo",
+    "undoShortcut": "Undo last git action (Ctrl+Z)",
     "stash": "Stash",
     "fetch": "Fetch",
     "pull": "Pull",
