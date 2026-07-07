@@ -6,6 +6,19 @@
 
 Desktop git client with commit graph — an Electron + React app that talks to `git` on your PATH.
 
+GitFreddo is free. If you want to support its development, or if it is useful to you, you can buy me a coffee using the link below.
+
+<p align="center">
+  <a href="https://www.buymeacoffee.com/george0u" target="_blank" rel="noopener noreferrer">
+    <img
+      src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
+      alt="Buy Me a Coffee"
+      width="217"
+      height="60"
+    />
+  </a>
+</p>
+
 ## Prerequisites
 
 - Node.js 24+
@@ -42,3 +55,4 @@ Full guides live in [docs/](docs/README.md):
 See also [CHANGELOG.md](CHANGELOG.md) and [docs/architecture.md](docs/architecture.md) for developers.
 
 Settings are stored in the app data directory for your platform (see [Getting started](docs/getting-started.md#settings-location)).
+
