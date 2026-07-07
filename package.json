@@ -24,6 +24,7 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "check-i18n": "bash scripts/check-i18n.sh",
+    "release:set-version": "node --experimental-strip-types scripts/set-version-from-tag.ts",
     "dist": "npm run build && electron-builder",
     "dist:linux": "npm run build && electron-builder --linux",
     "dist:mac": "npm run build && electron-builder --mac",

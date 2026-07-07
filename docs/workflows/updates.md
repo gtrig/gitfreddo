@@ -32,4 +32,4 @@ Auto-update is **disabled** when running unpackaged (`npm run dev`). Manual chec
 
 ## Release requirements
 
-Tagged releases (`v*`) must upload installer artifacts **and** `*.yml` update metadata. See `.github/workflows/release.yml`.
+Tagged releases (`v*`) bump `package.json` to the tag version before building, then upload installer artifacts **and** `*.yml` update metadata. See `.github/workflows/release.yml`.
