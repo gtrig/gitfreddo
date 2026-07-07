@@ -26,9 +26,13 @@
         "title": "Άνοιγμα φακέλου",
         "description": "Επιλέξτε τοπικό φάκελο που περιέχει κατάλογο .git."
       },
-      "init": {
-        "title": "Δημιουργία νέου αποθετηρίου",
-        "description": "Δημιουργήστε νέο αποθετήριο git σε κενό ή νέο φάκελο."
+      "clone": {
+        "title": "Κλωνοποίηση αποθετηρίου",
+        "description": "Κλωνοποιήστε από το GitHub, το GitLab ή οποιοδήποτε git απομακρυσμένο."
+      },
+      "cloneTab": {
+        "url": "URL",
+        "github": "GitHub"
       },
       "clone": {
         "title": "Κλωνοποίηση αποθετηρίου",
@@ -162,26 +166,27 @@
       "conflictInstructionsPlaceholder": "Προτίμησε ελάχιστες, σωστές συγχωνεύσεις…"
     },
     "github": {
-      "title": "GitHub",
-      "description": "Συνδεθείτε για περιήγηση σε αποθετήρια, διαχείριση PRs/issues και πιστοποίηση git.",
-      "connected": "Συνδεδεμένο",
-      "notConnected": "Μη συνδεδεμένο",
-      "signedInAs": "Σύνδεση ως @{{login}}",
-      "noAccount": "Δεν υπάρχει συνδεδεμένος λογαριασμός GitHub.",
-      "oauth": "OAuth",
-      "token": "Token",
-      "patPlaceholder": "ghp_…",
-      "enterCode": "Εισάγετε αυτόν τον κωδικό στο GitHub:",
-      "waitingAuth": "Αναμονή εξουσιοδότησης…",
-      "startingAuth": "Έναρξη εξουσιοδότησης συσκευής…",
-      "disconnect": "Αποσύνδεση",
-      "disconnecting": "Αποσύνδεση…",
-      "uploadSshKey": "Ανέβασμα SSH key",
-      "uploading": "Ανέβασμα…",
-      "connecting": "Σύνδεση…",
-      "connectWithGithub": "Σύνδεση με GitHub",
-      "connectWithToken": "Σύνδεση με token",
-      "tokenHint": "Το token αποθηκεύεται τοπικά στις ρυθμίσεις."
+      "fork": {
+        "title": "Fork αποθετηρίου",
+        "description": "Δημιουργήστε ένα κλωνίδιο στον λογαριασμό σας στο GitHub, μετά κλωνοποιήστε το τοπικά.",
+        "connectFirst": "Συνδεθείτε στο GitHub από Ρυθμίσεις → Ενσωματώσεις για να κάνετε κλωνοποίηση αποθετηρίων.",
+        "owner": "Ιδιοκτήτης",
+        "repo": "Αποθετήριο",
+        "action": "Fork",
+        "success": "Το αποθετήριο κλωνοποιήθηκε.",
+        "missingFields": "Εισάγετε όνομα ιδιοκτήτη και αποθετηρίου."
+      },
+      "repo": {
+        "name": "Όνομα αποθετηρίου",
+        "namePlaceholder": "το_νέο_μου_αποθετήριο",
+        "descriptionOptional": "Περιγραφή (προαιρετικό)",
+        "descriptionPlaceholder": "Σύντομη περιγραφή",
+        "public": "Δημόσιο",
+        "private": "Ιδιώτικο",
+        "nameRequired": "Το όνομα του αποθετηρίου είναι απαραίτητο.",
+        "connectFirst": "Συνδεθείτε στο GitHub από Ρυθμίσεις → Ενσωματώσεις για να δημιουργήσετε αποθετήρια.",
+        "create": "Δημιουργία αποθετηρίου"
+      }
     },
     "maintenance": {
       "updates": "Ενημερώσεις εφαρμογής",
@@ -1067,8 +1072,9 @@
       "searchPlaceholder": "Αναζήτηση αποθετηρίων…",
       "loading": "Φόρτωση αποθετηρίων…",
       "empty": "Δεν βρέθηκαν αποθετήρια.",
-      "public": "δημόσιο",
-      "private": "ιδιωτικό"
+        "public": "Δημόσιο",
+        "private": "Ιδιώτικό"
+
     }
   },
   "update": {

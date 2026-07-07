@@ -175,7 +175,7 @@ export const GIT_IPC_METHODS = {
     stateSource: 'git'
   },
   'stage.applyPatch': {
-    invalidates: ['working.status'],
+    invalidates: ['working.status', 'diff.working', 'diff.staged'],
     commands: ['apply.patch'],
     stateSource: 'git'
   },

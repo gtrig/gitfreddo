@@ -21,6 +21,7 @@ import {
   parseUnifiedDiffRows,
   splitRowsForDisplay
 } from '@/lib/diff/unifiedDiff'
+import { diffModeAfterLastHunkAction } from '@/lib/diff/hunkStageMode'
 import type { AppSettings } from '@/hooks/useAppSettings'
 import type { GitBlameLine, GitDiffResult } from '@/lib/types'
 
@@ -40,6 +41,7 @@ export function DiffOverlay({ onClose }: DiffOverlayProps) {
   const [viewMode, setViewMode] = useState<DiffViewMode>(settings?.diffViewMode ?? 'unified')
 
   const selectedWorkingFile = useSelectionStore((s) => s.selectedWorkingFile)
+  const setSelectedWorkingFile = useSelectionStore((s) => s.setSelectedWorkingFile)
   const selectedCommitFile = useSelectionStore((s) => s.selectedCommitFile)
   const selectedCommitHash = useSelectionStore((s) => s.selectedCommitHash)
   const diffMode = useSelectionStore((s) => s.diffMode)
@@ -189,6 +191,10 @@ export function DiffOverlay({ onClose }: DiffOverlayProps) {
         patch,
         reverse: hunkStageMode === 'unstage'
       })
+      const nextMode = diffModeAfterLastHunkAction(hunkStageMode, hunkGroups.length)
+      if (nextMode) {
+        setSelectedWorkingFile(patchPath, nextMode)
+      }
       showToast(hunkStageMode === 'stage' ? t('diff.hunkStaged') : t('diff.hunkUnstaged'), 'success')
     } catch (error) {
       showToast(error instanceof Error ? error.message : String(error), 'error')
