@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
@@ -16,12 +16,6 @@ import { SubmodulesSection } from '@/components/Layout/sidebar/SubmodulesSection
 import { TagsSection } from '@/components/Layout/sidebar/TagsSection'
 import { SidebarPullRequestsSection } from '@/components/Layout/sidebar/SidebarPullRequestsSection'
 import { SidebarIssuesSection } from '@/components/Layout/sidebar/SidebarIssuesSection'
-import {
-  buildLocalBranchTree,
-  countBranchTreeNodes,
-  filterBranchTree,
-  matchesFilter
-} from '@/lib/workspace/branchTree'
 
 export function RepoSidebar() {
   const { t } = useTranslation()

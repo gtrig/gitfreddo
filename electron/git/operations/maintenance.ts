@@ -1,18 +1,18 @@
 import {
   buildForEachRefAllRefsArgs,
-  buildFsckUnreachableArgs,
   buildGcPruneArgs,
-  buildMergeBaseIsAncestorArgs,
   buildReflogExpireArgs,
   buildRevListCountNotHeadArgs,
-  buildRevListCountNotHeadFromRefArgs,
   buildRevParseCommitArgs,
   buildRevParseHeadArgs,
   buildShowCommitSummaryArgs,
   buildSymbolicRefHeadArgs,
-  buildUpdateRefDeleteArgs
+  buildUpdateRefDeleteArgs,
+  fsckUnreachable,
+  mergeBaseIsAncestor,
+  revListCountNotHeadFromRef
 } from '../../../shared/git/commands'
-import { runGit, runGitOrThrow } from '../git-runner'
+import { runCommand, runGitOrThrow } from '../git-runner'
 import { branchDelete } from './branch'
 
 export interface UnreachableCommit {
@@ -129,7 +129,7 @@ export function parseFsckUnreachable(stdout: string): {
 }
 
 async function runFsckUnreachable(cwd: string, gitBinaryPath: string): Promise<string> {
-  const result = await runGit(buildFsckUnreachableArgs(), { cwd, gitBinaryPath })
+  const result = await runCommand(fsckUnreachable, undefined as never, { cwd, gitBinaryPath })
   if (result.code !== 0 && !result.stdout.trim()) {
     throw new Error(result.stderr.trim() || 'git fsck failed')
   }
@@ -257,7 +257,7 @@ async function exclusiveCommitCount(
   gitBinaryPath: string,
   ref: string
 ): Promise<number> {
-  const out = await runGit(buildRevListCountNotHeadFromRefArgs({ ref }), { cwd, gitBinaryPath })
+  const out = await runCommand(revListCountNotHeadFromRef, { ref }, { cwd, gitBinaryPath })
   if (out.code !== 0) return 0
   return Number.parseInt(out.stdout.trim(), 10) || 0
 }
@@ -280,14 +280,16 @@ export async function findRefsForCommits(
     }
 
     for (const hash of hashes) {
-      const onRef = await runGit(
-        buildMergeBaseIsAncestorArgs({ ancestor: hash, descendant: entry.objectId }),
+      const onRef = await runCommand(
+        mergeBaseIsAncestor,
+        { ancestor: hash, descendant: entry.objectId },
         { cwd, gitBinaryPath }
       )
       if (onRef.code !== 0) continue
 
-      const onHead = await runGit(
-        buildMergeBaseIsAncestorArgs({ ancestor: hash, descendant: head }),
+      const onHead = await runCommand(
+        mergeBaseIsAncestor,
+        { ancestor: hash, descendant: head },
         { cwd, gitBinaryPath }
       )
       if (onHead.code !== 0) {

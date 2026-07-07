@@ -29,6 +29,7 @@ import {
   buildPushTagArgs,
   buildRemoteAddArgs,
   buildRemoteListArgs,
+  buildRemoteGetUrlArgs,
   buildRemoteRemoveArgs,
   buildRemoteRenameArgs,
   buildRemoteSetUrlArgs
@@ -313,6 +314,7 @@ describe('command argv builders', () => {
 
   it('builds remote args', () => {
     expect(buildRemoteListArgs()).toEqual(['remote', '-v'])
+    expect(buildRemoteGetUrlArgs('origin')).toEqual(['remote', 'get-url', 'origin'])
     expect(buildRemoteAddArgs({ name: 'origin', url: 'https://example.com' })).toContain('add')
     expect(buildRemoteRemoveArgs('origin')).toContain('remove')
     expect(buildRemoteRenameArgs({ oldName: 'a', newName: 'b' })).toContain('rename')

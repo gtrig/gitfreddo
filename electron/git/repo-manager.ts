@@ -24,6 +24,7 @@ import * as hooksOps from './operations/hooks'
 import * as submoduleOps from './operations/submodule'
 import * as undoOps from './operations/undo'
 import { loadSettings } from '../settings'
+import type { GitIpcMethod, GitIpcParams, GitIpcResult } from '../../shared/git/ipc'
 
 const MAX_PARAM_CHARS = 240
 
@@ -94,7 +95,20 @@ export class RepoManager {
     this.activePath = null
   }
 
-  async invoke(repoPath: string | undefined, method: string, params: unknown = {}): Promise<unknown> {
+  async invoke<M extends GitIpcMethod>(
+    repoPath: string | undefined,
+    method: M,
+    params?: GitIpcParams<M>
+  ): Promise<GitIpcResult<M>> {
+    const result = await this.dispatchInvoke(repoPath, method, params)
+    return result as GitIpcResult<M>
+  }
+
+  private async dispatchInvoke(
+    repoPath: string | undefined,
+    method: string,
+    params: unknown = {}
+  ): Promise<unknown> {
     const cwd = normalizeRepoPath(repoPath ?? this.activePath ?? '')
     if (!cwd || !this.repos.has(cwd)) {
       throw new Error('No repository connected')

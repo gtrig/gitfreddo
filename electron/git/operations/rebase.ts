@@ -6,7 +6,6 @@ import {
   buildCherryPickArgs,
   buildCherryPickContinueArgs,
   buildCherryPickSkipArgs,
-  buildMergeBaseIsAncestorArgs,
   buildRebaseAbortArgs,
   buildRebaseContinueArgs,
   buildRebaseInteractiveArgs,
@@ -16,11 +15,12 @@ import {
   buildResetModeArgs,
   buildRevertArgs,
   buildRevListParentsArgs,
-  buildRevParseHeadParentArgs,
-  buildRevParseParentArgs,
-  buildRevParseVerifyArgs
+  buildRevParseVerifyArgs,
+  mergeBaseIsAncestor,
+  revParseHeadParent,
+  revParseParent
 } from '../../../shared/git/commands'
-import { runGit, runGitOrThrow } from '../git-runner'
+import { runCommand, runGitOrThrow } from '../git-runner'
 import { workingStatus } from './status'
 import { continueGitOperation } from './commit-message'
 
@@ -204,8 +204,9 @@ export async function rebaseReword(
     await runGitOrThrow(buildRevParseVerifyArgs({ ref: hash }), { cwd, gitBinaryPath })
   ).trim()
 
-  const ancestorCheck = await runGit(
-    buildMergeBaseIsAncestorArgs({ ancestor: fullHash, descendant: 'HEAD' }),
+  const ancestorCheck = await runCommand(
+    mergeBaseIsAncestor,
+    { ancestor: fullHash, descendant: 'HEAD' },
     { cwd, gitBinaryPath }
   )
   if (ancestorCheck.code !== 0) {
@@ -221,7 +222,7 @@ export async function rebaseReword(
   }
 
   const isRoot =
-    (await runGit(buildRevParseParentArgs(fullHash), { cwd, gitBinaryPath })).code !== 0
+    (await runCommand(revParseParent, fullHash, { cwd, gitBinaryPath })).code !== 0
 
   const tempDir = await mkdtemp(join(tmpdir(), 'gitfreddo-reword-'))
   try {
@@ -351,7 +352,7 @@ export async function rebaseSquash(
 
   const oldestHash = resolved[0]!
   const isRoot =
-    (await runGit(buildRevParseParentArgs(oldestHash), { cwd, gitBinaryPath })).code !== 0
+    (await runCommand(revParseParent, oldestHash, { cwd, gitBinaryPath })).code !== 0
 
   const tempDir = await mkdtemp(join(tmpdir(), 'gitfreddo-squash-'))
   try {
@@ -410,7 +411,7 @@ export async function rebaseInteractive(
 
   const fullHash = await resolveFullHash(cwd, gitBinaryPath, baseHash)
   const isRoot =
-    (await runGit(buildRevParseParentArgs(fullHash), { cwd, gitBinaryPath })).code !== 0
+    (await runCommand(revParseParent, fullHash, { cwd, gitBinaryPath })).code !== 0
 
   const tempDir = await mkdtemp(join(tmpdir(), 'gitfreddo-interactive-'))
   try {
@@ -448,7 +449,7 @@ export async function resetToParent(
   mode: 'soft' | 'mixed' | 'hard'
 ): Promise<void> {
   const hasParent =
-    (await runGit(buildRevParseHeadParentArgs(), { cwd, gitBinaryPath })).code === 0
+    (await runCommand(revParseHeadParent, undefined as never, { cwd, gitBinaryPath })).code === 0
   if (!hasParent) {
     throw new Error('Cannot delete the root commit.')
   }
@@ -517,7 +518,7 @@ export async function rebaseDrop(
 
   const oldestHash = resolved[0]!
   const isRoot =
-    (await runGit(buildRevParseParentArgs(oldestHash), { cwd, gitBinaryPath })).code !== 0
+    (await runCommand(revParseParent, oldestHash, { cwd, gitBinaryPath })).code !== 0
 
   const tempDir = await mkdtemp(join(tmpdir(), 'gitfreddo-drop-'))
   try {

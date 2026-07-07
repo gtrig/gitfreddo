@@ -46,9 +46,43 @@ Workspace helpers: `connect`, `switchWorkspace`, `cloneRepository`, `openWorkspa
 
 ## Git backend
 
-- `electron/git/git-runner.ts` — spawn `git` with `cwd = repo`
-- `electron/git/repo-manager.ts` — per-tab repo pool + `invoke` dispatch
-- `electron/git/operations/*` — domain modules (branch, log, diff, remote, stash, worktree, merge, rebase, status)
+- `electron/git/git-runner.ts` — spawn `git` with `cwd = repo`; `runCommand()` executes catalog descriptors (exit codes, stdin, config)
+- `electron/git/repo-manager.ts` — per-tab repo pool + typed `invoke` dispatch
+- `electron/git/operations/*` — domain modules; argv built via `shared/git/commands` builders
 - `electron/git/git-dir.ts` — resolve git metadata dir for linked worktrees
 
 No third-party git libraries; output is parsed from porcelain/plumbing commands.
+
+## Command catalog (`shared/git/commands/`)
+
+Single source of truth for every `git` argv the app runs.
+
+| Piece | Role |
+|-------|------|
+| `_types.ts` | `GitCommandDescriptor`, `defineCommand()` |
+| `_common.ts` | Shared helpers (`withPaths`, ref helpers, word-diff flags) |
+| Domain modules | `branch.ts`, `log.ts`, `merge-rebase.ts`, `remote.ts`, … — `buildXxxArgs()` + descriptors |
+| `registry.ts` | `GIT_COMMAND_REGISTRY` — all descriptors keyed by id |
+
+Operations call `runGitOrThrow(buildXxxArgs(...))` or `runCommand(descriptor, params, …)` when a descriptor declares non-zero `acceptExitCodes` (merge conflicts, fsck, bisect, ancestry checks).
+
+## IPC catalog (`shared/git/ipc/`)
+
+Maps renderer `invoke(method, params)` to git operations and cache invalidation.
+
+| Piece | Role |
+|-------|------|
+| `params.ts` / `results.ts` | Typed params and return shapes per method |
+| `methods.ts` | `GIT_IPC_METHODS` — each method lists `invalidates`, underlying `commands`, optional `settings` |
+| `shared/ipc.ts` | `GitFreddoAPI.invoke<M>()` overloads for the renderer |
+
+`useGitMutations` reads `gitIpcInvalidates(method)` instead of hand-maintained query-key lists. `repo-change.ts` derives invalidation suffixes from the IPC catalog.
+
+**Data flow:**
+
+```
+Renderer hook → window.gitfreddo.invoke(method, params)
+  → preload → main → RepoManager.invoke
+  → operations/* → git-runner → git subprocess
+       ↑ argv from shared/git/commands
+```

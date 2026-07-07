@@ -116,13 +116,15 @@ export const revParseCommit = defineCommand({
 export const revParseParent = defineCommand({
   id: 'rev-parse.parent',
   subcommand: 'rev-parse',
-  buildArgs: (ref: string) => buildRevParseParentArgs(ref)
+  buildArgs: (ref: string) => buildRevParseParentArgs(ref),
+  acceptExitCodes: [0, 1]
 })
 
 export const revParseHeadParent = defineCommand({
   id: 'rev-parse.head-parent',
   subcommand: 'rev-parse',
-  buildArgs: () => buildRevParseHeadParentArgs()
+  buildArgs: () => buildRevParseHeadParentArgs(),
+  acceptExitCodes: [0, 1]
 })
 
 export const revParseCommitObject = defineCommand({

@@ -1,13 +1,13 @@
 import {
   buildBisectBadArgs,
   buildBisectGoodArgs,
-  buildBisectLogArgs,
   buildBisectResetArgs,
   buildBisectStartArgs,
+  bisectLog,
   buildRevParseHeadArgs
 } from '../../../shared/git/commands'
 import { readGitMetadataFile } from '../git-dir'
-import { runGit, runGitOrThrow } from '../git-runner'
+import { runCommand, runGitOrThrow } from '../git-runner'
 
 export interface GitBisectStatus {
   active: boolean
@@ -26,7 +26,7 @@ export async function bisectStatus(
     return { active: false }
   }
 
-  const result = await runGit(buildBisectLogArgs(), { cwd, gitBinaryPath })
+  const result = await runCommand(bisectLog, undefined as never, { cwd, gitBinaryPath })
   const lines = result.stdout.trim().split('\n').filter(Boolean)
   const good = lines.find((line) => line.startsWith('good'))
   const bad = lines.find((line) => line.startsWith('bad'))

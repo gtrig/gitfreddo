@@ -1,6 +1,5 @@
 import type { RepoManager } from '../git/repo-manager'
 import type { AiExplainCommitInput, AiFillContext, AiFillParams } from '../../shared/ai'
-import type { GitDiffResult, GitWorkingStatus } from '../git/types'
 
 const DIFF_PURPOSES = new Set<AiFillParams['purpose']>([
   'commit_message',
@@ -30,19 +29,17 @@ async function loadConflictStages(
   repoPath: string,
   filePath: string
 ): Promise<ConflictStageContext> {
-  const [sideBase, sideA, sideB, conflictContent] = await Promise.all([
-    manager.invoke(repoPath, 'file.readStage', { stage: 1, path: filePath }) as Promise<string>,
-    manager.invoke(repoPath, 'file.readStage', { stage: 2, path: filePath }) as Promise<string>,
-    manager.invoke(repoPath, 'file.readStage', { stage: 3, path: filePath }) as Promise<string>,
-    manager.invoke(repoPath, 'working.read', { path: filePath }).then(
-      (result) => (result as { content: string }).content
-    ) as Promise<string>
+  const [sideBase, sideA, sideB, workingRead] = await Promise.all([
+    manager.invoke(repoPath, 'file.readStage', { stage: 1, path: filePath }),
+    manager.invoke(repoPath, 'file.readStage', { stage: 2, path: filePath }),
+    manager.invoke(repoPath, 'file.readStage', { stage: 3, path: filePath }),
+    manager.invoke(repoPath, 'working.read', { path: filePath })
   ])
   return {
     sideBase: truncateText(sideBase, MAX_STAGE_CHARS),
     sideA: truncateText(sideA, MAX_STAGE_CHARS),
     sideB: truncateText(sideB, MAX_STAGE_CHARS),
-    conflictContent: truncateText(conflictContent, MAX_STAGE_CHARS)
+    conflictContent: truncateText(workingRead.content, MAX_STAGE_CHARS)
   }
 }
 
@@ -58,12 +55,10 @@ async function loadExplainCommitContext(
   for (const commit of commits) {
     let message = commit.message?.trim()
     if (!message) {
-      message = String(
-        await manager.invoke(repoPath, 'log.message', { hash: commit.hash })
-      ).trim()
+      message = (await manager.invoke(repoPath, 'log.message', { hash: commit.hash })).trim()
     }
 
-    const diff = (await manager.invoke(repoPath, 'diff.show', { ref: commit.hash })) as GitDiffResult
+    const diff = await manager.invoke(repoPath, 'diff.show', { ref: commit.hash })
     const diffText = truncateText(diff.unified?.trim() ?? '', perCommitBudget)
 
     enrichedCommits.push({
@@ -89,7 +84,7 @@ async function loadExplainCommitContext(
 
   let branch: string | undefined
   try {
-    const repoStatus = (await manager.invoke(repoPath, 'repo.status')) as { branch: string }
+    const repoStatus = await manager.invoke(repoPath, 'repo.status')
     branch = repoStatus.branch
   } catch {
     branch = undefined
@@ -135,11 +130,7 @@ export async function enrichAiContext(
 
       if (!branch || !operationKind) {
         try {
-          const mergeStatus = (await manager.invoke(repoPath, 'merge.status')) as {
-            kind?: 'merge' | 'rebase' | 'cherry-pick' | null
-            currentBranch?: string
-            incomingLabel?: string
-          }
+          const mergeStatus = await manager.invoke(repoPath, 'merge.status')
           branch = branch ?? mergeStatus.currentBranch
           operationKind = operationKind ?? mergeStatus.kind ?? undefined
           incomingLabel = incomingLabel ?? mergeStatus.incomingLabel
@@ -193,21 +184,21 @@ export async function enrichAiContext(
   }
 
   try {
-    const status = (await manager.invoke(repoPath, 'working.status')) as GitWorkingStatus
+    const status = await manager.invoke(repoPath, 'working.status')
     let filePaths = params.context?.filePaths
     let diffText: string | undefined
 
     if (params.purpose === 'commit_message' || params.purpose === 'compose_commits') {
       filePaths = filePaths ?? status.staged.map((f) => f.path)
       if (filePaths.length > 0) {
-        const diff = (await manager.invoke(repoPath, 'diff.staged')) as GitDiffResult
+        const diff = await manager.invoke(repoPath, 'diff.staged')
         diffText = diff.unified?.trim() || undefined
       }
     } else if (params.purpose === 'stash_message') {
       const changed = [...status.unstaged, ...status.untracked, ...status.conflicted]
       filePaths = filePaths ?? changed.map((f) => f.path)
       if (filePaths.length > 0) {
-        const diff = (await manager.invoke(repoPath, 'diff.working')) as GitDiffResult
+        const diff = await manager.invoke(repoPath, 'diff.working')
         diffText = diff.unified?.trim() || undefined
       }
     } else if (params.purpose === 'analyze_changes') {
@@ -218,14 +209,14 @@ export async function enrichAiContext(
 
       const diffParts: string[] = []
       if (stagedPaths.length > 0) {
-        const stagedDiff = (await manager.invoke(repoPath, 'diff.staged')) as GitDiffResult
+        const stagedDiff = await manager.invoke(repoPath, 'diff.staged')
         const stagedText = stagedDiff.unified?.trim()
         if (stagedText) {
           diffParts.push(`--- Staged changes ---\n${stagedText}`)
         }
       }
       if (unstagedPaths.length > 0) {
-        const workingDiff = (await manager.invoke(repoPath, 'diff.working')) as GitDiffResult
+        const workingDiff = await manager.invoke(repoPath, 'diff.working')
         const workingText = workingDiff.unified?.trim()
         if (workingText) {
           diffParts.push(`--- Unstaged changes ---\n${workingText}`)
@@ -236,7 +227,7 @@ export async function enrichAiContext(
       let analyzeBranch = params.context?.branch
       if (!analyzeBranch) {
         try {
-          const repoStatus = (await manager.invoke(repoPath, 'repo.status')) as { branch: string }
+          const repoStatus = await manager.invoke(repoPath, 'repo.status')
           analyzeBranch = repoStatus.branch
         } catch {
           analyzeBranch = status.branch
@@ -263,7 +254,7 @@ export async function enrichAiContext(
     let branch = params.context?.branch
     if (!branch) {
       try {
-        const repoStatus = (await manager.invoke(repoPath, 'repo.status')) as { branch: string }
+        const repoStatus = await manager.invoke(repoPath, 'repo.status')
         branch = repoStatus.branch
       } catch {
         branch = status.branch

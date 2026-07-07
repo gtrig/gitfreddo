@@ -5,10 +5,10 @@ import {
   buildDiffConflictNamesArgs,
   buildMergeAbortArgs,
   buildMergeContinueArgs,
-  buildMergeStartArgs,
+  mergeStart as mergeStartCommand,
   buildRevParseShortArgs
 } from '../../../shared/git/commands'
-import { runGit, runGitOrThrow } from '../git-runner'
+import { runCommand, runGitOrThrow } from '../git-runner'
 import { gitMetadataPath, readGitMetadataFile, rebaseInProgress, resolveGitDir } from '../git-dir'
 import { continueGitOperation } from './commit-message'
 import { workingStatus } from './status'
@@ -141,7 +141,11 @@ export async function mergeStart(
   branch: string,
   options: { noFf?: boolean; squash?: boolean } = {}
 ): Promise<GitMergeStartResult> {
-  const result = await runGit(buildMergeStartArgs({ branch, ...options }), { cwd, gitBinaryPath })
+  const result = await runCommand(
+    mergeStartCommand,
+    { branch, ...options },
+    { cwd, gitBinaryPath }
+  )
   if (result.code === 0) {
     return { status: 'completed', conflictedPaths: [] }
   }

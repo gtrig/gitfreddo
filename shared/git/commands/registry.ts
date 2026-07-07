@@ -63,6 +63,7 @@ export const GIT_COMMAND_REGISTRY: Map<string, GitCommandDescriptor<unknown>> = 
   [workingTree.diffCommitRange.id, workingTree.diffCommitRange],
   [workingTree.diffNoIndex.id, workingTree.diffNoIndex],
   [remoteCmd.remoteList.id, remoteCmd.remoteList],
+  [remoteCmd.remoteGetUrl.id, remoteCmd.remoteGetUrl],
   [remoteCmd.remoteAdd.id, remoteCmd.remoteAdd],
   [remoteCmd.fetch.id, remoteCmd.fetch],
   [remoteCmd.push.id, remoteCmd.push],

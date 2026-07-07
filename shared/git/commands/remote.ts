@@ -44,6 +44,10 @@ export function buildRemoteSetUrlArgs({ name, url, push }: RemoteSetUrlParams): 
   return args
 }
 
+export function buildRemoteGetUrlArgs(name: string): string[] {
+  return ['remote', 'get-url', name]
+}
+
 export interface FetchParams {
   remote: string
   tags?: boolean
@@ -145,6 +149,12 @@ export const remoteAdd = defineCommand({
   id: 'remote.add',
   subcommand: 'remote',
   buildArgs: buildRemoteAddArgs
+})
+
+export const remoteGetUrl = defineCommand({
+  id: 'remote.get-url',
+  subcommand: 'remote',
+  buildArgs: (name: string) => buildRemoteGetUrlArgs(name)
 })
 
 export const fetch = defineCommand({
