@@ -1,3 +1,4 @@
+import type { BranchCheckoutParams } from '@shared/git'
 import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { GitBranch, GitRemote, GitTag } from '@/lib/types'
@@ -65,7 +66,7 @@ export function useTimelineRefContextMenu({
   const handlers = useMemo(
     () => ({
       onSelectCommit,
-      onCheckout: (name: string) => void checkout.mutateAsync({ name }),
+      onCheckout: (params: BranchCheckoutParams) => void checkout.mutateAsync(params),
       onMerge,
       onRenameBranch: setRenameBranch,
       onDeleteBranch: setPendingDeleteBranch,

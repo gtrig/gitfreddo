@@ -1,4 +1,5 @@
 import type { TFunction } from 'i18next'
+import type { BranchCheckoutParams } from '@shared/git'
 import type { ContextMenuItem } from '@/components/Ui/ContextMenu'
 import type { GitBranch, GitTag } from '@/lib/types'
 import {
@@ -11,7 +12,7 @@ import type { TimelineRef } from '@/lib/timeline/timelineRefs'
 
 export interface TimelineRefContextMenuHandlers {
   onSelectCommit: (hash: string) => void
-  onCheckout: (name: string) => void
+  onCheckout: (params: BranchCheckoutParams) => void
   onMerge: (name: string) => void
   onRenameBranch: (name: string) => void
   onDeleteBranch: (name: string) => void
