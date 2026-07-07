@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import type { BranchCheckoutParams } from '@shared/git'
+import { localBranchCheckoutParams } from '@/lib/git/branchCheckout'
 import { useTranslation } from 'react-i18next'
 import type { GitBranch, GitRemote } from '@/lib/types'
 import type { BranchTreeNode } from '@/lib/workspace/branchTree'
@@ -54,7 +56,7 @@ interface LocalBranchesSectionProps {
   isDetached?: boolean
   head?: string
   onSelectCommit: (hash: string) => void
-  onCheckout: (name: string) => void
+  onCheckout: (params: BranchCheckoutParams) => void
   onCreateBranch: () => void
 }
 
@@ -81,7 +83,7 @@ function BranchTree({
   openFolders: Set<string>
   toggleFolder: (path: string) => void
   onSelectCommit: (hash: string) => void
-  onCheckout: (name: string) => void
+  onCheckout: (params: BranchCheckoutParams) => void
   onMerge: (name: string) => void
   onRename: (name: string) => void
   onDelete: (name: string) => void
@@ -168,7 +170,7 @@ function BranchTree({
             openMenu={openMenu}
             onClick={() => onSelectCommit(branch.head)}
             onDoubleClick={() => {
-              if (!branch.isCurrent) onCheckout(branch.name)
+              if (!branch.isCurrent) onCheckout(localBranchCheckoutParams(branch.name))
             }}
           />
         )

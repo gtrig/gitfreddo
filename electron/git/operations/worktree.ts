@@ -1,3 +1,9 @@
+import {
+  buildWorktreeAddArgs,
+  buildWorktreeListArgs,
+  buildWorktreePruneArgs,
+  buildWorktreeRemoveArgs
+} from '../../../shared/git/commands'
 import { resolve } from 'path'
 import { runGitOrThrow } from '../git-runner'
 import type { GitWorktreeEntry } from '../types'
@@ -72,10 +78,7 @@ export async function worktreeList(
   cwd: string,
   gitBinaryPath: string
 ): Promise<GitWorktreeEntry[]> {
-  const stdout = await runGitOrThrow(['worktree', 'list', '--porcelain'], {
-    cwd,
-    gitBinaryPath
-  })
+  const stdout = await runGitOrThrow(buildWorktreeListArgs(), { cwd, gitBinaryPath })
   if (!stdout.trim()) return []
 
   const blocks = parseWorktreeListPorcelain(stdout)
@@ -93,21 +96,7 @@ export async function worktreeAdd(
     commit?: string
   }
 ): Promise<string> {
-  const args = ['worktree', 'add']
-  if (params.detach) {
-    args.push('--detach')
-  }
-  if (params.newBranch) {
-    args.push('-b', params.newBranch)
-  }
-  args.push(params.path)
-  if (params.branch) {
-    args.push(params.branch)
-  } else if (params.commit) {
-    args.push(params.commit)
-  }
-
-  await runGitOrThrow(args, { cwd, gitBinaryPath })
+  await runGitOrThrow(buildWorktreeAddArgs(params), { cwd, gitBinaryPath })
   return resolve(params.path)
 }
 
@@ -117,12 +106,9 @@ export async function worktreeRemove(
   path: string,
   force = false
 ): Promise<void> {
-  const args = ['worktree', 'remove']
-  if (force) args.push('--force')
-  args.push(path)
-  await runGitOrThrow(args, { cwd, gitBinaryPath })
+  await runGitOrThrow(buildWorktreeRemoveArgs({ path, force }), { cwd, gitBinaryPath })
 }
 
 export async function worktreePrune(cwd: string, gitBinaryPath: string): Promise<void> {
-  await runGitOrThrow(['worktree', 'prune'], { cwd, gitBinaryPath })
+  await runGitOrThrow(buildWorktreePruneArgs(), { cwd, gitBinaryPath })
 }

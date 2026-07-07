@@ -18,6 +18,7 @@ import {
 } from '../update/auto-update'
 import { registerExternalLinkHandlers } from '../external-links'
 import { onLog } from '../git/log-bus'
+import type { GitIpcMethod, GitIpcParams } from '../../shared/git/ipc'
 import { cloneRepository } from '../git/clone'
 import { initRepository } from '../git/init'
 import { aiConfigFromSettings, aiFill } from '../llm/client'
@@ -242,7 +243,11 @@ function registerIpc(): void {
         const enriched = await enrichAiContext(repoManager, params as AiFillParams)
         return aiFill(aiConfigFromSettings(settings), enriched)
       }
-      return repoManager.invoke(repoPath, method, params)
+      return repoManager.invoke(
+        repoPath,
+        method as GitIpcMethod,
+        params as GitIpcParams<GitIpcMethod>
+      )
     }
   )
 

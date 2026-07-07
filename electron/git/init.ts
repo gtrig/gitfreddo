@@ -1,4 +1,5 @@
 import { resolve } from 'path'
+import { buildInitArgs } from '../../shared/git/commands'
 import { emitLog } from './log-bus'
 import { runGitOrThrow } from './git-runner'
 import { hasGitDir } from './repo-path'
@@ -10,7 +11,7 @@ export async function initRepository(repoPath: string, gitBinaryPath = 'git'): P
   }
 
   emitLog('app', 'info', 'Initializing repository', normalized)
-  await runGitOrThrow(['init'], { cwd: normalized, gitBinaryPath })
+  await runGitOrThrow(buildInitArgs(), { cwd: normalized, gitBinaryPath })
   emitLog('app', 'info', 'Repository initialized', normalized)
   return normalized
 }

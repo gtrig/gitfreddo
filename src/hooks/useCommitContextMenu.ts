@@ -237,7 +237,7 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
           openDeleteModal({ action: 'drop', commits }),
         removeStaleSelected: (commits) =>
           openRemoveStaleModal({ seedHashes: commits.map((commit) => commit.hash) }),
-        checkout: (ref) => runMutation(checkout.mutateAsync({ name: ref }), t('contextMenu.checkedOut')),
+        checkout: (params) => runMutation(checkout.mutateAsync(params), t('contextMenu.checkedOut')),
         mergeBranch: (branchName) => {
           closeMenu()
           setMergeSource(branchName)

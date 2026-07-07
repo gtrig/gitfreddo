@@ -1,4 +1,9 @@
-import { buildLogGraphArgs, parseLogGraphOutput } from '../../../shared/gitLog'
+import {
+  buildLogGraphArgs,
+  buildLogMessageArgs,
+  buildShowCommitNameStatusArgs,
+  parseLogGraphOutput
+} from '../../../shared/gitLog'
 import { runGitOrThrow } from '../git-runner'
 import type { GitCommit, GitLogGraphResult } from '../types'
 
@@ -17,11 +22,7 @@ export async function showCommit(
   gitBinaryPath: string,
   hash: string
 ): Promise<string> {
-  // Merge commits default to a combined diff that omits most changed files.
-  return runGitOrThrow(
-    ['show', '-m', '--first-parent', '--format=', '--name-status', hash],
-    { cwd, gitBinaryPath }
-  )
+  return runGitOrThrow(buildShowCommitNameStatusArgs(hash), { cwd, gitBinaryPath })
 }
 
 export async function commitMessage(
@@ -29,5 +30,5 @@ export async function commitMessage(
   gitBinaryPath: string,
   hash: string
 ): Promise<string> {
-  return runGitOrThrow(['log', '-1', '--format=%B', hash], { cwd, gitBinaryPath })
+  return runGitOrThrow(buildLogMessageArgs({ hash }), { cwd, gitBinaryPath })
 }

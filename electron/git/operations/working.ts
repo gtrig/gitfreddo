@@ -1,6 +1,15 @@
 import { writeFile, mkdir, readFile, access } from 'fs/promises'
 import { dirname } from 'path'
 import { appendGitignoreEntry } from '../../../shared/gitignore'
+import {
+  buildApplyPatchArgs,
+  buildLsFilesErrorUnmatchArgs,
+  buildLsFilesTrackedPrefixArgs,
+  buildMvArgs,
+  buildRevParseShowToplevelArgs,
+  buildRmArgs,
+  buildShowStageArgs
+} from '../../../shared/git/commands'
 import type { WorkingReadResult } from '../../../shared/working'
 import { runGit, runGitOrThrow } from '../git-runner'
 import { resolveRepoFile } from '../workspace-files'
@@ -13,7 +22,7 @@ export async function workingWrite(
   relativePath: string,
   content: string
 ): Promise<void> {
-  const root = (await runGitOrThrow(['rev-parse', '--show-toplevel'], { cwd, gitBinaryPath })).trim()
+  const root = (await runGitOrThrow(buildRevParseShowToplevelArgs(), { cwd, gitBinaryPath })).trim()
   const target = resolveRepoFile(root, relativePath)
   await mkdir(dirname(target), { recursive: true })
   await writeFile(target, content, 'utf8')
@@ -24,7 +33,7 @@ export async function workingRead(
   gitBinaryPath: string,
   relativePath: string
 ): Promise<WorkingReadResult> {
-  const root = (await runGitOrThrow(['rev-parse', '--show-toplevel'], { cwd, gitBinaryPath })).trim()
+  const root = (await runGitOrThrow(buildRevParseShowToplevelArgs(), { cwd, gitBinaryPath })).trim()
   const target = resolveRepoFile(root, relativePath)
   try {
     await access(target)
@@ -41,7 +50,7 @@ export async function workingRename(
   oldPath: string,
   newPath: string
 ): Promise<void> {
-  await runGitOrThrow(['mv', '--', oldPath, newPath], { cwd, gitBinaryPath })
+  await runGitOrThrow(buildMvArgs({ oldPath, newPath }), { cwd, gitBinaryPath })
 }
 
 export async function stageApplyPatch(
@@ -50,9 +59,7 @@ export async function stageApplyPatch(
   patch: string,
   reverse = false
 ): Promise<void> {
-  const args = ['apply', '--cached']
-  if (reverse) args.push('--reverse')
-  const result = await runGit(args, {
+  const result = await runGit(buildApplyPatchArgs({ patch, reverse }), {
     cwd,
     gitBinaryPath,
     input: patch
@@ -68,7 +75,7 @@ export async function fileReadStage(
   stage: 1 | 2 | 3,
   path: string
 ): Promise<string> {
-  return runGitOrThrow(['show', `:${stage}:${path}`], { cwd, gitBinaryPath })
+  return runGitOrThrow(buildShowStageArgs({ stage, path }), { cwd, gitBinaryPath })
 }
 
 export async function workingAddToGitignore(
@@ -93,18 +100,24 @@ export async function workingAddToGitignore(
 
   if (directory) {
     const prefix = `${normalized}/`
-    const listed = await runGit(['ls-files', '--', prefix], { cwd, gitBinaryPath })
+    const listed = await runGit(buildLsFilesTrackedPrefixArgs(prefix), { cwd, gitBinaryPath })
     if (listed.stdout.trim()) {
-      await runGitOrThrow(['rm', '--cached', '-r', '-f', '--', prefix], { cwd, gitBinaryPath })
+      await runGitOrThrow(
+        buildRmArgs({ paths: [prefix], cached: true, recursive: true, force: true }),
+        { cwd, gitBinaryPath }
+      )
     }
     return
   }
 
-  const tracked = await runGit(['ls-files', '--error-unmatch', '--', normalized], {
+  const tracked = await runGit(buildLsFilesErrorUnmatchArgs(normalized), {
     cwd,
     gitBinaryPath
   })
   if (tracked.code === 0) {
-    await runGitOrThrow(['rm', '--cached', '-f', '--', normalized], { cwd, gitBinaryPath })
+    await runGitOrThrow(
+      buildRmArgs({ paths: [normalized], cached: true, force: true }),
+      { cwd, gitBinaryPath }
+    )
   }
 }

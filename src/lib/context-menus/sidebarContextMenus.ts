@@ -1,8 +1,10 @@
 import type { TFunction } from 'i18next'
+import type { BranchCheckoutParams } from '@shared/git'
 import type { ContextMenuItem } from '@/components/Ui/ContextMenu'
 import type { GitBranch, GitTag, GitWorktreeEntry } from '@/lib/types'
 import type { GitHubIssue, GitHubMergeMethod, GitHubPullRequest } from '@shared/github'
 import { copyToClipboard } from '@/lib/clipboard'
+import { detachedRefCheckoutParams, localBranchCheckoutParams } from '@/lib/git/branchCheckout'
 import { remoteBranchShortName } from '@/lib/workspace/branchTree'
 import { localTagName, tagCheckoutRef } from '@/lib/format/tagNames'
 
@@ -40,7 +42,7 @@ export function folderContextMenuItems(
 export function localBranchContextMenuItems(
   branch: GitBranch,
   handlers: {
-    onCheckout: (name: string) => void
+    onCheckout: (params: BranchCheckoutParams) => void
     onSelectCommit: (hash: string) => void
     onMerge: (name: string) => void
     onRename: (name: string) => void
@@ -57,7 +59,7 @@ export function localBranchContextMenuItems(
       id: 'checkout',
       label: t ? t('common.checkout') : 'Checkout',
       disabled: branch.isCurrent,
-      onClick: () => handlers.onCheckout(branch.name)
+      onClick: () => handlers.onCheckout(localBranchCheckoutParams(branch.name))
     },
     ...(handlers.onCheckoutInWorktree
       ? [
@@ -349,7 +351,7 @@ export function tagContextMenuItems(
   handlers: {
     defaultRemote?: string
     onSelectCommit: (hash: string) => void
-    onCheckout: (ref: string) => void
+    onCheckout: (params: BranchCheckoutParams) => void
     onPush: (name: string, remote?: string) => void
     onRename?: (tag: GitTag) => void
     onDelete: (tag: GitTag, remote?: string) => void
@@ -371,7 +373,7 @@ export function tagContextMenuItems(
       label: t
         ? t('contextMenu.sidebar.checkoutTag', { name: shortName })
         : `Checkout ${shortName}`,
-      onClick: () => handlers.onCheckout(tagCheckoutRef(tag.name))
+      onClick: () => handlers.onCheckout(detachedRefCheckoutParams(tagCheckoutRef(tag.name)))
     })
     items.push(separator('sep-push'))
     items.push({

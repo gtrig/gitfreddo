@@ -1,5 +1,40 @@
 import { runGit, runGitOrThrow } from '../git-runner'
+import {
+  buildBranchCreateArgs,
+  buildBranchDeleteArgs,
+  buildBranchListArgs,
+  buildBranchRenameArgs,
+  buildBranchSetUpstreamArgs,
+  buildBranchUnsetUpstreamArgs,
+  buildPushDeleteBranchArgs,
+  buildRevParseAbbrevRefArgs,
+  buildRevParseLocalBranchArgs,
+  buildRevParseCommitArgs,
+  buildRevListAheadBehindArgs,
+  buildSwitchCheckoutArgs,
+  buildSwitchCreateTrackingArgs
+} from '../../../shared/git/commands'
 import type { GitBranch } from '../types'
+
+export { buildBranchSwitchArgs } from '../../../shared/git/commands'
+
+async function checkoutNeedsDetach(
+  cwd: string,
+  gitBinaryPath: string,
+  name: string
+): Promise<boolean> {
+  const localBranch = await runGit(buildRevParseLocalBranchArgs(name), {
+    cwd,
+    gitBinaryPath
+  })
+  if (localBranch.code === 0) return false
+
+  const commit = await runGit(buildRevParseCommitArgs(name), {
+    cwd,
+    gitBinaryPath
+  })
+  return commit.code === 0
+}
 
 export function stripAnsi(text: string): string {
   return text.replace(/\x1B\[[0-9;]*m/g, '')
@@ -47,7 +82,7 @@ async function branchAheadBehind(
 ): Promise<{ ahead: number; behind: number }> {
   try {
     const out = await runGitOrThrow(
-      ['rev-list', '--left-right', '--count', `${upstream}...${branch}`],
+      buildRevListAheadBehindArgs({ upstream, branch }),
       { cwd, gitBinaryPath }
     )
     const [behind, ahead] = out.trim().split(/\s+/).map(Number)
@@ -58,7 +93,7 @@ async function branchAheadBehind(
 }
 
 export async function branchList(cwd: string, gitBinaryPath: string): Promise<GitBranch[]> {
-  const stdout = await runGitOrThrow(['branch', '-a', '-v', '--no-abbrev'], { cwd, gitBinaryPath })
+  const stdout = await runGitOrThrow(buildBranchListArgs(), { cwd, gitBinaryPath })
   const parsed = stdout
     .split('\n')
     .map(parseBranchLine)
@@ -70,7 +105,7 @@ export async function branchList(cwd: string, gitBinaryPath: string): Promise<Gi
   for (const branch of localBranches) {
     try {
       const upstream = (
-        await runGit(['rev-parse', '--abbrev-ref', `${branch.name}@{upstream}`], {
+        await runGit(buildRevParseAbbrevRefArgs(`${branch.name}@{upstream}`), {
           cwd,
           gitBinaryPath
         })
@@ -92,9 +127,16 @@ export async function branchList(cwd: string, gitBinaryPath: string): Promise<Gi
 export async function branchCheckout(
   cwd: string,
   gitBinaryPath: string,
-  name: string
+  name: string,
+  options?: { detach?: boolean }
 ): Promise<void> {
-  await runGitOrThrow(['switch', '--end-of-options', name], { cwd, gitBinaryPath })
+  const detach =
+    options?.detach === true
+      ? true
+      : options?.detach === false
+        ? false
+        : await checkoutNeedsDetach(cwd, gitBinaryPath, name)
+  await runGitOrThrow(buildSwitchCheckoutArgs({ name, detach }), { cwd, gitBinaryPath })
 }
 
 export async function branchCreate(
@@ -103,8 +145,7 @@ export async function branchCreate(
   name: string,
   startPoint?: string
 ): Promise<void> {
-  const args = ['branch', '--end-of-options', name]
-  if (startPoint) args.push(startPoint)
+  const args = buildBranchCreateArgs({ name, startPoint })
   await runGitOrThrow(args, { cwd, gitBinaryPath })
 }
 
@@ -114,7 +155,7 @@ export async function branchDelete(
   name: string,
   force = false
 ): Promise<void> {
-  await runGitOrThrow(['branch', force ? '-D' : '-d', '--end-of-options', name], {
+  await runGitOrThrow(buildBranchDeleteArgs({ name, force }), {
     cwd,
     gitBinaryPath
   })
@@ -126,7 +167,7 @@ export async function branchRename(
   oldName: string,
   newName: string
 ): Promise<void> {
-  await runGitOrThrow(['branch', '-m', '--end-of-options', oldName, newName], {
+  await runGitOrThrow(buildBranchRenameArgs({ oldName, newName }), {
     cwd,
     gitBinaryPath
   })
@@ -152,17 +193,17 @@ export async function branchCheckoutRemote(
 
   const trackingRef = `${parsed.remote}/${parsed.branch}`
   const local = localName?.trim() || parsed.branch
-  const exists = await runGit(['rev-parse', '--verify', `refs/heads/${local}`], {
+  const exists = await runGit(buildRevParseLocalBranchArgs(local), {
     cwd,
     gitBinaryPath
   })
 
   if (exists.code === 0) {
-    await runGitOrThrow(['switch', '--end-of-options', local], { cwd, gitBinaryPath })
+    await runGitOrThrow(buildSwitchCheckoutArgs({ name: local, detach: false }), { cwd, gitBinaryPath })
     return
   }
 
-  await runGitOrThrow(['switch', '-c', local, '--track', trackingRef], { cwd, gitBinaryPath })
+  await runGitOrThrow(buildSwitchCreateTrackingArgs({ local, trackingRef }), { cwd, gitBinaryPath })
 }
 
 export async function branchSetUpstream(
@@ -171,7 +212,7 @@ export async function branchSetUpstream(
   branch: string,
   upstream: string
 ): Promise<void> {
-  await runGitOrThrow(['branch', '--set-upstream-to', upstream, branch], {
+  await runGitOrThrow(buildBranchSetUpstreamArgs({ branch, upstream }), {
     cwd,
     gitBinaryPath
   })
@@ -182,8 +223,7 @@ export async function branchUnsetUpstream(
   gitBinaryPath: string,
   branch?: string
 ): Promise<void> {
-  const args = ['branch', '--unset-upstream']
-  if (branch?.trim()) args.push(branch.trim())
+  const args = buildBranchUnsetUpstreamArgs(branch)
   await runGitOrThrow(args, { cwd, gitBinaryPath })
 }
 
@@ -193,5 +233,5 @@ export async function branchDeleteRemote(
   remote: string,
   branch: string
 ): Promise<void> {
-  await runGitOrThrow(['push', remote, `:refs/heads/${branch}`], { cwd, gitBinaryPath })
+  await runGitOrThrow(buildPushDeleteBranchArgs({ remote, branch }), { cwd, gitBinaryPath })
 }

@@ -1,17 +1,21 @@
 import { existsSync, readFileSync } from 'fs'
 import { join, resolve } from 'path'
+import {
+  buildRevParseAbsoluteGitDirArgs,
+  buildRevParseGitCommonDirArgs
+} from '../../shared/git/commands'
 import { runGitOrThrow } from './git-runner'
 
 export async function resolveGitDir(cwd: string, gitBinaryPath: string): Promise<string> {
   const out = (
-    await runGitOrThrow(['rev-parse', '--absolute-git-dir'], { cwd, gitBinaryPath })
+    await runGitOrThrow(buildRevParseAbsoluteGitDirArgs(), { cwd, gitBinaryPath })
   ).trim()
   return resolve(out)
 }
 
 export async function resolveGitCommonDir(cwd: string, gitBinaryPath: string): Promise<string> {
   const out = (
-    await runGitOrThrow(['rev-parse', '--git-common-dir'], { cwd, gitBinaryPath })
+    await runGitOrThrow(buildRevParseGitCommonDirArgs(), { cwd, gitBinaryPath })
   ).trim()
   const gitDir = await resolveGitDir(cwd, gitBinaryPath)
   if (out === '.git' || out === 'git') {

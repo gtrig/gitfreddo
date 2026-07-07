@@ -1,7 +1,26 @@
 import { chmod, mkdtemp, rm, writeFile } from 'fs/promises'
 import { join } from 'path'
 import { tmpdir } from 'os'
-import { runGit, runGitOrThrow } from '../git-runner'
+import {
+  buildCherryPickAbortArgs,
+  buildCherryPickArgs,
+  buildCherryPickContinueArgs,
+  buildCherryPickSkipArgs,
+  buildRebaseAbortArgs,
+  buildRebaseContinueArgs,
+  buildRebaseInteractiveArgs,
+  buildRebaseSkipArgs,
+  buildRebaseStartArgs,
+  buildResetHeadParentArgs,
+  buildResetModeArgs,
+  buildRevertArgs,
+  buildRevListParentsArgs,
+  buildRevParseVerifyArgs,
+  mergeBaseIsAncestor,
+  revParseHeadParent,
+  revParseParent
+} from '../../../shared/git/commands'
+import { runCommand, runGitOrThrow } from '../git-runner'
 import { workingStatus } from './status'
 import { continueGitOperation } from './commit-message'
 
@@ -103,7 +122,9 @@ async function assertCanRewriteHistory(cwd: string, gitBinaryPath: string): Prom
 }
 
 async function resolveFullHash(cwd: string, gitBinaryPath: string, hash: string): Promise<string> {
-  return (await runGitOrThrow(['rev-parse', '--verify', hash], { cwd, gitBinaryPath })).trim()
+  return (
+    await runGitOrThrow(buildRevParseVerifyArgs({ ref: hash }), { cwd, gitBinaryPath })
+  ).trim()
 }
 
 async function runInteractiveRebaseWithSequenceEditor(
@@ -125,15 +146,11 @@ export async function rebaseStart(
   onto: string,
   from?: string
 ): Promise<void> {
-  if (from?.trim()) {
-    await runGitOrThrow(['rebase', '--onto', onto, from.trim()], { cwd, gitBinaryPath })
-    return
-  }
-  await runGitOrThrow(['rebase', onto], { cwd, gitBinaryPath })
+  await runGitOrThrow(buildRebaseStartArgs({ onto, from }), { cwd, gitBinaryPath })
 }
 
 export async function rebaseAbort(cwd: string, gitBinaryPath: string): Promise<void> {
-  await runGitOrThrow(['rebase', '--abort'], { cwd, gitBinaryPath })
+  await runGitOrThrow(buildRebaseAbortArgs(), { cwd, gitBinaryPath })
 }
 
 export async function rebaseContinue(
@@ -141,11 +158,11 @@ export async function rebaseContinue(
   gitBinaryPath: string,
   message?: string
 ): Promise<void> {
-  await continueGitOperation(cwd, gitBinaryPath, ['rebase', '--continue'], message)
+  await continueGitOperation(cwd, gitBinaryPath, buildRebaseContinueArgs(), message)
 }
 
 export async function rebaseSkip(cwd: string, gitBinaryPath: string): Promise<void> {
-  await runGitOrThrow(['rebase', '--skip'], { cwd, gitBinaryPath })
+  await runGitOrThrow(buildRebaseSkipArgs(), { cwd, gitBinaryPath })
 }
 
 export async function cherryPickContinue(
@@ -153,15 +170,15 @@ export async function cherryPickContinue(
   gitBinaryPath: string,
   message?: string
 ): Promise<void> {
-  await continueGitOperation(cwd, gitBinaryPath, ['cherry-pick', '--continue'], message)
+  await continueGitOperation(cwd, gitBinaryPath, buildCherryPickContinueArgs(), message)
 }
 
 export async function cherryPickAbort(cwd: string, gitBinaryPath: string): Promise<void> {
-  await runGitOrThrow(['cherry-pick', '--abort'], { cwd, gitBinaryPath })
+  await runGitOrThrow(buildCherryPickAbortArgs(), { cwd, gitBinaryPath })
 }
 
 export async function cherryPickSkip(cwd: string, gitBinaryPath: string): Promise<void> {
-  await runGitOrThrow(['cherry-pick', '--skip'], { cwd, gitBinaryPath })
+  await runGitOrThrow(buildCherryPickSkipArgs(), { cwd, gitBinaryPath })
 }
 
 export async function rebaseReword(
@@ -184,19 +201,20 @@ export async function rebaseReword(
   }
 
   const fullHash = (
-    await runGitOrThrow(['rev-parse', '--verify', hash], { cwd, gitBinaryPath })
+    await runGitOrThrow(buildRevParseVerifyArgs({ ref: hash }), { cwd, gitBinaryPath })
   ).trim()
 
-  const ancestorCheck = await runGit(['merge-base', '--is-ancestor', fullHash, 'HEAD'], {
-    cwd,
-    gitBinaryPath
-  })
+  const ancestorCheck = await runCommand(
+    mergeBaseIsAncestor,
+    { ancestor: fullHash, descendant: 'HEAD' },
+    { cwd, gitBinaryPath }
+  )
   if (ancestorCheck.code !== 0) {
     throw new Error('Commit is not part of the current branch history.')
   }
 
   const parentLine = (
-    await runGitOrThrow(['rev-list', '--parents', '-n', '1', fullHash], { cwd, gitBinaryPath })
+    await runGitOrThrow(buildRevListParentsArgs({ hash: fullHash }), { cwd, gitBinaryPath })
   ).trim()
   const parentCount = parentLine.split(/\s+/).length - 1
   if (parentCount > 1) {
@@ -204,7 +222,7 @@ export async function rebaseReword(
   }
 
   const isRoot =
-    (await runGit(['rev-parse', '--verify', `${fullHash}^`], { cwd, gitBinaryPath })).code !== 0
+    (await runCommand(revParseParent, fullHash, { cwd, gitBinaryPath })).code !== 0
 
   const tempDir = await mkdtemp(join(tmpdir(), 'gitfreddo-reword-'))
   try {
@@ -244,7 +262,9 @@ copyFileSync(${JSON.stringify(messageFile)}, process.argv[2])
     await chmod(seqEditor, 0o755)
     await chmod(msgEditor, 0o755)
 
-    const rebaseArgs = isRoot ? ['rebase', '-i', '--root'] : ['rebase', '-i', `${fullHash}^`]
+    const rebaseArgs = isRoot
+      ? buildRebaseInteractiveArgs({ root: true })
+      : buildRebaseInteractiveArgs({ baseHash: fullHash })
 
     await runGitOrThrow(rebaseArgs, {
       cwd,
@@ -265,16 +285,17 @@ export async function cherryPick(
 ): Promise<void> {
   const fullHash = await resolveFullHash(cwd, gitBinaryPath, hash)
   const parentCount = await mergeParentCount(cwd, gitBinaryPath, fullHash)
-  const args = ['cherry-pick']
-  if (noCommit) args.push('-n')
-  if (parentCount > 1) {
-    if (!mainline) {
-      throw new Error('Select a parent line when cherry-picking a merge commit.')
-    }
-    args.push('-m', String(mainline))
+  if (parentCount > 1 && !mainline) {
+    throw new Error('Select a parent line when cherry-picking a merge commit.')
   }
-  args.push(fullHash)
-  await runGitOrThrow(args, { cwd, gitBinaryPath })
+  await runGitOrThrow(
+    buildCherryPickArgs({
+      hash: fullHash,
+      noCommit,
+      mainline: parentCount > 1 ? mainline : undefined
+    }),
+    { cwd, gitBinaryPath }
+  )
 }
 
 export async function cherryPickMultiple(
@@ -299,7 +320,7 @@ async function mergeParentCount(
   fullHash: string
 ): Promise<number> {
   const parentLine = (
-    await runGitOrThrow(['rev-list', '--parents', '-n', '1', fullHash], { cwd, gitBinaryPath })
+    await runGitOrThrow(buildRevListParentsArgs({ hash: fullHash }), { cwd, gitBinaryPath })
   ).trim()
   return parentLine.split(/\s+/).length - 1
 }
@@ -322,7 +343,7 @@ export async function rebaseSquash(
 
   for (const fullHash of resolved) {
     const parentLine = (
-      await runGitOrThrow(['rev-list', '--parents', '-n', '1', fullHash], { cwd, gitBinaryPath })
+      await runGitOrThrow(buildRevListParentsArgs({ hash: fullHash }), { cwd, gitBinaryPath })
     ).trim()
     if (parentLine.split(/\s+/).length - 1 > 1) {
       throw new Error('Squashing merge commits is not supported.')
@@ -331,7 +352,7 @@ export async function rebaseSquash(
 
   const oldestHash = resolved[0]!
   const isRoot =
-    (await runGit(['rev-parse', '--verify', `${oldestHash}^`], { cwd, gitBinaryPath })).code !== 0
+    (await runCommand(revParseParent, oldestHash, { cwd, gitBinaryPath })).code !== 0
 
   const tempDir = await mkdtemp(join(tmpdir(), 'gitfreddo-squash-'))
   try {
@@ -367,7 +388,9 @@ writeFileSync(todoPath, updated)
     )
     await chmod(seqEditor, 0o755)
 
-    const rebaseArgs = isRoot ? ['rebase', '-i', '--root'] : ['rebase', '-i', `${oldestHash}^`]
+    const rebaseArgs = isRoot
+      ? buildRebaseInteractiveArgs({ root: true })
+      : buildRebaseInteractiveArgs({ baseHash: oldestHash })
     await runInteractiveRebaseWithSequenceEditor(cwd, gitBinaryPath, rebaseArgs, seqEditor)
   } finally {
     await rm(tempDir, { recursive: true, force: true })
@@ -388,7 +411,7 @@ export async function rebaseInteractive(
 
   const fullHash = await resolveFullHash(cwd, gitBinaryPath, baseHash)
   const isRoot =
-    (await runGit(['rev-parse', '--verify', `${fullHash}^`], { cwd, gitBinaryPath })).code !== 0
+    (await runCommand(revParseParent, fullHash, { cwd, gitBinaryPath })).code !== 0
 
   const tempDir = await mkdtemp(join(tmpdir(), 'gitfreddo-interactive-'))
   try {
@@ -402,7 +425,9 @@ writeFileSync(process.argv[2], ${JSON.stringify(todoLines.join('\n'))})
     )
     await chmod(seqEditor, 0o755)
 
-    const rebaseArgs = isRoot ? ['rebase', '-i', '--root'] : ['rebase', '-i', `${fullHash}^`]
+    const rebaseArgs = isRoot
+      ? buildRebaseInteractiveArgs({ root: true })
+      : buildRebaseInteractiveArgs({ baseHash: fullHash })
     await runInteractiveRebaseWithSequenceEditor(cwd, gitBinaryPath, rebaseArgs, seqEditor)
   } finally {
     await rm(tempDir, { recursive: true, force: true })
@@ -415,9 +440,7 @@ export async function resetRepo(
   mode: 'soft' | 'mixed' | 'hard',
   ref?: string
 ): Promise<void> {
-  const args = ['reset', `--${mode}`]
-  if (ref) args.push(ref)
-  await runGitOrThrow(args, { cwd, gitBinaryPath })
+  await runGitOrThrow(buildResetModeArgs({ mode, ref }), { cwd, gitBinaryPath })
 }
 
 export async function resetToParent(
@@ -425,7 +448,8 @@ export async function resetToParent(
   gitBinaryPath: string,
   mode: 'soft' | 'mixed' | 'hard'
 ): Promise<void> {
-  const hasParent = (await runGit(['rev-parse', '--verify', 'HEAD~1'], { cwd, gitBinaryPath })).code === 0
+  const hasParent =
+    (await runCommand(revParseHeadParent, undefined as never, { cwd, gitBinaryPath })).code === 0
   if (!hasParent) {
     throw new Error('Cannot delete the root commit.')
   }
@@ -439,7 +463,7 @@ export async function resetToParent(
     }
   }
 
-  await runGitOrThrow(['reset', `--${mode}`, 'HEAD~1'], { cwd, gitBinaryPath })
+  await runGitOrThrow(buildResetHeadParentArgs(mode), { cwd, gitBinaryPath })
 }
 
 export async function revertCommit(
@@ -455,15 +479,16 @@ export async function revertCommit(
 
   const fullHash = await resolveFullHash(cwd, gitBinaryPath, hash)
   const parentCount = await mergeParentCount(cwd, gitBinaryPath, fullHash)
-  const args = ['revert', '--no-edit']
-  if (parentCount > 1) {
-    if (!mainline) {
-      throw new Error('Select a parent line when reverting a merge commit.')
-    }
-    args.push('-m', String(mainline))
+  if (parentCount > 1 && !mainline) {
+    throw new Error('Select a parent line when reverting a merge commit.')
   }
-  args.push(fullHash)
-  await runGitOrThrow(args, { cwd, gitBinaryPath })
+  await runGitOrThrow(
+    buildRevertArgs({
+      hash: fullHash,
+      mainline: parentCount > 1 ? mainline : undefined
+    }),
+    { cwd, gitBinaryPath }
+  )
 }
 
 export async function rebaseDrop(
@@ -484,7 +509,7 @@ export async function rebaseDrop(
 
   for (const fullHash of resolved) {
     const parentLine = (
-      await runGitOrThrow(['rev-list', '--parents', '-n', '1', fullHash], { cwd, gitBinaryPath })
+      await runGitOrThrow(buildRevListParentsArgs({ hash: fullHash }), { cwd, gitBinaryPath })
     ).trim()
     if (parentLine.split(/\s+/).length - 1 > 1) {
       throw new Error('Dropping merge commits is not supported.')
@@ -493,7 +518,7 @@ export async function rebaseDrop(
 
   const oldestHash = resolved[0]!
   const isRoot =
-    (await runGit(['rev-parse', '--verify', `${oldestHash}^`], { cwd, gitBinaryPath })).code !== 0
+    (await runCommand(revParseParent, oldestHash, { cwd, gitBinaryPath })).code !== 0
 
   const tempDir = await mkdtemp(join(tmpdir(), 'gitfreddo-drop-'))
   try {
@@ -524,7 +549,9 @@ writeFileSync(todoPath, updated)
     )
     await chmod(seqEditor, 0o755)
 
-    const rebaseArgs = isRoot ? ['rebase', '-i', '--root'] : ['rebase', '-i', `${oldestHash}^`]
+    const rebaseArgs = isRoot
+      ? buildRebaseInteractiveArgs({ root: true })
+      : buildRebaseInteractiveArgs({ baseHash: oldestHash })
     await runInteractiveRebaseWithSequenceEditor(cwd, gitBinaryPath, rebaseArgs, seqEditor)
   } finally {
     await rm(tempDir, { recursive: true, force: true })

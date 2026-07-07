@@ -1,3 +1,4 @@
+import { buildReflogShowHeadArgs, buildResetModeArgs, buildRevParseHeadArgs } from '../../../shared/git/commands'
 import { runGit, runGitOrThrow } from '../git-runner'
 import { workingStatus } from './status'
 
@@ -68,7 +69,7 @@ export async function readHeadReflog(
   count = 2
 ): Promise<HeadReflogEntry[]> {
   const stdout = await runGitOrThrow(
-    ['reflog', 'show', 'HEAD', `-${count}`, '--format=%H%x00%gs'],
+    buildReflogShowHeadArgs(count, '%H%x00%gs'),
     { cwd, gitBinaryPath }
   )
 
@@ -105,11 +106,12 @@ export async function undoLastAction(cwd: string, gitBinaryPath: string): Promis
     throw new Error('Nothing to undo.')
   }
 
-  await runGitOrThrow(['reset', `--${peek.mode}`, peek.targetHash], { cwd, gitBinaryPath })
+  await runGitOrThrow(buildResetModeArgs({ mode: peek.mode, ref: peek.targetHash }), {
+    cwd,
+    gitBinaryPath
+  })
 
-  const headMoved = (
-    await runGit(['rev-parse', 'HEAD'], { cwd, gitBinaryPath })
-  ).stdout.trim()
+  const headMoved = (await runGit(buildRevParseHeadArgs(), { cwd, gitBinaryPath })).stdout.trim()
   if (headMoved !== peek.targetHash) {
     throw new Error('Undo did not move HEAD to the expected commit.')
   }

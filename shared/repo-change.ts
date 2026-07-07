@@ -1,3 +1,5 @@
+import { GIT_IPC_METHODS } from './git/ipc/methods'
+
 export type RepoChangeScope = 'working' | 'refs'
 
 export interface RepoChangeEvent {
@@ -33,4 +35,15 @@ export function isRepoChangeDiffQuerySuffix(suffix: unknown): boolean {
     typeof suffix === 'string' &&
     (REPO_CHANGE_WORKING_DIFF_SUFFIXES as readonly string[]).includes(suffix)
   )
+}
+
+/** All query suffixes invalidated by at least one git IPC mutation. */
+export function allGitIpcInvalidationSuffixes(): string[] {
+  const suffixes = new Set<string>()
+  for (const meta of Object.values(GIT_IPC_METHODS)) {
+    for (const suffix of meta.invalidates) {
+      suffixes.add(suffix)
+    }
+  }
+  return [...suffixes].sort()
 }

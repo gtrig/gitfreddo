@@ -1,4 +1,5 @@
 import { parseGitHubRemote } from '../../shared/github'
+import { buildRemoteGetUrlArgs } from '../../shared/git/commands'
 import { runGitOrThrow } from '../git/git-runner'
 import { remoteList, resolveRemoteName } from '../git/operations/remote'
 import type { AppSettings } from '../../shared/ipc'
@@ -8,7 +9,7 @@ async function contextFromRemote(
   gitBinaryPath: string,
   remoteName: string
 ): Promise<{ owner: string; repo: string; host: string } | null> {
-  const stdout = await runGitOrThrow(['remote', 'get-url', remoteName], {
+  const stdout = await runGitOrThrow(buildRemoteGetUrlArgs(remoteName), {
     cwd: repoPath,
     gitBinaryPath
   })

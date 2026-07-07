@@ -1,3 +1,4 @@
+import { buildReflogListArgs } from '../../../shared/git/commands'
 import { runGitOrThrow } from '../git-runner'
 
 export interface GitReflogEntry {
@@ -14,7 +15,7 @@ export async function reflogList(
   maxCount = 200
 ): Promise<GitReflogEntry[]> {
   const stdout = await runGitOrThrow(
-    ['reflog', '--format=%H %gD %gs', '-n', String(maxCount)],
+    buildReflogListArgs({ maxCount, format: '%H %gD %gs' }),
     { cwd, gitBinaryPath }
   )
 

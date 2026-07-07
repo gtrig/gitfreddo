@@ -1,10 +1,17 @@
 import { runGit, runGitOrThrow } from '../git-runner'
 import type { GitRemote } from '../types'
-import type { PushSubmoduleRecursion, SubmoduleRecursion } from '../../../shared/submodule'
+import type { PushSubmoduleRecursion, SubmoduleRecursion } from '../../../shared/submodule-types'
 import {
-  pushSubmoduleRecursionArgs,
-  submoduleRecursionFetchArgs
-} from '../../../shared/submodule'
+  buildFetchArgs,
+  buildPullArgs,
+  buildPushArgs,
+  buildRemoteAddArgs,
+  buildRemoteListArgs,
+  buildRemoteRemoveArgs,
+  buildRemoteRenameArgs,
+  buildRemoteSetUrlArgs,
+  buildRevParseAbbrevRefArgs
+} from '../../../shared/git/commands'
 
 export function remoteNameFromUpstream(upstream: string): string {
   const slash = upstream.indexOf('/')
@@ -26,7 +33,7 @@ export async function resolveRemoteName(
 
   try {
     const upstream = (
-      await runGitOrThrow(['rev-parse', '--abbrev-ref', '@{upstream}'], { cwd, gitBinaryPath })
+      await runGitOrThrow(buildRevParseAbbrevRefArgs('@{upstream}'), { cwd, gitBinaryPath })
     ).trim()
     const upstreamRemote = remoteNameFromUpstream(upstream)
     if (names.has(upstreamRemote)) {
@@ -52,12 +59,12 @@ export async function resolveRemoteName(
 }
 
 async function branchHasUpstream(cwd: string, gitBinaryPath: string): Promise<boolean> {
-  const result = await runGit(['rev-parse', '--abbrev-ref', '@{upstream}'], { cwd, gitBinaryPath })
+  const result = await runGit(buildRevParseAbbrevRefArgs('@{upstream}'), { cwd, gitBinaryPath })
   return result.code === 0 && Boolean(result.stdout.trim())
 }
 
 export async function remoteList(cwd: string, gitBinaryPath: string): Promise<GitRemote[]> {
-  const stdout = await runGitOrThrow(['remote', '-v'], { cwd, gitBinaryPath })
+  const stdout = await runGitOrThrow(buildRemoteListArgs(), { cwd, gitBinaryPath })
   return parseRemoteVerboseOutput(stdout)
 }
 
@@ -85,7 +92,7 @@ export async function remoteAdd(
   name: string,
   url: string
 ): Promise<void> {
-  await runGitOrThrow(['remote', 'add', name, url], { cwd, gitBinaryPath })
+  await runGitOrThrow(buildRemoteAddArgs({ name, url }), { cwd, gitBinaryPath })
 }
 
 export async function remoteRemove(
@@ -93,7 +100,7 @@ export async function remoteRemove(
   gitBinaryPath: string,
   name: string
 ): Promise<void> {
-  await runGitOrThrow(['remote', 'remove', name], { cwd, gitBinaryPath })
+  await runGitOrThrow(buildRemoteRemoveArgs(name), { cwd, gitBinaryPath })
 }
 
 export interface FetchParams {
@@ -109,27 +116,20 @@ export async function fetchRemote(
   gitBinaryPath: string,
   params: FetchParams = {}
 ): Promise<void> {
-  const args = ['fetch']
+  const remote = params.remote?.trim()
+    ? params.remote.trim()
+    : await resolveRemoteName(cwd, gitBinaryPath, params.remote)
 
-  if (params.tagsOnly) {
-    args.push('--tags')
-    if (params.remote?.trim()) {
-      args.push(params.remote.trim())
-    } else {
-      args.push(await resolveRemoteName(cwd, gitBinaryPath))
-    }
-    await runGitOrThrow(args, { cwd, gitBinaryPath })
-    return
-  }
-
-  args.push('--prune')
-  if (params.tags) args.push('--tags')
-  args.push(...submoduleRecursionFetchArgs(params.submoduleRecursion ?? 'none'))
-  args.push(await resolveRemoteName(cwd, gitBinaryPath, params.remote))
-  if (params.refspec?.trim()) {
-    args.push(params.refspec.trim())
-  }
-  await runGitOrThrow(args, { cwd, gitBinaryPath })
+  await runGitOrThrow(
+    buildFetchArgs({
+      remote,
+      tags: params.tags,
+      tagsOnly: params.tagsOnly,
+      refspec: params.refspec,
+      submoduleRecursion: params.submoduleRecursion
+    }),
+    { cwd, gitBinaryPath }
+  )
 }
 
 export async function pushRemote(
@@ -143,18 +143,17 @@ export async function pushRemote(
   pushSubmoduleRecursion: PushSubmoduleRecursion = 'no'
 ): Promise<void> {
   const pushRemoteName = await resolveRemoteName(cwd, gitBinaryPath, remote)
-  const args = ['push']
-  if (force) args.push('--force-with-lease')
-  args.push(...pushSubmoduleRecursionArgs(pushSubmoduleRecursion))
 
   if (pushAll) {
-    args.push('--all', pushRemoteName)
-    await runGitOrThrow(args, { cwd, gitBinaryPath })
+    await runGitOrThrow(
+      buildPushArgs({ remote: pushRemoteName, force, pushAll: true, pushSubmoduleRecursion }),
+      { cwd, gitBinaryPath }
+    )
     return
   }
 
   const currentBranch = (
-    await runGitOrThrow(['rev-parse', '--abbrev-ref', 'HEAD'], { cwd, gitBinaryPath })
+    await runGitOrThrow(buildRevParseAbbrevRefArgs('HEAD'), { cwd, gitBinaryPath })
   ).trim()
 
   if (currentBranch === 'HEAD') {
@@ -163,9 +162,17 @@ export async function pushRemote(
 
   const pushBranch = branch?.trim() || currentBranch
   const useUpstream = setUpstream || !(await branchHasUpstream(cwd, gitBinaryPath))
-  if (useUpstream) args.push('-u')
-  args.push(pushRemoteName, pushBranch)
-  await runGitOrThrow(args, { cwd, gitBinaryPath })
+
+  await runGitOrThrow(
+    buildPushArgs({
+      remote: pushRemoteName,
+      branch: pushBranch,
+      setUpstream: useUpstream,
+      force,
+      pushSubmoduleRecursion
+    }),
+    { cwd, gitBinaryPath }
+  )
 }
 
 export async function pullRemote(
@@ -177,14 +184,15 @@ export async function pullRemote(
   submoduleRecursion: SubmoduleRecursion = 'none'
 ): Promise<void> {
   const pullRemoteName = await resolveRemoteName(cwd, gitBinaryPath, remote)
-  const args = ['pull']
-  if (rebase) args.push('--rebase')
-  args.push(...submoduleRecursionFetchArgs(submoduleRecursion))
-  args.push(pullRemoteName)
-  if (branch?.trim()) {
-    args.push(branch.trim())
-  }
-  await runGitOrThrow(args, { cwd, gitBinaryPath })
+  await runGitOrThrow(
+    buildPullArgs({
+      remote: pullRemoteName,
+      branch,
+      rebase,
+      submoduleRecursion
+    }),
+    { cwd, gitBinaryPath }
+  )
 }
 
 export async function remoteRename(
@@ -193,7 +201,7 @@ export async function remoteRename(
   oldName: string,
   newName: string
 ): Promise<void> {
-  await runGitOrThrow(['remote', 'rename', oldName, newName], { cwd, gitBinaryPath })
+  await runGitOrThrow(buildRemoteRenameArgs({ oldName, newName }), { cwd, gitBinaryPath })
 }
 
 export async function remoteSetUrl(
@@ -203,8 +211,5 @@ export async function remoteSetUrl(
   url: string,
   push = false
 ): Promise<void> {
-  const args = ['remote', 'set-url']
-  if (push) args.push('--push')
-  args.push(name, url)
-  await runGitOrThrow(args, { cwd, gitBinaryPath })
+  await runGitOrThrow(buildRemoteSetUrlArgs({ name, url, push }), { cwd, gitBinaryPath })
 }

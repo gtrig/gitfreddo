@@ -1,5 +1,6 @@
 import type { RepoChangeEvent } from './repo-change'
 import type { UpdateEvent } from './update'
+import type { GitIpcMethod, GitIpcParams, GitIpcResult } from './git/ipc'
 
 export type { UpdateEvent, UpdateChannel, UpdateUiState, UpdateUiStatus } from './update'
 import type { UpdateChannel } from './update'
@@ -98,7 +99,14 @@ export interface GitFreddoAPI {
   listWorkspaces: () => Promise<string[]>
   getWorkspacePath: () => Promise<string | null>
   disconnect: () => Promise<void>
-  invoke: (method: string, params?: unknown, repoPath?: string) => Promise<unknown>
+  invoke: {
+    <M extends GitIpcMethod>(
+      method: M,
+      params?: GitIpcParams<M>,
+      repoPath?: string
+    ): Promise<GitIpcResult<M>>
+    (method: string, params?: unknown, repoPath?: string): Promise<unknown>
+  }
   pickFile: () => Promise<string | null>
   pickFiles: () => Promise<string[] | null>
   pickGitBinary: () => Promise<string | null>

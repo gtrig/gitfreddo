@@ -1,3 +1,4 @@
+import { buildBlameArgs } from '../../../shared/git/commands'
 import { runGitOrThrow } from '../git-runner'
 
 export interface GitBlameLine {
@@ -75,9 +76,9 @@ export async function fileBlame(
   path: string,
   ref?: string
 ): Promise<GitBlameLine[]> {
-  const args = ['blame', '--line-porcelain']
-  if (ref?.trim()) args.push(ref.trim())
-  args.push('--', path)
-  const stdout = await runGitOrThrow(args, { cwd, gitBinaryPath })
+  const stdout = await runGitOrThrow(buildBlameArgs({ path, ref: ref?.trim() }), {
+    cwd,
+    gitBinaryPath
+  })
   return parseBlamePorcelain(stdout)
 }

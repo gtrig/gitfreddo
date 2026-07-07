@@ -93,7 +93,7 @@ export async function aiFill(config: AiClientConfig, params: AiFillParams): Prom
         { role: 'system', content: system },
         { role: 'user', content: user }
       ],
-      temperature: 0.4,
+      // temperature: 0.4,
       max_tokens: 100000,
       stream: false
     })

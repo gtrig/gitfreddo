@@ -1,17 +1,14 @@
+import {
+  buildPushDeleteTagArgs,
+  buildPushTagArgs,
+  buildTagCreateArgs,
+  buildTagDeleteArgs,
+  buildTagListArgs,
+  buildTagRenameArgs
+} from '../../../shared/git/commands'
 import { runGitOrThrow } from '../git-runner'
 import { resolveRemoteName } from './remote'
 import type { GitTag } from '../types'
-
-const TAG_FIELD_SEPARATOR = '\t'
-
-const TAG_LIST_FORMAT = [
-  '%(refname)',
-  '%(objectname)',
-  '%(*objectname)',
-  '%(objecttype)',
-  '%(creatordate:iso8601)',
-  '%(contents:subject)'
-].join('%09')
 
 export function parseTagRef(refname: string): { name: string; isRemote: boolean; remote?: string } | null {
   const trimmed = refname.trim()
@@ -28,6 +25,8 @@ export function parseTagRef(refname: string): { name: string; isRemote: boolean;
 
   return null
 }
+
+const TAG_FIELD_SEPARATOR = '\t'
 
 export function parseTagLine(line: string): GitTag | null {
   const normalized = line.replace(/\r?\n$/, '')
@@ -55,16 +54,7 @@ export function parseTagLine(line: string): GitTag | null {
 }
 
 export async function tagList(cwd: string, gitBinaryPath: string): Promise<GitTag[]> {
-  const stdout = await runGitOrThrow(
-    [
-      'for-each-ref',
-      '--sort=-creatordate',
-      'refs/tags',
-      'refs/remotes/*/tags',
-      `--format=${TAG_LIST_FORMAT}`
-    ],
-    { cwd, gitBinaryPath }
-  )
+  const stdout = await runGitOrThrow(buildTagListArgs(), { cwd, gitBinaryPath })
 
   if (!stdout.trim()) return []
 
@@ -95,23 +85,20 @@ export async function tagCreate(
     throw new Error('Tag name is required.')
   }
 
-  const args = ['tag']
-  if (sign) args.push('-s')
   const trimmedMessage = message?.trim()
-  if (trimmedMessage) {
-    args.push('-a', trimmedName, '-m', trimmedMessage)
-  } else {
-    if (sign) {
-      throw new Error('Signing requires an annotated tag message.')
-    }
-    args.push(trimmedName)
+  if (sign && !trimmedMessage) {
+    throw new Error('Signing requires an annotated tag message.')
   }
 
-  if (target?.trim()) {
-    args.push(target.trim())
-  }
-
-  await runGitOrThrow(args, { cwd, gitBinaryPath })
+  await runGitOrThrow(
+    buildTagCreateArgs({
+      name: trimmedName,
+      target: target?.trim(),
+      message: trimmedMessage,
+      sign
+    }),
+    { cwd, gitBinaryPath }
+  )
 }
 
 function resolveLocalTagName(name: string): string {
@@ -135,12 +122,15 @@ export async function tagDelete(
   const deleteRemote = (Boolean(remote?.trim()) && !alsoDeleteRemote) || Boolean(alsoDeleteRemote)
 
   if (deleteLocal) {
-    await runGitOrThrow(['tag', '-d', tagRef], { cwd, gitBinaryPath })
+    await runGitOrThrow(buildTagDeleteArgs(tagRef), { cwd, gitBinaryPath })
   }
 
   if (deleteRemote) {
     const remoteName = await resolveRemoteName(cwd, gitBinaryPath, remote)
-    await runGitOrThrow(['push', remoteName, `:refs/tags/${tagRef}`], { cwd, gitBinaryPath })
+    await runGitOrThrow(buildPushDeleteTagArgs({ remote: remoteName, tag: tagRef }), {
+      cwd,
+      gitBinaryPath
+    })
   }
 }
 
@@ -157,11 +147,17 @@ export async function tagPush(
     const tagRef = trimmedName.includes('/')
       ? trimmedName.slice(trimmedName.indexOf('/') + 1)
       : trimmedName
-    await runGitOrThrow(['push', remoteName, tagRef], { cwd, gitBinaryPath })
+    await runGitOrThrow(buildPushTagArgs({ remote: remoteName, tag: tagRef }), {
+      cwd,
+      gitBinaryPath
+    })
     return
   }
 
-  await runGitOrThrow(['push', remoteName, '--tags'], { cwd, gitBinaryPath })
+  await runGitOrThrow(buildPushTagArgs({ remote: remoteName, allTags: true }), {
+    cwd,
+    gitBinaryPath
+  })
 }
 
 export async function tagRename(
@@ -171,5 +167,8 @@ export async function tagRename(
   newName: string
 ): Promise<void> {
   const localOld = oldName.includes('/') ? oldName.slice(oldName.indexOf('/') + 1) : oldName
-  await runGitOrThrow(['tag', localOld, newName.trim()], { cwd, gitBinaryPath })
+  await runGitOrThrow(buildTagRenameArgs({ oldName: localOld, newName: newName.trim() }), {
+    cwd,
+    gitBinaryPath
+  })
 }

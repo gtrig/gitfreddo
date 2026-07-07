@@ -1,5 +1,13 @@
+import {
+  buildBisectBadArgs,
+  buildBisectGoodArgs,
+  buildBisectResetArgs,
+  buildBisectStartArgs,
+  bisectLog,
+  buildRevParseHeadArgs
+} from '../../../shared/git/commands'
 import { readGitMetadataFile } from '../git-dir'
-import { runGit, runGitOrThrow } from '../git-runner'
+import { runCommand, runGitOrThrow } from '../git-runner'
 
 export interface GitBisectStatus {
   active: boolean
@@ -18,12 +26,12 @@ export async function bisectStatus(
     return { active: false }
   }
 
-  const result = await runGit(['bisect', 'log'], { cwd, gitBinaryPath })
+  const result = await runCommand(bisectLog, undefined as never, { cwd, gitBinaryPath })
   const lines = result.stdout.trim().split('\n').filter(Boolean)
   const good = lines.find((line) => line.startsWith('good'))
   const bad = lines.find((line) => line.startsWith('bad'))
 
-  const head = (await runGitOrThrow(['rev-parse', 'HEAD'], { cwd, gitBinaryPath })).trim()
+  const head = (await runGitOrThrow(buildRevParseHeadArgs(), { cwd, gitBinaryPath })).trim()
 
   return {
     active: true,
@@ -39,23 +47,17 @@ export async function bisectStart(
   badRef: string,
   goodRef?: string
 ): Promise<void> {
-  const args = ['bisect', 'start', badRef]
-  if (goodRef?.trim()) args.push(goodRef.trim())
-  await runGitOrThrow(args, { cwd, gitBinaryPath })
+  await runGitOrThrow(buildBisectStartArgs({ badRef, goodRef }), { cwd, gitBinaryPath })
 }
 
 export async function bisectGood(cwd: string, gitBinaryPath: string, ref?: string): Promise<void> {
-  const args = ['bisect', 'good']
-  if (ref?.trim()) args.push(ref.trim())
-  await runGitOrThrow(args, { cwd, gitBinaryPath })
+  await runGitOrThrow(buildBisectGoodArgs(ref), { cwd, gitBinaryPath })
 }
 
 export async function bisectBad(cwd: string, gitBinaryPath: string, ref?: string): Promise<void> {
-  const args = ['bisect', 'bad']
-  if (ref?.trim()) args.push(ref.trim())
-  await runGitOrThrow(args, { cwd, gitBinaryPath })
+  await runGitOrThrow(buildBisectBadArgs(ref), { cwd, gitBinaryPath })
 }
 
 export async function bisectReset(cwd: string, gitBinaryPath: string): Promise<void> {
-  await runGitOrThrow(['bisect', 'reset'], { cwd, gitBinaryPath })
+  await runGitOrThrow(buildBisectResetArgs(), { cwd, gitBinaryPath })
 }

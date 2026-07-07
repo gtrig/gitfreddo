@@ -10,6 +10,7 @@ import { useContextMenu } from '@/hooks/useContextMenu'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { matchesFilter } from '@/lib/workspace/branchTree'
 import { tagCheckoutRef } from '@/lib/format/tagNames'
+import { detachedRefCheckoutParams } from '@/lib/git/branchCheckout'
 import { tagContextMenuItems } from '@/lib/context-menus/sidebarContextMenus'
 import { CreateTagModal } from '@/components/Tags/CreateTagModal'
 import { RenameTagModal } from '@/components/Tags/RenameTagModal'
@@ -76,7 +77,7 @@ export function TagsSection({
               {
                 defaultRemote,
                 onSelectCommit,
-                onCheckout: (name) => void checkout.mutateAsync({ name }),
+                onCheckout: (params) => void checkout.mutateAsync(params),
                 onPush: (name, remote) => void pushTag.mutateAsync({ name, remote }),
                 onRename: (tag) => setRenameTag(tag),
                 onDelete: (tag, remote) => setPendingDelete({ tag, remote })
@@ -99,7 +100,7 @@ export function TagsSection({
                 onClick={() => onSelectCommit(tag.target)}
                 onDoubleClick={() => {
                   if (!tag.isRemote) {
-                    void checkout.mutateAsync({ name: tagCheckoutRef(tag.name) })
+                    void checkout.mutateAsync(detachedRefCheckoutParams(tagCheckoutRef(tag.name)))
                   }
                 }}
               />

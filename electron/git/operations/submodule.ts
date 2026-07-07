@@ -1,6 +1,19 @@
 import { existsSync } from 'fs'
 import { resolve } from 'path'
 import {
+  buildGitmodulesConfigArgs,
+  buildLsFilesArgs,
+  buildLsFilesMatchArgs,
+  buildRmArgs,
+  buildSubmoduleAddArgs,
+  buildSubmoduleDeinitArgs,
+  buildSubmoduleInitArgs,
+  buildSubmoduleSetUrlArgs,
+  buildSubmoduleStatusArgs,
+  buildSubmoduleSyncArgs,
+  buildSubmoduleUpdateArgs
+} from '../../../shared/git/commands'
+import {
   parseGitmodulesConfig,
   parseSubmoduleStatusLine,
   submoduleStatusFromPrefix,
@@ -19,10 +32,7 @@ export async function submoduleList(
 
   let configStdout = ''
   try {
-    configStdout = await runGitOrThrow(['config', '--file', '.gitmodules', '--list'], {
-      cwd,
-      gitBinaryPath
-    })
+    configStdout = await runGitOrThrow(buildGitmodulesConfigArgs(), { cwd, gitBinaryPath })
   } catch {
     return []
   }
@@ -32,10 +42,7 @@ export async function submoduleList(
 
   const statusByPath = new Map<string, ReturnType<typeof parseSubmoduleStatusLine>>()
   try {
-    const statusStdout = await runGitOrThrow(['submodule', 'status', '--recursive'], {
-      cwd,
-      gitBinaryPath
-    })
+    const statusStdout = await runGitOrThrow(buildSubmoduleStatusArgs(), { cwd, gitBinaryPath })
     for (const line of statusStdout.split('\n')) {
       const parsed = parseSubmoduleStatusLine(line)
       if (parsed) statusByPath.set(parsed.path, parsed)
@@ -46,7 +53,7 @@ export async function submoduleList(
 
   const indexByPath = new Map<string, string>()
   try {
-    const lsStdout = await runGitOrThrow(['ls-files', '-s'], { cwd, gitBinaryPath })
+    const lsStdout = await runGitOrThrow(buildLsFilesArgs(), { cwd, gitBinaryPath })
     for (const line of lsStdout.split('\n')) {
       const parts = line.trim().split(/\s+/)
       if (parts.length < 4 || parts[0] !== '160000') continue
@@ -79,12 +86,14 @@ export async function submoduleAdd(
   gitBinaryPath: string,
   params: { url: string; path: string; branch?: string }
 ): Promise<void> {
-  const args = ['-c', 'protocol.file.allow=always', 'submodule', 'add']
-  if (params.branch?.trim()) {
-    args.push('-b', params.branch.trim())
-  }
-  args.push(params.url.trim(), params.path.trim())
-  await runGitOrThrow(args, { cwd, gitBinaryPath })
+  await runGitOrThrow(
+    buildSubmoduleAddArgs({
+      url: params.url.trim(),
+      path: params.path.trim(),
+      branch: params.branch
+    }),
+    { cwd, gitBinaryPath }
+  )
 }
 
 export async function submoduleInit(
@@ -93,10 +102,7 @@ export async function submoduleInit(
   paths?: string[],
   recursive = false
 ): Promise<void> {
-  const args = ['submodule', 'init']
-  if (recursive) args.push('--recursive')
-  if (paths && paths.length > 0) args.push('--', ...paths)
-  await runGitOrThrow(args, { cwd, gitBinaryPath })
+  await runGitOrThrow(buildSubmoduleInitArgs({ paths, recursive }), { cwd, gitBinaryPath })
 }
 
 export async function submoduleUpdate(
@@ -111,14 +117,7 @@ export async function submoduleUpdate(
     rebase?: boolean
   } = {}
 ): Promise<void> {
-  const args = ['-c', 'protocol.file.allow=always', 'submodule', 'update']
-  if (params.init) args.push('--init')
-  if (params.recursive) args.push('--recursive')
-  if (params.remote) args.push('--remote')
-  if (params.merge) args.push('--merge')
-  if (params.rebase) args.push('--rebase')
-  if (params.paths && params.paths.length > 0) args.push('--', ...params.paths)
-  await runGitOrThrow(args, { cwd, gitBinaryPath })
+  await runGitOrThrow(buildSubmoduleUpdateArgs(params), { cwd, gitBinaryPath })
 }
 
 export async function submoduleSync(
@@ -127,10 +126,7 @@ export async function submoduleSync(
   paths?: string[],
   recursive = false
 ): Promise<void> {
-  const args = ['submodule', 'sync']
-  if (recursive) args.push('--recursive')
-  if (paths && paths.length > 0) args.push('--', ...paths)
-  await runGitOrThrow(args, { cwd, gitBinaryPath })
+  await runGitOrThrow(buildSubmoduleSyncArgs({ paths, recursive }), { cwd, gitBinaryPath })
 }
 
 export async function submoduleDeinit(
@@ -139,10 +135,7 @@ export async function submoduleDeinit(
   path: string,
   force = false
 ): Promise<void> {
-  const args = ['submodule', 'deinit']
-  if (force) args.push('-f')
-  args.push('--', path)
-  await runGitOrThrow(args, { cwd, gitBinaryPath })
+  await runGitOrThrow(buildSubmoduleDeinitArgs({ path, force }), { cwd, gitBinaryPath })
 }
 
 export async function submoduleRemove(
@@ -156,7 +149,7 @@ export async function submoduleRemove(
   } catch {
     if (!force) throw new Error(`Failed to deinitialize submodule at ${path}`)
   }
-  await runGitOrThrow(['rm', '-f', '--', path], { cwd, gitBinaryPath })
+  await runGitOrThrow(buildRmArgs({ paths: [path], force: true }), { cwd, gitBinaryPath })
 }
 
 export async function submoduleSetUrl(
@@ -165,7 +158,7 @@ export async function submoduleSetUrl(
   path: string,
   url: string
 ): Promise<void> {
-  await runGitOrThrow(['submodule', 'set-url', '--', path, url], { cwd, gitBinaryPath })
+  await runGitOrThrow(buildSubmoduleSetUrlArgs({ path, url }), { cwd, gitBinaryPath })
 }
 
 export async function isSubmodulePath(
@@ -173,7 +166,7 @@ export async function isSubmodulePath(
   gitBinaryPath: string,
   path: string
 ): Promise<boolean> {
-  const result = await runGit(['ls-files', '-s', '--', path], { cwd, gitBinaryPath })
+  const result = await runGit(buildLsFilesMatchArgs({ path }), { cwd, gitBinaryPath })
   if (result.code !== 0) return false
   const mode = result.stdout.trim().split(/\s+/)[0]
   return mode === '160000'

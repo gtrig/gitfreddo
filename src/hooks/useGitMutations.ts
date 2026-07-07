@@ -1,5 +1,7 @@
 import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import type { GitIpcMethod } from '@shared/git/ipc'
+import { gitIpcInvalidates } from '@shared/git/ipc'
 import { useInvalidateGit } from '@/hooks/useInvalidateGit'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
@@ -18,13 +20,14 @@ export function useGitMutations() {
   const repoPath = useWorkspaceStore((s) => s.activePath)
   const showToast = useToastStore((s) => s.show)
 
-  const wrap = (method: string, invalidateKeys: string[] = []) => {
+  const wrap = <M extends GitIpcMethod>(method: M, invalidateKeys?: string[]) => {
     const remoteAction = REMOTE_ACTION_KEYS[method]
+    const keys = invalidateKeys ?? [...gitIpcInvalidates(method)]
 
     return useMutation({
       mutationFn: async (params?: unknown) => {
         if (!repoPath) throw new Error(t('toast.noRepoConnected'))
-        return window.gitfreddo.invoke(method, params)
+        return window.gitfreddo.invoke(method, params as never)
       },
       onMutate: () => {
         useOperationStore.getState().begin()
@@ -33,7 +36,7 @@ export function useGitMutations() {
         useOperationStore.getState().end()
       },
       onSuccess: () => {
-        invalidate(...invalidateKeys)
+        invalidate(...keys)
         if (remoteAction) {
           showToast(t(remoteAction.success), 'success')
         }
@@ -48,72 +51,72 @@ export function useGitMutations() {
   }
 
   return {
-    checkout: wrap('branch.checkout', ['branch.list', 'working.status', 'log.graph', 'status']),
-    createBranch: wrap('branch.create', ['branch.list']),
-    deleteBranch: wrap('branch.delete', ['branch.list']),
-    renameBranch: wrap('branch.rename', ['branch.list', 'log.graph']),
-    checkoutRemote: wrap('branch.checkoutRemote', ['branch.list', 'working.status', 'log.graph', 'status']),
-    setUpstream: wrap('branch.setUpstream', ['branch.list']),
-    unsetUpstream: wrap('branch.unsetUpstream', ['branch.list']),
-    deleteRemoteBranch: wrap('branch.deleteRemote', ['branch.list']),
-    stageAdd: wrap('stage.add', ['working.status']),
-    stageReset: wrap('stage.reset', ['working.status']),
-    workingDiscard: wrap('working.discard', ['working.status']),
-    workingRemove: wrap('working.remove', ['working.status']),
-    workingClean: wrap('working.clean', ['working.status']),
-    workingRename: wrap('working.rename', ['working.status']),
-    workingAddToGitignore: wrap('working.addToGitignore', ['working.status']),
-    submoduleAdd: wrap('submodule.add', ['submodule.list', 'working.status']),
-    submoduleInit: wrap('submodule.init', ['submodule.list', 'working.status']),
-    submoduleUpdate: wrap('submodule.update', ['submodule.list', 'working.status']),
-    submoduleSync: wrap('submodule.sync', ['submodule.list']),
-    submoduleDeinit: wrap('submodule.deinit', ['submodule.list', 'working.status']),
-    submoduleRemove: wrap('submodule.remove', ['submodule.list', 'working.status']),
-    submoduleSetUrl: wrap('submodule.setUrl', ['submodule.list']),
-    stageApplyPatch: wrap('stage.applyPatch', ['working.status']),
-    commit: wrap('commit.create', ['working.status', 'log.graph', 'status']),
-    rewordCommit: wrap('commit.reword', ['working.status', 'log.graph', 'status']),
-    fetch: wrap('fetch', ['branch.list', 'log.graph', 'working.status', 'tag.list']),
-    push: wrap('push', ['branch.list', 'working.status']),
-    pull: wrap('pull', ['branch.list', 'log.graph', 'working.status']),
-    merge: wrap('merge.start', ['branch.list', 'working.status', 'log.graph', 'merge.status']),
-    mergeAbort: wrap('merge.abort', ['working.status', 'merge.status']),
-    mergeContinue: wrap('merge.continue', ['working.status', 'log.graph', 'merge.status']),
-    rebaseStart: wrap('rebase.start', ['branch.list', 'working.status', 'log.graph', 'merge.status']),
-    rebaseInteractive: wrap('rebase.interactive', ['working.status', 'log.graph', 'status', 'branch.list']),
-    rebaseAbort: wrap('rebase.abort', ['working.status', 'merge.status']),
-    rebaseContinue: wrap('rebase.continue', ['working.status', 'log.graph', 'merge.status']),
-    rebaseSkip: wrap('rebase.skip', ['working.status', 'log.graph', 'merge.status']),
-    cherryPickContinue: wrap('cherry-pick.continue', ['working.status', 'log.graph', 'merge.status']),
-    cherryPickAbort: wrap('cherry-pick.abort', ['working.status', 'merge.status']),
-    cherryPickSkip: wrap('cherry-pick.skip', ['working.status', 'log.graph', 'merge.status']),
-    cherryPick: wrap('cherry-pick', ['working.status', 'log.graph', 'merge.status']),
-    squashCommits: wrap('rebase.squash', ['working.status', 'log.graph', 'status']),
-    dropCommits: wrap('rebase.drop', ['working.status', 'log.graph', 'status', 'branch.list']),
-    revertCommit: wrap('commit.revert', ['working.status', 'log.graph', 'status', 'branch.list']),
-    reset: wrap('reset', ['working.status', 'log.graph', 'status']),
-    resetHead: wrap('reset.head', ['working.status', 'log.graph', 'status', 'branch.list']),
-    undoLast: wrap('undo.last', ['working.status', 'log.graph', 'status', 'branch.list']),
-    stashPush: wrap('stash.push', ['working.status', 'stash.list']),
-    stashPop: wrap('stash.pop', ['working.status', 'stash.list']),
-    stashApply: wrap('stash.apply', ['working.status']),
-    stashDrop: wrap('stash.drop', ['stash.list']),
-    worktreeAdd: wrap('worktree.add', ['worktree.list', 'branch.list']),
-    worktreeRemove: wrap('worktree.remove', ['worktree.list', 'branch.list']),
-    worktreePrune: wrap('worktree.prune', ['worktree.list']),
-    remoteAdd: wrap('remote.add', ['remote.list']),
-    remoteRemove: wrap('remote.remove', ['remote.list', 'branch.list', 'tag.list']),
-    remoteRename: wrap('remote.rename', ['remote.list', 'branch.list']),
-    remoteSetUrl: wrap('remote.setUrl', ['remote.list']),
-    createTag: wrap('tag.create', ['tag.list', 'log.graph']),
-    deleteTag: wrap('tag.delete', ['tag.list', 'log.graph']),
-    renameTag: wrap('tag.rename', ['tag.list', 'log.graph']),
-    pushTag: wrap('tag.push', ['tag.list']),
-    stashBranch: wrap('stash.branch', ['stash.list', 'branch.list', 'working.status']),
-    bisectStart: wrap('bisect.start', ['merge.status', 'working.status']),
-    bisectGood: wrap('bisect.good', ['merge.status', 'log.graph']),
-    bisectBad: wrap('bisect.bad', ['merge.status', 'log.graph']),
-    bisectReset: wrap('bisect.reset', ['merge.status', 'log.graph', 'working.status']),
-    notesAdd: wrap('notes.add', ['log.graph']),
+    checkout: wrap('branch.checkout'),
+    createBranch: wrap('branch.create'),
+    deleteBranch: wrap('branch.delete'),
+    renameBranch: wrap('branch.rename'),
+    checkoutRemote: wrap('branch.checkoutRemote'),
+    setUpstream: wrap('branch.setUpstream'),
+    unsetUpstream: wrap('branch.unsetUpstream'),
+    deleteRemoteBranch: wrap('branch.deleteRemote'),
+    stageAdd: wrap('stage.add'),
+    stageReset: wrap('stage.reset'),
+    workingDiscard: wrap('working.discard'),
+    workingRemove: wrap('working.remove'),
+    workingClean: wrap('working.clean'),
+    workingRename: wrap('working.rename'),
+    workingAddToGitignore: wrap('working.addToGitignore'),
+    submoduleAdd: wrap('submodule.add'),
+    submoduleInit: wrap('submodule.init'),
+    submoduleUpdate: wrap('submodule.update'),
+    submoduleSync: wrap('submodule.sync'),
+    submoduleDeinit: wrap('submodule.deinit'),
+    submoduleRemove: wrap('submodule.remove'),
+    submoduleSetUrl: wrap('submodule.setUrl'),
+    stageApplyPatch: wrap('stage.applyPatch'),
+    commit: wrap('commit.create'),
+    rewordCommit: wrap('commit.reword'),
+    fetch: wrap('fetch'),
+    push: wrap('push'),
+    pull: wrap('pull'),
+    merge: wrap('merge.start'),
+    mergeAbort: wrap('merge.abort'),
+    mergeContinue: wrap('merge.continue'),
+    rebaseStart: wrap('rebase.start'),
+    rebaseInteractive: wrap('rebase.interactive'),
+    rebaseAbort: wrap('rebase.abort'),
+    rebaseContinue: wrap('rebase.continue'),
+    rebaseSkip: wrap('rebase.skip'),
+    cherryPickContinue: wrap('cherry-pick.continue'),
+    cherryPickAbort: wrap('cherry-pick.abort'),
+    cherryPickSkip: wrap('cherry-pick.skip'),
+    cherryPick: wrap('cherry-pick'),
+    squashCommits: wrap('rebase.squash'),
+    dropCommits: wrap('rebase.drop'),
+    revertCommit: wrap('commit.revert'),
+    reset: wrap('reset'),
+    resetHead: wrap('reset.head'),
+    undoLast: wrap('undo.last'),
+    stashPush: wrap('stash.push'),
+    stashPop: wrap('stash.pop'),
+    stashApply: wrap('stash.apply'),
+    stashDrop: wrap('stash.drop'),
+    worktreeAdd: wrap('worktree.add'),
+    worktreeRemove: wrap('worktree.remove'),
+    worktreePrune: wrap('worktree.prune'),
+    remoteAdd: wrap('remote.add'),
+    remoteRemove: wrap('remote.remove'),
+    remoteRename: wrap('remote.rename'),
+    remoteSetUrl: wrap('remote.setUrl'),
+    createTag: wrap('tag.create'),
+    deleteTag: wrap('tag.delete'),
+    renameTag: wrap('tag.rename'),
+    pushTag: wrap('tag.push'),
+    stashBranch: wrap('stash.branch'),
+    bisectStart: wrap('bisect.start'),
+    bisectGood: wrap('bisect.good'),
+    bisectBad: wrap('bisect.bad'),
+    bisectReset: wrap('bisect.reset'),
+    notesAdd: wrap('notes.add')
   }
 }

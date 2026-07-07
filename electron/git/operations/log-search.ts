@@ -1,4 +1,10 @@
-import { buildLogGraphArgs, parseLogGraphOutput } from '../../../shared/gitLog'
+import {
+  buildLogFileArgs,
+  buildLogGraphArgs,
+  buildLogPickaxeArgs,
+  buildLogSearchArgs,
+  parseLogGraphOutput
+} from '../../../shared/gitLog'
 import { runGitOrThrow } from '../git-runner'
 import type { GitCommit } from '../types'
 
@@ -8,9 +14,7 @@ export async function logFile(
   path: string,
   maxCount = 100
 ): Promise<GitCommit[]> {
-  const args = buildLogGraphArgs(maxCount)
-  args.push('--follow', '--', path)
-  const stdout = await runGitOrThrow(args, { cwd, gitBinaryPath })
+  const stdout = await runGitOrThrow(buildLogFileArgs({ maxCount, path }), { cwd, gitBinaryPath })
   return parseLogGraphOutput(stdout) as GitCommit[]
 }
 
@@ -21,13 +25,10 @@ export async function logPickaxe(
   mode: 'pickaxe' | 'regex' = 'pickaxe',
   maxCount = 100
 ): Promise<GitCommit[]> {
-  const args = buildLogGraphArgs(maxCount)
-  if (mode === 'regex') {
-    args.push('-G', query)
-  } else {
-    args.push('-S', query)
-  }
-  const stdout = await runGitOrThrow(args, { cwd, gitBinaryPath })
+  const stdout = await runGitOrThrow(
+    buildLogPickaxeArgs({ maxCount, query, mode }),
+    { cwd, gitBinaryPath }
+  )
   return parseLogGraphOutput(stdout) as GitCommit[]
 }
 
@@ -43,11 +44,12 @@ export async function logSearch(
   }
 ): Promise<GitCommit[]> {
   const maxCount = options.maxCount ?? 200
-  const args = buildLogGraphArgs(maxCount)
-  if (options.author?.trim()) args.push(`--author=${options.author.trim()}`)
-  if (options.grep?.trim()) args.push(`--grep=${options.grep.trim()}`, '-i')
-  if (options.since?.trim()) args.push(`--since=${options.since.trim()}`)
-  if (options.until?.trim()) args.push(`--until=${options.until.trim()}`)
-  const stdout = await runGitOrThrow(args, { cwd, gitBinaryPath })
+  const stdout = await runGitOrThrow(buildLogSearchArgs({ maxCount, ...options }), {
+    cwd,
+    gitBinaryPath
+  })
   return parseLogGraphOutput(stdout) as GitCommit[]
 }
+
+// Re-export for tests that import buildLogGraphArgs from this module
+export { buildLogGraphArgs }

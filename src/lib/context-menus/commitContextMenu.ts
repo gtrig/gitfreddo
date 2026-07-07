@@ -1,4 +1,6 @@
 import type { TFunction } from 'i18next'
+import type { BranchCheckoutParams } from '@shared/git'
+import { detachedRefCheckoutParams, localBranchCheckoutParams } from '@/lib/git/branchCheckout'
 import type { ResetMode } from '@/components/DetailPanel/DeleteCommitModal'
 import type { ContextMenuItem } from '@/components/Ui/ContextMenu'
 import {
@@ -17,7 +19,7 @@ export interface CommitContextMenuActions extends MultiCommitContextMenuActions 
   copyHash: (hash: string) => void
   copyShortHash: (shortHash: string) => void
   explainCommits: (commits: GitCommit[]) => void
-  checkout: (ref: string) => void
+  checkout: (params: BranchCheckoutParams) => void
   mergeBranch: (branchName: string) => void
   createWorktreeFromCommit: (commit: GitCommit) => void
   createBranch: (hash: string) => void
@@ -267,7 +269,7 @@ export function buildCommitContextMenuItems({
         id: `checkout-${branchName}`,
         label: t ? t('contextMenu.checkoutBranch', { branch: branchName }) : `Checkout ${branchName}`,
         disabled: gitBusy,
-        onClick: () => actions.checkout(branchName)
+        onClick: () => actions.checkout(localBranchCheckoutParams(branchName))
       })
     }
   } else {
@@ -275,7 +277,7 @@ export function buildCommitContextMenuItems({
       id: 'checkout',
       label: t ? t('contextMenu.checkoutCommitDetached') : 'Checkout commit (detached HEAD)',
       disabled: gitBusy,
-      onClick: () => actions.checkout(commit.hash)
+      onClick: () => actions.checkout(detachedRefCheckoutParams(commit.hash))
     })
   }
 
