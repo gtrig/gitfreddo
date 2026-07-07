@@ -116,7 +116,9 @@ export class RepoManager {
       case 'branch.list':
         return branchOps.branchList(cwd, git)
       case 'branch.checkout':
-        return branchOps.branchCheckout(cwd, git, p.name as string)
+        return branchOps.branchCheckout(cwd, git, p.name as string, {
+          detach: p.detach === true ? true : p.detach === false ? false : undefined
+        })
       case 'branch.create':
         return branchOps.branchCreate(cwd, git, p.name as string, p.startPoint as string | undefined)
       case 'branch.delete':
