@@ -145,6 +145,16 @@ describe('hunk helpers', () => {
     expect(diffStatsFromSplitRows(split)).toEqual(diffStatsFromRows(rows))
     expect(rowsToSplitDisplay(rows).length).toBeGreaterThan(0)
   })
+
+  it('builds git-apply-compatible hunk patches without a blank line before @@', () => {
+    const group = groupRowsByHunk(rows)[0]
+    expect(group).toBeDefined()
+    const patch = buildHunkPatch('src/a.go', group!)
+    const lines = patch.split('\n')
+    const plusIndex = lines.findIndex((line) => line.startsWith('+++'))
+    expect(plusIndex).toBeGreaterThanOrEqual(0)
+    expect(lines[plusIndex + 1]).toMatch(/^@@/)
+  })
 })
 
 describe('isBinaryContent', () => {

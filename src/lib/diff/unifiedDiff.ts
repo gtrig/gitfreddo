@@ -255,7 +255,7 @@ export function rowsToSplitDisplay(rows: DiffRow[]): SplitDiffRow[] {
 
 export function buildHunkPatch(path: string, rows: DiffRow[]): string {
   const formattedPath = path.startsWith('/') ? path.slice(1) : path
-  const lines: string[] = [`--- a/${formattedPath}`, `+++ b/${formattedPath}`, ``]
+  const lines: string[] = [`--- a/${formattedPath}`, `+++ b/${formattedPath}`]
   for (const row of rows) {
     if (row.kind === 'hunk') {
       lines.push(row.content)
