@@ -5,6 +5,7 @@ export type AiFillPurpose =
   | 'resolve_conflict'
   | 'analyze_changes'
   | 'explain_commit'
+  | 'pull_request'
 
 export interface AiComposeCommitProposal {
   summary: string
@@ -46,6 +47,11 @@ export interface AiExplainCommitResult {
   commits: AiExplainCommitEntry[]
 }
 
+export interface AiPullRequestProposal {
+  title: string
+  body: string
+}
+
 export interface AiConflictResolutionProposal {
   hunkId: number
   text: string
@@ -57,6 +63,8 @@ export type AiProvider = 'local' | 'api'
 
 export interface AiFillContext {
   branch?: string
+  headBranch?: string
+  baseBranch?: string
   filePaths?: string[]
   stagedFilePaths?: string[]
   unstagedFilePaths?: string[]
@@ -144,7 +152,8 @@ export function buildAiMessages(
   purpose === 'compose_commits' ||
   purpose === 'analyze_changes' ||
   purpose === 'explain_commit' ||
-  purpose === 'resolve_conflict'
+  purpose === 'resolve_conflict' ||
+  purpose === 'pull_request'
     ? 'You write concise, technical text for git workflows. ' +
         'Respond with only valid JSON — no quotes around the whole payload, markdown fences, or preamble.'
     : 'You write concise, technical text for git workflows. ' +
@@ -283,6 +292,26 @@ export function buildAiMessages(
       )
       break
     }
+    case 'pull_request':
+      user = appendCommitMessageInstructions(
+        'Write a GitHub pull request title and description for the changes on the head branch.\n' +
+          (context.headBranch ? `Head branch: ${context.headBranch}\n` : '') +
+          (context.baseBranch ? `Base branch: ${context.baseBranch}\n` : '') +
+          (files ? `Changed files:\n${files}\n` : '') +
+          diffBlock +
+          (seed ? `Starting idea:\n${seed}\n` : '') +
+          'Return ONLY JSON with this shape:\n' +
+          '{\n' +
+          '  "title": "concise PR title (≤72 chars)",\n' +
+          '  "body": "Markdown description with summary, key changes, and test notes"\n' +
+          '}\n' +
+          'Rules:\n' +
+          '- Base title and body on the diff and branch context when provided\n' +
+          '- Body should help reviewers understand what changed, why, and how to test\n' +
+          '- Use markdown lists in the body when helpful',
+        instructions.commitMessage
+      )
+      break
     case 'resolve_conflict': {
       const filePath = context.filePath?.trim()
       const op = context.operationKind ?? 'merge'
@@ -459,6 +488,31 @@ function normalizeAnalysisText(value: unknown): string {
       .join('\n')
   }
   return ''
+}
+
+export function parsePullRequestResponse(text: string): AiPullRequestProposal {
+  const cleaned = stripJsonFences(text)
+  let parsed: unknown
+
+  try {
+    parsed = JSON.parse(cleaned)
+  } catch {
+    throw new Error('AI response was not valid JSON. Try again or adjust your AI settings.')
+  }
+
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('AI response was not a JSON object.')
+  }
+
+  const raw = parsed as { title?: unknown; body?: unknown }
+  const title = typeof raw.title === 'string' ? raw.title.trim() : ''
+  const body = typeof raw.body === 'string' ? raw.body.trim() : ''
+
+  if (!title) {
+    throw new Error('AI returned no PR title.')
+  }
+
+  return { title, body }
 }
 
 export function parseAnalyzeChangesResponse(

@@ -155,6 +155,45 @@ export async function enrichAiContext(
     }
   }
 
+  if (params.purpose === 'pull_request') {
+    const headBranch = params.context?.headBranch?.trim()
+    const baseBranch = params.context?.baseBranch?.trim()
+    if (!headBranch || !baseBranch || params.context?.diffText) {
+      return params
+    }
+
+    try {
+      const diff = await manager.invoke(repoPath, 'diff.commits', {
+        fromRef: baseBranch,
+        toRef: headBranch
+      })
+      const diffText = diff.unified?.trim()
+      if (!diffText) {
+        return params
+      }
+
+      const filePaths = [
+        ...diffText.matchAll(/^\+\+\+ b\/(.+)$/gm)
+      ]
+        .map((match) => match[1]!)
+        .filter((path) => path !== '/dev/null')
+
+      return {
+        ...params,
+        context: {
+          ...params.context,
+          headBranch,
+          baseBranch,
+          branch: headBranch,
+          filePaths: filePaths.length > 0 ? filePaths : params.context?.filePaths,
+          diffText: truncateDiff(diffText)
+        }
+      }
+    } catch {
+      return params
+    }
+  }
+
   if (params.purpose === 'explain_commit') {
     const commits = params.context?.commits
     if (!commits || commits.length === 0 || params.context?.diffText) {
