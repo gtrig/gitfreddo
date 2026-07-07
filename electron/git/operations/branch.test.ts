@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { describe, expect, it } from 'vitest'
-import { branchCheckout, parseBranchLine, parseRemoteBranchRef, stripAnsi } from './branch'
+import { branchCheckout, buildBranchSwitchArgs, parseBranchLine, parseRemoteBranchRef, stripAnsi } from './branch'
 import { runGitOrThrow } from '../git-runner'
 
 function initRepo(dir: string) {
@@ -80,7 +80,66 @@ describe('parseRemoteBranchRef', () => {
   })
 })
 
+describe('buildBranchSwitchArgs', () => {
+  it('places --detach before --end-of-options for detached checkout', () => {
+    expect(buildBranchSwitchArgs('abc123', true)).toEqual([
+      'switch',
+      '--detach',
+      '--end-of-options',
+      'abc123'
+    ])
+  })
+
+  it('omits --detach for branch checkout', () => {
+    expect(buildBranchSwitchArgs('feature/login', false)).toEqual([
+      'switch',
+      '--end-of-options',
+      'feature/login'
+    ])
+  })
+})
+
 describe('branchCheckout', () => {
+  it('checks out a tag in detached HEAD when detach is requested', async () => {
+    const repoDir = mkdtempSync(join(tmpdir(), 'gf-branch-'))
+    try {
+      initRepo(repoDir)
+      const head = (await runGitOrThrow(['rev-parse', 'HEAD'], { cwd: repoDir })).trim()
+      await runGitOrThrow(['tag', 'v1.0', head], { cwd: repoDir })
+
+      await branchCheckout(repoDir, 'git', 'v1.0', { detach: true })
+
+      const current = (await runGitOrThrow(['branch', '--show-current'], { cwd: repoDir })).trim()
+      expect(current).toBe('')
+      const checkedOut = (await runGitOrThrow(['rev-parse', 'HEAD'], { cwd: repoDir })).trim()
+      expect(checkedOut).toBe(head)
+    } finally {
+      rmSync(repoDir, { recursive: true, force: true })
+    }
+  })
+
+  it('checks out a commit in detached HEAD state', async () => {
+    const repoDir = mkdtempSync(join(tmpdir(), 'gf-branch-'))
+    try {
+      initRepo(repoDir)
+      const firstCommit = (
+        await runGitOrThrow(['rev-parse', 'HEAD~0'], { cwd: repoDir })
+      ).trim()
+      writeFileSync(join(repoDir, 'README.md'), 'second\n')
+      execSync('git add README.md', { cwd: repoDir, stdio: 'ignore' })
+      execSync('git commit -m "second"', { cwd: repoDir, stdio: 'ignore' })
+
+      await branchCheckout(repoDir, 'git', firstCommit)
+
+      const head = (await runGitOrThrow(['rev-parse', 'HEAD'], { cwd: repoDir })).trim()
+      expect(head).toBe(firstCommit)
+      const current = (await runGitOrThrow(['branch', '--show-current'], { cwd: repoDir })).trim()
+      expect(current).toBe('')
+    } finally {
+      rmSync(repoDir, { recursive: true, force: true })
+    }
+  })
+
   it('checks out local branches whose names contain slashes', async () => {
     const repoDir = mkdtempSync(join(tmpdir(), 'gf-branch-'))
     const slashBranch = 'topic/sub'

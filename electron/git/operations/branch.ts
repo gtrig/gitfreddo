@@ -1,6 +1,30 @@
 import { runGit, runGitOrThrow } from '../git-runner'
 import type { GitBranch } from '../types'
 
+export function buildBranchSwitchArgs(name: string, detach: boolean): string[] {
+  return detach
+    ? ['switch', '--detach', '--end-of-options', name]
+    : ['switch', '--end-of-options', name]
+}
+
+async function checkoutNeedsDetach(
+  cwd: string,
+  gitBinaryPath: string,
+  name: string
+): Promise<boolean> {
+  const localBranch = await runGit(['rev-parse', '--verify', `refs/heads/${name}`], {
+    cwd,
+    gitBinaryPath
+  })
+  if (localBranch.code === 0) return false
+
+  const commit = await runGit(['rev-parse', '--verify', `${name}^{commit}`], {
+    cwd,
+    gitBinaryPath
+  })
+  return commit.code === 0
+}
+
 export function stripAnsi(text: string): string {
   return text.replace(/\x1B\[[0-9;]*m/g, '')
 }
@@ -92,9 +116,16 @@ export async function branchList(cwd: string, gitBinaryPath: string): Promise<Gi
 export async function branchCheckout(
   cwd: string,
   gitBinaryPath: string,
-  name: string
+  name: string,
+  options?: { detach?: boolean }
 ): Promise<void> {
-  await runGitOrThrow(['switch', '--end-of-options', name], { cwd, gitBinaryPath })
+  const detach =
+    options?.detach === true
+      ? true
+      : options?.detach === false
+        ? false
+        : await checkoutNeedsDetach(cwd, gitBinaryPath, name)
+  await runGitOrThrow(buildBranchSwitchArgs(name, detach), { cwd, gitBinaryPath })
 }
 
 export async function branchCreate(
