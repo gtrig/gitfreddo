@@ -34,6 +34,10 @@
         "title": "Clone a repository",
         "description": "Clone from GitHub, GitLab, or any git remote."
       },
+      "cloneTab": {
+        "url": "URL",
+        "github": "GitHub"
+      },
       "createGithub": {
         "title": "Create on GitHub",
         "description": "Create a new repository on GitHub and clone it locally."
@@ -162,26 +166,27 @@
       "conflictInstructionsPlaceholder": "Prefer minimal, correct merges…"
     },
     "github": {
-      "title": "GitHub",
-      "description": "Sign in to browse repositories, manage pull requests and issues, and authenticate git operations.",
-      "connected": "Connected",
-      "notConnected": "Not connected",
-      "signedInAs": "Signed in as @{{login}}",
-      "noAccount": "No GitHub account linked.",
-      "oauth": "OAuth",
-      "token": "Token",
-      "patPlaceholder": "ghp_…",
-      "enterCode": "Enter this code on GitHub:",
-      "waitingAuth": "Waiting for authorization…",
-      "startingAuth": "Starting device authorization…",
-      "disconnect": "Disconnect",
-      "disconnecting": "Disconnecting…",
-      "uploadSshKey": "Upload SSH key",
-      "uploading": "Uploading…",
-      "connecting": "Connecting…",
-      "connectWithGithub": "Connect with GitHub",
-      "connectWithToken": "Connect with token",
-      "tokenHint": "Token is stored locally in settings."
+      "fork": {
+        "title": "Fork repository",
+        "description": "Create a fork under your GitHub account, then clone it locally.",
+        "connectFirst": "Connect GitHub in Settings → Integrations to fork repositories.",
+        "owner": "Owner",
+        "repo": "Repository",
+        "action": "Fork",
+        "success": "Repository forked.",
+        "missingFields": "Enter owner and repository name."
+      },
+      "repo": {
+        "name": "Repository name",
+        "namePlaceholder": "my-new-repo",
+        "descriptionOptional": "Description (optional)",
+        "descriptionPlaceholder": "Short description",
+        "public": "Public",
+        "private": "Private",
+        "nameRequired": "Repository name is required",
+        "connectFirst": "Connect GitHub in Settings → Integrations to create repositories.",
+        "create": "Create repository"
+      }
     },
     "maintenance": {
       "updates": "Application updates",
@@ -908,8 +913,9 @@
       "searchPlaceholder": "Search repositories…",
       "loading": "Loading repositories…",
       "empty": "No repositories found.",
-      "public": "public",
-      "private": "private"
+        "public": "Public",
+        "private": "Private"
+
     }
   },
   "contextMenu": {
