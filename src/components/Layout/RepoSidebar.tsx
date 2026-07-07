@@ -102,7 +102,7 @@ export function RepoSidebar() {
           isDetached={repoStatus?.isDetached ?? false}
           head={repoStatus?.head}
           onSelectCommit={(hash) => selectTimelineNode('commit', hash)}
-          onCheckout={(name) => void checkout.mutateAsync({ name })}
+          onCheckout={(params) => void checkout.mutateAsync(params)}
           onCreateBranch={() => setCreateOpen(true)}
         />
         <RemoteBranchesSection

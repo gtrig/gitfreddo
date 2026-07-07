@@ -252,7 +252,7 @@ export function CommitTimeline() {
     event.preventDefault()
     if (isStashCommit(commit)) return
 
-    void checkout.mutateAsync({ name: resolveCommitDoubleClickCheckout(commit.hash) })
+    void checkout.mutateAsync(resolveCommitDoubleClickCheckout(commit.hash))
   }
   const {
     state: stashMenuState,
@@ -367,7 +367,7 @@ export function CommitTimeline() {
         return
       }
 
-      void checkout.mutateAsync({ name: action.ref })
+      void checkout.mutateAsync(action.params)
     }
 
   const onRowContextMenu = (commit: GitCommit) => (event: React.MouseEvent) => {
