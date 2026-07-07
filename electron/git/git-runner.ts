@@ -1,6 +1,7 @@
 import { spawn } from 'child_process'
 import { emitLog } from './log-bus'
 import { buildGitEnv } from './credentials'
+import type { GitCommandDescriptor } from '../../shared/git/commands'
 
 export interface GitResult {
   stdout: string
@@ -18,6 +19,15 @@ export interface RunGitOptions {
 
 const DEFAULT_TIMEOUT_MS = 120_000
 const COLOR_OFF_ARGS = ['-c', 'color.ui=never'] as const
+
+function prependConfig(
+  args: readonly string[],
+  config?: readonly (readonly [string, string])[]
+): string[] {
+  if (!config || config.length === 0) return [...args]
+  const configArgs = config.flatMap(([key, value]) => ['-c', `${key}=${value}`])
+  return [...configArgs, ...args]
+}
 
 export async function runGit(
   args: string[],
@@ -95,11 +105,42 @@ export async function runGitOrThrow(
   return result.stdout
 }
 
+export async function runCommand<T>(
+  descriptor: GitCommandDescriptor<T>,
+  params: T,
+  options: RunGitOptions
+): Promise<GitResult> {
+  const args = prependConfig(descriptor.buildArgs(params), descriptor.config)
+  const stdin =
+    descriptor.stdin === undefined
+      ? options.input
+      : typeof descriptor.stdin === 'function'
+        ? descriptor.stdin(params)
+        : options.input
+  const env = descriptor.env ? { ...options.env, ...descriptor.env(params) } : options.env
+  return runGit(args, { ...options, input: stdin, env })
+}
+
+export async function runCommandOrThrow<T>(
+  descriptor: GitCommandDescriptor<T>,
+  params: T,
+  options: RunGitOptions
+): Promise<string> {
+  const result = await runCommand(descriptor, params, options)
+  const accept = descriptor.acceptExitCodes ?? [0]
+  if (!accept.includes(result.code)) {
+    const detail = result.stderr.trim() || result.stdout.trim() || `git exited with code ${result.code}`
+    throw new Error(detail)
+  }
+  return result.stdout
+}
+
 /** Resolves a user-supplied ref to a full object name (safe for argv). */
 export async function resolveGitRef(
   cwd: string,
   gitBinaryPath: string,
   ref: string
 ): Promise<string> {
-  return (await runGitOrThrow(['rev-parse', '--verify', ref], { cwd, gitBinaryPath })).trim()
+  const { revParseVerify } = await import('../../shared/git/commands')
+  return (await runCommandOrThrow(revParseVerify, { ref }, { cwd, gitBinaryPath })).trim()
 }

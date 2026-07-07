@@ -16,8 +16,8 @@ const api: GitFreddoAPI = {
   disconnectWorkspace: (repoPath) => ipcRenderer.invoke('gitfreddo:disconnect-workspace', repoPath),
   listWorkspaces: () => ipcRenderer.invoke('gitfreddo:list-workspaces'),
   disconnect: () => ipcRenderer.invoke('gitfreddo:disconnect'),
-  invoke: (method, params, repoPath) =>
-    ipcRenderer.invoke('gitfreddo:invoke', method, params, repoPath),
+  invoke: ((method: string, params?: unknown, repoPath?: string) =>
+    ipcRenderer.invoke('gitfreddo:invoke', method, params, repoPath)) as GitFreddoAPI['invoke'],
   pickFile: () => ipcRenderer.invoke('gitfreddo:pick-file'),
   pickFiles: () => ipcRenderer.invoke('gitfreddo:pick-files'),
   pickGitBinary: () => ipcRenderer.invoke('gitfreddo:pick-git-binary'),

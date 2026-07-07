@@ -1,5 +1,17 @@
 import type { SubmoduleEntryStatus } from '../../../shared/submodule'
 import { runGit, runGitOrThrow } from '../git-runner'
+import {
+  buildAddArgs,
+  buildCheckoutDiscardArgs,
+  buildCleanArgs,
+  buildCommitArgs,
+  buildResetHeadArgs,
+  buildRestoreDiscardArgs,
+  buildRevListUpstreamAheadBehindArgs,
+  buildRevParseHeadArgs,
+  buildRmArgs,
+  buildStatusPorcelainArgs
+} from '../../../shared/git/commands'
 import { gitMetadataExists, rebaseInProgress } from '../git-dir'
 import type { GitFileChange, GitWorkingStatus } from '../types'
 
@@ -36,7 +48,7 @@ async function parseAheadBehind(
   gitBinaryPath: string
 ): Promise<{ ahead: number; behind: number }> {
   try {
-    const out = await runGitOrThrow(['rev-list', '--left-right', '--count', '@{upstream}...HEAD'], {
+    const out = await runGitOrThrow(buildRevListUpstreamAheadBehindArgs(), {
       cwd,
       gitBinaryPath
     })
@@ -51,10 +63,7 @@ export async function workingStatus(
   cwd: string,
   gitBinaryPath: string
 ): Promise<GitWorkingStatus> {
-  const stdout = await runGitOrThrow(
-    ['status', '--porcelain=2', '-b', '-uall'],
-    { cwd, gitBinaryPath }
-  )
+  const stdout = await runGitOrThrow(buildStatusPorcelainArgs(), { cwd, gitBinaryPath })
   const lines = stdout.split('\n')
 
   let branch = 'HEAD'
@@ -220,9 +229,9 @@ export async function stageAdd(
   paths: string[]
 ): Promise<void> {
   if (paths.length === 0) {
-    await runGitOrThrow(['add', '-A'], { cwd, gitBinaryPath })
+    await runGitOrThrow(buildAddArgs({ all: true }), { cwd, gitBinaryPath })
   } else {
-    await runGitOrThrow(['add', '--', ...paths], { cwd, gitBinaryPath })
+    await runGitOrThrow(buildAddArgs({ paths }), { cwd, gitBinaryPath })
   }
 }
 
@@ -231,11 +240,7 @@ export async function stageReset(
   gitBinaryPath: string,
   paths?: string[]
 ): Promise<void> {
-  if (!paths || paths.length === 0) {
-    await runGitOrThrow(['reset', 'HEAD'], { cwd, gitBinaryPath })
-  } else {
-    await runGitOrThrow(['reset', 'HEAD', '--', ...paths], { cwd, gitBinaryPath })
-  }
+  await runGitOrThrow(buildResetHeadArgs({ paths }), { cwd, gitBinaryPath })
 }
 
 export async function workingDiscard(
@@ -246,16 +251,11 @@ export async function workingDiscard(
 ): Promise<void> {
   if (paths.length === 0) return
 
-  const restoreArgs = staged
-    ? ['restore', '--source=HEAD', '--staged', '--worktree', '--', ...paths]
-    : ['restore', '--worktree', '--', ...paths]
-
+  const restoreArgs = buildRestoreDiscardArgs({ paths, staged })
   const result = await runGit(restoreArgs, { cwd, gitBinaryPath })
   if (result.code === 0) return
 
-  const checkoutArgs = staged
-    ? ['checkout', 'HEAD', '--', ...paths]
-    : ['checkout', '--', ...paths]
+  const checkoutArgs = buildCheckoutDiscardArgs({ paths, staged })
   await runGitOrThrow(checkoutArgs, { cwd, gitBinaryPath })
 }
 
@@ -266,10 +266,10 @@ export async function workingRemove(
 ): Promise<void> {
   if (paths.length === 0) return
 
-  const result = await runGit(['rm', '--', ...paths], { cwd, gitBinaryPath })
+  const result = await runGit(buildRmArgs({ paths }), { cwd, gitBinaryPath })
   if (result.code === 0) return
 
-  await runGitOrThrow(['rm', '-f', '--', ...paths], { cwd, gitBinaryPath })
+  await runGitOrThrow(buildRmArgs({ paths, force: true }), { cwd, gitBinaryPath })
 }
 
 /** Parse `git clean -n` output lines into relative paths. */
@@ -286,9 +286,7 @@ export async function workingCleanPreview(
   gitBinaryPath: string,
   includeIgnored = false
 ): Promise<string[]> {
-  const args = ['clean', '-fdn']
-  if (includeIgnored) args.push('-x')
-  const stdout = await runGitOrThrow(args, { cwd, gitBinaryPath })
+  const stdout = await runGitOrThrow(buildCleanArgs({ dryRun: true, includeIgnored }), { cwd, gitBinaryPath })
   return parseCleanPreviewOutput(stdout)
 }
 
@@ -297,9 +295,7 @@ export async function workingClean(
   gitBinaryPath: string,
   includeIgnored = false
 ): Promise<void> {
-  const args = ['clean', '-fd']
-  if (includeIgnored) args.push('-x')
-  await runGitOrThrow(args, { cwd, gitBinaryPath })
+  await runGitOrThrow(buildCleanArgs({ dryRun: false, includeIgnored }), { cwd, gitBinaryPath })
 }
 
 export async function commitCreate(
@@ -309,11 +305,8 @@ export async function commitCreate(
   amend = false,
   sign = false
 ): Promise<string> {
-  const args = ['commit', '-m', message]
-  if (amend) args.push('--amend')
-  if (sign) args.push('-S')
-  const stdout = await runGitOrThrow(args, { cwd, gitBinaryPath })
+  const stdout = await runGitOrThrow(buildCommitArgs({ message, amend, sign }), { cwd, gitBinaryPath })
   const match = stdout.match(/\[[\w/.-]+ ([0-9a-f]+)\]/)
   if (match) return match[1]
-  return (await runGitOrThrow(['rev-parse', 'HEAD'], { cwd, gitBinaryPath })).trim()
+  return (await runGitOrThrow(buildRevParseHeadArgs(), { cwd, gitBinaryPath })).trim()
 }

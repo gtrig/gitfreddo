@@ -1,21 +1,24 @@
 import { resolveGitRef, runGit, runGitOrThrow } from '../git-runner'
 import { isSubmodulePath } from './submodule'
 import type { GitDiffResult } from '../types'
-
-const NULL_DEVICE = process.platform === 'win32' ? 'NUL' : '/dev/null'
-
-function withWordDiff(args: string[], wordDiff?: boolean): string[] {
-  if (!wordDiff) return args
-  const insertAt = args[0] === 'diff' || args[0] === 'show' ? 1 : 0
-  return [...args.slice(0, insertAt), '--word-diff=plain', ...args.slice(insertAt)]
-}
+import {
+  buildDiffCommitRangeArgs,
+  buildDiffCommitsArgs,
+  buildDiffNoIndexArgs,
+  buildDiffStagedArgs,
+  buildDiffWorkingArgs,
+  buildLogShowArgs,
+  buildLsFilesOthersArgs,
+  buildRevParseParentArgs,
+  buildShowBlobArgs
+} from '../../../shared/git/commands'
 
 async function isUntrackedPath(
   cwd: string,
   gitBinaryPath: string,
   path: string
 ): Promise<boolean> {
-  const result = await runGit(['ls-files', '--others', '--exclude-standard', '--', path], {
+  const result = await runGit(buildLsFilesOthersArgs(path), {
     cwd,
     gitBinaryPath
   })
@@ -30,7 +33,7 @@ async function diffUntrackedPath(
   gitBinaryPath: string,
   path: string
 ): Promise<string> {
-  const result = await runGit(['diff', '--no-index', '--', NULL_DEVICE, path], {
+  const result = await runGit(buildDiffNoIndexArgs({ path }), {
     cwd,
     gitBinaryPath
   })
@@ -48,7 +51,7 @@ export async function diffWorking(
   wordDiff = false
 ): Promise<GitDiffResult> {
   if (path && (await isSubmodulePath(cwd, gitBinaryPath, path))) {
-    const args = withWordDiff(['diff', '--submodule=log', '--', path], wordDiff)
+    const args = buildDiffWorkingArgs({ path, wordDiff, submodule: true })
     const result = await runGit(args, { cwd, gitBinaryPath })
     if (result.code !== 0) {
       throw new Error(result.stderr.trim() || `git diff exited with code ${result.code}`)
@@ -56,8 +59,7 @@ export async function diffWorking(
     return { unified: result.stdout, path }
   }
 
-  const args = withWordDiff(['diff', '--'], wordDiff)
-  if (path) args.push(path)
+  const args = buildDiffWorkingArgs({ path, wordDiff })
   const result = await runGit(args, { cwd, gitBinaryPath })
   if (result.code !== 0) {
     throw new Error(result.stderr.trim() || `git diff exited with code ${result.code}`)
@@ -78,13 +80,12 @@ export async function diffStaged(
   wordDiff = false
 ): Promise<GitDiffResult> {
   if (path && (await isSubmodulePath(cwd, gitBinaryPath, path))) {
-    const args = withWordDiff(['diff', '--cached', '--submodule=log', '--', path], wordDiff)
+    const args = buildDiffStagedArgs({ path, wordDiff, submodule: true })
     const unified = await runGitOrThrow(args, { cwd, gitBinaryPath })
     return { unified, path }
   }
 
-  const args = withWordDiff(['diff', '--cached', '--'], wordDiff)
-  if (path) args.push(path)
+  const args = buildDiffStagedArgs({ path, wordDiff })
   const unified = await runGitOrThrow(args, { cwd, gitBinaryPath })
   return { unified, path: path ?? '' }
 }
@@ -98,8 +99,7 @@ export async function diffCommits(
 ): Promise<GitDiffResult> {
   const from = await resolveGitRef(cwd, gitBinaryPath, fromRef)
   const to = await resolveGitRef(cwd, gitBinaryPath, toRef)
-  const args = ['diff', from, to, '--']
-  if (path) args.push(path)
+  const args = buildDiffCommitsArgs({ from, to, path })
   const unified = await runGitOrThrow(args, { cwd, gitBinaryPath })
   return { unified, path: path ?? '' }
 }
@@ -113,8 +113,8 @@ export async function diffCommitRange(
   const oldest = await resolveGitRef(cwd, gitBinaryPath, oldestHash)
   const newest = await resolveGitRef(cwd, gitBinaryPath, newestHash)
   const hasParent =
-    (await runGit(['rev-parse', '--verify', `${oldest}^`], { cwd, gitBinaryPath })).code === 0
-  const args = hasParent ? ['diff', `${oldest}^`, newest] : ['diff', oldest, newest]
+    (await runGit(buildRevParseParentArgs(oldest), { cwd, gitBinaryPath })).code === 0
+  const args = buildDiffCommitRangeArgs({ oldest, newest, hasParent })
   const unified = await runGitOrThrow(args, { cwd, gitBinaryPath })
   return { unified, path: `${oldest.slice(0, 7)}..${newest.slice(0, 7)}` }
 }
@@ -126,8 +126,7 @@ export async function diffShow(
   path?: string
 ): Promise<GitDiffResult> {
   const resolvedRef = await resolveGitRef(cwd, gitBinaryPath, ref)
-  const args = ['show', '-m', '--first-parent', resolvedRef, '--']
-  if (path) args.push(path)
+  const args = buildLogShowArgs({ ref: resolvedRef, path })
   const unified = await runGitOrThrow(args, { cwd, gitBinaryPath })
   return { unified, path: path ?? '' }
 }
@@ -138,5 +137,5 @@ export async function fileRead(
   ref: string,
   path: string
 ): Promise<string> {
-  return runGitOrThrow(['show', `${ref}:${path}`], { cwd, gitBinaryPath })
+  return runGitOrThrow(buildShowBlobArgs({ ref, path }), { cwd, gitBinaryPath })
 }

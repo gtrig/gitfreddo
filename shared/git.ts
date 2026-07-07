@@ -1,9 +1,5 @@
-/** Params for `branch.checkout` IPC — maps to `git switch [--detach] <ref>`. */
-export interface BranchCheckoutParams {
-  name: string
-  /** Detach HEAD at a commit or tag. Omitted for local branch checkout. */
-  detach?: boolean
-}
+/** @deprecated Import from `@shared/git/ipc/params` */
+export type { BranchCheckoutParams } from './git/ipc/params'
 
 export function repoNameFromUrl(url: string): string {
   const trimmed = url.trim().replace(/\/$/, '')

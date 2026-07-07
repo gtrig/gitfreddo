@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  allGitIpcInvalidationSuffixes,
   isRepoChangeDiffQuerySuffix,
   REPO_CHANGE_REFS_QUERY_SUFFIXES,
   REPO_CHANGE_WORKING_QUERY_SUFFIXES
@@ -20,5 +21,12 @@ describe('repo-change', () => {
     expect(isRepoChangeDiffQuerySuffix('diff.working')).toBe(true)
     expect(isRepoChangeDiffQuerySuffix('diff.staged')).toBe(true)
     expect(isRepoChangeDiffQuerySuffix('log.graph')).toBe(false)
+  })
+
+  it('aggregates invalidation suffixes from IPC catalog', () => {
+    const suffixes = allGitIpcInvalidationSuffixes()
+    expect(suffixes).toContain('branch.list')
+    expect(suffixes).toContain('working.status')
+    expect(suffixes.length).toBeGreaterThan(10)
   })
 })

@@ -25,7 +25,7 @@ export function useRepoStatus(enabled = true) {
   const { repoPath, connected } = useRepoScope()
   return useQuery<GitRepoStatus>({
     queryKey: ['repo', repoPath, 'status'],
-    queryFn: async () => (await window.gitfreddo.invoke('repo.status')) as GitRepoStatus,
+    queryFn: async () => window.gitfreddo.invoke('repo.status'),
     enabled: enabled && connected && Boolean(repoPath)
   })
 }
@@ -35,8 +35,7 @@ export function useLogGraph(enabled = true) {
   const maxCount = useLogMaxCount()
   return useQuery<GitLogGraphResult>({
     queryKey: ['repo', repoPath, 'log.graph', maxCount],
-    queryFn: async () =>
-      (await window.gitfreddo.invoke('log.graph', { maxCount })) as GitLogGraphResult,
+    queryFn: async () => window.gitfreddo.invoke('log.graph', { maxCount }),
     enabled: enabled && connected && Boolean(repoPath)
   })
 }
