@@ -49,30 +49,6 @@ export function RepoSidebar() {
   const [filter, setFilter] = useState('')
   const [createOpen, setCreateOpen] = useState(false)
 
-  const viewingCount = useMemo(() => {
-    if (!connected) return 0
-    const local = branches?.filter((b) => !b.isRemote) ?? []
-    const localTree = filterBranchTree(buildLocalBranchTree(local), filter)
-    const localCount = countBranchTreeNodes(localTree) + (repoStatus?.isDetached && matchesFilter('HEAD', filter) ? 1 : 0)
-    const remoteCount = (branches ?? []).filter(
-      (b) =>
-        b.isRemote &&
-        matchesFilter(b.name.replace(/^remotes\//, ''), filter)
-    ).length
-    const stashCount = (stashes ?? []).filter((s) =>
-      matchesFilter(s.message || `stash@{${s.index}}`, filter)
-    ).length
-    const worktreeCount = (worktrees ?? []).filter((wt) => {
-      const label = wt.branch ?? (wt.isDetached ? '(detached)' : wt.path)
-      return matchesFilter(label, filter) || matchesFilter(wt.path, filter)
-    }).length
-    const submoduleCount = (submodules ?? []).filter((sm) =>
-      matchesFilter(sm.path, filter) || matchesFilter(sm.url, filter)
-    ).length
-    const tagCount = (tags ?? []).filter((tag) => matchesFilter(tag.name, filter)).length
-    return localCount + remoteCount + stashCount + worktreeCount + submoduleCount + tagCount
-  }, [branches, connected, filter, repoStatus?.isDetached, stashes, submodules, tags, worktrees])
-
   if (!connected) {
     return (
       <aside className="flex h-full flex-col">
@@ -86,9 +62,6 @@ export function RepoSidebar() {
   return (
     <aside className="flex h-full min-h-0 flex-col">
       <div className="shrink-0 border-b border-gf-border/60 px-2 pt-2">
-        <p className="pb-1.5 text-[11px] text-gf-sidebar-count">
-          {t('sidebar.viewing', { count: viewingCount })}
-        </p>
         <SidebarFilter value={filter} onChange={setFilter} />
       </div>
 
