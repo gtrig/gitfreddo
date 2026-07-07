@@ -10,6 +10,7 @@ import {
   parseComposeCommitsResponse,
   parseConflictResolveResponse,
   parseExplainCommitResponse,
+  parsePullRequestResponse,
   pickChatModelId,
   proposalsToResolutionMap
 } from './ai'
@@ -108,6 +109,27 @@ describe('buildAiMessages', () => {
     expect(user).toContain('Commit message instructions:')
     expect(user).toContain('Use Conventional Commits with a scope.')
     expect(user).toContain('commit message instructions below')
+  })
+
+  it('asks for JSON pull request title and body with branch context', () => {
+    const { system, user } = buildAiMessages(
+      'pull_request',
+      {
+        headBranch: 'feature/auth',
+        baseBranch: 'main',
+        filePaths: ['src/auth.ts'],
+        diffText: '+++ b/src/auth.ts\n+export function login() {}',
+        currentText: 'Title: WIP auth'
+      },
+      { commitMessage: 'Use Conventional Commits.' }
+    )
+    expect(system).toContain('valid JSON')
+    expect(user).toContain('feature/auth')
+    expect(user).toContain('main')
+    expect(user).toContain('src/auth.ts')
+    expect(user).toContain('WIP auth')
+    expect(user).toContain('"title"')
+    expect(user).toContain('Use Conventional Commits.')
   })
 
   it('asks for structured JSON when explaining commits', () => {
@@ -305,6 +327,29 @@ describe('parseAnalyzeChangesResponse', () => {
 
   it('throws on invalid JSON', () => {
     expect(() => parseAnalyzeChangesResponse('not json', changed)).toThrow('valid JSON')
+  })
+})
+
+describe('parsePullRequestResponse', () => {
+  it('parses title and body from JSON', () => {
+    const proposal = parsePullRequestResponse(
+      JSON.stringify({
+        title: 'Add login flow',
+        body: '## Summary\nAdds login.'
+      })
+    )
+    expect(proposal).toEqual({
+      title: 'Add login flow',
+      body: '## Summary\nAdds login.'
+    })
+  })
+
+  it('throws when title is missing', () => {
+    expect(() => parsePullRequestResponse(JSON.stringify({ body: 'Only body' }))).toThrow('no PR title')
+  })
+
+  it('throws on invalid JSON', () => {
+    expect(() => parsePullRequestResponse('not json')).toThrow('valid JSON')
   })
 })
 

@@ -871,6 +871,7 @@
       "description": "Description",
       "head": "Head",
       "base": "Base",
+      "fillWithAi": "Fill with AI",
       "squash": "Squash",
       "rebase": "Rebase"
     },

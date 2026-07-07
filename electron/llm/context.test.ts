@@ -106,3 +106,44 @@ describe('enrichAiContext explain_commit', () => {
     expect(enriched.context?.diffText).toContain('diff for def456abc789')
   })
 })
+
+describe('enrichAiContext pull_request', () => {
+  it('loads diff between base and head branches', async () => {
+    const invoke = vi.fn(async (_repoPath: string, method: string, params?: unknown) => {
+      if (method === 'diff.commits') {
+        expect(params).toEqual({ fromRef: 'main', toRef: 'feature' })
+        return { unified: '+++ b/src/feature.ts\n+change' }
+      }
+      throw new Error(`unexpected ${method}`)
+    })
+
+    const enriched = await enrichAiContext(createManager(invoke), {
+      purpose: 'pull_request',
+      context: { headBranch: 'feature', baseBranch: 'main' }
+    })
+
+    expect(invoke).toHaveBeenCalledWith('/repo', 'diff.commits', {
+      fromRef: 'main',
+      toRef: 'feature'
+    })
+    expect(enriched.context?.diffText).toContain('feature.ts')
+    expect(enriched.context?.headBranch).toBe('feature')
+    expect(enriched.context?.baseBranch).toBe('main')
+    expect(enriched.context?.filePaths).toEqual(['src/feature.ts'])
+  })
+
+  it('skips enrichment when diff text is already provided', async () => {
+    const invoke = vi.fn()
+    const enriched = await enrichAiContext(createManager(invoke), {
+      purpose: 'pull_request',
+      context: {
+        headBranch: 'feature',
+        baseBranch: 'main',
+        diffText: 'already loaded'
+      }
+    })
+
+    expect(invoke).not.toHaveBeenCalled()
+    expect(enriched.context?.diffText).toBe('already loaded')
+  })
+})
