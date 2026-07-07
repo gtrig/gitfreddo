@@ -11,7 +11,7 @@ describe('resolveTimelineRefDoubleClickCheckout', () => {
         { label: 'feature', kind: 'branch', fullRef: 'feature', sourceOrder: 0 },
         { isCurrent: false }
       )
-    ).toEqual({ kind: 'ref', ref: 'feature' })
+    ).toEqual({ kind: 'ref', params: { name: 'feature' } })
   })
 
   it('skips checkout for the current branch', () => {
@@ -29,7 +29,7 @@ describe('resolveTimelineRefDoubleClickCheckout', () => {
         { label: 'v1.0.0', kind: 'tag', fullRef: 'v1.0.0', sourceOrder: 0 },
         { isCurrent: false }
       )
-    ).toEqual({ kind: 'ref', ref: 'v1.0.0' })
+    ).toEqual({ kind: 'ref', params: { name: 'v1.0.0', detach: true } })
   })
 
   it('opens remote checkout for remote branches', () => {
@@ -43,7 +43,10 @@ describe('resolveTimelineRefDoubleClickCheckout', () => {
 })
 
 describe('resolveCommitDoubleClickCheckout', () => {
-  it('checks out the commit hash', () => {
-    expect(resolveCommitDoubleClickCheckout('abc123def')).toBe('abc123def')
+  it('checks out the commit hash in detached HEAD', () => {
+    expect(resolveCommitDoubleClickCheckout('abc123def')).toEqual({
+      name: 'abc123def',
+      detach: true
+    })
   })
 })
