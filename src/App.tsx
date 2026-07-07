@@ -9,6 +9,7 @@ import { ActionBar } from '@/components/Layout/ActionBar'
 import { WorkspaceHub } from '@/components/Layout/WorkspaceHub'
 import { WorkspaceTabs } from '@/components/Layout/WorkspaceTabs'
 import { ToastBanner } from '@/components/Layout/ToastBanner'
+import { StartupModal } from '@/components/Layout/StartupModal'
 import { UpdateBanner } from '@/components/Layout/UpdateBanner'
 import { LogDrawer, useLogSubscription } from '@/components/Layout/LogDrawer'
 import { HeaderToolsMenu } from '@/components/Layout/HeaderToolsMenu'
@@ -39,6 +40,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [docsOpen, setDocsOpen] = useState(false)
+  const [startupModalOpen, setStartupModalOpen] = useState(true)
   const refresh = useManualRefresh()
   const selectedWorkingFile = useSelectionStore((s) => s.selectedWorkingFile)
   const selectedCommitFile = useSelectionStore((s) => s.selectedCommitFile)
@@ -139,6 +141,11 @@ export default function App() {
           onInstall={appUpdate.installUpdate}
           onDismiss={appUpdate.dismissBanner}
         />
+        <StartupModal
+          open={startupModalOpen}
+          onClose={() => setStartupModalOpen(false)}
+          onCheckForUpdates={() => void appUpdate.checkForUpdates(true)}
+        />
       </>
     )
   }
@@ -203,6 +210,11 @@ export default function App() {
         onDownload={() => void appUpdate.downloadUpdate()}
         onInstall={appUpdate.installUpdate}
         onDismiss={appUpdate.dismissBanner}
+      />
+      <StartupModal
+        open={startupModalOpen}
+        onClose={() => setStartupModalOpen(false)}
+        onCheckForUpdates={() => void appUpdate.checkForUpdates(true)}
       />
     </div>
   )
