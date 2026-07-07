@@ -66,7 +66,8 @@ import {
   buildLogMessageArgs,
   buildLogPickaxeArgs,
   buildLogSearchArgs,
-  buildLogShowArgs
+  buildLogShowArgs,
+  buildShowCommitNameStatusArgs
 } from './log'
 import {
   buildStashApplyArgs,
@@ -114,20 +115,25 @@ import {
   buildConfigGetArgs,
   buildConfigListArgs,
   buildConfigSetArgs,
+  buildForEachRefAllRefsArgs,
   buildFsckUnreachableArgs,
   buildGcPruneArgs,
   buildInitArgs,
   buildLsFilesArgs,
+  buildLsFilesErrorUnmatchArgs,
   buildLsFilesMatchArgs,
   buildLsFilesOthersArgs,
+  buildLsFilesTrackedPrefixArgs,
   buildMvArgs,
   buildNotesAddArgs,
   buildNotesListArgs,
   buildNotesShowArgs,
   buildReflogExpireArgs,
   buildReflogListArgs,
+  buildReflogShowHeadArgs,
   buildRmArgs,
   buildShowBlobArgs,
+  buildShowCommitSummaryArgs,
   buildShowStageArgs,
   buildSymbolicRefHeadArgs,
   buildUpdateRefDeleteArgs
@@ -326,6 +332,7 @@ describe('command argv builders', () => {
   it('builds log, stash, tag, worktree, submodule, merge/rebase, and misc args', () => {
     expect(buildLogGraphArgs(100)[0]).toBe('log')
     expect(buildLogMessageArgs({ hash: 'abc' }).some((arg) => arg.includes('%B'))).toBe(true)
+    expect(buildShowCommitNameStatusArgs('abc')).toContain('--name-status')
     expect(buildLogShowArgs({ ref: 'abc', path: 'f' })).toContain('show')
     expect(buildLogFileArgs({ maxCount: 10, path: 'f' })).toContain('--follow')
     expect(buildLogPickaxeArgs({ maxCount: 10, query: 'x', mode: 'pickaxe' })).toContain('-S')
@@ -373,6 +380,11 @@ describe('command argv builders', () => {
     )
 
     expect(buildFsckUnreachableArgs()).toContain('fsck')
+    expect(buildForEachRefAllRefsArgs()).toContain('for-each-ref')
+    expect(buildShowCommitSummaryArgs('abc')).toContain('show')
+    expect(buildLsFilesTrackedPrefixArgs('dir/')).toContain('ls-files')
+    expect(buildLsFilesErrorUnmatchArgs('f')).toContain('--error-unmatch')
+    expect(buildReflogShowHeadArgs(2, '%H')).toContain('reflog')
     expect(buildReflogExpireArgs()).toContain('expire')
     expect(buildGcPruneArgs()).toContain('gc')
     expect(buildSymbolicRefHeadArgs()).toContain('symbolic-ref')

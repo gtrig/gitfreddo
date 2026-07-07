@@ -1,6 +1,10 @@
 import { defineCommand } from './_types'
 import { withPaths } from './_common'
 
+function withFileProtocolAllow(args: string[]): string[] {
+  return ['-c', 'protocol.file.allow=always', ...args]
+}
+
 export function buildSubmoduleStatusArgs(): string[] {
   return ['submodule', 'status', '--recursive']
 }
@@ -15,7 +19,7 @@ export function buildSubmoduleAddArgs({ url, path, branch }: SubmoduleAddParams)
   const args = ['submodule', 'add']
   if (branch?.trim()) args.push('-b', branch.trim())
   args.push(url, path)
-  return args
+  return withFileProtocolAllow(args)
 }
 
 export interface SubmoduleInitParams {
@@ -46,8 +50,10 @@ export function buildSubmoduleUpdateArgs(params: SubmoduleUpdateParams): string[
   if (params.remote) args.push('--remote')
   if (params.merge) args.push('--merge')
   if (params.rebase) args.push('--rebase')
-  if (params.paths && params.paths.length > 0) return withPaths(args, params.paths)
-  return args
+  if (params.paths && params.paths.length > 0) {
+    return withFileProtocolAllow(withPaths(args, params.paths))
+  }
+  return withFileProtocolAllow(args)
 }
 
 export interface SubmoduleSyncParams {

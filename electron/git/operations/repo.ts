@@ -1,3 +1,8 @@
+import {
+  buildRevParseAbbrevRefArgs,
+  buildRevParseHeadArgs,
+  buildRevParseShowToplevelArgs
+} from '../../../shared/git/commands'
 import { resolve } from 'path'
 import { runGitOrThrow } from '../git-runner'
 import { resolveGitCommonDir, resolveGitDir } from '../git-dir'
@@ -8,10 +13,10 @@ export async function repoStatus(
   gitBinaryPath: string
 ): Promise<GitRepoStatus> {
   const branch = (
-    await runGitOrThrow(['rev-parse', '--abbrev-ref', 'HEAD'], { cwd, gitBinaryPath })
+    await runGitOrThrow(buildRevParseAbbrevRefArgs('HEAD'), { cwd, gitBinaryPath })
   ).trim()
-  const head = (await runGitOrThrow(['rev-parse', 'HEAD'], { cwd, gitBinaryPath })).trim()
-  const root = (await runGitOrThrow(['rev-parse', '--show-toplevel'], { cwd, gitBinaryPath })).trim()
+  const head = (await runGitOrThrow(buildRevParseHeadArgs(), { cwd, gitBinaryPath })).trim()
+  const root = (await runGitOrThrow(buildRevParseShowToplevelArgs(), { cwd, gitBinaryPath })).trim()
   const gitDir = await resolveGitDir(cwd, gitBinaryPath)
   const commonDir = await resolveGitCommonDir(cwd, gitBinaryPath)
   return {

@@ -1,5 +1,13 @@
 import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
+import {
+  buildBranchShowCurrentArgs,
+  buildDiffConflictNamesArgs,
+  buildMergeAbortArgs,
+  buildMergeContinueArgs,
+  buildMergeStartArgs,
+  buildRevParseShortArgs
+} from '../../../shared/git/commands'
 import { runGit, runGitOrThrow } from '../git-runner'
 import { gitMetadataPath, readGitMetadataFile, rebaseInProgress, resolveGitDir } from '../git-dir'
 import { continueGitOperation } from './commit-message'
@@ -8,9 +16,7 @@ import type { GitMergeStartResult, GitMergeStatus } from '../types'
 
 async function shortHash(cwd: string, gitBinaryPath: string, ref: string): Promise<string> {
   try {
-    return (
-      await runGitOrThrow(['rev-parse', '--short', ref], { cwd, gitBinaryPath })
-    ).trim()
+    return (await runGitOrThrow(buildRevParseShortArgs(ref), { cwd, gitBinaryPath })).trim()
   } catch {
     return ref.slice(0, 7)
   }
@@ -61,7 +67,7 @@ export async function mergeStatus(cwd: string, gitBinaryPath: string): Promise<G
 
   let conflictedPaths: string[] = []
   if (inProgress) {
-    const stdout = await runGitOrThrow(['diff', '--name-only', '--diff-filter=U'], {
+    const stdout = await runGitOrThrow(buildDiffConflictNamesArgs(), {
       cwd,
       gitBinaryPath
     })
@@ -83,7 +89,7 @@ export async function mergeStatus(cwd: string, gitBinaryPath: string): Promise<G
   let currentBranch: string | undefined
   try {
     currentBranch = (
-      await runGitOrThrow(['branch', '--show-current'], { cwd, gitBinaryPath })
+      await runGitOrThrow(buildBranchShowCurrentArgs(), { cwd, gitBinaryPath })
     ).trim()
     if (!currentBranch) currentBranch = undefined
   } catch {
@@ -135,12 +141,7 @@ export async function mergeStart(
   branch: string,
   options: { noFf?: boolean; squash?: boolean } = {}
 ): Promise<GitMergeStartResult> {
-  const args = ['merge']
-  if (options.noFf) args.push('--no-ff')
-  if (options.squash) args.push('--squash')
-  args.push(branch)
-
-  const result = await runGit(args, { cwd, gitBinaryPath })
+  const result = await runGit(buildMergeStartArgs({ branch, ...options }), { cwd, gitBinaryPath })
   if (result.code === 0) {
     return { status: 'completed', conflictedPaths: [] }
   }
@@ -187,7 +188,7 @@ export function formatMergeFailureMessage(stderr: string, stdout: string, code: 
 }
 
 export async function mergeAbort(cwd: string, gitBinaryPath: string): Promise<void> {
-  await runGitOrThrow(['merge', '--abort'], { cwd, gitBinaryPath })
+  await runGitOrThrow(buildMergeAbortArgs(), { cwd, gitBinaryPath })
 }
 
 export async function mergeContinue(
@@ -195,5 +196,5 @@ export async function mergeContinue(
   gitBinaryPath: string,
   message?: string
 ): Promise<void> {
-  await continueGitOperation(cwd, gitBinaryPath, ['merge', '--continue'], message)
+  await continueGitOperation(cwd, gitBinaryPath, buildMergeContinueArgs(), message)
 }

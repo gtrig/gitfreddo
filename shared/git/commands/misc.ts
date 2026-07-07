@@ -31,6 +31,18 @@ export function buildForEachRefArgs(refs: string, format: string): string[] {
   return ['for-each-ref', refs, `--format=${format}`]
 }
 
+export function buildForEachRefAllRefsArgs(): string[] {
+  return ['for-each-ref', '--format=%(refname) %(objecttype) %(objectname)', 'refs/']
+}
+
+export function buildShowCommitSummaryArgs(hash: string): string[] {
+  return ['show', '-s', '--format=%H%n%h%n%s%n%aI', hash]
+}
+
+export function buildLsFilesTrackedPrefixArgs(prefix: string): string[] {
+  return withPaths(['ls-files'], [prefix])
+}
+
 export interface ReflogListParams {
   maxCount: number
   format?: string

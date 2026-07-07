@@ -1,3 +1,17 @@
+import {
+  buildForEachRefAllRefsArgs,
+  buildFsckUnreachableArgs,
+  buildGcPruneArgs,
+  buildMergeBaseIsAncestorArgs,
+  buildReflogExpireArgs,
+  buildRevListCountNotHeadArgs,
+  buildRevListCountNotHeadFromRefArgs,
+  buildRevParseCommitArgs,
+  buildRevParseHeadArgs,
+  buildShowCommitSummaryArgs,
+  buildSymbolicRefHeadArgs,
+  buildUpdateRefDeleteArgs
+} from '../../../shared/git/commands'
 import { runGit, runGitOrThrow } from '../git-runner'
 import { branchDelete } from './branch'
 
@@ -115,7 +129,7 @@ export function parseFsckUnreachable(stdout: string): {
 }
 
 async function runFsckUnreachable(cwd: string, gitBinaryPath: string): Promise<string> {
-  const result = await runGit(['fsck', '--unreachable', '--no-reflogs'], { cwd, gitBinaryPath })
+  const result = await runGit(buildFsckUnreachableArgs(), { cwd, gitBinaryPath })
   if (result.code !== 0 && !result.stdout.trim()) {
     throw new Error(result.stderr.trim() || 'git fsck failed')
   }
@@ -127,10 +141,7 @@ async function commitDetails(
   gitBinaryPath: string,
   hash: string
 ): Promise<UnreachableCommit> {
-  const out = await runGitOrThrow(
-    ['show', '-s', '--format=%H%n%h%n%s%n%aI', hash],
-    { cwd, gitBinaryPath }
-  )
+  const out = await runGitOrThrow(buildShowCommitSummaryArgs(hash), { cwd, gitBinaryPath })
   const [fullHash, shortHash, subject, authorDate] = out.trim().split('\n')
   return {
     hash: fullHash ?? hash,
@@ -178,8 +189,8 @@ export async function pruneStaleObjects(
   const beforeStdout = await runFsckUnreachable(cwd, gitBinaryPath)
   const beforeCount = parseFsckUnreachable(beforeStdout).commitHashes.length
 
-  await runGitOrThrow(['reflog', 'expire', '--expire=now', '--all'], { cwd, gitBinaryPath })
-  await runGitOrThrow(['gc', '--prune=now'], { cwd, gitBinaryPath })
+  await runGitOrThrow(buildReflogExpireArgs(), { cwd, gitBinaryPath })
+  await runGitOrThrow(buildGcPruneArgs(), { cwd, gitBinaryPath })
 
   const afterStdout = await runFsckUnreachable(cwd, gitBinaryPath)
   const afterCount = parseFsckUnreachable(afterStdout).commitHashes.length
@@ -188,18 +199,15 @@ export async function pruneStaleObjects(
 }
 
 async function resolveHead(cwd: string, gitBinaryPath: string): Promise<string> {
-  return (await runGitOrThrow(['rev-parse', 'HEAD'], { cwd, gitBinaryPath })).trim()
+  return (await runGitOrThrow(buildRevParseHeadArgs(), { cwd, gitBinaryPath })).trim()
 }
 
 async function resolveHeadRef(cwd: string, gitBinaryPath: string): Promise<string> {
-  return (await runGitOrThrow(['symbolic-ref', 'HEAD'], { cwd, gitBinaryPath })).trim()
+  return (await runGitOrThrow(buildSymbolicRefHeadArgs(), { cwd, gitBinaryPath })).trim()
 }
 
 async function countCommitsNotOnHead(cwd: string, gitBinaryPath: string): Promise<number> {
-  const out = await runGitOrThrow(['rev-list', '--count', '--all', '--not', 'HEAD'], {
-    cwd,
-    gitBinaryPath
-  })
+  const out = await runGitOrThrow(buildRevListCountNotHeadArgs(), { cwd, gitBinaryPath })
   return Number.parseInt(out.trim(), 10) || 0
 }
 
@@ -215,10 +223,7 @@ interface ParsedRef {
 }
 
 async function listCommitRefs(cwd: string, gitBinaryPath: string): Promise<ParsedRef[]> {
-  const stdout = await runGitOrThrow(
-    ['for-each-ref', '--format=%(refname) %(objecttype) %(objectname)', 'refs/'],
-    { cwd, gitBinaryPath }
-  )
+  const stdout = await runGitOrThrow(buildForEachRefAllRefsArgs(), { cwd, gitBinaryPath })
 
   const refs: ParsedRef[] = []
   for (const line of stdout.split('\n')) {
@@ -230,7 +235,7 @@ async function listCommitRefs(cwd: string, gitBinaryPath: string): Promise<Parse
     if (objectType === 'tag') {
       try {
         const peeled = (
-          await runGitOrThrow(['rev-parse', `${ref}^{commit}`], { cwd, gitBinaryPath })
+          await runGitOrThrow(buildRevParseCommitArgs(ref), { cwd, gitBinaryPath })
         ).trim()
         refs.push({ ref, objectId: peeled })
       } catch {
@@ -252,7 +257,7 @@ async function exclusiveCommitCount(
   gitBinaryPath: string,
   ref: string
 ): Promise<number> {
-  const out = await runGit(['rev-list', '--count', ref, '--not', 'HEAD'], { cwd, gitBinaryPath })
+  const out = await runGit(buildRevListCountNotHeadFromRefArgs({ ref }), { cwd, gitBinaryPath })
   if (out.code !== 0) return 0
   return Number.parseInt(out.stdout.trim(), 10) || 0
 }
@@ -275,16 +280,16 @@ export async function findRefsForCommits(
     }
 
     for (const hash of hashes) {
-      const onRef = await runGit(['merge-base', '--is-ancestor', hash, entry.objectId], {
-        cwd,
-        gitBinaryPath
-      })
+      const onRef = await runGit(
+        buildMergeBaseIsAncestorArgs({ ancestor: hash, descendant: entry.objectId }),
+        { cwd, gitBinaryPath }
+      )
       if (onRef.code !== 0) continue
 
-      const onHead = await runGit(['merge-base', '--is-ancestor', hash, head], {
-        cwd,
-        gitBinaryPath
-      })
+      const onHead = await runGit(
+        buildMergeBaseIsAncestorArgs({ ancestor: hash, descendant: head }),
+        { cwd, gitBinaryPath }
+      )
       if (onHead.code !== 0) {
         matched.add(entry.ref)
         break
@@ -343,7 +348,7 @@ async function deleteRef(cwd: string, gitBinaryPath: string, ref: string): Promi
     return
   }
 
-  await runGitOrThrow(['update-ref', '-d', ref], { cwd, gitBinaryPath })
+  await runGitOrThrow(buildUpdateRefDeleteArgs(ref), { cwd, gitBinaryPath })
 }
 
 export async function removeStaleBranches(
@@ -379,8 +384,8 @@ export async function removeStaleRefs(
     deletedRefs.push(ref)
   }
 
-  await runGitOrThrow(['reflog', 'expire', '--expire=now', '--all'], { cwd, gitBinaryPath })
-  await runGitOrThrow(['gc', '--prune=now'], { cwd, gitBinaryPath })
+  await runGitOrThrow(buildReflogExpireArgs(), { cwd, gitBinaryPath })
+  await runGitOrThrow(buildGcPruneArgs(), { cwd, gitBinaryPath })
 
   const afterCount = await countCommitsNotOnHead(cwd, gitBinaryPath)
 

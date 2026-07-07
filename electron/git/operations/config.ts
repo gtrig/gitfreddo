@@ -1,3 +1,8 @@
+import {
+  buildConfigGetArgs,
+  buildConfigListArgs,
+  buildConfigSetArgs
+} from '../../../shared/git/commands'
 import { runGitOrThrow } from '../git-runner'
 
 export type GitConfigScope = 'local' | 'global'
@@ -19,7 +24,7 @@ export async function configGet(
   scope: GitConfigScope = 'local'
 ): Promise<string | null> {
   try {
-    const args = ['config', scope === 'global' ? '--global' : '--local', key]
+    const args = buildConfigGetArgs({ key, scope })
     if (scope === 'local') {
       return (await runGitOrThrow(args, { cwd, gitBinaryPath })).trim()
     }
@@ -36,7 +41,7 @@ export async function configSet(
   value: string,
   scope: GitConfigScope = 'local'
 ): Promise<void> {
-  const args = ['config', scope === 'global' ? '--global' : '--local', key, value]
+  const args = buildConfigSetArgs({ key, value, scope })
   if (scope === 'local') {
     await runGitOrThrow(args, { cwd, gitBinaryPath })
   } else {
@@ -49,7 +54,7 @@ export async function configList(
   gitBinaryPath: string,
   scope: GitConfigScope = 'local'
 ): Promise<Record<string, string>> {
-  const args = ['config', scope === 'global' ? '--global' : '--local', '--list']
+  const args = buildConfigListArgs(scope)
   const stdout =
     scope === 'local'
       ? await runGitOrThrow(args, { cwd, gitBinaryPath })

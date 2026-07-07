@@ -1,6 +1,7 @@
 import { mkdtemp, rm, writeFile } from 'fs/promises'
 import { join } from 'path'
 import { tmpdir } from 'os'
+import { buildCommitFileArgs } from '../../../shared/git/commands'
 import { runGitOrThrow } from '../git-runner'
 
 export const NON_INTERACTIVE_GIT_ENV: NodeJS.ProcessEnv = {
@@ -19,7 +20,7 @@ export async function commitWithMessageFile(
   try {
     const text = message.endsWith('\n') ? message : `${message}\n`
     await writeFile(msgPath, text, 'utf8')
-    await runGitOrThrow(['commit', '-F', msgPath], { cwd, gitBinaryPath })
+    await runGitOrThrow(buildCommitFileArgs(msgPath), { cwd, gitBinaryPath })
   } finally {
     await rm(dir, { recursive: true, force: true })
   }

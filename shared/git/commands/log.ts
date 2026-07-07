@@ -146,6 +146,11 @@ export function buildLogShowArgs({ ref, path }: LogShowParams): string[] {
   return args
 }
 
+/** Merge commits: combined diff omitted; returns name-status only. */
+export function buildShowCommitNameStatusArgs(hash: string): string[] {
+  return ['show', '-m', '--first-parent', '--format=', '--name-status', hash]
+}
+
 function parseLogRecord(block: string): ParsedGitCommit | null {
   const { main, stats } = parseShortstatFromBlock(block)
   const parts = main.split(LOG_FIELD_SEPARATOR)

@@ -10,6 +10,7 @@ import {
 } from 'fs'
 import { join, resolve } from 'path'
 import { resolveGitCommonDir } from '../git-dir'
+import { buildRevParseShowToplevelArgs } from '../../../shared/git/commands'
 import { runGitOrThrow } from '../git-runner'
 import { configGet } from './config'
 
@@ -76,7 +77,7 @@ export async function resolveHooksDir(cwd: string, gitBinaryPath: string): Promi
       return resolve(hooksPath)
     }
     const root = (
-      await runGitOrThrow(['rev-parse', '--show-toplevel'], { cwd, gitBinaryPath })
+      await runGitOrThrow(buildRevParseShowToplevelArgs(), { cwd, gitBinaryPath })
     ).trim()
     return resolve(root, hooksPath)
   }
