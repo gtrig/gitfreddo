@@ -112,3 +112,54 @@ export function sanitizeUpdateErrorMessage(message: string): string {
   if (!firstLine) return message
   return firstLine.length > 240 ? `${firstLine.slice(0, 237)}…` : firstLine
 }
+
+function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+}
+
+function stripHtml(html: string): string {
+  return decodeHtmlEntities(
+    html
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/(p|li|h[1-6]|tr)>/gi, '\n')
+      .replace(/<li[^>]*>/gi, '• ')
+      .replace(/<a[^>]*>([\s\S]*?)<\/a>/gi, '$1')
+      .replace(/<[^>]+>/g, '')
+  )
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{2,}/g, '\n')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim()
+}
+
+export function formatReleaseNotesForDisplay(notes: unknown): string | undefined {
+  if (!notes) return undefined
+
+  if (typeof notes === 'string') {
+    const plain = stripHtml(notes)
+    return plain || undefined
+  }
+
+  if (!Array.isArray(notes)) return undefined
+
+  const parts = notes
+    .map((entry) => {
+      if (typeof entry === 'string') return entry
+      if (entry && typeof entry === 'object' && 'note' in entry) {
+        return (entry as { note?: string | null }).note ?? ''
+      }
+      return ''
+    })
+    .filter(Boolean)
+    .map(stripHtml)
+    .filter(Boolean)
+
+  if (!parts.length) return undefined
+  return parts.join('\n\n')
+}

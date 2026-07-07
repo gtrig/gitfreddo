@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   applyUpdateChannel,
   classifyUpdateError,
+  formatReleaseNotesForDisplay,
   reduceUpdateState,
   sanitizeUpdateErrorMessage
 } from './update'
@@ -51,6 +52,34 @@ describe('classifyUpdateError', () => {
 
   it('detects network failures', () => {
     expect(classifyUpdateError('getaddrinfo ENOTFOUND github.com')).toBe('network')
+  })
+})
+
+describe('formatReleaseNotesForDisplay', () => {
+  it('strips GitHub release HTML to readable plain text', () => {
+    const html = `<h2>What's Changed</h2>
+<ul>
+<li>refactor: centralize git command execution by <a class="user-mention" href="https://github.com/gtrig">@gtrig</a> in <a href="https://github.com/gtrig/gitfreddo/pull/12">#12</a></li>
+<li>fix: update banner styling</li>
+</ul>`
+    expect(formatReleaseNotesForDisplay(html)).toBe(
+      "What's Changed\n• refactor: centralize git command execution by @gtrig in #12\n• fix: update banner styling"
+    )
+  })
+
+  it('joins electron-updater release note entries', () => {
+    expect(
+      formatReleaseNotesForDisplay([
+        { note: '<p>First <strong>change</strong></p>' },
+        { note: 'Second change' }
+      ])
+    ).toBe('First change\n\nSecond change')
+  })
+
+  it('returns undefined for empty input', () => {
+    expect(formatReleaseNotesForDisplay(undefined)).toBeUndefined()
+    expect(formatReleaseNotesForDisplay('')).toBeUndefined()
+    expect(formatReleaseNotesForDisplay([])).toBeUndefined()
   })
 })
 

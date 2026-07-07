@@ -1,7 +1,7 @@
 import { app, BrowserWindow } from 'electron'
 import electronUpdater from 'electron-updater'
 import type { AppSettings } from '../../shared/ipc'
-import { applyUpdateChannel, type UpdateEvent, sanitizeUpdateErrorMessage } from '../../shared/update'
+import { applyUpdateChannel, type UpdateEvent, formatReleaseNotesForDisplay, sanitizeUpdateErrorMessage } from '../../shared/update'
 import { emitLog } from '../git/log-bus'
 
 const { autoUpdater } = electronUpdater
@@ -51,7 +51,7 @@ export function initAutoUpdater(getSettings: () => AppSettings): void {
     broadcast({
       type: 'available',
       version: info.version,
-      releaseNotes: formatReleaseNotes(info.releaseNotes)
+      releaseNotes: formatReleaseNotesForDisplay(info.releaseNotes)
     })
     if (getSettings().autoDownloadUpdates) {
       void autoUpdater.downloadUpdate().catch((error: Error) => {
@@ -118,21 +118,4 @@ export function installUpdate(): void {
 
 export function getAppVersion(): string {
   return app.getVersion()
-}
-
-function formatReleaseNotes(notes: unknown): string | undefined {
-  if (!notes) return undefined
-  if (typeof notes === 'string') return notes
-  if (!Array.isArray(notes)) return undefined
-  return notes
-    .map((entry) => {
-      if (typeof entry === 'string') return entry
-      if (entry && typeof entry === 'object' && 'note' in entry) {
-        const note = (entry as { note?: string | null }).note
-        return note ?? ''
-      }
-      return ''
-    })
-    .filter(Boolean)
-    .join('\n\n')
 }

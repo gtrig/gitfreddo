@@ -47,7 +47,9 @@ export function UpdateBanner({
               </p>
             )}
             {state.releaseNotes && !isDownloading && (
-              <p className="mt-1 line-clamp-3 text-xs text-gf-fg-subtle">{state.releaseNotes}</p>
+              <p className="mt-1 line-clamp-3 whitespace-pre-line text-xs text-gf-fg-subtle">
+                {state.releaseNotes}
+              </p>
             )}
           </div>
           <button
