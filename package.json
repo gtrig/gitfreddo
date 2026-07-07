@@ -1,6 +1,6 @@
 {
   "name": "gitfreddo",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "private": true,
   "description": "Desktop git client with commit graph",
   "author": "George Trigonakis <gtrig84@gmail.com>",

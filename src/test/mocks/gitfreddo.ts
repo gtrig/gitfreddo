@@ -126,7 +126,7 @@ export function createGitFreddoMock(overrides: Partial<GitFreddoAPI> = {}): GitF
     zoomOut: vi.fn(async () => 0.9),
     onZoomChanged: vi.fn(() => () => undefined),
     onRepoChanged: vi.fn(() => () => undefined),
-    getAppVersion: vi.fn(async () => '0.2.8'),
+    getAppVersion: vi.fn(async () => '0.2.9'),
     checkForUpdates: vi.fn(async () => undefined),
     downloadUpdate: vi.fn(async () => undefined),
     installUpdate: vi.fn(() => undefined),
