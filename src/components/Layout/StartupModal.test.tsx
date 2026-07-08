@@ -28,10 +28,14 @@ describe('StartupModal', () => {
     )
 
     expect(
-      screen.getByText('Faster timeline rendering for large repositories.')
+      screen.getByText(
+        'Startup news now ships from `NEWS.md` so release highlights stay up to date.'
+      )
     ).toBeInTheDocument()
     expect(
-      screen.getByText('Expanded AI assistance for commit messages and conflict help.')
+      screen.getByText(
+        'Bitbucket Upload SSH key needs an app password connection (OAuth cannot use that API).'
+      )
     ).toBeInTheDocument()
   })
 
