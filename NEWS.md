@@ -5,6 +5,9 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+- Full-page commit view: file list on the left, diff on the right, with **Show all files** to list every path at that revision.
+- **Full file** view mode in commit detail and file history (alongside unified and side-by-side).
+
 ## [0.3.4]
 
 - Startup news now ships from `NEWS.md` so release highlights stay up to date.
