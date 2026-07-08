@@ -42,11 +42,15 @@ GitFreddo loads unprefixed keys from `.env` into the Electron main process at st
 3. Enter your Bitbucket username and app password
 4. Click **Connect**
 
-Create an app password in Bitbucket with repository read/write permissions. Credentials are stored locally using OS encryption.
+Create an app password in Bitbucket with **Account: Write** (needed for SSH key upload) plus repository / pull request access as needed. Credentials are stored locally using OS encryption.
+
+If Bitbucket no longer offers app passwords, use an **API token with scopes** the same way (username + token in App password mode).
 
 ## SSH key upload
 
-After connecting, click **Upload SSH key** to add a generated key to your Bitbucket account. Useful when you prefer SSH remotes.
+Bitbucket’s SSH keys API does **not** accept OAuth access tokens (only session, password, or app password / API token). Connect with **App password**, then click **Upload SSH key**.
+
+OAuth still works for PRs, issues, and repo browsing — only SSH key upload needs app password.
 
 ## Using Bitbucket features
 
@@ -68,6 +72,7 @@ With Bitbucket connected and a Bitbucket remote configured, the left sidebar sho
 |---------|----------|
 | "Not connected" after OAuth | Complete browser authorization; verify consumer callback URL and env vars |
 | OAuth env error | Set both `BITBUCKET_CLIENT_ID` and `BITBUCKET_CLIENT_SECRET` |
+| SSH upload 403 / “apppassword” only | Disconnect OAuth; reconnect with **App password** (or API token) |
 | Push/clone still asks for password | Ensure the remote URL uses HTTPS with a connected account, or use SSH |
 | Issues panel empty or error | Enable the issue tracker for the repository in Bitbucket settings |
 

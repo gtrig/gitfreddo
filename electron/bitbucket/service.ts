@@ -277,6 +277,12 @@ export async function uploadBitbucketSshKey(settings: AppSettings, title: string
   if (!login) {
     throw new Error('Bitbucket account is not connected')
   }
+  const authType = inferBitbucketAuthType(settings)
+  if (authType !== 'app_password') {
+    throw new Error(
+      'Bitbucket SSH key upload requires an app password (or API token). OAuth cannot access the SSH keys API. Disconnect, then reconnect with App password.'
+    )
+  }
   const result = await generateAndUploadSshKey(login, title, authSettings(settings))
   const next = await saveSettings({ bitbucketSshKeyTitle: result.title })
   return { settings: next, result }

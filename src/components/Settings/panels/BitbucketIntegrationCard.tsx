@@ -25,6 +25,8 @@ export function BitbucketIntegrationCard() {
   const login = status?.login ?? null
   const avatarUrl = status?.avatarUrl ?? null
   const sshKeyTitle = status?.sshKeyTitle ?? null
+  const authType = status?.authType ?? null
+  const canUploadSshKey = authType === 'app_password'
 
   useEffect(() => {
     const unsubscribe = window.gitfreddo.onBitbucketConnectProgress((next) => {
@@ -194,7 +196,11 @@ export function BitbucketIntegrationCard() {
                 ? t('settings.bitbucket.disconnecting')
                 : t('settings.bitbucket.disconnect')}
             </ActionButton>
-            <ActionButton onClick={() => void handleUploadSshKey()} disabled={uploadingKey}>
+            <ActionButton
+              onClick={() => void handleUploadSshKey()}
+              disabled={uploadingKey || !canUploadSshKey}
+              title={!canUploadSshKey ? t('settings.bitbucket.sshRequiresAppPassword') : undefined}
+            >
               {uploadingKey
                 ? t('settings.bitbucket.uploading')
                 : t('settings.bitbucket.uploadSshKey')}
@@ -220,7 +226,9 @@ export function BitbucketIntegrationCard() {
       </div>
 
       <p className="mt-3 text-[11px] leading-relaxed text-gf-fg-subtle">
-        {t('settings.bitbucket.tokenHint')}
+        {connected && !canUploadSshKey
+          ? t('settings.bitbucket.sshRequiresAppPassword')
+          : t('settings.bitbucket.tokenHint')}
       </p>
     </div>
   )

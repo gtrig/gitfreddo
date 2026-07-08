@@ -220,4 +220,16 @@ describe('bitbucket service auth', () => {
       }
     )
   })
+
+  it('rejects SSH key upload when connected with OAuth', async () => {
+    const settings = {
+      bitbucketLogin: 'gtrig',
+      bitbucketAuthType: 'oauth' as const
+    }
+
+    await expect(uploadBitbucketSshKey(settings as never, 'GitFreddo key')).rejects.toThrow(
+      /app password/i
+    )
+    expect(generateAndUploadSshKey).not.toHaveBeenCalled()
+  })
 })

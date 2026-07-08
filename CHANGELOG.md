@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-08 — Bitbucket SSH upload requires app password
+
+- **Why:** Bitbucket SSH keys API rejects OAuth (`403` … only session/password/apppassword); Upload SSH key failed after OAuth connect.
+- **What:** Guard `uploadBitbucketSshKey` for non–app-password auth; disable Upload SSH in UI when on OAuth with guidance; docs updated.
+
 ### 2026-07-08 — GitHub OAuth scope for SSH key upload
 
 - **Why:** Upload SSH key returned GitHub API 404 after OAuth; device flow only requested `repo`, which cannot call `POST /user/keys`.
