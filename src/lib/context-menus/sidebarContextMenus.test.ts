@@ -58,6 +58,36 @@ describe('localBranchContextMenuItems', () => {
 
     expect(items.some((item) => item.id === 'create-pr')).toBe(true)
   })
+
+  it('offers graph visibility toggle when handler is provided', () => {
+    const items = localBranchContextMenuItems(branch(), {
+      onCheckout: noop,
+      onSelectCommit: noop,
+      onMerge: noop,
+      onRename: noop,
+      onDelete: noop,
+      onToggleGraphVisibility: noop,
+      isHiddenInGraph: true
+    })
+
+    const toggle = items.find((item) => item.id === 'toggle-graph-visibility')
+    expect(toggle?.label).toBe('Show in graph')
+    expect(toggle?.checked).toBe(false)
+  })
+
+  it('disables graph visibility toggle for the current branch', () => {
+    const items = localBranchContextMenuItems(branch({ isCurrent: true }), {
+      onCheckout: noop,
+      onSelectCommit: noop,
+      onMerge: noop,
+      onRename: noop,
+      onDelete: noop,
+      onToggleGraphVisibility: noop,
+      isHiddenInGraph: false
+    })
+
+    expect(items.find((item) => item.id === 'toggle-graph-visibility')?.disabled).toBe(true)
+  })
 })
 
 describe('worktreeContextMenuItems', () => {
@@ -107,6 +137,28 @@ describe('remoteBranchContextMenuItems', () => {
       }
     )
     expect(items.some((item) => item.id === 'delete-remote')).toBe(true)
+  })
+
+  it('offers graph visibility toggle when handler is provided', () => {
+    const items = remoteBranchContextMenuItems(
+      {
+        name: 'remotes/origin/feature',
+        head: 'abc',
+        ahead: 0,
+        behind: 0,
+        isCurrent: false,
+        isRemote: true
+      },
+      {
+        onSelectCommit: noop,
+        onToggleGraphVisibility: noop,
+        isHiddenInGraph: false
+      }
+    )
+
+    const toggle = items.find((item) => item.id === 'toggle-graph-visibility')
+    expect(toggle?.label).toBe('Hide from graph')
+    expect(toggle?.checked).toBe(true)
   })
 })
 

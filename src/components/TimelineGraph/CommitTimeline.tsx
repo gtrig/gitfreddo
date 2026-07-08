@@ -17,6 +17,11 @@ import { timelineRefs } from '@/lib/timeline/timelineRefs'
 import { commitSearchDimmedHashes, commitSearchRowDimClass } from '@/lib/git/commitSearch'
 import { useCommitSearchStore } from '@/stores/commitSearch'
 import { filterTimelineCommits, isStashCommit, resolveStashEntry } from '@/lib/git/stashCommit'
+import {
+  filterCommitsForVisibleBranches,
+  filterTimelineRefsForVisibility
+} from '@/lib/timeline/branchVisibility'
+import { useBranchVisibilityStore } from '@/stores/branchVisibility'
 import { stashContextMenuItems } from '@/lib/context-menus/sidebarContextMenus'
 import {
   hasVisibleColumnAfter,
@@ -81,6 +86,7 @@ function BranchTagRow({
   isSelected,
   isPrimary,
   searchDimClass,
+  hiddenBranches,
   onRowContextMenu,
   onRefContextMenu,
   onRefDoubleClick,
@@ -97,6 +103,7 @@ function BranchTagRow({
   isSelected: boolean
   isPrimary: boolean
   searchDimClass: string
+  hiddenBranches: ReadonlySet<string>
   onRowContextMenu: (event: React.MouseEvent) => void
   onRefContextMenu: (event: React.MouseEvent, timelineRef: TimelineRef) => void
   onRefDoubleClick: (event: React.MouseEvent, timelineRef: TimelineRef) => void
@@ -106,7 +113,10 @@ function BranchTagRow({
 }) {
   const refConnectorAnchor = useConnectorAnchor(`ref:${commit.hash}`)
   const stashConnectorAnchor = useConnectorAnchor(`stash:${commit.hash}`)
-  const refs = timelineRefs(commit.refs, tagNames, remoteNames)
+  const refs = filterTimelineRefsForVisibility(
+    timelineRefs(commit.refs, tagNames, remoteNames),
+    hiddenBranches
+  )
   const stash = isStashCommit(commit)
 
   return (
@@ -187,12 +197,16 @@ export function CommitTimeline() {
   const selectCommitRange = useSelectionStore((s) => s.selectCommitRange)
 
   const searchQuery = useCommitSearchStore((s) => s.query)
-  const commits = useMemo(() => filterTimelineCommits(graph?.commits ?? []), [graph?.commits])
+  const hiddenBranches = useBranchVisibilityStore((s) => s.hiddenBranches)
+  const head = repoStatus?.head ?? ''
+  const commits = useMemo(() => {
+    const filtered = filterTimelineCommits(graph?.commits ?? [])
+    return filterCommitsForVisibleBranches(filtered, branches ?? [], hiddenBranches, head)
+  }, [graph?.commits, branches, hiddenBranches, head])
   const searchDimmedHashes = useMemo(
     () => commitSearchDimmedHashes(commits, searchQuery),
     [commits, searchQuery]
   )
-  const head = repoStatus?.head ?? ''
   const isDetached = repoStatus?.isDetached ?? false
   const currentBranch = isDetached ? '' : (repoStatus?.branch ?? workingStatus?.branch ?? '')
   const selectedHashSet = useMemo(() => new Set(selectedCommitHashes), [selectedCommitHashes])
@@ -523,6 +537,7 @@ export function CommitTimeline() {
                 isSelected={isSelected}
                 isPrimary={isPrimary}
                 searchDimClass={searchDimClass}
+                hiddenBranches={hiddenBranches}
                 onRowContextMenu={onRowContextMenu(commit)}
                 onRefContextMenu={onRefContextMenu(commit)}
                 onRefDoubleClick={handleRefDoubleClick(commit)}

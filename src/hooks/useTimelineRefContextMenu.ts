@@ -11,6 +11,7 @@ import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
 import { buildTimelineRefContextMenuItems } from '@/lib/timeline/timelineRefContextMenu'
 import type { TimelineRef } from '@/lib/timeline/timelineRefs'
+import { useBranchVisibilityStore } from '@/stores/branchVisibility'
 
 export interface TimelineRefContextMenuOptions {
   connected: boolean
@@ -39,6 +40,8 @@ export function useTimelineRefContextMenu({
   const { data: ghCtx } = useGitHubRepoContext(repoPath, connected)
   const invalidatePrs = useInvalidateGitHubPullRequests()
   const show = useToastStore((s) => s.show)
+  const toggleBranchVisibility = useBranchVisibilityStore((s) => s.toggleBranchVisibility)
+  const isBranchHidden = useBranchVisibilityStore((s) => s.isBranchHidden)
 
   const [renameBranch, setRenameBranch] = useState<string | null>(null)
   const [pendingDeleteBranch, setPendingDeleteBranch] = useState<string | null>(null)
@@ -82,16 +85,20 @@ export function useTimelineRefContextMenu({
       onPushTag: (name: string, remote?: string) => void pushTag.mutateAsync({ name, remote }),
       onRenameTag: setRenameTag,
       onDeleteTag: (tag: GitTag, remote?: string) => setPendingDeleteTag({ tag, remote }),
-      defaultRemote
+      defaultRemote,
+      onToggleGraphVisibility: toggleBranchVisibility,
+      isBranchHiddenInGraph: isBranchHidden
     }),
     [
       branches,
       canCreatePr,
       checkout,
       defaultRemote,
+      isBranchHidden,
       onMerge,
       onSelectCommit,
       pushTag,
+      toggleBranchVisibility,
       unsetUpstream
     ]
   )
