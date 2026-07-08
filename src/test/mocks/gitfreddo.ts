@@ -22,10 +22,12 @@ export const defaultMockSettings: AppSettings = {
   aiConflictInstructions: '',
   githubLogin: '',
   githubConnectedAt: null,
+  githubSshKeyTitle: '',
   bitbucketLogin: '',
   bitbucketAuthLogin: '',
   bitbucketConnectedAt: null,
   bitbucketAuthType: null,
+  bitbucketSshKeyTitle: '',
   pullRebase: false,
   submoduleRecursion: 'on-demand',
   pushSubmoduleRecursion: 'check',
@@ -59,9 +61,26 @@ export function createGitFreddoMock(overrides: Partial<GitFreddoAPI> = {}): GitF
     openInEditor: vi.fn(async () => undefined),
     getSettings: vi.fn(async () => ({ ...defaultMockSettings })),
     setSettings: vi.fn(async (patch) => ({ ...defaultMockSettings, ...patch })),
-    githubGetStatus: vi.fn(async () => ({ connected: false, login: null, avatarUrl: null })),
-    githubConnect: vi.fn(async () => ({ connected: true, login: 'test', avatarUrl: null })),
-    githubConnectPat: vi.fn(async () => ({ connected: true, login: 'test', avatarUrl: null })),
+    exportSettingsBackup: vi.fn(async () => '/tmp/gitfreddo-settings-backup.json'),
+    importSettingsBackup: vi.fn(async () => ({ ...defaultMockSettings })),
+    githubGetStatus: vi.fn(async () => ({
+      connected: false,
+      login: null,
+      avatarUrl: null,
+      sshKeyTitle: null
+    })),
+    githubConnect: vi.fn(async () => ({
+      connected: true,
+      login: 'test',
+      avatarUrl: null,
+      sshKeyTitle: null
+    })),
+    githubConnectPat: vi.fn(async () => ({
+      connected: true,
+      login: 'test',
+      avatarUrl: null,
+      sshKeyTitle: null
+    })),
     githubDisconnect: vi.fn(async () => undefined),
     githubListRepos: vi.fn(async () => []),
     githubCreateRepo: vi.fn(async () => ({
@@ -127,19 +146,22 @@ export function createGitFreddoMock(overrides: Partial<GitFreddoAPI> = {}): GitF
       connected: false,
       login: null,
       avatarUrl: null,
-      authType: null
+      authType: null,
+      sshKeyTitle: null
     })),
     bitbucketConnect: vi.fn(async () => ({
       connected: true,
       login: 'test',
       avatarUrl: null,
-      authType: 'oauth' as const
+      authType: 'oauth' as const,
+      sshKeyTitle: null
     })),
     bitbucketConnectAppPassword: vi.fn(async () => ({
       connected: true,
       login: 'test',
       avatarUrl: null,
-      authType: 'app_password' as const
+      authType: 'app_password' as const,
+      sshKeyTitle: null
     })),
     bitbucketDisconnect: vi.fn(async () => undefined),
     bitbucketListRepos: vi.fn(async () => []),

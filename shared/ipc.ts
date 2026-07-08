@@ -49,10 +49,12 @@ export interface AppSettings {
   aiConflictInstructions: string
   githubLogin: string
   githubConnectedAt: number | null
+  githubSshKeyTitle: string
   bitbucketLogin: string
   bitbucketAuthLogin: string
   bitbucketConnectedAt: number | null
   bitbucketAuthType: import('./bitbucket').BitbucketAuthType | null
+  bitbucketSshKeyTitle: string
   pullRebase: boolean
   submoduleRecursion: SubmoduleRecursion
   pushSubmoduleRecursion: PushSubmoduleRecursion
@@ -67,6 +69,7 @@ export interface GitHubStatus {
   connected: boolean
   login: string | null
   avatarUrl: string | null
+  sshKeyTitle: string | null
 }
 
 export interface BitbucketStatus {
@@ -74,6 +77,7 @@ export interface BitbucketStatus {
   login: string | null
   avatarUrl: string | null
   authType: import('./bitbucket').BitbucketAuthType | null
+  sshKeyTitle: string | null
 }
 
 export type BitbucketAuthSettings = Pick<
@@ -130,6 +134,8 @@ export interface GitFreddoAPI {
   openInEditor: (relativePath: string) => Promise<void>
   getSettings: () => Promise<AppSettings>
   setSettings: (patch: Partial<AppSettings>) => Promise<AppSettings>
+  exportSettingsBackup: () => Promise<string | null>
+  importSettingsBackup: () => Promise<AppSettings | null>
   githubGetStatus: () => Promise<GitHubStatus>
   githubConnect: () => Promise<GitHubStatus>
   githubConnectPat: (token: string) => Promise<GitHubStatus>
