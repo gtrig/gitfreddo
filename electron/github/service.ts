@@ -14,15 +14,25 @@ import { createPullRequest, listPullRequests, mergePullRequest } from './api/pul
 import { clearRepoCache, createRepo, forkRepo, listUserRepos } from './api/repos'
 import { runGitHubDeviceFlow, type DeviceFlowProgress } from './oauth'
 import { resolveGitHubRepoContext } from './repo-context'
-import { generateAndUploadSshKey } from './ssh-keys'
+import { generateAndUploadSshKey, findGitFreddoSshKeyTitle } from './ssh-keys'
 import { clearGitHubToken, hasGitHubToken, loadGitHubToken, saveGitHubToken } from './token-store'
 
-function toStatus(login: string, avatarUrl: string): GitHubStatus {
-  return { connected: true, login, avatarUrl }
+function sshKeyTitleFromSettings(title: string | undefined | null): string | null {
+  const trimmed = title?.trim() ?? ''
+  return trimmed || null
+}
+
+function toStatus(login: string, avatarUrl: string, sshKeyTitle: string): GitHubStatus {
+  return {
+    connected: true,
+    login,
+    avatarUrl,
+    sshKeyTitle: sshKeyTitleFromSettings(sshKeyTitle)
+  }
 }
 
 function disconnectedStatus(): GitHubStatus {
-  return { connected: false, login: null, avatarUrl: null }
+  return { connected: false, login: null, avatarUrl: null, sshKeyTitle: null }
 }
 
 async function clearGitHubConnection(_settings: AppSettings): Promise<AppSettings> {
@@ -30,30 +40,58 @@ async function clearGitHubConnection(_settings: AppSettings): Promise<AppSetting
   clearRepoCache()
   return saveSettings({
     githubLogin: '',
-    githubConnectedAt: null
+    githubConnectedAt: null,
+    githubSshKeyTitle: ''
   })
 }
 
-export async function getGitHubStatus(settings: AppSettings): Promise<GitHubStatus> {
+async function resolveGitHubSshKeyTitle(
+  settings: AppSettings,
+  token: string
+): Promise<{ settings: AppSettings; sshKeyTitle: string }> {
+  const stored = settings.githubSshKeyTitle?.trim()
+  if (stored) {
+    return { settings, sshKeyTitle: stored }
+  }
+
+  const discovered = await findGitFreddoSshKeyTitle(token)
+  if (!discovered) {
+    return { settings, sshKeyTitle: '' }
+  }
+
+  const next = await saveSettings({ githubSshKeyTitle: discovered })
+  return { settings: next, sshKeyTitle: discovered }
+}
+
+export async function getGitHubStatus(
+  settings: AppSettings
+): Promise<{ settings: AppSettings; status: GitHubStatus }> {
   const tokenPresent = await hasGitHubToken()
   if (!tokenPresent) {
-    return disconnectedStatus()
+    return { settings, status: disconnectedStatus() }
   }
 
   try {
     const token = await loadGitHubToken()
-    if (!token) return disconnectedStatus()
+    if (!token) {
+      return { settings, status: disconnectedStatus() }
+    }
     const user = await getAuthenticatedUser(token)
+    let nextSettings = settings
     if (user.login !== settings.githubLogin) {
-      await saveSettings({
+      nextSettings = await saveSettings({
         githubLogin: user.login,
         githubConnectedAt: settings.githubConnectedAt ?? Date.now()
       })
     }
-    return toStatus(user.login, user.avatar_url)
+    const sshKey = await resolveGitHubSshKeyTitle(nextSettings, token)
+    return {
+      settings: sshKey.settings,
+      status: toStatus(user.login, user.avatar_url, sshKey.sshKeyTitle)
+    }
   } catch {
-    await clearGitHubConnection(settings)
-    return disconnectedStatus()
+    const cleared = await clearGitHubConnection(settings)
+    return { settings: cleared, status: disconnectedStatus() }
   }
 }
 
@@ -97,7 +135,7 @@ async function finalizeGitHubConnection(
 
   return {
     settings: next,
-    status: toStatus(user.login, user.avatar_url)
+    status: toStatus(user.login, user.avatar_url, next.githubSshKeyTitle)
   }
 }
 
@@ -117,8 +155,10 @@ export async function forkGitHubRepo(owner: string, repo: string): Promise<GitHu
   return forkRepo(owner, repo)
 }
 
-export async function uploadGitHubSshKey(title: string) {
-  return generateAndUploadSshKey(title)
+export async function uploadGitHubSshKey(_settings: AppSettings, title: string) {
+  const result = await generateAndUploadSshKey(title)
+  const next = await saveSettings({ githubSshKeyTitle: result.title })
+  return { settings: next, result }
 }
 
 export async function listGitHubPullRequests(repoPath: string, settings: AppSettings) {

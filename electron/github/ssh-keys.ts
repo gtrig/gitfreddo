@@ -3,10 +3,25 @@ import { mkdtempSync, readFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { githubJson } from './api/http'
+import { findGitFreddoSshKeyLabel } from '../../shared/forge-ssh'
 
 export interface SshKeyResult {
   title: string
   publicKey: string
+}
+
+interface GitHubApiSshKey {
+  title?: string
+}
+
+export async function listSshKeys(token?: string): Promise<string[]> {
+  const keys = await githubJson<GitHubApiSshKey[]>('/user/keys', {}, token)
+  return keys.map((key) => key.title?.trim() ?? '').filter(Boolean)
+}
+
+export async function findGitFreddoSshKeyTitle(token?: string): Promise<string | null> {
+  const titles = await listSshKeys(token)
+  return findGitFreddoSshKeyLabel(titles)
 }
 
 export function generateSshKeyPair(): { publicKey: string; privateKeyPath: string } {
