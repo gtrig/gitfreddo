@@ -29,12 +29,12 @@ describe('StartupModal', () => {
 
     expect(
       screen.getByText(
-        'Startup news now ships from `NEWS.md` so release highlights stay up to date.'
+        'Full-page commit view: file list on the left, diff on the right, with **Show all files** to list every path at that revision.'
       )
     ).toBeInTheDocument()
     expect(
       screen.getByText(
-        'Bitbucket Upload SSH key needs an app password connection (OAuth cannot use that API).'
+        '**Full file** view mode in commit detail and file history (alongside unified and side-by-side).'
       )
     ).toBeInTheDocument()
   })

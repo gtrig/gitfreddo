@@ -127,6 +127,8 @@ export class RepoManager {
         return logOps.showCommit(cwd, git, p.hash as string)
       case 'log.message':
         return logOps.commitMessage(cwd, git, p.hash as string)
+      case 'log.tree':
+        return logOps.listTreeFiles(cwd, git, p.hash as string)
       case 'branch.list':
         return branchOps.branchList(cwd, git)
       case 'branch.checkout':
