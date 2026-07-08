@@ -85,11 +85,7 @@
     "supportBody": "If GitFreddo is useful to you, consider buying me a coffee to help fund ongoing work.",
     "donateCta": "Buy Me a Coffee",
     "newsTitle": "Latest News",
-    "newsItems": {
-      "performance": "Faster timeline rendering for large repositories.",
-      "github": "Improved GitHub flows for pull requests and issues.",
-      "ai": "Expanded AI assistance for commit messages and conflict help."
-    },
+    "newsEmpty": "No news items yet. Check back after the next update.",
     "updatesTitle": "Updates",
     "updatesBody": "Use the app update banner to download and install the latest GitFreddo release when it becomes available.",
     "checkForUpdates": "Check for Updates",

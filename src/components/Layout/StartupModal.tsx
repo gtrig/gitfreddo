@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Modal, ActionButton } from '@/components/Ui/Modal'
+import { getStartupNewsItems } from '@/lib/news/content'
 
 interface StartupModalProps {
   open: boolean
@@ -9,6 +10,7 @@ interface StartupModalProps {
 
 export function StartupModal({ open, onClose, onCheckForUpdates }: StartupModalProps) {
   const { t } = useTranslation()
+  const newsItems = getStartupNewsItems()
 
   return (
     <Modal title={t('startup.title')} open={open} onClose={onClose} size="lg">
@@ -35,11 +37,15 @@ export function StartupModal({ open, onClose, onCheckForUpdates }: StartupModalP
 
         <section className="rounded-lg border border-gf-border bg-gf-bg-deep p-3">
           <h3 className="text-sm font-semibold text-gf-fg">{t('startup.newsTitle')}</h3>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-gf-fg-subtle">
-            <li>{t('startup.newsItems.performance')}</li>
-            <li>{t('startup.newsItems.github')}</li>
-            <li>{t('startup.newsItems.ai')}</li>
-          </ul>
+          {newsItems.length > 0 ? (
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-gf-fg-subtle">
+              {newsItems.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-1 text-sm text-gf-fg-subtle">{t('startup.newsEmpty')}</p>
+          )}
         </section>
 
         <section className="rounded-lg border border-gf-border bg-gf-bg-deep p-3">

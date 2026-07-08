@@ -3,8 +3,19 @@
 All notable changes to GitFreddo are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a release section (`## [X.Y.Z]` ↔ tag `vX.Y.Z`).
 
 ## [Unreleased]
+
+### 2026-07-08 — Startup NEWS.md + session logs
+
+- **Why:** Startup modal should load user-facing news from a root file; agents should also keep changelog session notes for commits/PRs.
+- **What:** Added `NEWS.md` (tag sections) with parser/`getStartupNewsItems`; wired `StartupModal` to it; extended `.cursor/rules/changes-log.mdc` for `CHANGELOG.md` + `NEWS.md`; removed i18n-hardcoded news bullets.
+
+### 2026-07-08 — Session changelog rule (by git tag)
+
+- **Why:** Improve commit messages and PR descriptions with a running session log, separated by release tags.
+- **What:** Always-apply Cursor rule `.cursor/rules/changes-log.mdc` now targets `CHANGELOG.md`; removed temporary `CHANGES.md`; new work is logged under `[Unreleased]` and moved into version sections when a `vX.Y.Z` tag is cut.
 
 ### Added
 

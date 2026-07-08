@@ -1,0 +1,38 @@
+---
+description: Log session work in CHANGELOG.md and user-facing NEWS.md by git tag
+alwaysApply: true
+---
+
+# CHANGELOG.md and NEWS.md
+
+After completing substantive work in a session, update the root logs **before ending the turn**.
+
+Skip only for pure Q&A, exploration with no edits, or when the user explicitly says not to log.
+
+## CHANGELOG.md (commits / PRs)
+
+- Append under `## [Unreleased]` (newest dated entries at the top of that section).
+- Do **not** put unfinished work under a released version heading.
+- Release sections use git tags: `## [X.Y.Z]` matches tag `vX.Y.Z`.
+- When a release tag is cut (or the user prepares a release), move applicable `[Unreleased]` items into `## [X.Y.Z] - YYYY-MM-DD` and leave `[Unreleased]` for ongoing work.
+- Preserve older tag sections unless asked to rewrite them.
+
+Session entry format under `[Unreleased]`:
+
+```markdown
+### YYYY-MM-DD — short title
+
+- **Why:** user intent / problem being solved
+- **What:** concise bullets of what changed (areas/files, behavior)
+```
+
+Use this log when drafting commit messages and PR summaries.
+
+## NEWS.md (startup modal)
+
+- Source for the welcome/startup modal “Latest News” list (`src/lib/news/`).
+- Same tag sections as the changelog: `[Unreleased]` then `## [X.Y.Z]` (newest first).
+- Bullets are **short, user-facing** product highlights — not internal commit/PR notes.
+- When a user-visible feature ships in a session, add a bullet under `[Unreleased]` (or update an existing one). Skip pure refactors, tests-only, or infra unless the user would care on startup.
+- Cap the active list mentally at ~3–5 bullets users should see; trim or fold older bullets when promoting on release.
+- On release tag: move/promote `[Unreleased]` news into `## [X.Y.Z]` (modal prefers Unreleased if non-empty, else newest release section).

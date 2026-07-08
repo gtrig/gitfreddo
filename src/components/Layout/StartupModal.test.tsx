@@ -22,6 +22,19 @@ describe('StartupModal', () => {
     )
   })
 
+  it('shows news bullets from NEWS.md', () => {
+    renderWithProviders(
+      <StartupModal open onClose={() => undefined} onCheckForUpdates={() => undefined} />
+    )
+
+    expect(
+      screen.getByText('Faster timeline rendering for large repositories.')
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('Expanded AI assistance for commit messages and conflict help.')
+    ).toBeInTheDocument()
+  })
+
   it('calls onClose when user dismisses the modal', async () => {
     const user = userEvent.setup()
     const onClose = vi.fn()
