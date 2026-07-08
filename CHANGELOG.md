@@ -7,6 +7,16 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-08 — GitHub OAuth scope for SSH key upload
+
+- **Why:** Upload SSH key returned GitHub API 404 after OAuth; device flow only requested `repo`, which cannot call `POST /user/keys`.
+- **What:** Request `repo admin:public_key` in GitHub device OAuth; document reconnect and PAT scope for SSH upload.
+
+### 2026-07-08 — Load project .env in Electron main
+
+- **Why:** `GITHUB_CLIENT_ID` in `.env` was ignored; electron-vite only exposes `VITE_`/`MAIN_VITE_` via `import.meta.env`, so connect failed with “not configured”.
+- **What:** Added `electron/load-dotenv.ts` and call `loadDotEnvFile()` at main startup; clarified `.env.example` and GitHub setup docs.
+
 ### 2026-07-08 — Startup NEWS.md + session logs
 
 - **Why:** Startup modal should load user-facing news from a root file; agents should also keep changelog session notes for commits/PRs.

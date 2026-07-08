@@ -24,12 +24,16 @@ Open **Settings → Integrations** to configure.
 
 By default GitFreddo uses a bundled OAuth client ID. For your own app:
 
-1. Create a GitHub OAuth App with **Device Flow** enabled and `repo` scope
-2. Set `GITHUB_CLIENT_ID` in the environment or project `.env` file
+1. Create a GitHub OAuth App with **Device Flow** enabled
+2. Set `GITHUB_CLIENT_ID` in the project-root `.env` file (or export it in your shell), then **restart** the app
+
+GitFreddo requests `repo` and `admin:public_key` during device authorization (needed for SSH key upload).
 
 ```bash
 GITHUB_CLIENT_ID=your_oauth_app_client_id
 ```
+
+GitFreddo loads unprefixed keys from `.env` into the Electron main process at startup.
 
 ### GitHub Enterprise
 
@@ -43,14 +47,16 @@ GITHUB_ENTERPRISE_HOST=github.mycompany.com
 
 1. Open **Settings → Integrations**
 2. Select **PAT** mode
-3. Paste a token with at least `repo` scope
+3. Paste a token with at least `repo` scope. For **Upload SSH key**, classic PATs also need `admin:public_key` (fine-grained: account permission to manage SSH keys)
 4. Click **Connect**
 
 PATs are stored locally in your GitFreddo settings file (see [settings location](../getting-started.md#settings-location)).
 
 ## SSH key upload
 
-After connecting, click **Upload SSH key** to add a generated key to your GitHub account. Useful when you prefer SSH remotes.
+After connecting with a token that includes `admin:public_key`, click **Upload SSH key** to add a generated key to your GitHub account. Useful when you prefer SSH remotes.
+
+If upload returns **404 Not Found**, the token is missing `admin:public_key` — disconnect and reconnect (OAuth) or create a PAT that includes that scope.
 
 ## Using GitHub features
 
@@ -72,6 +78,7 @@ With GitHub connected, the left sidebar shows:
 |---------|----------|
 | "Not connected" after OAuth | Complete the browser authorization; check network and client ID |
 | Token expired | Disconnect and reconnect with a fresh PAT |
+| SSH upload 404 Not Found | Reconnect OAuth (or PAT with `admin:public_key`); GitHub hides unauthorized key endpoints as 404 |
 | Enterprise host errors | Verify `GITHUB_ENTERPRISE_HOST` matches your server hostname |
 | Push/clone still asks for password | Ensure the remote URL uses HTTPS with a connected account, or use SSH |
 

@@ -3,7 +3,8 @@ import { getAuthenticatedUser } from './client'
 
 const DEVICE_CODE_URL = 'https://github.com/login/device/code'
 const ACCESS_TOKEN_URL = 'https://github.com/login/oauth/access_token'
-const DEFAULT_SCOPE = 'repo'
+/** repo for API/git HTTPS; admin:public_key for Upload SSH key (POST /user/keys). */
+const DEFAULT_SCOPE = 'repo admin:public_key'
 
 export interface DeviceCodeResponse {
   device_code: string

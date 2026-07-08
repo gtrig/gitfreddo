@@ -26,12 +26,14 @@ Bitbucket Cloud OAuth requires a consumer with a callback URL. For GitFreddo:
 1. Create a Bitbucket OAuth consumer in your workspace settings
 2. Set the callback URL to `http://127.0.0.1:8765/callback`
 3. Enable scopes: `account`, `repository`, `repository:write`, `pullrequest`, `pullrequest:write`, `issue`, `issue:write`
-4. Set environment variables:
+4. Set these in the project-root `.env` file (or export them in your shell), then **restart** the app:
 
 ```bash
 BITBUCKET_CLIENT_ID=your_consumer_key
 BITBUCKET_CLIENT_SECRET=your_consumer_secret
 ```
+
+GitFreddo loads unprefixed keys from `.env` into the Electron main process at startup.
 
 ## Connect with an app password
 
