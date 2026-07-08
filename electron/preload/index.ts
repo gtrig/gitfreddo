@@ -91,6 +91,39 @@ const api: GitFreddoAPI = {
     ) => callback(progress)
     ipcRenderer.on('gitfreddo:github-connect-progress', listener)
     return () => ipcRenderer.removeListener('gitfreddo:github-connect-progress', listener)
+  },
+  bitbucketGetStatus: () => ipcRenderer.invoke('gitfreddo:bitbucket-get-status'),
+  bitbucketConnect: () => ipcRenderer.invoke('gitfreddo:bitbucket-connect'),
+  bitbucketConnectAppPassword: (username, password) =>
+    ipcRenderer.invoke('gitfreddo:bitbucket-connect-app-password', username, password),
+  bitbucketDisconnect: () => ipcRenderer.invoke('gitfreddo:bitbucket-disconnect'),
+  bitbucketListRepos: (params) => ipcRenderer.invoke('gitfreddo:bitbucket-list-repos', params),
+  bitbucketListWorkspaces: () => ipcRenderer.invoke('gitfreddo:bitbucket-list-workspaces'),
+  bitbucketCreateRepo: (params) => ipcRenderer.invoke('gitfreddo:bitbucket-create-repo', params),
+  bitbucketForkRepo: (workspace, repo) =>
+    ipcRenderer.invoke('gitfreddo:bitbucket-fork-repo', workspace, repo),
+  bitbucketUploadSshKey: (title) => ipcRenderer.invoke('gitfreddo:bitbucket-upload-ssh-key', title),
+  bitbucketGetRepoContext: (repoPath) =>
+    ipcRenderer.invoke('gitfreddo:bitbucket-get-repo-context', repoPath),
+  bitbucketListPullRequests: (repoPath) =>
+    ipcRenderer.invoke('gitfreddo:bitbucket-list-pull-requests', repoPath),
+  bitbucketCreatePullRequest: (repoPath, params) =>
+    ipcRenderer.invoke('gitfreddo:bitbucket-create-pull-request', repoPath, params),
+  bitbucketMergePullRequest: (repoPath, number, method) =>
+    ipcRenderer.invoke('gitfreddo:bitbucket-merge-pull-request', repoPath, number, method),
+  bitbucketListIssues: (repoPath, assigneeLogin) =>
+    ipcRenderer.invoke('gitfreddo:bitbucket-list-issues', repoPath, assigneeLogin),
+  bitbucketCreateIssue: (repoPath, params) =>
+    ipcRenderer.invoke('gitfreddo:bitbucket-create-issue', repoPath, params),
+  bitbucketUpdateIssue: (repoPath, number, params) =>
+    ipcRenderer.invoke('gitfreddo:bitbucket-update-issue', repoPath, number, params),
+  onBitbucketConnectProgress: (callback) => {
+    const listener = (
+      _event: Electron.IpcRendererEvent,
+      progress: import('../../shared/bitbucket').BitbucketConnectProgress
+    ) => callback(progress)
+    ipcRenderer.on('gitfreddo:bitbucket-connect-progress', listener)
+    return () => ipcRenderer.removeListener('gitfreddo:bitbucket-connect-progress', listener)
   }
 }
 

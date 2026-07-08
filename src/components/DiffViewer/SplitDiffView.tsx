@@ -42,8 +42,8 @@ export function SplitDiffView({ rows, loading, emptyMessage }: SplitDiffViewProp
   return (
     <div className="font-mono text-[12px] leading-5">
       <div className="sticky top-0 z-10 grid grid-cols-2 border-b border-gf-border bg-gf-bg-deep/95 text-[10px] uppercase tracking-wide text-gf-fg-subtle">
-        <span className="border-r border-gf-border px-4 py-1">Before</span>
-        <span className="px-4 py-1">After</span>
+        <span className="border-r border-gf-border px-4 py-1">{t('diff.before')}</span>
+        <span className="px-4 py-1">{t('diff.after')}</span>
       </div>
       {rows.map((row, index) => (
         <div key={index} className="grid grid-cols-2 border-b border-gf-border/40">

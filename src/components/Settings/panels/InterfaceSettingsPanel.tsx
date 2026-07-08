@@ -1,6 +1,6 @@
 import { FieldLabel, TextInput } from '@/components/Ui/Modal'
 import type { AppSettings } from '@/hooks/useAppSettings'
-import { THEME_MODE_LABELS, THEME_MODES, THEMES } from '@/lib/themes'
+import { THEME_MODES, THEMES } from '@/lib/themes'
 import { useTranslation } from 'react-i18next'
 
 interface PanelProps {
@@ -26,14 +26,21 @@ export function InterfaceSettingsPanel({ form, onChange }: PanelProps) {
         </select>
       </div>
       <div>
-        <FieldLabel>Theme</FieldLabel>
+        <FieldLabel>{t('settings.interface.theme')}</FieldLabel>
         <select
           value={form.theme}
           onChange={(e) => onChange({ theme: e.target.value as AppSettings['theme'] })}
           className="w-full rounded border border-gf-border-strong bg-gf-bg-deep px-2 py-1.5 text-sm text-gf-fg"
         >
           {THEME_MODES.map((mode) => (
-            <optgroup key={mode} label={THEME_MODE_LABELS[mode]}>
+            <optgroup
+              key={mode}
+              label={
+                mode === 'dark'
+                  ? t('settings.interface.themeModeDark')
+                  : t('settings.interface.themeModeLight')
+              }
+            >
               {THEMES.filter((theme) => theme.mode === mode).map((theme) => (
                 <option key={theme.id} value={theme.id}>
                   {theme.label}
@@ -44,7 +51,7 @@ export function InterfaceSettingsPanel({ form, onChange }: PanelProps) {
         </select>
       </div>
       <div>
-        <FieldLabel>Poll interval (ms, 0 = off)</FieldLabel>
+        <FieldLabel>{t('settings.interface.pollInterval')}</FieldLabel>
         <TextInput
           type="number"
           value={String(form.pollIntervalMs)}
@@ -54,7 +61,7 @@ export function InterfaceSettingsPanel({ form, onChange }: PanelProps) {
         />
       </div>
       <div>
-        <FieldLabel>Commit graph max commits</FieldLabel>
+        <FieldLabel>{t('settings.interface.logMaxCount')}</FieldLabel>
         <TextInput
           type="number"
           value={String(form.logMaxCount)}
@@ -64,15 +71,15 @@ export function InterfaceSettingsPanel({ form, onChange }: PanelProps) {
         />
       </div>
       <div>
-        <FieldLabel>External editor command (optional)</FieldLabel>
+        <FieldLabel>{t('settings.interface.editorCommand')}</FieldLabel>
         <TextInput
           value={form.editorCommand}
           onChange={(e) => onChange({ editorCommand: e.target.value })}
-          placeholder="code --wait"
+          placeholder={t('settings.interface.editorCommandPlaceholder')}
         />
       </div>
       <div>
-        <FieldLabel>Default diff view</FieldLabel>
+        <FieldLabel>{t('settings.interface.diffViewMode')}</FieldLabel>
         <select
           value={form.diffViewMode}
           onChange={(e) =>
@@ -80,9 +87,9 @@ export function InterfaceSettingsPanel({ form, onChange }: PanelProps) {
           }
           className="w-full rounded border border-gf-border-strong bg-gf-bg-deep px-2 py-1.5 text-sm text-gf-fg"
         >
-          <option value="unified">Unified</option>
-          <option value="split">Side by side</option>
-          <option value="word">Word diff</option>
+          <option value="unified">{t('settings.interface.diffViewUnified')}</option>
+          <option value="split">{t('settings.interface.diffViewSplit')}</option>
+          <option value="word">{t('settings.interface.diffViewWord')}</option>
         </select>
       </div>
     </div>

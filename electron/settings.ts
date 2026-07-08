@@ -29,6 +29,10 @@ const DEFAULT_SETTINGS: AppSettings = {
   aiConflictInstructions: '',
   githubLogin: '',
   githubConnectedAt: null,
+  bitbucketLogin: '',
+  bitbucketAuthLogin: '',
+  bitbucketConnectedAt: null,
+  bitbucketAuthType: null,
   pullRebase: false,
   submoduleRecursion: 'on-demand',
   pushSubmoduleRecursion: 'check',
@@ -66,6 +70,13 @@ export async function loadSettings(): Promise<AppSettings> {
       aiConflictInstructions: parsed.aiConflictInstructions ?? '',
       githubLogin: parsed.githubLogin ?? '',
       githubConnectedAt: parsed.githubConnectedAt ?? null,
+      bitbucketLogin: parsed.bitbucketLogin ?? '',
+      bitbucketAuthLogin: parsed.bitbucketAuthLogin ?? '',
+      bitbucketConnectedAt: parsed.bitbucketConnectedAt ?? null,
+      bitbucketAuthType:
+        parsed.bitbucketAuthType === 'oauth' || parsed.bitbucketAuthType === 'app_password'
+          ? parsed.bitbucketAuthType
+          : null,
       pullRebase: Boolean(parsed.pullRebase),
       submoduleRecursion:
         parsed.submoduleRecursion === 'always' || parsed.submoduleRecursion === 'none'

@@ -26,13 +26,11 @@ import { ConfirmDialog } from '@/components/Ui/Modal'
 import { ContextMenu } from '@/components/Ui/ContextMenu'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { useGitMutations } from '@/hooks/useGitMutations'
-import { useGitHubRepoContext } from '@/hooks/useGitHubRepos'
-import { useGitHubStatus } from '@/hooks/useGitHubStatus'
+import { ForgeCreatePrModal } from '@/components/Forge/ForgeCreatePrModal'
+import { useForgePullRequestActions } from '@/hooks/useForgePullRequestActions'
 import { useWorkspaceStore } from '@/stores/workspace'
-import { useInvalidateGitHubPullRequests } from '@/hooks/useGitHubPullRequests'
 import { useToastStore } from '@/stores/toast'
 import { MergeBranchDialog } from '@/components/Branches/MergeBranchDialog'
-import { CreatePrModal } from '@/components/GitHub/CreatePrModal'
 import { RenameBranchModal } from '@/components/Branches/RenameBranchModal'
 import { SetUpstreamModal } from '@/components/Branches/SetUpstreamModal'
 import { CheckoutRemoteModal } from '@/components/Branches/CheckoutRemoteModal'
@@ -233,16 +231,13 @@ export function LocalBranchesSection({
   const repoPath = useWorkspaceStore((s) => s.activePath)
   const toggleBranchVisibility = useBranchVisibilityStore((s) => s.toggleBranchVisibility)
   const isBranchHidden = useBranchVisibilityStore((s) => s.isBranchHidden)
-  const { data: ghStatus } = useGitHubStatus()
-  const { data: ghCtx } = useGitHubRepoContext(repoPath, true)
-  const invalidatePrs = useInvalidateGitHubPullRequests()
+  const { canCreatePr, provider, submitPullRequest } = useForgePullRequestActions(repoPath, true)
   const show = useToastStore((s) => s.show)
 
   const defaultBase =
     localBranches.find((b) => b.name === 'main')?.name ??
     localBranches[0]?.name ??
     'main'
-  const canCreatePr = Boolean(ghStatus?.connected && ghCtx)
 
   function toggleFolder(path: string) {
     setOpenFolders((prev) => {
@@ -272,7 +267,7 @@ export function LocalBranchesSection({
         {showDetachedHead && head ? (
           <SidebarTreeRow
             icon={<SidebarIconBranch className="h-3.5 w-3.5" />}
-            label="HEAD"
+            label={t('common.head')}
             labelClassName="text-emerald-400"
             title={t('sidebar.detachedHead')}
             onClick={() => onSelectCommit(head)}
@@ -329,15 +324,15 @@ export function LocalBranchesSection({
           onCancel={() => setPendingDelete(null)}
         />
       )}
-      {prBranch && repoPath && (
-        <CreatePrModal
+      {prBranch && repoPath && provider && (
+        <ForgeCreatePrModal
+          provider={provider}
           open
           onClose={() => setPrBranch(null)}
           defaultHead={prBranch}
           defaultBase={defaultBase}
           onSubmit={async (params) => {
-            await window.gitfreddo.githubCreatePullRequest(repoPath, params)
-            await invalidatePrs(repoPath)
+            await submitPullRequest(params)
             show(t('sidebar.pullRequestCreated'), 'success')
             setPrBranch(null)
           }}

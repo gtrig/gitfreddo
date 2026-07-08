@@ -11,7 +11,8 @@ Near-term direction for GitFreddo. Not a commitment — priorities may shift.
 
 ## Integrations
 
-- [ ] GitLab and Bitbucket forge support
+- [ ] GitLab forge support
+- [x] Bitbucket Cloud forge support
 - [ ] Improved GitHub Enterprise documentation and testing
 
 ## Graph and UX

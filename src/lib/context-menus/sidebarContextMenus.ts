@@ -2,7 +2,9 @@ import type { TFunction } from 'i18next'
 import type { BranchCheckoutParams } from '@shared/git'
 import type { ContextMenuItem } from '@/components/Ui/ContextMenu'
 import type { GitBranch, GitTag, GitWorktreeEntry } from '@/lib/types'
+import type { BitbucketIssue, BitbucketMergeMethod, BitbucketPullRequest } from '@shared/bitbucket'
 import type { GitHubIssue, GitHubMergeMethod, GitHubPullRequest } from '@shared/github'
+import type { ForgeProvider } from '@/lib/forge/detect'
 import { copyToClipboard } from '@/lib/clipboard'
 import { detachedRefCheckoutParams, localBranchCheckoutParams } from '@/lib/git/branchCheckout'
 import { remoteBranchShortName } from '@/lib/workspace/branchTree'
@@ -467,16 +469,25 @@ export function tagContextMenuItems(
 }
 
 export function pullRequestContextMenuItems(
-  pr: GitHubPullRequest,
+  pr: GitHubPullRequest | BitbucketPullRequest,
   handlers: {
-    onMerge: (method: GitHubMergeMethod) => void
+    onMerge: (method: GitHubMergeMethod | BitbucketMergeMethod) => void
   },
-  t?: TFunction
+  t?: TFunction,
+  provider: ForgeProvider = 'github'
 ): ContextMenuItem[] {
+  const openLabel =
+    provider === 'bitbucket'
+      ? t
+        ? t('contextMenu.sidebar.openOnBitbucket')
+        : 'Open on Bitbucket'
+      : t
+        ? t('contextMenu.sidebar.openOnGitHub')
+        : 'Open on GitHub'
   return [
     {
       id: 'open',
-      label: t ? t('contextMenu.sidebar.openOnGitHub') : 'Open on GitHub',
+      label: openLabel,
       onClick: () => window.open(pr.htmlUrl, '_blank', 'noopener,noreferrer')
     },
     {
@@ -504,19 +515,29 @@ export function pullRequestContextMenuItems(
 }
 
 export function issueContextMenuItems(
-  issue: GitHubIssue,
+  issue: GitHubIssue | BitbucketIssue,
   handlers: {
     onBranchFromIssue: (issueNumber: number, title: string) => void
-    onEdit?: (issue: GitHubIssue) => void
-    onClose?: (issue: GitHubIssue) => void
-    onReopen?: (issue: GitHubIssue) => void
+    onEdit?: (issue: GitHubIssue | BitbucketIssue) => void
+    onClose?: (issue: GitHubIssue | BitbucketIssue) => void
+    onReopen?: (issue: GitHubIssue | BitbucketIssue) => void
   },
-  t?: TFunction
+  t?: TFunction,
+  provider: ForgeProvider = 'github'
 ): ContextMenuItem[] {
+  const openLabel =
+    provider === 'bitbucket'
+      ? t
+        ? t('contextMenu.sidebar.openOnBitbucket')
+        : 'Open on Bitbucket'
+      : t
+        ? t('contextMenu.sidebar.openOnGitHub')
+        : 'Open on GitHub'
+  const issueNs = provider === 'bitbucket' ? 'bitbucket.issue' : 'github.issue'
   const items: ContextMenuItem[] = [
     {
       id: 'open',
-      label: t ? t('contextMenu.sidebar.openOnGitHub') : 'Open on GitHub',
+      label: openLabel,
       onClick: () => window.open(issue.htmlUrl, '_blank', 'noopener,noreferrer')
     },
     {
@@ -529,7 +550,7 @@ export function issueContextMenuItems(
   if (handlers.onEdit) {
     items.push({
       id: 'edit',
-      label: t ? t('github.issue.edit') : 'Edit issue…',
+      label: t ? t(`${issueNs}.edit`) : 'Edit issue…',
       onClick: () => handlers.onEdit!(issue)
     })
   }
@@ -537,7 +558,7 @@ export function issueContextMenuItems(
   if (issue.state === 'open' && handlers.onClose) {
     items.push({
       id: 'close',
-      label: t ? t('github.issue.close') : 'Close issue',
+      label: t ? t(`${issueNs}.close`) : 'Close issue',
       onClick: () => handlers.onClose!(issue)
     })
   }
@@ -545,7 +566,7 @@ export function issueContextMenuItems(
   if (issue.state === 'closed' && handlers.onReopen) {
     items.push({
       id: 'reopen',
-      label: t ? t('github.issue.reopen') : 'Reopen issue',
+      label: t ? t(`${issueNs}.reopen`) : 'Reopen issue',
       onClick: () => handlers.onReopen!(issue)
     })
   }

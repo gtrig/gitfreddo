@@ -41,6 +41,24 @@ import {
   updateGitHubIssue,
   uploadGitHubSshKey
 } from '../github/service'
+import {
+  connectBitbucket,
+  connectBitbucketAppPassword,
+  createBitbucketIssue,
+  createBitbucketPullRequest,
+  createBitbucketRepo,
+  disconnectBitbucket,
+  forkBitbucketRepo,
+  getBitbucketStatus,
+  listBitbucketIssues,
+  listBitbucketPullRequests,
+  listBitbucketRepos,
+  listBitbucketWorkspaces,
+  mergeBitbucketPullRequest,
+  tryGetBitbucketRepoContext,
+  updateBitbucketIssue,
+  uploadBitbucketSshKey
+} from '../bitbucket/service'
 import type { AiFillParams } from '../../shared/ai'
 import type { AppSettings, LogEntry, RepoChangeEvent } from '../../shared/ipc'
 import { THEME_BG_COLORS } from '../../shared/themes'
@@ -78,6 +96,10 @@ let settings: AppSettings = {
   aiConflictInstructions: '',
   githubLogin: '',
   githubConnectedAt: null,
+  bitbucketLogin: '',
+  bitbucketAuthLogin: '',
+  bitbucketConnectedAt: null,
+  bitbucketAuthType: null,
   pullRebase: false,
   submoduleRecursion: 'on-demand',
   pushSubmoduleRecursion: 'check',
@@ -347,6 +369,87 @@ function registerIpc(): void {
     number: number,
     params
   ) => updateGitHubIssue(repoPath, settings, number, params))
+
+  ipcMain.handle('gitfreddo:bitbucket-get-status', async () => getBitbucketStatus(settings))
+
+  ipcMain.handle('gitfreddo:bitbucket-connect', async (event) => {
+    const result = await connectBitbucket((progress) => {
+      if (!event.sender.isDestroyed()) {
+        event.sender.send('gitfreddo:bitbucket-connect-progress', progress)
+      }
+    })
+    settings = result.settings
+    return result.status
+  })
+
+  ipcMain.handle(
+    'gitfreddo:bitbucket-connect-app-password',
+    async (_event, username: string, password: string) => {
+      const result = await connectBitbucketAppPassword(username, password)
+      settings = result.settings
+      return result.status
+    }
+  )
+
+  ipcMain.handle('gitfreddo:bitbucket-disconnect', async () => {
+    settings = await disconnectBitbucket(settings)
+  })
+
+  ipcMain.handle('gitfreddo:bitbucket-list-repos', async (_event, params) =>
+    listBitbucketRepos(settings, params)
+  )
+
+  ipcMain.handle('gitfreddo:bitbucket-list-workspaces', async () =>
+    listBitbucketWorkspaces(settings)
+  )
+
+  ipcMain.handle('gitfreddo:bitbucket-create-repo', async (_event, params) =>
+    createBitbucketRepo(settings, params)
+  )
+
+  ipcMain.handle('gitfreddo:bitbucket-fork-repo', async (_event, workspace: string, repo: string) =>
+    forkBitbucketRepo(settings, workspace, repo)
+  )
+
+  ipcMain.handle('gitfreddo:bitbucket-upload-ssh-key', async (_event, title: string) =>
+    uploadBitbucketSshKey(settings, title)
+  )
+
+  ipcMain.handle('gitfreddo:bitbucket-get-repo-context', async (_event, repoPath: string) =>
+    tryGetBitbucketRepoContext(repoPath, settings)
+  )
+
+  ipcMain.handle('gitfreddo:bitbucket-list-pull-requests', async (_event, repoPath: string) =>
+    listBitbucketPullRequests(repoPath, settings)
+  )
+
+  ipcMain.handle(
+    'gitfreddo:bitbucket-create-pull-request',
+    async (_event, repoPath: string, params) =>
+      createBitbucketPullRequest(repoPath, settings, params)
+  )
+
+  ipcMain.handle(
+    'gitfreddo:bitbucket-merge-pull-request',
+    async (_event, repoPath: string, number: number, method) =>
+      mergeBitbucketPullRequest(repoPath, settings, number, method)
+  )
+
+  ipcMain.handle(
+    'gitfreddo:bitbucket-list-issues',
+    async (_event, repoPath: string, assigneeLogin?: string) =>
+      listBitbucketIssues(repoPath, settings, assigneeLogin)
+  )
+
+  ipcMain.handle('gitfreddo:bitbucket-create-issue', async (_event, repoPath: string, params) =>
+    createBitbucketIssue(repoPath, settings, params)
+  )
+
+  ipcMain.handle(
+    'gitfreddo:bitbucket-update-issue',
+    async (_event, repoPath: string, number: number, params) =>
+      updateBitbucketIssue(repoPath, settings, number, params)
+  )
 
   ipcMain.handle('gitfreddo:pick-file', async () => {
     const repo = repoManager.getRepoPath()

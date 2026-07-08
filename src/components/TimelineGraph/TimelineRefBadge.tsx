@@ -50,7 +50,7 @@ export function TimelineDetachedHeadBadge() {
       title={t('timeline.detachedHead')}
     >
       <SidebarIconBranch className="h-2.5 w-2.5 shrink-0 opacity-90" />
-      <span className="truncate">HEAD</span>
+      <span className="truncate">{t('common.head')}</span>
     </span>
   )
 }

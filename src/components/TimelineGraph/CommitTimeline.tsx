@@ -48,7 +48,7 @@ import { ColumnResizeHandle } from '@/components/Ui/ColumnResizeHandle'
 import { ContextMenu } from '@/components/Ui/ContextMenu'
 import { LoadingRow } from '@/components/Ui/Spinner'
 import { MergeBranchDialog } from '@/components/Branches/MergeBranchDialog'
-import { CreatePrModal } from '@/components/GitHub/CreatePrModal'
+import { ForgeCreatePrModal } from '@/components/Forge/ForgeCreatePrModal'
 import { AddWorktreeModal } from '@/components/Worktrees/AddWorktreeModal'
 import { CheckoutRemoteModal } from '@/components/Branches/CheckoutRemoteModal'
 import { CreateBranchModal } from '@/components/Branches/CreateBranchModal'
@@ -327,7 +327,8 @@ export function CommitTimeline() {
     setPrBranch,
     defaultBase,
     repoPath,
-    invalidatePrs,
+    provider,
+    submitPullRequest,
     show,
     worktreeBranch,
     setWorktreeBranch,
@@ -954,15 +955,15 @@ export function CommitTimeline() {
         />
       )}
 
-      {prBranch && repoPath && (
-        <CreatePrModal
+      {prBranch && repoPath && provider && (
+        <ForgeCreatePrModal
+          provider={provider}
           open
           onClose={() => setPrBranch(null)}
           defaultHead={prBranch}
           defaultBase={defaultBase}
           onSubmit={async (params) => {
-            await window.gitfreddo.githubCreatePullRequest(repoPath, params)
-            await invalidatePrs(repoPath)
+            await submitPullRequest(params)
             show(t('sidebar.pullRequestCreated'), 'success')
             setPrBranch(null)
           }}

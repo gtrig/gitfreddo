@@ -16,7 +16,9 @@
     "add": "Add",
     "remove": "Remove",
     "search": "Search",
-    "browse": "Browse"
+    "browse": "Browse",
+    "head": "HEAD",
+    "currentHead": "Current HEAD"
   },
   "workspace": {
     "hub": {
@@ -36,11 +38,16 @@
       },
       "cloneTab": {
         "url": "URL",
-        "github": "GitHub"
+        "github": "GitHub",
+        "bitbucket": "Bitbucket"
       },
       "createGithub": {
         "title": "Create on GitHub",
         "description": "Create a new repository on GitHub and clone it locally."
+      },
+      "createBitbucket": {
+        "title": "Create on Bitbucket",
+        "description": "Create a new repository on Bitbucket and clone it locally."
       },
       "recent": "Recent",
       "filter": "Filter recent repositories…",
@@ -59,7 +66,7 @@
       "error": {
         "chooseFolder": "Choose a parent folder first.",
         "enterUrl": "Enter a repository URL.",
-        "selectRepo": "Select a GitHub repository."
+        "selectRepo": "Select a repository."
       }
     },
     "tabs": {
@@ -117,6 +124,19 @@
       "en": "English",
       "el": "Ελληνικά"
     },
+    "interface": {
+      "theme": "Theme",
+      "pollInterval": "Poll interval (ms, 0 = off)",
+      "logMaxCount": "Commit graph max commits",
+      "editorCommand": "External editor command (optional)",
+      "editorCommandPlaceholder": "code --wait",
+      "diffViewMode": "Default diff view",
+      "diffViewUnified": "Unified",
+      "diffViewSplit": "Side by side",
+      "diffViewWord": "Word diff",
+      "themeModeDark": "Dark",
+      "themeModeLight": "Light"
+    },
     "git": {
       "binaryPath": "git binary path",
       "defaultRemote": "Default remote",
@@ -166,6 +186,26 @@
       "conflictInstructionsPlaceholder": "Prefer minimal, correct merges…"
     },
     "github": {
+      "title": "GitHub",
+      "description": "Connect your GitHub account to browse repositories, open pull requests, and manage remotes.",
+      "connected": "Connected",
+      "notConnected": "Not connected",
+      "signedInAs": "Signed in as @{{login}}",
+      "noAccount": "No GitHub account connected.",
+      "oauth": "OAuth",
+      "token": "Token",
+      "patPlaceholder": "ghp_…",
+      "tokenHint": "OAuth opens your browser for sign-in. Personal access tokens need repo scope and are stored only on this machine.",
+      "enterCode": "Enter this code on GitHub:",
+      "waitingAuth": "Waiting for authorization in your browser…",
+      "startingAuth": "Starting GitHub authorization…",
+      "connectWithGithub": "Connect with GitHub",
+      "connectWithToken": "Connect with token",
+      "connecting": "Connecting…",
+      "disconnect": "Disconnect",
+      "disconnecting": "Disconnecting…",
+      "uploadSshKey": "Upload SSH key",
+      "uploading": "Uploading…",
       "fork": {
         "title": "Fork repository",
         "description": "Create a fork under your GitHub account, then clone it locally.",
@@ -187,6 +227,29 @@
         "connectFirst": "Connect GitHub in Settings → Integrations to create repositories.",
         "create": "Create repository"
       }
+    },
+    "bitbucket": {
+      "title": "Bitbucket",
+      "description": "Connect Bitbucket Cloud to browse repositories, open pull requests, and manage remotes.",
+      "connected": "Connected",
+      "notConnected": "Not connected",
+      "signedInAs": "Signed in as @{{login}}",
+      "noAccount": "No Bitbucket account connected.",
+      "oauth": "OAuth",
+      "appPassword": "App password",
+      "usernamePlaceholder": "Bitbucket username",
+      "appPasswordPlaceholder": "App password",
+      "tokenHint": "OAuth opens your browser for sign-in. App passwords need repository access and are stored only on this machine.",
+      "waitingAuth": "Waiting for authorization in your browser…",
+      "exchangingToken": "Exchanging authorization code…",
+      "startingAuth": "Starting Bitbucket authorization…",
+      "connectWithBitbucket": "Connect with Bitbucket",
+      "connectWithAppPassword": "Connect with app password",
+      "connecting": "Connecting…",
+      "disconnect": "Disconnect",
+      "disconnecting": "Disconnecting…",
+      "uploadSshKey": "Upload SSH key",
+      "uploading": "Uploading…"
     },
     "maintenance": {
       "updates": "Application updates",
@@ -325,7 +388,11 @@
     "pullRequestCreated": "Pull request created",
     "openRepoForPr": "Open a repository to view pull requests.",
     "connectGitHub": "Connect GitHub in Settings → Integrations.",
+    "connectBitbucket": "Connect Bitbucket in Settings → Integrations.",
+    "connectForge": "Connect GitHub or Bitbucket in Settings → Integrations.",
     "notLinkedGitHub": "This repository is not linked to GitHub.",
+    "notLinkedBitbucket": "This repository is not linked to Bitbucket.",
+    "notLinkedForge": "This repository is not linked to a supported forge.",
     "noOpenPullRequests": "No open pull requests.",
     "prMerged": "PR #{{number}} merged",
     "openRepoForIssues": "Open a repository to view issues.",
@@ -688,6 +755,8 @@
     "loadingDiff": "Loading diff…",
     "noChangesInRange": "No changes in this range.",
     "sideBySide": "Side by side",
+    "before": "Before",
+    "after": "After",
     "noDiffContent": "No diff content for this file.",
     "stageHunk": "Stage hunk",
     "unstageHunk": "Unstage hunk",
@@ -920,6 +989,56 @@
 
     }
   },
+  "bitbucket": {
+    "fork": {
+      "title": "Fork repository",
+      "description": "Create a fork under your Bitbucket account, then clone it locally.",
+      "workspace": "Workspace",
+      "repo": "Repository",
+      "action": "Fork",
+      "success": "Repository forked.",
+      "missingFields": "Enter workspace and repository name.",
+      "connectFirst": "Connect Bitbucket in Settings → Integrations to fork repositories.",
+      "forkToAccount": "Fork to my account…"
+    },
+    "issue": {
+      "editTitle": "Edit issue #{{number}}",
+      "titleRequired": "Issue title is required.",
+      "updated": "Issue updated.",
+      "close": "Close issue",
+      "reopen": "Reopen issue",
+      "edit": "Edit issue…"
+    },
+    "pr": {
+      "createTitle": "Create pull request",
+      "description": "Description",
+      "head": "Head",
+      "base": "Base",
+      "fillWithAi": "Fill with AI",
+      "squash": "Squash",
+      "rebase": "Rebase"
+    },
+    "repo": {
+      "workspace": "Workspace",
+      "connectFirst": "Connect Bitbucket in Settings → Integrations to create repositories.",
+      "name": "Repository name",
+      "namePlaceholder": "my-new-repo",
+      "descriptionOptional": "Description (optional)",
+      "descriptionPlaceholder": "Short description",
+      "nameRequired": "Workspace and repository name are required",
+      "create": "Create repository",
+      "public": "Public",
+      "private": "Private"
+    },
+    "repoPicker": {
+      "connectFirst": "Connect Bitbucket in Settings → Integrations to browse repositories.",
+      "searchPlaceholder": "Search repositories…",
+      "loading": "Loading repositories…",
+      "empty": "No repositories found.",
+      "public": "Public",
+      "private": "Private"
+    }
+  },
   "contextMenu": {
     "detachedHead": "detached HEAD",
     "currentBranch": "current branch",
@@ -1045,6 +1164,7 @@
       "deleteFromRemote": "Delete from {{remote}}…",
       "copyTagName": "Copy tag name",
       "openOnGitHub": "Open on GitHub",
+      "openOnBitbucket": "Open on Bitbucket",
       "copyLink": "Copy link",
       "mergeCommit": "Merge commit",
       "squashAndMerge": "Squash and merge",
@@ -1120,6 +1240,11 @@
     "github": {
       "connected": "Connected to GitHub as @{{login}}",
       "disconnected": "Disconnected from GitHub",
+      "sshKeyUploaded": "SSH key uploaded: {{title}}"
+    },
+    "bitbucket": {
+      "connected": "Connected to Bitbucket as @{{login}}",
+      "disconnected": "Disconnected from Bitbucket",
       "sshKeyUploaded": "SSH key uploaded: {{title}}"
     },
     "maintenance": {

@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { BitbucketIntegrationCard } from '@/components/Settings/panels/BitbucketIntegrationCard'
 import { GithubIntegrationCard } from '@/components/Settings/panels/GithubIntegrationCard'
 
 export function IntegrationsSettingsPanel() {
@@ -10,6 +11,7 @@ export function IntegrationsSettingsPanel() {
         {t('settings.integrations.intro')}
       </p>
       <GithubIntegrationCard />
+      <BitbucketIntegrationCard />
     </div>
   )
 }

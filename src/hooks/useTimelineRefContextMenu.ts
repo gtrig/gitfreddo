@@ -4,9 +4,7 @@ import { useTranslation } from 'react-i18next'
 import type { GitBranch, GitRemote, GitTag } from '@/lib/types'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { useGitMutations } from '@/hooks/useGitMutations'
-import { useGitHubRepoContext } from '@/hooks/useGitHubRepos'
-import { useGitHubStatus } from '@/hooks/useGitHubStatus'
-import { useInvalidateGitHubPullRequests } from '@/hooks/useGitHubPullRequests'
+import { useForgePullRequestActions } from '@/hooks/useForgePullRequestActions'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
 import { buildTimelineRefContextMenuItems } from '@/lib/timeline/timelineRefContextMenu'
@@ -36,9 +34,7 @@ export function useTimelineRefContextMenu({
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
   const { checkout, pushTag, deleteBranch, deleteRemoteBranch, unsetUpstream } = useGitMutations()
   const repoPath = useWorkspaceStore((s) => s.activePath)
-  const { data: ghStatus } = useGitHubStatus()
-  const { data: ghCtx } = useGitHubRepoContext(repoPath, connected)
-  const invalidatePrs = useInvalidateGitHubPullRequests()
+  const { canCreatePr, provider, submitPullRequest } = useForgePullRequestActions(repoPath, connected)
   const show = useToastStore((s) => s.show)
   const toggleBranchVisibility = useBranchVisibilityStore((s) => s.toggleBranchVisibility)
   const isBranchHidden = useBranchVisibilityStore((s) => s.isBranchHidden)
@@ -64,7 +60,6 @@ export function useTimelineRefContextMenu({
     localBranches[0]?.name ??
     'main'
   const defaultRemote = remotes?.[0]?.name
-  const canCreatePr = Boolean(ghStatus?.connected && ghCtx)
 
   const handlers = useMemo(
     () => ({
@@ -133,7 +128,8 @@ export function useTimelineRefContextMenu({
     setPrBranch,
     defaultBase,
     repoPath,
-    invalidatePrs,
+    provider,
+    submitPullRequest,
     show,
     worktreeBranch,
     setWorktreeBranch,

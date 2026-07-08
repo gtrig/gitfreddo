@@ -16,7 +16,9 @@
     "add": "Προσθήκη",
     "remove": "Αφαίρεση",
     "search": "Αναζήτηση",
-    "browse": "Περιήγηση"
+    "browse": "Περιήγηση",
+    "head": "HEAD",
+    "currentHead": "Τρέχον HEAD"
   },
   "workspace": {
     "hub": {
@@ -26,21 +28,26 @@
         "title": "Άνοιγμα φακέλου",
         "description": "Επιλέξτε τοπικό φάκελο που περιέχει κατάλογο .git."
       },
+      "init": {
+        "title": "Αρχικοποίηση νέου αποθετηρίου",
+        "description": "Δημιουργήστε νέο αποθετήριο git σε κενό ή νέο φάκελο."
+      },
       "clone": {
         "title": "Κλωνοποίηση αποθετηρίου",
         "description": "Κλωνοποιήστε από το GitHub, το GitLab ή οποιοδήποτε git απομακρυσμένο."
       },
       "cloneTab": {
         "url": "URL",
-        "github": "GitHub"
-      },
-      "clone": {
-        "title": "Κλωνοποίηση αποθετηρίου",
-        "description": "Κλωνοποίηση από GitHub, GitLab ή οποιοδήποτε git remote."
+        "github": "GitHub",
+        "bitbucket": "Bitbucket"
       },
       "createGithub": {
         "title": "Δημιουργία στο GitHub",
         "description": "Δημιουργήστε νέο αποθετήριο στο GitHub και κλωνοποιήστε το τοπικά."
+      },
+      "createBitbucket": {
+        "title": "Δημιουργία στο Bitbucket",
+        "description": "Δημιουργήστε νέο αποθετήριο στο Bitbucket και κλωνοποιήστε το τοπικά."
       },
       "recent": "Πρόσφατα",
       "filter": "Φίλτρο πρόσφατων αποθετηρίων…",
@@ -59,7 +66,7 @@
       "error": {
         "chooseFolder": "Επιλέξτε πρώτα γονικό φάκελο.",
         "enterUrl": "Εισάγετε URL αποθετηρίου.",
-        "selectRepo": "Επιλέξτε αποθετήριο GitHub."
+        "selectRepo": "Επιλέξτε αποθετήριο."
       }
     },
     "tabs": {
@@ -117,11 +124,24 @@
       "en": "English",
       "el": "Ελληνικά"
     },
+    "interface": {
+      "theme": "Θέμα",
+      "pollInterval": "Διάστημα polling (ms, 0 = απενεργ.)",
+      "logMaxCount": "Μέγιστος αριθμός commits στο γράφημα",
+      "editorCommand": "Εντολή εξωτερικού editor (προαιρετικό)",
+      "editorCommandPlaceholder": "code --wait",
+      "diffViewMode": "Προεπιλεγμένη προβολή diff",
+      "diffViewUnified": "Ενιαία",
+      "diffViewSplit": "Πλάι-πλάι",
+      "diffViewWord": "Word diff",
+      "themeModeDark": "Σκούρο",
+      "themeModeLight": "Ανοιχτό"
+    },
     "git": {
       "binaryPath": "Διαδρομή git binary",
       "defaultRemote": "Προεπιλεγμένο remote",
       "pullRebase": "Pull με rebase",
-      "submodules": "Submodules",
+      "submodules": "Υπομονάδες",
       "submoduleRecursion": "Αναδρομή clone / fetch / pull",
       "submoduleRecursionNone": "Καμία",
       "submoduleRecursionOnDemand": "Κατά παραγγελία",
@@ -135,14 +155,14 @@
       "configLoadFailed": "Αποτυχία φόρτωσης ρυθμίσεων.",
       "configSaved": "Αποθηκεύτηκε {{key}}.",
       "repoFiles": "Αρχεία αποθετηρίου",
-      "repoHooks": "Git hooks"
+      "repoHooks": "Hooks Git"
     },
     "ai": {
       "intro": "Ο βοηθός AI συμπληρώνει μηνύματα commit και stash από τις αλλαγές σας και μπορεί να επιλύει συγκρούσεις συγχώνευσης. Υποστηρίζει OpenAI-compatible endpoints (LM Studio, Ollama, OpenAI, OpenRouter).",
       "enabled": "Ενεργοποίηση βοηθού AI",
       "provider": "Πάροχος",
       "providerLocal": "Τοπικό LLM",
-      "providerApi": "Cloud API",
+      "providerApi": "API στο cloud",
       "baseUrl": "Base URL",
       "baseUrlHintApi": "OpenAI-compatible API base URL (το /v1 προστίθεται αυτόματα).",
       "baseUrlHintLocal": "LM Studio: http://localhost:1234 · Ollama: http://localhost:11434",
@@ -166,6 +186,26 @@
       "conflictInstructionsPlaceholder": "Προτίμησε ελάχιστες, σωστές συγχωνεύσεις…"
     },
     "github": {
+      "title": "GitHub",
+      "description": "Συνδέστε τον λογαριασμό σας στο GitHub για περιήγηση σε αποθετήρια, pull requests και διαχείριση remotes.",
+      "connected": "Συνδεδεμένο",
+      "notConnected": "Μη συνδεδεμένο",
+      "signedInAs": "Συνδεδεδεμένος ως @{{login}}",
+      "noAccount": "Δεν υπάρχει συνδεδεμένος λογαριασμός GitHub.",
+      "oauth": "OAuth",
+      "token": "Token",
+      "patPlaceholder": "ghp_…",
+      "tokenHint": "Το OAuth ανοίγει τον browser για σύνδεση. Τα personal access tokens χρειάζονται repo scope και αποθηκεύονται μόνο σε αυτόν τον υπολογιστή.",
+      "enterCode": "Εισάγετε αυτόν τον κωδικό στο GitHub:",
+      "waitingAuth": "Αναμονή εξουσιοδότησης στον browser…",
+      "startingAuth": "Έναρξη εξουσιοδότησης GitHub…",
+      "connectWithGithub": "Σύνδεση με GitHub",
+      "connectWithToken": "Σύνδεση με token",
+      "connecting": "Σύνδεση…",
+      "disconnect": "Αποσύνδεση",
+      "disconnecting": "Αποσύνδεση…",
+      "uploadSshKey": "Μεταφόρτωση SSH key",
+      "uploading": "Μεταφόρτωση…",
       "fork": {
         "title": "Fork αποθετηρίου",
         "description": "Δημιουργήστε ένα κλωνίδιο στον λογαριασμό σας στο GitHub, μετά κλωνοποιήστε το τοπικά.",
@@ -187,6 +227,29 @@
         "connectFirst": "Συνδεθείτε στο GitHub από Ρυθμίσεις → Ενσωματώσεις για να δημιουργήσετε αποθετήρια.",
         "create": "Δημιουργία αποθετηρίου"
       }
+    },
+    "bitbucket": {
+      "title": "Bitbucket",
+      "description": "Συνδέστε το Bitbucket Cloud για περιήγηση αποθετηρίων, pull requests και remotes.",
+      "connected": "Συνδεδεμένο",
+      "notConnected": "Μη συνδεδεμένο",
+      "signedInAs": "Σύνδεση ως @{{login}}",
+      "noAccount": "Δεν υπάρχει συνδεδεμένος λογαριασμός Bitbucket.",
+      "oauth": "OAuth",
+      "appPassword": "App password",
+      "usernamePlaceholder": "Όνομα χρήστη Bitbucket",
+      "appPasswordPlaceholder": "App password",
+      "tokenHint": "Το OAuth ανοίγει τον browser. Τα app passwords αποθηκεύονται μόνο τοπικά.",
+      "waitingAuth": "Αναμονή εξουσιοδότησης στον browser…",
+      "exchangingToken": "Ανταλλαγή κωδικού εξουσιοδότησης…",
+      "startingAuth": "Έναρξη εξουσιοδότησης Bitbucket…",
+      "connectWithBitbucket": "Σύνδεση με Bitbucket",
+      "connectWithAppPassword": "Σύνδεση με app password",
+      "connecting": "Σύνδεση…",
+      "disconnect": "Αποσύνδεση",
+      "disconnecting": "Αποσύνδεση…",
+      "uploadSshKey": "Μεταφόρτωση SSH κλειδιού",
+      "uploading": "Μεταφόρτωση…"
     },
     "maintenance": {
       "updates": "Ενημερώσεις εφαρμογής",
@@ -258,10 +321,10 @@
     "remote": "Απομακρυσμένοι",
     "stashes": "Stashes",
     "worktrees": "Worktrees",
-    "submodules": "Submodules",
+    "submodules": "Υπομονάδες",
     "tags": "Ετικέτες",
     "pullRequests": "Pull requests",
-    "issues": "Issues",
+    "issues": "Ζητήματα",
     "add": "Προσθήκη",
     "moreActions": "Περισσότερες ενέργειες",
     "sectionActions": "Ενέργειες {{title}}",
@@ -325,7 +388,11 @@
     "pullRequestCreated": "Το pull request δημιουργήθηκε",
     "openRepoForPr": "Ανοίξτε ένα αποθετήριο για προβολή pull requests.",
     "connectGitHub": "Συνδεθείτε στο GitHub από Ρυθμίσεις → Ενσωματώσεις.",
+    "connectBitbucket": "Συνδεθείτε στο Bitbucket από Ρυθμίσεις → Ενσωματώσεις.",
+    "connectForge": "Συνδεθείτε στο GitHub ή Bitbucket από Ρυθμίσεις → Ενσωματώσεις.",
     "notLinkedGitHub": "Αυτό το αποθετήριο δεν είναι συνδεδεμένο με το GitHub.",
+    "notLinkedBitbucket": "Αυτό το αποθετήριο δεν είναι συνδεδεμένο με το Bitbucket.",
+    "notLinkedForge": "Αυτό το αποθετήριο δεν είναι συνδεδεμένο με υποστηριζόμενο forge.",
     "noOpenPullRequests": "Κανένα ανοιχτό pull request.",
     "prMerged": "Το PR #{{number}} συγχωνεύτηκε",
     "openRepoForIssues": "Ανοίξτε ένα αποθετήριο για προβολή issues.",
@@ -398,10 +465,10 @@
       "newName": "Νέο όνομα"
     },
     "mergeParent": {
-      "revertTitle": "Revert merge commit",
+      "revertTitle": "Αναίρεση merge commit",
       "cherryPickTitle": "Cherry-pick merge commit",
       "description": "Επιλέξτε mainline parent για το merge commit {{hash}}.",
-      "parentLine": "Parent {{number}}"
+      "parentLine": "Γονέας {{number}}"
     },
     "renameTag": {
       "title": "Μετονομασία ετικέτας",
@@ -506,8 +573,8 @@
       "activeHint": "Το bisect είναι ενεργό. Σημειώστε commits ως good ή bad και κάντε reset όταν τελειώσετε.",
       "inactiveHint": "Ξεκινήστε bisect με γνωστό bad commit και προαιρετικά γνωστό good commit.",
       "current": "Τρέχον:",
-      "good": "Good:",
-      "bad": "Bad:",
+      "good": "Καλό:",
+      "bad": "Κακό:",
       "badCommit": "Bad commit (απαιτείται)",
       "goodCommit": "Good commit (προαιρετικό)",
       "badPlaceholder": "HEAD ή hash commit",
@@ -518,7 +585,7 @@
       "markedGood": "Σημειώθηκε ως good.",
       "markBad": "Σήμανση τρέχοντος ως bad",
       "markedBad": "Σημειώθηκε ως bad.",
-      "resetBisect": "Reset bisect",
+      "resetBisect": "Επαναφορά bisect",
       "reset": "Το bisect έγινε reset."
     },
     "reflog": {
@@ -570,7 +637,7 @@
     "forcePush": {
       "title": "Force push;",
       "message": "Το remote έχει commits που δεν υπάρχουν τοπικά στον {{branch}}. Το force push θα αντικαταστήσει το {{remote}} με τον τοπικό κλάδο.",
-      "confirm": "Force push",
+      "confirm": "Εξαναγκαστικό push",
       "currentBranch": "τον τρέχοντα κλάδο",
       "theRemote": "το remote"
     }
@@ -688,6 +755,8 @@
     "loadingDiff": "Φόρτωση diff…",
     "noChangesInRange": "Δεν υπάρχουν αλλαγές σε αυτό το εύρος.",
     "sideBySide": "Παράλληλα",
+    "before": "Πριν",
+    "after": "Μετά",
     "noDiffContent": "Δεν υπάρχει περιεχόμενο diff για αυτό το αρχείο.",
     "stageHunk": "Stage hunk",
     "unstageHunk": "Unstage hunk",
@@ -849,16 +918,16 @@
     "commitsNotOnBranch_plural": "Υπάρχουν {{count}} commits στο αποθετήριο που δεν είναι στον τρέχοντα κλάδο.",
     "noStaleReferences": "Δεν βρέθηκαν παλαιές αναφορές. Αν τα commits εμφανίζονται ακόμα στο γράφημα, δοκιμάστε Ρυθμίσεις → Συντήρηση → Σάρωση για παλαιά commits.",
     "kindBackup": "Backup rebase/filter-branch",
-    "kindRemote": "Remote-tracking ref",
-    "kindTag": "Tag",
+    "kindRemote": "Απομακρυσμένη αναφορά",
+    "kindTag": "Ετικέτα",
     "kindBranch": "Τοπικός κλάδος",
     "kindDefault": "Αναφορά Git",
     "commitsNotOnCurrentBranch": "{{count}} commit εκτός τρέχοντος κλάδου",
     "commitsNotOnCurrentBranch_plural": "{{count}} commits εκτός τρέχοντος κλάδου",
     "deleteReferences": "Διαγραφή {{count}} αναφοράς",
     "deleteReferences_plural": "Διαγραφή {{count}} αναφορών",
-    "deleteReferencesWithCommits": " ({{count}} commit)",
-    "deleteReferencesWithCommits_plural": " ({{count}} commits)",
+    "deleteReferencesWithCommits": " ({{count}} υποβολή)",
+    "deleteReferencesWithCommits_plural": " ({{count}} υποβολές)",
     "removedReferences": "Αφαιρέθηκε {{refs}} αναφορά και {{commits}} commit.",
     "removedReferences_plural": "Αφαιρέθηκαν {{refs}} αναφορές και {{commits}} commits.",
     "stash": "Stash",
@@ -868,7 +937,7 @@
     "hashesCopied": "Αντιγράφηκαν {{count}} hashes commits.",
     "cherryPicked": "Έγινε cherry-pick {{count}} commits.",
     "squashed": "Έγινε squash {{count}} commits.",
-    "compareLabel": "{{count}} commits ({{oldest}}..{{newest}})"
+    "compareLabel": "{{count}} υποβολές ({{oldest}}..{{newest}})"
   },
   "contextMenu": {
     "detachedHead": "αποσυνδεδεμένο HEAD",
@@ -914,9 +983,9 @@
     "revertCommitRecommended": "Αναίρεση commit (συνιστάται για κοινόχρηστους κλάδους)…",
     "revertCommit": "Αναίρεση commit…",
     "removeStaleBranchHistory": "Αφαίρεση παλαιού ιστορικού κλάδου…",
-    "resetSoft": "Reset soft — {{target}}",
-    "resetMixed": "Reset mixed — {{target}}",
-    "resetHard": "Reset hard — {{target}}",
+    "resetSoft": "Soft reset — {{target}}",
+    "resetMixed": "Mixed reset — {{target}}",
+    "resetHard": "Hard reset — {{target}}",
     "moveBack": "μετακίνηση {{branch}} πίσω στο {{short}}",
     "moveForward": "μετακίνηση {{branch}} μπροστά στο {{short}}",
     "resetTo": "reset {{branch}} στο {{short}}",
@@ -995,6 +1064,7 @@
       "deleteFromRemote": "Διαγραφή από {{remote}}…",
       "copyTagName": "Αντιγραφή ονόματος tag",
       "openOnGitHub": "Άνοιγμα στο GitHub",
+      "openOnBitbucket": "Άνοιγμα στο Bitbucket",
       "copyLink": "Αντιγραφή συνδέσμου",
       "mergeCommit": "Merge commit",
       "squashAndMerge": "Squash and merge",
@@ -1081,6 +1151,56 @@
 
     }
   },
+  "bitbucket": {
+    "fork": {
+      "title": "Fork αποθετηρίου",
+      "description": "Δημιουργήστε fork στον λογαριασμό σας στο Bitbucket και κλωνοποιήστε το τοπικά.",
+      "workspace": "Workspace",
+      "repo": "Αποθετήριο",
+      "action": "Fork",
+      "success": "Το αποθετήριο fork-αρίστηκε.",
+      "missingFields": "Εισάγετε workspace και όνομα αποθετηρίου.",
+      "connectFirst": "Συνδεθείτε στο Bitbucket από Ρυθμίσεις → Ενσωματώσεις για fork.",
+      "forkToAccount": "Fork στον λογαριασμό μου…"
+    },
+    "issue": {
+      "editTitle": "Επεξεργασία issue #{{number}}",
+      "titleRequired": "Ο τίτλος issue είναι υποχρεωτικός.",
+      "updated": "Το issue ενημερώθηκε.",
+      "close": "Κλείσιμο issue",
+      "reopen": "Επανάνοιγμα issue",
+      "edit": "Επεξεργασία issue…"
+    },
+    "pr": {
+      "createTitle": "Δημιουργία pull request",
+      "description": "Περιγραφή",
+      "head": "Head",
+      "base": "Base",
+      "fillWithAi": "Συμπλήρωση με AI",
+      "squash": "Squash",
+      "rebase": "Rebase"
+    },
+    "repo": {
+      "workspace": "Workspace",
+      "connectFirst": "Συνδεθείτε στο Bitbucket από Ρυθμίσεις → Ενσωματώσεις για δημιουργία αποθετηρίων.",
+      "name": "Όνομα αποθετηρίου",
+      "namePlaceholder": "my-new-repo",
+      "descriptionOptional": "Περιγραφή (προαιρετικά)",
+      "descriptionPlaceholder": "Σύντομη περιγραφή",
+      "nameRequired": "Απαιτούνται workspace και όνομα αποθετηρίου",
+      "create": "Δημιουργία αποθετηρίου",
+      "public": "Δημόσιο",
+      "private": "Ιδιωτικό"
+    },
+    "repoPicker": {
+      "connectFirst": "Συνδεθείτε στο Bitbucket από Ρυθμίσεις → Ενσωματώσεις για περιήγηση σε αποθετήρια.",
+      "searchPlaceholder": "Αναζήτηση αποθετηρίων…",
+      "loading": "Φόρτωση αποθετηρίων…",
+      "empty": "Δεν βρέθηκαν αποθετήρια.",
+      "public": "Δημόσιο",
+      "private": "Ιδιωτικό"
+    }
+  },
   "update": {
     "available": "Διαθέσιμο GitFreddo {{version}}",
     "readyToInstall": "Το GitFreddo {{version}} είναι έτοιμο για εγκατάσταση",
@@ -1120,6 +1240,11 @@
     "github": {
       "connected": "Σύνδεση με GitHub ως @{{login}}",
       "disconnected": "Αποσύνδεση από GitHub",
+      "sshKeyUploaded": "Το SSH key ανέβηκε: {{title}}"
+    },
+    "bitbucket": {
+      "connected": "Σύνδεση με Bitbucket ως @{{login}}",
+      "disconnected": "Αποσύνδεση από Bitbucket",
       "sshKeyUploaded": "Το SSH key ανέβηκε: {{title}}"
     },
     "maintenance": {

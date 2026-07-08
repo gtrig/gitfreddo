@@ -1,55 +1,78 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { EditIssueModal as BitbucketEditIssueModal } from '@/components/Bitbucket/EditIssueModal'
+import { EditIssueModal as GitHubEditIssueModal } from '@/components/GitHub/EditIssueModal'
 import { SidebarSection } from '@/components/Layout/sidebar/SidebarSection'
 import { SidebarIconIssues } from '@/components/Layout/sidebar/SidebarIcons'
 import { SidebarTreeRow } from '@/components/Layout/sidebar/SidebarTreeRow'
 import { ActionButton, Modal } from '@/components/Ui/Modal'
 import { ContextMenu } from '@/components/Ui/ContextMenu'
+import { useBitbucketIssues, useInvalidateBitbucketIssues } from '@/hooks/useBitbucketIssues'
+import { useForgeContext, forgeConnectKey, forgeNotLinkedKey } from '@/hooks/useForgeContext'
 import { useGitHubIssues, useInvalidateGitHubIssues } from '@/hooks/useGitHubIssues'
-import { useGitHubRepoContext } from '@/hooks/useGitHubRepos'
-import { useGitHubStatus } from '@/hooks/useGitHubStatus'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
 import { slugifyIssueBranch } from '@/lib/git/github'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { issueContextMenuItems } from '@/lib/context-menus/sidebarContextMenus'
-import { EditIssueModal } from '@/components/GitHub/EditIssueModal'
+import type { BitbucketIssue } from '@shared/bitbucket'
 import type { GitHubIssue } from '@shared/github'
 
 const FILTER_IDS = ['all', 'mine'] as const
+type ForgeIssue = GitHubIssue | BitbucketIssue
 
 export function SidebarIssuesSection() {
   const { t } = useTranslation()
   const connected = useWorkspaceStore((s) => s.connected)
   const repoPath = useWorkspaceStore((s) => s.activePath)
-  const { data: ghStatus } = useGitHubStatus()
-  const { data: ctx } = useGitHubRepoContext(repoPath, connected)
+  const forge = useForgeContext(repoPath, connected)
+  const provider = forge.provider ?? forge.expectedProvider
   const [filterId, setFilterId] = useState<(typeof FILTER_IDS)[number]>('all')
-  const { data: issues, isLoading, error } = useGitHubIssues(
+  const assignee = filterId === 'mine' ? (forge.login ?? undefined) : undefined
+  const { data: ghIssues, isLoading: ghLoading, error: ghError } = useGitHubIssues(
     repoPath,
-    filterId === 'mine' ? ghStatus?.login ?? undefined : undefined,
-    connected && Boolean(ctx)
+    assignee,
+    connected && forge.provider === 'github'
   )
-  const invalidate = useInvalidateGitHubIssues()
+  const { data: bbIssues, isLoading: bbLoading, error: bbError } = useBitbucketIssues(
+    repoPath,
+    assignee,
+    connected && forge.provider === 'bitbucket'
+  )
+  const invalidateGitHub = useInvalidateGitHubIssues()
+  const invalidateBitbucket = useInvalidateBitbucketIssues()
   const { createBranch } = useGitMutations()
   const show = useToastStore((s) => s.show)
   const [createOpen, setCreateOpen] = useState(false)
-  const [editIssue, setEditIssue] = useState<GitHubIssue | null>(null)
+  const [editIssue, setEditIssue] = useState<ForgeIssue | null>(null)
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
 
-  const canUseGitHub = connected && ghStatus?.connected && ctx
-  const count = canUseGitHub ? (issues ?? []).length : 0
+  const canUseForge = connected && Boolean(forge.provider) && forge.connected
+  const issues: ForgeIssue[] =
+    forge.provider === 'bitbucket'
+      ? (bbIssues ?? [])
+      : forge.provider === 'github'
+        ? (ghIssues ?? [])
+        : []
+  const isLoading = forge.provider === 'bitbucket' ? bbLoading : ghLoading
+  const error = forge.provider === 'bitbucket' ? bbError : ghError
+  const count = canUseForge ? issues.length : 0
 
   async function handleCreate() {
-    if (!repoPath || !title.trim()) return
-    await window.gitfreddo.githubCreateIssue(repoPath, { title: title.trim(), body })
+    if (!repoPath || !title.trim() || !forge.provider) return
+    if (forge.provider === 'bitbucket') {
+      await window.gitfreddo.bitbucketCreateIssue(repoPath, { title: title.trim(), body })
+      await invalidateBitbucket(repoPath)
+    } else {
+      await window.gitfreddo.githubCreateIssue(repoPath, { title: title.trim(), body })
+      await invalidateGitHub(repoPath)
+    }
     setTitle('')
     setBody('')
     setCreateOpen(false)
-    await invalidate(repoPath)
     show(t('sidebar.issueCreated'), 'success')
   }
 
@@ -59,11 +82,17 @@ export function SidebarIssuesSection() {
     show(t('sidebar.branchCreated', { name: branchName }), 'success')
   }
 
-  async function updateIssueState(issue: GitHubIssue, state: 'open' | 'closed') {
-    if (!repoPath) return
-    await window.gitfreddo.githubUpdateIssue(repoPath, issue.number, { state })
-    await invalidate(repoPath)
-    show(t('github.issue.updated'), 'success')
+  async function updateIssueState(issue: ForgeIssue, state: 'open' | 'closed') {
+    if (!repoPath || !forge.provider) return
+    if (forge.provider === 'bitbucket') {
+      await window.gitfreddo.bitbucketUpdateIssue(repoPath, issue.number, { state })
+      await invalidateBitbucket(repoPath)
+      show(t('bitbucket.issue.updated'), 'success')
+    } else {
+      await window.gitfreddo.githubUpdateIssue(repoPath, issue.number, { state })
+      await invalidateGitHub(repoPath)
+      show(t('github.issue.updated'), 'success')
+    }
   }
 
   return (
@@ -75,19 +104,22 @@ export function SidebarIssuesSection() {
         count={count}
         defaultOpen={false}
         footer
-        onAdd={canUseGitHub ? () => setCreateOpen(true) : undefined}
+        onAdd={canUseForge ? () => setCreateOpen(true) : undefined}
         addTitle={t('sidebar.createIssue')}
       >
         {!connected && (
           <p className="px-2 text-xs text-gf-fg-subtle">{t('sidebar.openRepoForIssues')}</p>
         )}
-        {connected && !ghStatus?.connected && (
-          <p className="px-2 text-xs text-gf-fg-subtle">{t('sidebar.connectGitHub')}</p>
+        {connected && forge.provider && !forge.connected && (
+          <p className="px-2 text-xs text-gf-fg-subtle">{t(forgeConnectKey(forge.provider))}</p>
         )}
-        {connected && ghStatus?.connected && !ctx && (
-          <p className="px-2 text-xs text-gf-fg-subtle">{t('sidebar.notLinkedGitHub')}</p>
+        {connected && !forge.provider && provider && !forge.connected && (
+          <p className="px-2 text-xs text-gf-fg-subtle">{t(forgeConnectKey(provider))}</p>
         )}
-        {canUseGitHub && (
+        {connected && forge.connected && !forge.provider && (
+          <p className="px-2 text-xs text-gf-fg-subtle">{t(forgeNotLinkedKey(provider))}</p>
+        )}
+        {canUseForge && (
           <>
             <div className="mb-2 flex flex-wrap gap-1 px-2">
               {FILTER_IDS.map((id) => (
@@ -108,7 +140,7 @@ export function SidebarIssuesSection() {
             {isLoading && <p className="px-2 text-xs text-gf-fg-subtle">{t('common.loading')}</p>}
             {error && <p className="px-2 text-xs text-red-400">{(error as Error).message}</p>}
             <div className="space-y-0.5">
-              {(issues ?? []).map((issue) => {
+              {issues.map((issue) => {
                 const issueMenuItems = issueContextMenuItems(
                   issue,
                   {
@@ -118,7 +150,8 @@ export function SidebarIssuesSection() {
                     onClose: (entry) => void updateIssueState(entry, 'closed'),
                     onReopen: (entry) => void updateIssueState(entry, 'open')
                   },
-                  t
+                  t,
+                  forge.provider ?? 'github'
                 )
                 return (
                   <SidebarTreeRow
@@ -131,7 +164,7 @@ export function SidebarIssuesSection() {
                   />
                 )
               })}
-              {(issues ?? []).length === 0 && !isLoading && (
+              {issues.length === 0 && !isLoading && (
                 <p className="px-2 py-1 text-xs text-gf-fg-subtle">{t('sidebar.noOpenIssues')}</p>
               )}
             </div>
@@ -148,7 +181,7 @@ export function SidebarIssuesSection() {
         />
       )}
 
-      {canUseGitHub && (
+      {canUseForge && (
         <Modal open={createOpen} title={t('modals.createIssue.title')} onClose={() => setCreateOpen(false)}>
           <div className="space-y-3 p-4">
             <label className="block text-sm">
@@ -178,13 +211,22 @@ export function SidebarIssuesSection() {
         </Modal>
       )}
 
-      {editIssue && repoPath && (
-        <EditIssueModal
+      {editIssue && repoPath && forge.provider === 'github' && (
+        <GitHubEditIssueModal
           open
-          issue={editIssue}
+          issue={editIssue as GitHubIssue}
           repoPath={repoPath}
           onClose={() => setEditIssue(null)}
-          onUpdated={() => invalidate(repoPath)}
+          onUpdated={() => invalidateGitHub(repoPath)}
+        />
+      )}
+      {editIssue && repoPath && forge.provider === 'bitbucket' && (
+        <BitbucketEditIssueModal
+          open
+          issue={editIssue as BitbucketIssue}
+          repoPath={repoPath}
+          onClose={() => setEditIssue(null)}
+          onUpdated={() => invalidateBitbucket(repoPath)}
         />
       )}
     </>

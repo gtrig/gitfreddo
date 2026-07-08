@@ -49,6 +49,10 @@ export interface AppSettings {
   aiConflictInstructions: string
   githubLogin: string
   githubConnectedAt: number | null
+  bitbucketLogin: string
+  bitbucketAuthLogin: string
+  bitbucketConnectedAt: number | null
+  bitbucketAuthType: import('./bitbucket').BitbucketAuthType | null
   pullRebase: boolean
   submoduleRecursion: SubmoduleRecursion
   pushSubmoduleRecursion: PushSubmoduleRecursion
@@ -64,6 +68,18 @@ export interface GitHubStatus {
   login: string | null
   avatarUrl: string | null
 }
+
+export interface BitbucketStatus {
+  connected: boolean
+  login: string | null
+  avatarUrl: string | null
+  authType: import('./bitbucket').BitbucketAuthType | null
+}
+
+export type BitbucketAuthSettings = Pick<
+  AppSettings,
+  'bitbucketLogin' | 'bitbucketAuthLogin' | 'bitbucketAuthType'
+>
 
 export type MenuAction =
   | 'open-workspace'
@@ -146,6 +162,50 @@ export interface GitFreddoAPI {
   aiFill: (params: import('./ai').AiFillParams) => Promise<string>
   onGitHubConnectProgress: (
     callback: (progress: import('./github').GitHubConnectProgress) => void
+  ) => () => void
+  bitbucketGetStatus: () => Promise<BitbucketStatus>
+  bitbucketConnect: () => Promise<BitbucketStatus>
+  bitbucketConnectAppPassword: (username: string, password: string) => Promise<BitbucketStatus>
+  bitbucketDisconnect: () => Promise<void>
+  bitbucketListRepos: (
+    params?: import('./bitbucket').BitbucketListReposParams
+  ) => Promise<import('./bitbucket').BitbucketRepo[]>
+  bitbucketListWorkspaces: () => Promise<string[]>
+  bitbucketCreateRepo: (
+    params: import('./bitbucket').BitbucketCreateRepoParams
+  ) => Promise<import('./bitbucket').BitbucketRepo>
+  bitbucketForkRepo: (workspace: string, repo: string) => Promise<import('./bitbucket').BitbucketRepo>
+  bitbucketUploadSshKey: (title: string) => Promise<{ title: string; publicKey: string }>
+  bitbucketGetRepoContext: (
+    repoPath: string
+  ) => Promise<import('./bitbucket').BitbucketRepoContext | null>
+  bitbucketListPullRequests: (
+    repoPath: string
+  ) => Promise<import('./bitbucket').BitbucketPullRequest[]>
+  bitbucketCreatePullRequest: (
+    repoPath: string,
+    params: import('./bitbucket').BitbucketCreatePullRequestParams
+  ) => Promise<import('./bitbucket').BitbucketPullRequest>
+  bitbucketMergePullRequest: (
+    repoPath: string,
+    number: number,
+    method: import('./bitbucket').BitbucketMergeMethod
+  ) => Promise<void>
+  bitbucketListIssues: (
+    repoPath: string,
+    assigneeLogin?: string
+  ) => Promise<import('./bitbucket').BitbucketIssue[]>
+  bitbucketCreateIssue: (
+    repoPath: string,
+    params: { title: string; body?: string; labels?: string[] }
+  ) => Promise<import('./bitbucket').BitbucketIssue>
+  bitbucketUpdateIssue: (
+    repoPath: string,
+    number: number,
+    params: { title?: string; body?: string; state?: 'open' | 'closed' }
+  ) => Promise<import('./bitbucket').BitbucketIssue>
+  onBitbucketConnectProgress: (
+    callback: (progress: import('./bitbucket').BitbucketConnectProgress) => void
   ) => () => void
   onMenuAction: (callback: (action: MenuAction) => void) => () => void
   onLogEntry: (callback: (entry: LogEntry) => void) => () => void

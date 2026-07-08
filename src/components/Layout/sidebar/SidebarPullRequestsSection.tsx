@@ -1,28 +1,41 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { CreatePrModal as BitbucketCreatePrModal } from '@/components/Bitbucket/CreatePrModal'
+import { CreatePrModal as GitHubCreatePrModal } from '@/components/GitHub/CreatePrModal'
 import { SidebarSection } from '@/components/Layout/sidebar/SidebarSection'
 import { SidebarIconPullRequest } from '@/components/Layout/sidebar/SidebarIcons'
 import { SidebarTreeRow } from '@/components/Layout/sidebar/SidebarTreeRow'
 import { ContextMenu } from '@/components/Ui/ContextMenu'
-import { CreatePrModal } from '@/components/GitHub/CreatePrModal'
+import { useBitbucketPullRequests, useInvalidateBitbucketPullRequests } from '@/hooks/useBitbucketPullRequests'
+import { useForgeContext, forgeConnectKey, forgeNotLinkedKey } from '@/hooks/useForgeContext'
 import { useGitHubPullRequests, useInvalidateGitHubPullRequests } from '@/hooks/useGitHubPullRequests'
-import { useGitHubRepoContext } from '@/hooks/useGitHubRepos'
-import { useGitHubStatus } from '@/hooks/useGitHubStatus'
 import { useBranches } from '@/hooks/useGit'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { pullRequestContextMenuItems } from '@/lib/context-menus/sidebarContextMenus'
+import type { BitbucketPullRequest } from '@shared/bitbucket'
+import type { GitHubPullRequest } from '@shared/github'
+
+type ForgePullRequest = GitHubPullRequest | BitbucketPullRequest
 
 export function SidebarPullRequestsSection() {
   const { t } = useTranslation()
   const connected = useWorkspaceStore((s) => s.connected)
   const repoPath = useWorkspaceStore((s) => s.activePath)
-  const { data: ghStatus } = useGitHubStatus()
-  const { data: ctx } = useGitHubRepoContext(repoPath, connected)
-  const { data: prs, isLoading, error } = useGitHubPullRequests(repoPath, connected && Boolean(ctx))
+  const forge = useForgeContext(repoPath, connected)
+  const provider = forge.provider ?? forge.expectedProvider
+  const { data: ghPrs, isLoading: ghLoading, error: ghError } = useGitHubPullRequests(
+    repoPath,
+    connected && forge.provider === 'github'
+  )
+  const { data: bbPrs, isLoading: bbLoading, error: bbError } = useBitbucketPullRequests(
+    repoPath,
+    connected && forge.provider === 'bitbucket'
+  )
   const { data: branches } = useBranches(connected)
-  const invalidate = useInvalidateGitHubPullRequests()
+  const invalidateGitHub = useInvalidateGitHubPullRequests()
+  const invalidateBitbucket = useInvalidateBitbucketPullRequests()
   const show = useToastStore((s) => s.show)
   const [createOpen, setCreateOpen] = useState(false)
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
@@ -33,14 +46,40 @@ export function SidebarPullRequestsSection() {
     branches?.find((b) => !b.isRemote)?.name ??
     'main'
 
-  const canUseGitHub = connected && ghStatus?.connected && ctx
-  const count = canUseGitHub ? (prs ?? []).length : 0
+  const canUseForge = connected && Boolean(forge.provider) && forge.connected
+  const prs: ForgePullRequest[] =
+    forge.provider === 'bitbucket' ? (bbPrs ?? []) : forge.provider === 'github' ? (ghPrs ?? []) : []
+  const isLoading = forge.provider === 'bitbucket' ? bbLoading : ghLoading
+  const error = forge.provider === 'bitbucket' ? bbError : ghError
+  const count = canUseForge ? prs.length : 0
 
   async function mergePullRequest(prNumber: number, method: 'merge' | 'squash' | 'rebase') {
-    if (!repoPath) return
-    await window.gitfreddo.githubMergePullRequest(repoPath, prNumber, method)
-    await invalidate(repoPath)
+    if (!repoPath || !forge.provider) return
+    if (forge.provider === 'bitbucket') {
+      await window.gitfreddo.bitbucketMergePullRequest(repoPath, prNumber, method)
+      await invalidateBitbucket(repoPath)
+    } else {
+      await window.gitfreddo.githubMergePullRequest(repoPath, prNumber, method)
+      await invalidateGitHub(repoPath)
+    }
     show(t('sidebar.prMerged', { number: prNumber }), 'success')
+  }
+
+  async function createPullRequest(params: {
+    title: string
+    body: string
+    head: string
+    base: string
+  }) {
+    if (!repoPath || !forge.provider) return
+    if (forge.provider === 'bitbucket') {
+      await window.gitfreddo.bitbucketCreatePullRequest(repoPath, params)
+      await invalidateBitbucket(repoPath)
+    } else {
+      await window.gitfreddo.githubCreatePullRequest(repoPath, params)
+      await invalidateGitHub(repoPath)
+    }
+    show(t('sidebar.pullRequestCreated'), 'success')
   }
 
   return (
@@ -52,30 +91,34 @@ export function SidebarPullRequestsSection() {
         count={count}
         defaultOpen={false}
         footer
-        onAdd={canUseGitHub ? () => setCreateOpen(true) : undefined}
+        onAdd={canUseForge ? () => setCreateOpen(true) : undefined}
         addTitle={t('sidebar.createPullRequest')}
       >
         {!connected && (
           <p className="px-2 text-xs text-gf-fg-subtle">{t('sidebar.openRepoForPr')}</p>
         )}
-        {connected && !ghStatus?.connected && (
-          <p className="px-2 text-xs text-gf-fg-subtle">{t('sidebar.connectGitHub')}</p>
+        {connected && forge.provider && !forge.connected && (
+          <p className="px-2 text-xs text-gf-fg-subtle">{t(forgeConnectKey(forge.provider))}</p>
         )}
-        {connected && ghStatus?.connected && !ctx && (
-          <p className="px-2 text-xs text-gf-fg-subtle">{t('sidebar.notLinkedGitHub')}</p>
+        {connected && !forge.provider && provider && !forge.connected && (
+          <p className="px-2 text-xs text-gf-fg-subtle">{t(forgeConnectKey(provider))}</p>
         )}
-        {canUseGitHub && (
+        {connected && forge.connected && !forge.provider && (
+          <p className="px-2 text-xs text-gf-fg-subtle">{t(forgeNotLinkedKey(provider))}</p>
+        )}
+        {canUseForge && (
           <>
             {isLoading && <p className="px-2 text-xs text-gf-fg-subtle">{t('common.loading')}</p>}
             {error && <p className="px-2 text-xs text-red-400">{(error as Error).message}</p>}
             <div className="space-y-0.5">
-              {(prs ?? []).map((pr) => {
+              {prs.map((pr) => {
                 const prMenuItems = pullRequestContextMenuItems(
                   pr,
                   {
                     onMerge: (method) => void mergePullRequest(pr.number, method)
                   },
-                  t
+                  t,
+                  forge.provider ?? 'github'
                 )
                 return (
                   <SidebarTreeRow
@@ -93,7 +136,7 @@ export function SidebarPullRequestsSection() {
                   />
                 )
               })}
-              {(prs ?? []).length === 0 && !isLoading && (
+              {prs.length === 0 && !isLoading && (
                 <p className="px-2 py-1 text-xs text-gf-fg-subtle">{t('sidebar.noOpenPullRequests')}</p>
               )}
             </div>
@@ -110,18 +153,22 @@ export function SidebarPullRequestsSection() {
         />
       )}
 
-      {canUseGitHub && (
-        <CreatePrModal
+      {canUseForge && forge.provider === 'github' && (
+        <GitHubCreatePrModal
           open={createOpen}
           onClose={() => setCreateOpen(false)}
           defaultHead={currentBranch}
           defaultBase={defaultBase}
-          onSubmit={async (params) => {
-            if (!repoPath) return
-            await window.gitfreddo.githubCreatePullRequest(repoPath, params)
-            await invalidate(repoPath)
-            show(t('sidebar.pullRequestCreated'), 'success')
-          }}
+          onSubmit={createPullRequest}
+        />
+      )}
+      {canUseForge && forge.provider === 'bitbucket' && (
+        <BitbucketCreatePrModal
+          open={createOpen}
+          onClose={() => setCreateOpen(false)}
+          defaultHead={currentBranch}
+          defaultBase={defaultBase}
+          onSubmit={createPullRequest}
         />
       )}
     </>
