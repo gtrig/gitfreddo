@@ -5,6 +5,12 @@ import {
   clearSelectionSnapshot,
   migrateSelectionSnapshot
 } from '@/stores/selection'
+import {
+  captureBranchVisibilityForWorkspace,
+  restoreBranchVisibilityForWorkspace,
+  clearBranchVisibilitySnapshot,
+  migrateBranchVisibilitySnapshot
+} from '@/stores/branchVisibility'
 import { appLog } from '@/stores/logs'
 import {
   orderPathsForRestore,
@@ -68,6 +74,7 @@ function remapTabPath(tabs: WorkspaceTab[], fromPath: string, toPath: string): W
     return tabs
   }
   migrateSelectionSnapshot(fromPath, toPath)
+  migrateBranchVisibilitySnapshot(fromPath, toPath)
   return tabs.map((tab) => (tab.path === fromPath ? { ...tab, path: toPath } : tab))
 }
 
@@ -114,6 +121,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
     if (activePath) {
       captureSelectionForWorkspace(activePath)
+      captureBranchVisibilityForWorkspace(activePath)
     }
 
     const nextTabs = [...tabs, { path: canonical, connected: false, connecting: true }]
@@ -133,6 +141,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         ...syncLegacyFields(currentTabs, connectedPath)
       })
       restoreSelectionForWorkspace(connectedPath)
+      restoreBranchVisibilityForWorkspace(connectedPath)
       appLog('info', 'Workspace connected', connectedPath)
     } catch (error) {
       const remaining = get().tabs.filter((tab) => tab.path !== canonical)
@@ -143,8 +152,10 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         ...syncLegacyFields(remaining, nextActive)
       })
       clearSelectionSnapshot(canonical)
+      clearBranchVisibilitySnapshot(canonical)
       if (nextActive) {
         restoreSelectionForWorkspace(nextActive)
+        restoreBranchVisibilityForWorkspace(nextActive)
       }
       appLog('error', 'Failed to open workspace', error instanceof Error ? error.message : String(error))
       throw error
@@ -170,6 +181,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
     if (activePath) {
       captureSelectionForWorkspace(activePath)
+      captureBranchVisibilityForWorkspace(activePath)
     }
 
     const activeCanonical = await ensureBackendWorkspace(canonical)
@@ -186,6 +198,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     })
     appLog('info', 'Switched workspace', activeCanonical)
     restoreSelectionForWorkspace(activeCanonical)
+    restoreBranchVisibilityForWorkspace(activeCanonical)
   },
 
   closeWorkspace: async (path) => {
@@ -197,10 +210,12 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
     if (wasActive) {
       captureSelectionForWorkspace(canonical)
+      captureBranchVisibilityForWorkspace(canonical)
     }
 
     await window.gitfreddo.disconnectWorkspace(canonical)
     clearSelectionSnapshot(canonical)
+    clearBranchVisibilitySnapshot(canonical)
 
     let nextActive = activePath
     if (wasActive) {
@@ -210,6 +225,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       if (nextActive) {
         await ensureBackendWorkspace(nextActive)
         restoreSelectionForWorkspace(nextActive)
+        restoreBranchVisibilityForWorkspace(nextActive)
       }
     }
 
@@ -335,6 +351,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         try {
           await get().switchWorkspace(nextActive)
           restoreSelectionForWorkspace(nextActive)
+        restoreBranchVisibilityForWorkspace(nextActive)
         } catch (error) {
           appLog(
             'warn',
