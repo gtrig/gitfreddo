@@ -4,10 +4,40 @@ import { tmpdir } from 'os'
 import { join } from 'path'
 import type { BitbucketAuthSettings } from '../../shared/ipc'
 import { bitbucketJson } from './api/http'
+import { findGitFreddoSshKeyLabel } from '../../shared/forge-ssh'
 
 export interface SshKeyResult {
   title: string
   publicKey: string
+}
+
+interface BitbucketApiSshKey {
+  label?: string
+}
+
+interface BitbucketSshKeyPage {
+  values?: BitbucketApiSshKey[]
+}
+
+export async function listSshKeys(
+  username: string,
+  settings?: BitbucketAuthSettings
+): Promise<string[]> {
+  const keys = await bitbucketJson<BitbucketSshKeyPage>(
+    `/users/${encodeURIComponent(username)}/ssh-keys`,
+    {},
+    undefined,
+    settings
+  )
+  return (keys.values ?? []).map((key) => key.label?.trim() ?? '').filter(Boolean)
+}
+
+export async function findGitFreddoSshKeyTitle(
+  username: string,
+  settings?: BitbucketAuthSettings
+): Promise<string | null> {
+  const labels = await listSshKeys(username, settings)
+  return findGitFreddoSshKeyLabel(labels)
 }
 
 export function generateSshKeyPair(): { publicKey: string; privateKeyPath: string } {

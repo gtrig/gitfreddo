@@ -9,6 +9,7 @@ import type {
 import type { AppSettings, BitbucketAuthSettings, BitbucketStatus } from '../../shared/ipc'
 import { saveSettings } from '../settings'
 import { resolveBitbucketAuthLogin } from './auth'
+import { inferBitbucketAuthType } from '../../shared/integration-settings'
 import { getAuthenticatedUser } from './client'
 import { listIssues, createIssue, updateIssue } from './api/issues'
 import { createPullRequest, listPullRequests, mergePullRequest } from './api/pulls'
@@ -21,7 +22,7 @@ import {
 } from './api/repos'
 import { runBitbucketOAuthFlow, type OAuthFlowProgress } from './oauth'
 import { resolveBitbucketRepoContext } from './repo-context'
-import { generateAndUploadSshKey } from './ssh-keys'
+import { generateAndUploadSshKey, findGitFreddoSshKeyTitle } from './ssh-keys'
 import {
   clearBitbucketToken,
   hasBitbucketToken,
@@ -33,20 +34,77 @@ function authSettings(settings: AppSettings): BitbucketAuthSettings {
   return {
     bitbucketLogin: settings.bitbucketLogin,
     bitbucketAuthLogin: settings.bitbucketAuthLogin,
-    bitbucketAuthType: settings.bitbucketAuthType ?? 'oauth'
+    bitbucketAuthType: inferBitbucketAuthType(settings)
   }
+}
+
+function sshKeyTitleFromSettings(title: string | undefined | null): string | null {
+  const trimmed = title?.trim() ?? ''
+  return trimmed || null
 }
 
 function toStatus(
   login: string,
   avatarUrl: string,
-  authType: AppSettings['bitbucketAuthType']
+  authType: AppSettings['bitbucketAuthType'],
+  sshKeyTitle: string
 ): BitbucketStatus {
-  return { connected: true, login, avatarUrl, authType }
+  return {
+    connected: true,
+    login,
+    avatarUrl,
+    authType,
+    sshKeyTitle: sshKeyTitleFromSettings(sshKeyTitle)
+  }
 }
 
 function disconnectedStatus(): BitbucketStatus {
-  return { connected: false, login: null, avatarUrl: null, authType: null }
+  return { connected: false, login: null, avatarUrl: null, authType: null, sshKeyTitle: null }
+}
+
+async function resolveBitbucketSshKeyTitle(
+  settings: AppSettings,
+  _token: string,
+  authType: NonNullable<AppSettings['bitbucketAuthType']>,
+  authLogin: string | undefined,
+  username: string
+): Promise<{ settings: AppSettings; sshKeyTitle: string }> {
+  const stored = settings.bitbucketSshKeyTitle?.trim()
+  if (stored) {
+    return { settings, sshKeyTitle: stored }
+  }
+
+  const discovered = await findGitFreddoSshKeyTitle(username, {
+    bitbucketLogin: username,
+    bitbucketAuthLogin: authLogin ?? settings.bitbucketAuthLogin,
+    bitbucketAuthType: authType
+  })
+  if (!discovered) {
+    return { settings, sshKeyTitle: '' }
+  }
+
+  const next = await saveSettings({ bitbucketSshKeyTitle: discovered })
+  return { settings: next, sshKeyTitle: discovered }
+}
+
+async function buildConnectedBitbucketStatus(
+  settings: AppSettings,
+  token: string,
+  authType: NonNullable<AppSettings['bitbucketAuthType']>,
+  authLogin: string | undefined,
+  user: { login: string; avatar_url: string }
+): Promise<{ settings: AppSettings; status: BitbucketStatus }> {
+  const sshKey = await resolveBitbucketSshKeyTitle(
+    settings,
+    token,
+    authType,
+    authLogin,
+    user.login
+  )
+  return {
+    settings: sshKey.settings,
+    status: toStatus(user.login, user.avatar_url, authType, sshKey.sshKeyTitle)
+  }
 }
 
 async function clearBitbucketConnection(_settings: AppSettings): Promise<AppSettings> {
@@ -56,41 +114,52 @@ async function clearBitbucketConnection(_settings: AppSettings): Promise<AppSett
     bitbucketLogin: '',
     bitbucketAuthLogin: '',
     bitbucketConnectedAt: null,
-    bitbucketAuthType: null
+    bitbucketAuthType: null,
+    bitbucketSshKeyTitle: ''
   })
 }
 
-export async function getBitbucketStatus(settings: AppSettings): Promise<BitbucketStatus> {
+export async function getBitbucketStatus(
+  settings: AppSettings
+): Promise<{ settings: AppSettings; status: BitbucketStatus }> {
   const tokenPresent = await hasBitbucketToken()
   if (!tokenPresent) {
-    return disconnectedStatus()
+    return { settings, status: disconnectedStatus() }
   }
 
   try {
     const token = await loadBitbucketToken()
-    if (!token) return disconnectedStatus()
-    const authType = settings.bitbucketAuthType ?? 'oauth'
-    const authLogin = resolveBitbucketAuthLogin(settings)
+    if (!token) {
+      return { settings, status: disconnectedStatus() }
+    }
+    const authType = inferBitbucketAuthType(settings)
+    const authLogin = resolveBitbucketAuthLogin({ ...settings, bitbucketAuthType: authType })
     const user = await getAuthenticatedUser(token, authType, authLogin)
     if (authType === 'oauth' && user.login !== settings.bitbucketLogin) {
-      await saveSettings({
+      const updated = await saveSettings({
         bitbucketLogin: user.login,
         bitbucketConnectedAt: settings.bitbucketConnectedAt ?? Date.now()
       })
-    } else if (
+      return buildConnectedBitbucketStatus(updated, token, authType, authLogin, user)
+    }
+    if (
       authType === 'app_password' &&
-      (user.login !== settings.bitbucketLogin || !settings.bitbucketAuthLogin?.trim())
+      (user.login !== settings.bitbucketLogin ||
+        !settings.bitbucketAuthLogin?.trim() ||
+        settings.bitbucketAuthType !== 'app_password')
     ) {
-      await saveSettings({
+      const updated = await saveSettings({
         bitbucketLogin: user.login,
         bitbucketAuthLogin: authLogin ?? settings.bitbucketLogin,
-        bitbucketConnectedAt: settings.bitbucketConnectedAt ?? Date.now()
+        bitbucketConnectedAt: settings.bitbucketConnectedAt ?? Date.now(),
+        bitbucketAuthType: 'app_password'
       })
+      return buildConnectedBitbucketStatus(updated, token, authType, authLogin, user)
     }
-    return toStatus(user.login, user.avatar_url, authType)
+    return buildConnectedBitbucketStatus(settings, token, authType, authLogin, user)
   } catch {
-    await clearBitbucketConnection(settings)
-    return disconnectedStatus()
+    const cleared = await clearBitbucketConnection(settings)
+    return { settings: cleared, status: disconnectedStatus() }
   }
 }
 
@@ -152,7 +221,7 @@ async function finalizeBitbucketConnection(
 
   return {
     settings: next,
-    status: toStatus(user.login, user.avatar_url, authType)
+    status: toStatus(user.login, user.avatar_url, authType, next.bitbucketSshKeyTitle)
   }
 }
 
@@ -191,7 +260,9 @@ export async function uploadBitbucketSshKey(settings: AppSettings, title: string
   if (!login) {
     throw new Error('Bitbucket account is not connected')
   }
-  return generateAndUploadSshKey(login, title, authSettings(settings))
+  const result = await generateAndUploadSshKey(login, title, authSettings(settings))
+  const next = await saveSettings({ bitbucketSshKeyTitle: result.title })
+  return { settings: next, result }
 }
 
 export async function listBitbucketPullRequests(repoPath: string, settings: AppSettings) {

@@ -23,7 +23,8 @@ vi.mock('./ssh-keys', () => ({
   generateAndUploadSshKey: vi.fn(async () => ({
     title: 'GitFreddo key',
     publicKey: 'ssh-rsa AAA...'
-  }))
+  })),
+  findGitFreddoSshKeyTitle: vi.fn(async () => null)
 }))
 
 import type { AppSettings } from '../../shared/ipc'
@@ -58,6 +59,7 @@ describe('bitbucket service auth', () => {
         bitbucketAuthLogin: '',
         bitbucketConnectedAt: null,
         bitbucketAuthType: null,
+        bitbucketSshKeyTitle: '',
         ...patch
       }) as AppSettings
     )
@@ -81,7 +83,8 @@ describe('bitbucket service auth', () => {
       connected: true,
       login: 'gtrig',
       avatarUrl: 'https://avatar.example/gtrig',
-      authType: 'app_password'
+      authType: 'app_password',
+      sshKeyTitle: null
     })
   })
 
@@ -93,7 +96,7 @@ describe('bitbucket service auth', () => {
       bitbucketAuthType: 'app_password' as const
     }
 
-    const status = await getBitbucketStatus(settings as never)
+    const { status } = await getBitbucketStatus(settings as never)
 
     expect(getAuthenticatedUser).toHaveBeenCalledWith(
       'app-password-token',
@@ -113,7 +116,7 @@ describe('bitbucket service auth', () => {
       bitbucketAuthType: 'app_password' as const
     }
 
-    const status = await getBitbucketStatus(settings as never)
+    const { status } = await getBitbucketStatus(settings as never)
 
     expect(getAuthenticatedUser).toHaveBeenCalledWith(
       'app-password-token',
@@ -123,9 +126,35 @@ describe('bitbucket service auth', () => {
     expect(saveSettings).toHaveBeenCalledWith({
       bitbucketLogin: 'gtrig',
       bitbucketAuthLogin: 'user@example.com',
-      bitbucketConnectedAt: settings.bitbucketConnectedAt
+      bitbucketConnectedAt: settings.bitbucketConnectedAt,
+      bitbucketAuthType: 'app_password'
     })
     expect(status.login).toBe('gtrig')
+  })
+
+  it('restores missing app password auth type on status checks', async () => {
+    const settings = {
+      bitbucketLogin: 'gtrig',
+      bitbucketAuthLogin: 'user@example.com',
+      bitbucketConnectedAt: Date.now(),
+      bitbucketAuthType: null
+    }
+
+    const { status, settings: nextSettings } = await getBitbucketStatus(settings as never)
+
+    expect(getAuthenticatedUser).toHaveBeenCalledWith(
+      'app-password-token',
+      'app_password',
+      'user@example.com'
+    )
+    expect(saveSettings).toHaveBeenCalledWith({
+      bitbucketLogin: 'gtrig',
+      bitbucketAuthLogin: 'user@example.com',
+      bitbucketConnectedAt: settings.bitbucketConnectedAt,
+      bitbucketAuthType: 'app_password'
+    })
+    expect(status.connected).toBe(true)
+    expect(nextSettings.bitbucketAuthType).toBe('app_password')
   })
 
   it('uploads ssh keys using the Bitbucket username slug', async () => {
@@ -137,6 +166,7 @@ describe('bitbucket service auth', () => {
 
     await uploadBitbucketSshKey(settings as never, 'GitFreddo key')
 
+    expect(saveSettings).toHaveBeenCalledWith({ bitbucketSshKeyTitle: 'GitFreddo key' })
     expect(generateAndUploadSshKey).toHaveBeenCalledWith(
       'gtrig',
       'GitFreddo key',
