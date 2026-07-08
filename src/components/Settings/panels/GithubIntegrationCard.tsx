@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActionButton, TextInput } from '@/components/Ui/Modal'
 import { useGitHubStatus, useInvalidateGitHubStatus } from '@/hooks/useGitHubStatus'
+import { IntegrationSshKeyStatus } from '@/components/Settings/panels/IntegrationSshKeyStatus'
 import { useToastStore } from '@/stores/toast'
 
 type ConnectMode = 'oauth' | 'pat'
@@ -23,6 +24,7 @@ export function GithubIntegrationCard() {
   const connected = status?.connected ?? false
   const login = status?.login ?? null
   const avatarUrl = status?.avatarUrl ?? null
+  const sshKeyTitle = status?.sshKeyTitle ?? null
 
   useEffect(() => {
     const unsubscribe = window.gitfreddo.onGitHubConnectProgress((next) => {
@@ -67,6 +69,7 @@ export function GithubIntegrationCard() {
     setUploadingKey(true)
     try {
       const result = await window.gitfreddo.githubUploadSshKey(`GitFreddo ${new Date().toISOString()}`)
+      await invalidate()
       show(t('toast.github.sshKeyUploaded', { title: result.title }), 'success')
     } catch (error) {
       show(error instanceof Error ? error.message : String(error), 'error')
@@ -84,15 +87,25 @@ export function GithubIntegrationCard() {
             {t('settings.github.description')}
           </p>
         </div>
-        <span
-          className={`shrink-0 rounded px-2 py-0.5 text-[11px] ${
-            connected
-              ? 'bg-gf-accent/15 text-gf-accent'
-              : 'bg-gf-surface-hover text-gf-fg-muted'
-          }`}
-        >
-          {isLoading ? '…' : connected ? t('settings.github.connected') : t('settings.github.notConnected')}
-        </span>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <span
+            className={`rounded px-2 py-0.5 text-[11px] ${
+              connected
+                ? 'bg-gf-accent/15 text-gf-accent'
+                : 'bg-gf-surface-hover text-gf-fg-muted'
+            }`}
+          >
+            {isLoading ? '…' : connected ? t('settings.github.connected') : t('settings.github.notConnected')}
+          </span>
+          {connected && sshKeyTitle && (
+            <span
+              className="max-w-[12rem] truncate rounded bg-gf-accent/10 px-2 py-0.5 text-[11px] text-gf-accent"
+              title={sshKeyTitle}
+            >
+              {t('settings.github.sshKeyActive')}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="mt-3">
@@ -108,6 +121,7 @@ export function GithubIntegrationCard() {
         ) : (
           <p className="text-xs text-gf-fg-muted">{t('settings.github.noAccount')}</p>
         )}
+        {connected && <IntegrationSshKeyStatus sshKeyTitle={sshKeyTitle} namespace="github" />}
       </div>
 
       {!connected && (

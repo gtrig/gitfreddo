@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useQueryClient } from '@tanstack/react-query'
 import { ActionButton, ConfirmDialog, FieldLabel } from '@/components/Ui/Modal'
 import { RemoveStaleBranchesModal } from '@/components/DetailPanel/RemoveStaleBranchesModal'
 import { useWorkspaceStore } from '@/stores/workspace'
@@ -24,6 +25,7 @@ function formatAuthorDate(iso: string): string {
 
 export function MaintenanceSettingsPanel({ form, onChange }: PanelProps) {
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
   const { state, checkForUpdates } = useAppUpdate()
   const repoPath = useWorkspaceStore((s) => s.activePath)
   const connected = useWorkspaceStore((s) => s.connected)
@@ -34,6 +36,41 @@ export function MaintenanceSettingsPanel({ form, onChange }: PanelProps) {
   const [confirmPrune, setConfirmPrune] = useState(false)
   const [summary, setSummary] = useState<UnreachableSummary | null>(null)
   const [removeStaleOpen, setRemoveStaleOpen] = useState(false)
+  const [exportingSettings, setExportingSettings] = useState(false)
+  const [importingSettings, setImportingSettings] = useState(false)
+  const [confirmImport, setConfirmImport] = useState(false)
+
+  async function handleExportSettings() {
+    setExportingSettings(true)
+    try {
+      const path = await window.gitfreddo.exportSettingsBackup()
+      if (path) {
+        showToast(t('settings.maintenance.exportSettingsSuccess', { path }), 'success')
+      }
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : String(error), 'error')
+    } finally {
+      setExportingSettings(false)
+    }
+  }
+
+  async function handleImportSettings() {
+    setImportingSettings(true)
+    try {
+      const restored = await window.gitfreddo.importSettingsBackup()
+      if (!restored) {
+        return
+      }
+      onChange(restored)
+      await queryClient.invalidateQueries({ queryKey: ['app-settings'] })
+      showToast(t('settings.maintenance.importSettingsSuccess'), 'success')
+      setConfirmImport(false)
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : String(error), 'error')
+    } finally {
+      setImportingSettings(false)
+    }
+  }
 
   async function handleScan() {
     if (!repoPath) {
@@ -129,6 +166,25 @@ export function MaintenanceSettingsPanel({ form, onChange }: PanelProps) {
         </ActionButton>
       </div>
 
+      <div className="space-y-3 border-b border-gf-border pb-4">
+        <div>
+          <h3 className="text-sm font-medium text-gf-fg">{t('settings.maintenance.settingsBackup')}</h3>
+          <p className="mt-1 text-xs text-gf-fg-muted">{t('settings.maintenance.settingsBackupDesc')}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <ActionButton onClick={() => void handleExportSettings()} loading={exportingSettings}>
+            {exportingSettings
+              ? t('settings.maintenance.exportingSettings')
+              : t('settings.maintenance.exportSettings')}
+          </ActionButton>
+          <ActionButton onClick={() => setConfirmImport(true)} disabled={importingSettings}>
+            {importingSettings
+              ? t('settings.maintenance.importingSettings')
+              : t('settings.maintenance.importSettings')}
+          </ActionButton>
+        </div>
+      </div>
+
       <p className="text-xs leading-relaxed text-gf-fg-subtle">
         {t('settings.maintenance.intro')}
       </p>
@@ -211,6 +267,16 @@ export function MaintenanceSettingsPanel({ form, onChange }: PanelProps) {
           {t('settings.maintenance.removeStaleBranches')}
         </ActionButton>
       </div>
+
+      <ConfirmDialog
+        open={confirmImport}
+        title={t('settings.maintenance.confirmImportTitle')}
+        message={t('settings.maintenance.confirmImportMessage')}
+        confirmLabel={t('settings.maintenance.importSettings')}
+        busy={importingSettings}
+        onConfirm={() => void handleImportSettings()}
+        onCancel={() => setConfirmImport(false)}
+      />
 
       <ConfirmDialog
         open={confirmPrune}

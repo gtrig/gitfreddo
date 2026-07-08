@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActionButton, TextInput } from '@/components/Ui/Modal'
 import { useBitbucketStatus, useInvalidateBitbucketStatus, useSetBitbucketStatus } from '@/hooks/useBitbucketStatus'
+import { IntegrationSshKeyStatus } from '@/components/Settings/panels/IntegrationSshKeyStatus'
 import { useToastStore } from '@/stores/toast'
 
 type ConnectMode = 'oauth' | 'app_password'
@@ -23,6 +24,7 @@ export function BitbucketIntegrationCard() {
   const connected = status?.connected ?? false
   const login = status?.login ?? null
   const avatarUrl = status?.avatarUrl ?? null
+  const sshKeyTitle = status?.sshKeyTitle ?? null
 
   useEffect(() => {
     const unsubscribe = window.gitfreddo.onBitbucketConnectProgress((next) => {
@@ -71,6 +73,7 @@ export function BitbucketIntegrationCard() {
       const result = await window.gitfreddo.bitbucketUploadSshKey(
         `GitFreddo ${new Date().toISOString()}`
       )
+      await invalidate()
       show(t('toast.bitbucket.sshKeyUploaded', { title: result.title }), 'success')
     } catch (error) {
       show(error instanceof Error ? error.message : String(error), 'error')
@@ -88,19 +91,29 @@ export function BitbucketIntegrationCard() {
             {t('settings.bitbucket.description')}
           </p>
         </div>
-        <span
-          className={`shrink-0 rounded px-2 py-0.5 text-[11px] ${
-            connected
-              ? 'bg-gf-accent/15 text-gf-accent'
-              : 'bg-gf-surface-hover text-gf-fg-muted'
-          }`}
-        >
-          {isLoading
-            ? '…'
-            : connected
-              ? t('settings.bitbucket.connected')
-              : t('settings.bitbucket.notConnected')}
-        </span>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <span
+            className={`rounded px-2 py-0.5 text-[11px] ${
+              connected
+                ? 'bg-gf-accent/15 text-gf-accent'
+                : 'bg-gf-surface-hover text-gf-fg-muted'
+            }`}
+          >
+            {isLoading
+              ? '…'
+              : connected
+                ? t('settings.bitbucket.connected')
+                : t('settings.bitbucket.notConnected')}
+          </span>
+          {connected && sshKeyTitle && (
+            <span
+              className="max-w-[12rem] truncate rounded bg-gf-accent/10 px-2 py-0.5 text-[11px] text-gf-accent"
+              title={sshKeyTitle}
+            >
+              {t('settings.bitbucket.sshKeyActive')}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="mt-3">
@@ -114,6 +127,7 @@ export function BitbucketIntegrationCard() {
         ) : (
           <p className="text-xs text-gf-fg-muted">{t('settings.bitbucket.noAccount')}</p>
         )}
+        {connected && <IntegrationSshKeyStatus sshKeyTitle={sshKeyTitle} namespace="bitbucket" />}
       </div>
 
       {!connected && (

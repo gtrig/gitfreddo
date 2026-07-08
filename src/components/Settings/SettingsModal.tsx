@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Modal, ActionButton } from '@/components/Ui/Modal'
 import { LoadingRow } from '@/components/Ui/Spinner'
 import type { AppSettings } from '@/hooks/useAppSettings'
+import { pickUserSettings } from '@shared/integration-settings'
 import { useToastStore } from '@/stores/toast'
 import { SettingsSidebar } from '@/components/Settings/SettingsSidebar'
 import { GitSettingsPanel } from '@/components/Settings/panels/GitSettingsPanel'
@@ -61,7 +62,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
     if (!form) return
     setSaving(true)
     try {
-      const saved = await window.gitfreddo.setSettings(form)
+      const saved = await window.gitfreddo.setSettings(pickUserSettings(form))
       setForm(saved)
       await queryClient.invalidateQueries({ queryKey: ['app-settings'] })
       show(t('settings.saved'), 'success')
