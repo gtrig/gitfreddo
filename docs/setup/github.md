@@ -27,7 +27,7 @@ By default GitFreddo uses a bundled OAuth client ID. For your own app:
 1. Create a GitHub OAuth App with **Device Flow** enabled
 2. Set `GITHUB_CLIENT_ID` in the project-root `.env` file (or export it in your shell), then **restart** the app
 
-GitFreddo requests `repo` and `admin:public_key` during device authorization (needed for SSH key upload).
+GitFreddo requests `repo`, `admin:public_key`, and `workflow` during device authorization (SSH key upload and pushing Actions workflow files).
 
 ```bash
 GITHUB_CLIENT_ID=your_oauth_app_client_id
@@ -79,6 +79,7 @@ With GitHub connected, the left sidebar shows:
 |---------|----------|
 | "Not connected" after OAuth | Complete the browser authorization; check network and client ID |
 | Token expired | Disconnect and reconnect with a fresh PAT |
+| Push rejected: OAuth App cannot update workflow without `workflow` scope | Disconnect and reconnect GitHub OAuth so the token includes `workflow`; or push via SSH |
 | SSH upload 404 Not Found | Reconnect OAuth (or PAT with `admin:public_key`); GitHub hides unauthorized key endpoints as 404 |
 | Enterprise host errors | Verify `GITHUB_ENTERPRISE_HOST` matches your server hostname |
 | Push/clone still asks for password | Ensure the remote URL uses HTTPS with a connected account, or use SSH |

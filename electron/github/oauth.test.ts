@@ -53,7 +53,7 @@ describe('requestDeviceCode', () => {
         method: 'POST',
         body: JSON.stringify({
           client_id: 'test-client-id',
-          scope: 'repo admin:public_key'
+          scope: 'repo admin:public_key workflow'
         })
       })
     )
