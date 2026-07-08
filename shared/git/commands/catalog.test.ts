@@ -68,6 +68,7 @@ import {
   buildLogPickaxeArgs,
   buildLogSearchArgs,
   buildLogShowArgs,
+  buildLogTreeArgs,
   buildShowCommitNameStatusArgs
 } from './log'
 import {
@@ -194,6 +195,7 @@ describe('GIT_COMMAND_REGISTRY', () => {
       'diff.conflict-names': v,
       'log.graph': 100,
       'log.message': { hash: 'abc' },
+      'log.tree': { hash: 'abc' },
       'log.show': { ref: 'abc' },
       'log.file': { maxCount: 10, path: 'f' },
       'log.pickaxe': { maxCount: 10, query: 'x', mode: 'pickaxe' },
@@ -334,6 +336,7 @@ describe('command argv builders', () => {
   it('builds log, stash, tag, worktree, submodule, merge/rebase, and misc args', () => {
     expect(buildLogGraphArgs(100)[0]).toBe('log')
     expect(buildLogMessageArgs({ hash: 'abc' }).some((arg) => arg.includes('%B'))).toBe(true)
+    expect(buildLogTreeArgs({ hash: 'abc' })).toEqual(['ls-tree', '-r', '--name-only', 'abc'])
     expect(buildShowCommitNameStatusArgs('abc')).toContain('--name-status')
     expect(buildLogShowArgs({ ref: 'abc', path: 'f' })).toContain('show')
     expect(buildLogFileArgs({ maxCount: 10, path: 'f' })).toContain('--follow')

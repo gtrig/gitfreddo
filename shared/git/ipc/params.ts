@@ -18,6 +18,10 @@ export interface LogMessageParams {
   hash: string
 }
 
+export interface LogTreeParams {
+  hash: string
+}
+
 export interface LogFileParams {
   path: string
   maxCount?: number

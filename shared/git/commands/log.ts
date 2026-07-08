@@ -151,6 +151,15 @@ export function buildShowCommitNameStatusArgs(hash: string): string[] {
   return ['show', '-m', '--first-parent', '--format=', '--name-status', hash]
 }
 
+export interface LogTreeParams {
+  hash: string
+}
+
+/** All file paths at a commit (blobs and trees, recursive). */
+export function buildLogTreeArgs({ hash }: LogTreeParams): string[] {
+  return ['ls-tree', '-r', '--name-only', hash]
+}
+
 function parseLogRecord(block: string): ParsedGitCommit | null {
   const { main, stats } = parseShortstatFromBlock(block)
   const parts = main.split(LOG_FIELD_SEPARATOR)
@@ -220,6 +229,12 @@ export const logMessage = defineCommand({
   id: 'log.message',
   subcommand: 'log',
   buildArgs: buildLogMessageArgs
+})
+
+export const logTree = defineCommand({
+  id: 'log.tree',
+  subcommand: 'ls-tree',
+  buildArgs: buildLogTreeArgs
 })
 
 export const logShow = defineCommand({

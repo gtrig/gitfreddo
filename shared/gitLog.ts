@@ -5,6 +5,7 @@ export {
   buildLogPickaxeArgs,
   buildLogSearchArgs,
   buildLogMessageArgs,
+  buildLogTreeArgs,
   buildShowCommitNameStatusArgs,
   parseLogGraphOutput,
   type GitCommitStats,

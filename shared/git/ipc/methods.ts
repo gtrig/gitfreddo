@@ -32,6 +32,11 @@ export const GIT_IPC_METHODS = {
     commands: ['log.message'],
     stateSource: 'git'
   },
+  'log.tree': {
+    invalidates: [],
+    commands: ['log.tree'],
+    stateSource: 'git'
+  },
   'log.file': {
     invalidates: [],
     commands: ['log.file'],
@@ -587,6 +592,7 @@ export interface GitIpcParamsMap {
   'log.graph': P.LogGraphParams | void
   'log.show': P.LogShowParams
   'log.message': P.LogMessageParams
+  'log.tree': P.LogTreeParams
   'log.file': P.LogFileParams
   'log.pickaxe': P.LogPickaxeParams
   'log.search': P.LogSearchParams
@@ -702,6 +708,7 @@ export interface GitIpcResultMap {
   'log.graph': R.GitLogGraphResult
   'log.show': R.GitDiffResult
   'log.message': string
+  'log.tree': string[]
   'log.file': R.GitCommit[]
   'log.pickaxe': R.GitCommit[]
   'log.search': R.GitCommit[]

@@ -1,6 +1,7 @@
 import {
   buildLogGraphArgs,
   buildLogMessageArgs,
+  buildLogTreeArgs,
   buildShowCommitNameStatusArgs,
   parseLogGraphOutput
 } from '../../../shared/gitLog'
@@ -31,4 +32,16 @@ export async function commitMessage(
   hash: string
 ): Promise<string> {
   return runGitOrThrow(buildLogMessageArgs({ hash }), { cwd, gitBinaryPath })
+}
+
+export async function listTreeFiles(
+  cwd: string,
+  gitBinaryPath: string,
+  hash: string
+): Promise<string[]> {
+  const stdout = await runGitOrThrow(buildLogTreeArgs({ hash }), { cwd, gitBinaryPath })
+  return stdout
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
 }

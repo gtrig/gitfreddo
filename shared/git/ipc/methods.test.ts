@@ -7,6 +7,7 @@ const REPO_MANAGER_METHODS = [
   'log.graph',
   'log.show',
   'log.message',
+  'log.tree',
   'branch.list',
   'branch.checkout',
   'branch.create',

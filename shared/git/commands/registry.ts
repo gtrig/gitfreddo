@@ -40,6 +40,7 @@ export const GIT_COMMAND_REGISTRY: Map<string, GitCommandDescriptor<unknown>> = 
   [statusCmd.diffConflictNames.id, statusCmd.diffConflictNames],
   [logCmd.logGraph.id, logCmd.logGraph],
   [logCmd.logMessage.id, logCmd.logMessage],
+  [logCmd.logTree.id, logCmd.logTree],
   [logCmd.logShow.id, logCmd.logShow],
   [logCmd.logFile.id, logCmd.logFile],
   [logCmd.logPickaxe.id, logCmd.logPickaxe],
