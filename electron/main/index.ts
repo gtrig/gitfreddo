@@ -6,6 +6,10 @@ import { hasGitDir } from '../git/repo-path'
 import { deleteRepoFile, resolveRepoFile } from '../git/workspace-files'
 import { normalizeRepoPath } from '../git/repo-path'
 import { addRecentRepo, loadSettings, saveSettings } from '../settings'
+import { preserveIntegrationSettings } from '../../shared/integration-settings'
+import { hasBitbucketToken } from '../bitbucket/token-store'
+import { hasGitHubToken } from '../github/token-store'
+import { exportSettingsBackup, importSettingsBackup } from '../settings-backup'
 import { buildAppMenu, pickGitBinary, setMainWindow } from '../menu'
 import {
   applyUpdaterSettings,
@@ -96,10 +100,12 @@ let settings: AppSettings = {
   aiConflictInstructions: '',
   githubLogin: '',
   githubConnectedAt: null,
+  githubSshKeyTitle: '',
   bitbucketLogin: '',
   bitbucketAuthLogin: '',
   bitbucketConnectedAt: null,
   bitbucketAuthType: null,
+  bitbucketSshKeyTitle: '',
   pullRebase: false,
   submoduleRecursion: 'on-demand',
   pushSubmoduleRecursion: 'check',
@@ -183,6 +189,24 @@ async function persistZoomFactor(factor: number): Promise<void> {
     return
   }
   settings = await saveSettings({ uiZoomFactor: rounded })
+}
+
+function applySettingsSideEffects(previous: AppSettings, next: AppSettings): void {
+  applyGitConfig()
+  if (previous.theme !== next.theme) {
+    applyWindowTheme(next.theme)
+  }
+  if (previous.uiZoomFactor !== next.uiZoomFactor) {
+    applyStoredZoom(next.uiZoomFactor)
+  }
+  if (
+    previous.updateChannel !== next.updateChannel ||
+    previous.autoDownloadUpdates !== next.autoDownloadUpdates ||
+    previous.checkForUpdatesOnStartup !== next.checkForUpdatesOnStartup
+  ) {
+    applyUpdaterSettings(next)
+    scheduleStartupCheck(() => settings)
+  }
 }
 
 function registerIpc(): void {
@@ -276,19 +300,28 @@ function registerIpc(): void {
   ipcMain.handle('gitfreddo:get-settings', async () => settings)
 
   ipcMain.handle('gitfreddo:set-settings', async (_event, patch: Partial<AppSettings>) => {
-    settings = await saveSettings(patch)
-    applyGitConfig()
-    if (patch.theme) {
-      applyWindowTheme(settings.theme)
+    const previous = settings
+    const safePatch = preserveIntegrationSettings(settings, patch, {
+      hasBitbucketToken: await hasBitbucketToken(),
+      hasGitHubToken: await hasGitHubToken()
+    })
+    settings = await saveSettings(safePatch)
+    applySettingsSideEffects(previous, settings)
+    return settings
+  })
+
+  ipcMain.handle('gitfreddo:export-settings-backup', async () => {
+    return exportSettingsBackup(settings, getAppVersion())
+  })
+
+  ipcMain.handle('gitfreddo:import-settings-backup', async () => {
+    const previous = settings
+    const restored = await importSettingsBackup()
+    if (!restored) {
+      return null
     }
-    if (
-      patch.updateChannel !== undefined ||
-      patch.autoDownloadUpdates !== undefined ||
-      patch.checkForUpdatesOnStartup !== undefined
-    ) {
-      applyUpdaterSettings(settings)
-      scheduleStartupCheck(() => settings)
-    }
+    settings = restored
+    applySettingsSideEffects(previous, settings)
     return settings
   })
 
@@ -300,7 +333,11 @@ function registerIpc(): void {
     return aiFill(aiConfigFromSettings(settings), enriched)
   })
 
-  ipcMain.handle('gitfreddo:github-get-status', async () => getGitHubStatus(settings))
+  ipcMain.handle('gitfreddo:github-get-status', async () => {
+    const result = await getGitHubStatus(settings)
+    settings = result.settings
+    return result.status
+  })
 
   ipcMain.handle('gitfreddo:github-connect', async (event) => {
     const result = await connectGitHub((progress) => {
@@ -330,9 +367,11 @@ function registerIpc(): void {
     forkGitHubRepo(owner, repo)
   )
 
-  ipcMain.handle('gitfreddo:github-upload-ssh-key', async (_event, title: string) =>
-    uploadGitHubSshKey(title)
-  )
+  ipcMain.handle('gitfreddo:github-upload-ssh-key', async (_event, title: string) => {
+    const uploaded = await uploadGitHubSshKey(settings, title)
+    settings = uploaded.settings
+    return uploaded.result
+  })
 
   ipcMain.handle('gitfreddo:github-get-repo-context', async (_event, repoPath: string) =>
     tryGetGitHubRepoContext(repoPath, settings)
@@ -370,7 +409,11 @@ function registerIpc(): void {
     params
   ) => updateGitHubIssue(repoPath, settings, number, params))
 
-  ipcMain.handle('gitfreddo:bitbucket-get-status', async () => getBitbucketStatus(settings))
+  ipcMain.handle('gitfreddo:bitbucket-get-status', async () => {
+    const result = await getBitbucketStatus(settings)
+    settings = result.settings
+    return result.status
+  })
 
   ipcMain.handle('gitfreddo:bitbucket-connect', async (event) => {
     const result = await connectBitbucket((progress) => {
@@ -411,9 +454,11 @@ function registerIpc(): void {
     forkBitbucketRepo(settings, workspace, repo)
   )
 
-  ipcMain.handle('gitfreddo:bitbucket-upload-ssh-key', async (_event, title: string) =>
-    uploadBitbucketSshKey(settings, title)
-  )
+  ipcMain.handle('gitfreddo:bitbucket-upload-ssh-key', async (_event, title: string) => {
+    const uploaded = await uploadBitbucketSshKey(settings, title)
+    settings = uploaded.settings
+    return uploaded.result
+  })
 
   ipcMain.handle('gitfreddo:bitbucket-get-repo-context', async (_event, repoPath: string) =>
     tryGetBitbucketRepoContext(repoPath, settings)

@@ -29,10 +29,12 @@ const DEFAULT_SETTINGS: AppSettings = {
   aiConflictInstructions: '',
   githubLogin: '',
   githubConnectedAt: null,
+  githubSshKeyTitle: '',
   bitbucketLogin: '',
   bitbucketAuthLogin: '',
   bitbucketConnectedAt: null,
   bitbucketAuthType: null,
+  bitbucketSshKeyTitle: '',
   pullRebase: false,
   submoduleRecursion: 'on-demand',
   pushSubmoduleRecursion: 'check',
@@ -70,6 +72,7 @@ export async function loadSettings(): Promise<AppSettings> {
       aiConflictInstructions: parsed.aiConflictInstructions ?? '',
       githubLogin: parsed.githubLogin ?? '',
       githubConnectedAt: parsed.githubConnectedAt ?? null,
+      githubSshKeyTitle: parsed.githubSshKeyTitle ?? '',
       bitbucketLogin: parsed.bitbucketLogin ?? '',
       bitbucketAuthLogin: parsed.bitbucketAuthLogin ?? '',
       bitbucketConnectedAt: parsed.bitbucketConnectedAt ?? null,
@@ -77,6 +80,7 @@ export async function loadSettings(): Promise<AppSettings> {
         parsed.bitbucketAuthType === 'oauth' || parsed.bitbucketAuthType === 'app_password'
           ? parsed.bitbucketAuthType
           : null,
+      bitbucketSshKeyTitle: parsed.bitbucketSshKeyTitle ?? '',
       pullRebase: Boolean(parsed.pullRebase),
       submoduleRecursion:
         parsed.submoduleRecursion === 'always' || parsed.submoduleRecursion === 'none'
