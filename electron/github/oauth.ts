@@ -1,4 +1,5 @@
 import { shell } from 'electron'
+import { getResolvedForgeOAuthEnv } from '../forge-oauth-env'
 import { getAuthenticatedUser } from './client'
 
 const DEVICE_CODE_URL = 'https://github.com/login/device/code'
@@ -20,9 +21,7 @@ export interface DeviceFlowProgress {
 }
 
 export function getGitHubClientId(): string {
-  const fromEnv = process.env.GITHUB_CLIENT_ID?.trim()
-  if (fromEnv) return fromEnv
-  return ''
+  return getResolvedForgeOAuthEnv().githubClientId
 }
 
 export async function requestDeviceCode(clientId: string): Promise<DeviceCodeResponse> {

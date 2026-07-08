@@ -34,6 +34,7 @@ BITBUCKET_CLIENT_SECRET=your_consumer_secret
 ```
 
 GitFreddo loads unprefixed keys from `.env` into the Electron main process at startup.
+Release builds bake `BITBUCKET_CLIENT_ID` / `BITBUCKET_CLIENT_SECRET` from GitHub Actions secrets into the main bundle.
 
 ## Connect with an app password
 

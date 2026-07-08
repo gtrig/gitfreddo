@@ -1,6 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'http'
 import { randomBytes } from 'crypto'
 import { shell } from 'electron'
+import { getResolvedForgeOAuthEnv } from '../forge-oauth-env'
 import { getAuthenticatedUser } from './client'
 
 const AUTHORIZE_URL = 'https://bitbucket.org/site/oauth2/authorize'
@@ -22,11 +23,11 @@ export interface OAuthFlowProgress {
 }
 
 export function getBitbucketClientId(): string {
-  return process.env.BITBUCKET_CLIENT_ID?.trim() ?? ''
+  return getResolvedForgeOAuthEnv().bitbucketClientId
 }
 
 export function getBitbucketClientSecret(): string {
-  return process.env.BITBUCKET_CLIENT_SECRET?.trim() ?? ''
+  return getResolvedForgeOAuthEnv().bitbucketClientSecret
 }
 
 function getRedirectUri(port: number): string {

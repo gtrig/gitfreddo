@@ -33,3 +33,11 @@ Auto-update is **disabled** when running unpackaged (`npm run dev`). Manual chec
 ## Release requirements
 
 Tagged releases (`v*`) bump `package.json` to the tag version before building, then upload installer artifacts **and** `*.yml` update metadata. See `.github/workflows/release.yml`.
+
+Forge OAuth for installed apps is baked at build time from Actions secrets:
+
+| Secret | Maps to build env |
+|--------|-------------------|
+| `GITFREDDO_GITHUB_CLIENT_ID` | `GITHUB_CLIENT_ID` (Actions forbids secrets named `GITHUB_*`) |
+| `BITBUCKET_CLIENT_ID` | `BITBUCKET_CLIENT_ID` |
+| `BITBUCKET_CLIENT_SECRET` | `BITBUCKET_CLIENT_SECRET` |

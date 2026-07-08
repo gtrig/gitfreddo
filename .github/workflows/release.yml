@@ -24,6 +24,13 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
+    # Actions forbids secrets named GITHUB_*; map GITFREDDO_GITHUB_CLIENT_ID → GITHUB_CLIENT_ID for the bake step.
+    # electron.vite defines these into the main bundle so OAuth works in installed apps.
+    env:
+      GITHUB_CLIENT_ID: ${{ secrets.GITFREDDO_GITHUB_CLIENT_ID }}
+      BITBUCKET_CLIENT_ID: ${{ secrets.BITBUCKET_CLIENT_ID }}
+      BITBUCKET_CLIENT_SECRET: ${{ secrets.BITBUCKET_CLIENT_SECRET }}
+
     steps:
       - uses: actions/checkout@v5
 

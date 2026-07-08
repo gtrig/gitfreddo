@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-08 — Bake forge OAuth credentials into release builds
+
+- **Why:** Local `.env` is not present in CI or installers; Actions also forbids secrets named `GITHUB_*`.
+- **What:** Release workflow maps `GITFREDDO_GITHUB_CLIENT_ID` / Bitbucket secrets into build env; electron-vite bakes them into main via `GITFREDDO_BUILD_*` defines; runtime `.env` still wins locally.
+
 ### 2026-07-08 — Bitbucket SSH upload requires app password
 
 - **Why:** Bitbucket SSH keys API rejects OAuth (`403` … only session/password/apppassword); Upload SSH key failed after OAuth connect.

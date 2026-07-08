@@ -34,6 +34,7 @@ GITHUB_CLIENT_ID=your_oauth_app_client_id
 ```
 
 GitFreddo loads unprefixed keys from `.env` into the Electron main process at startup.
+Release builds bake the same values from CI secrets (`GITFREDDO_GITHUB_CLIENT_ID` — Actions forbids secrets named `GITHUB_*`) into the main bundle.
 
 ### GitHub Enterprise
 
