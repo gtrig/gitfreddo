@@ -46,6 +46,9 @@ import {
   remoteBranchContextMenuItems,
   remoteFolderContextMenuItems
 } from '@/lib/context-menus/sidebarContextMenus'
+import { BranchVisibilityToggle } from '@/components/Layout/sidebar/BranchVisibilityToggle'
+import { branchVisibilityKey } from '@/lib/timeline/branchVisibility'
+import { useBranchVisibilityStore } from '@/stores/branchVisibility'
 
 interface LocalBranchesSectionProps {
   branches: GitBranch[] | undefined
@@ -75,6 +78,8 @@ function BranchTree({
   onCheckoutInWorktree,
   onSetUpstream,
   onUnsetUpstream,
+  isBranchHidden,
+  onToggleGraphVisibility,
   openMenu
 }: {
   nodes: BranchTreeNode[]
@@ -91,6 +96,8 @@ function BranchTree({
   onCheckoutInWorktree?: (name: string) => void
   onSetUpstream?: (name: string) => void
   onUnsetUpstream?: (name: string) => void
+  isBranchHidden: (branchKey: string) => boolean
+  onToggleGraphVisibility: (branchKey: string) => void
   openMenu: ReturnType<typeof useContextMenu>['openMenu']
 }) {
   const { t } = useTranslation()
@@ -126,6 +133,8 @@ function BranchTree({
                   onCheckoutInWorktree={onCheckoutInWorktree}
                   onSetUpstream={onSetUpstream}
                   onUnsetUpstream={onUnsetUpstream}
+                  isBranchHidden={isBranchHidden}
+                  onToggleGraphVisibility={onToggleGraphVisibility}
                   openMenu={openMenu}
                 />
               )}
@@ -135,6 +144,8 @@ function BranchTree({
 
         const branch = node.branch!
         const displayName = branch.name.includes('/') ? node.name : branch.name
+        const visibilityKey = branchVisibilityKey(branch)
+        const hiddenInGraph = isBranchHidden(visibilityKey)
         const branchMenuItems = localBranchContextMenuItems(
           branch,
           {
@@ -146,7 +157,9 @@ function BranchTree({
             onCreatePr,
             onCheckoutInWorktree,
             onSetUpstream,
-            onUnsetUpstream
+            onUnsetUpstream,
+            onToggleGraphVisibility,
+            isHiddenInGraph: hiddenInGraph
           },
           t
         )
@@ -158,6 +171,7 @@ function BranchTree({
             depth={depth}
             isCurrent={branch.isCurrent}
             title={t('sidebar.branchClickHint')}
+            labelClassName={hiddenInGraph ? 'opacity-60' : ''}
             suffix={
               branch.ahead > 0 || branch.behind > 0 ? (
                 <span className="shrink-0 text-[10px] text-gf-fg-subtle">
@@ -165,6 +179,13 @@ function BranchTree({
                   {branch.behind > 0 && ` ↓${branch.behind}`}
                 </span>
               ) : undefined
+            }
+            trailingAction={
+              <BranchVisibilityToggle
+                hidden={hiddenInGraph}
+                disabled={branch.isCurrent}
+                onToggle={() => onToggleGraphVisibility(visibilityKey)}
+              />
             }
             menuItems={branchMenuItems}
             openMenu={openMenu}
@@ -210,6 +231,8 @@ export function LocalBranchesSection({
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
   const { deleteBranch, unsetUpstream } = useGitMutations()
   const repoPath = useWorkspaceStore((s) => s.activePath)
+  const toggleBranchVisibility = useBranchVisibilityStore((s) => s.toggleBranchVisibility)
+  const isBranchHidden = useBranchVisibilityStore((s) => s.isBranchHidden)
   const { data: ghStatus } = useGitHubStatus()
   const { data: ghCtx } = useGitHubRepoContext(repoPath, true)
   const invalidatePrs = useInvalidateGitHubPullRequests()
@@ -270,6 +293,8 @@ export function LocalBranchesSection({
           onCheckoutInWorktree={setWorktreeBranch}
           onSetUpstream={setUpstreamBranch}
           onUnsetUpstream={(name) => void unsetUpstream.mutateAsync({ branch: name })}
+          isBranchHidden={isBranchHidden}
+          onToggleGraphVisibility={toggleBranchVisibility}
           openMenu={openMenu}
         />
       </div>
@@ -388,6 +413,8 @@ export function RemoteBranchesSection({
   const [renameRemote, setRenameRemote] = useState<string | null>(null)
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
   const { fetch, deleteRemoteBranch, remoteRemove } = useGitMutations()
+  const toggleBranchVisibility = useBranchVisibilityStore((s) => s.toggleBranchVisibility)
+  const isBranchHidden = useBranchVisibilityStore((s) => s.isBranchHidden)
 
   function toggleRemote(name: string) {
     setCollapsedRemotes((prev) => {
@@ -453,6 +480,8 @@ export function RemoteBranchesSection({
               )}
               {open &&
                 list.map((branch) => {
+                  const visibilityKey = branchVisibilityKey(branch)
+                  const hiddenInGraph = isBranchHidden(visibilityKey)
                   const remoteBranchMenuItems = remoteBranchContextMenuItems(
                     branch,
                     {
@@ -461,7 +490,9 @@ export function RemoteBranchesSection({
                       onDeleteRemote: (remoteBranch) => {
                         const match = remoteBranches.find((item) => item.name === remoteBranch)
                         if (match) setPendingDeleteRemote(match)
-                      }
+                      },
+                      onToggleGraphVisibility: toggleBranchVisibility,
+                      isHiddenInGraph: hiddenInGraph
                     },
                     t
                   )
@@ -472,9 +503,16 @@ export function RemoteBranchesSection({
                       label={remoteBranchShortName(branch.name)}
                       depth={1}
                       title={t('sidebar.clickFocusCommit')}
+                      labelClassName={hiddenInGraph ? 'opacity-60' : ''}
                       menuItems={remoteBranchMenuItems}
                       openMenu={openMenu}
                       onClick={() => onSelectCommit(branch.head)}
+                      trailingAction={
+                        <BranchVisibilityToggle
+                          hidden={hiddenInGraph}
+                          onToggle={() => toggleBranchVisibility(visibilityKey)}
+                        />
+                      }
                     />
                   )
                 })}

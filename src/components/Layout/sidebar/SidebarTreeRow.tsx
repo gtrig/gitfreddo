@@ -15,6 +15,7 @@ interface SidebarTreeRowProps {
   isSelected?: boolean
   labelClassName?: string
   suffix?: ReactNode
+  trailingAction?: ReactNode
   title?: string
   menuItems?: ContextMenuItem[]
   openMenu?: OpenContextMenu
@@ -31,6 +32,7 @@ export function SidebarTreeRow({
   isSelected = false,
   labelClassName = '',
   suffix,
+  trailingAction,
   title,
   menuItems,
   openMenu,
@@ -74,6 +76,7 @@ export function SidebarTreeRow({
         {label}
       </button>
       {suffix}
+      {trailingAction}
     </div>
   )
 }
