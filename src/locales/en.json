@@ -206,6 +206,10 @@
       "disconnecting": "Disconnecting…",
       "uploadSshKey": "Upload SSH key",
       "uploading": "Uploading…",
+      "sshKeyActive": "SSH key active",
+      "sshKeyIdentifier": "{{title}}",
+      "sshKeyMissing": "No GitFreddo SSH key found on this account.",
+      "sshKeyUploaded": "SSH: {{title}}",
       "fork": {
         "title": "Fork repository",
         "description": "Create a fork under your GitHub account, then clone it locally.",
@@ -249,7 +253,11 @@
       "disconnect": "Disconnect",
       "disconnecting": "Disconnecting…",
       "uploadSshKey": "Upload SSH key",
-      "uploading": "Uploading…"
+      "uploading": "Uploading…",
+      "sshKeyActive": "SSH key active",
+      "sshKeyIdentifier": "{{title}}",
+      "sshKeyMissing": "No GitFreddo SSH key found on this account.",
+      "sshKeyUploaded": "SSH: {{title}}"
     },
     "maintenance": {
       "updates": "Application updates",
@@ -276,7 +284,17 @@
       "removeStaleBranches": "Remove stale branches",
       "confirmPruneTitle": "Remove unreachable commits?",
       "confirmPruneMessage": "This will permanently remove {{count}} unreachable commits.",
-      "confirmPrune": "Remove"
+      "confirmPrune": "Remove",
+      "settingsBackup": "Settings backup",
+      "settingsBackupDesc": "Export or restore GitFreddo preferences, AI configuration, and integration logins. Backup files may contain API keys and tokens — store them securely.",
+      "exportSettings": "Export settings",
+      "importSettings": "Import settings",
+      "exportingSettings": "Exporting…",
+      "importingSettings": "Importing…",
+      "exportSettingsSuccess": "Settings exported to {{path}}.",
+      "importSettingsSuccess": "Settings restored from backup.",
+      "confirmImportTitle": "Restore settings from backup?",
+      "confirmImportMessage": "This replaces your current GitFreddo settings with the values from the backup file. Integration tokens included in the backup will also be restored."
     },
     "repoFiles": {
       "connectRequired": "Open a repository to edit repository files.",

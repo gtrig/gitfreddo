@@ -206,6 +206,10 @@
       "disconnecting": "Αποσύνδεση…",
       "uploadSshKey": "Μεταφόρτωση SSH key",
       "uploading": "Μεταφόρτωση…",
+      "sshKeyActive": "Ενεργό SSH κλειδί",
+      "sshKeyIdentifier": "{{title}}",
+      "sshKeyMissing": "Δεν βρέθηκε SSH κλειδί GitFreddo σε αυτόν τον λογαριασμό.",
+      "sshKeyUploaded": "SSH: {{title}}",
       "fork": {
         "title": "Fork αποθετηρίου",
         "description": "Δημιουργήστε ένα κλωνίδιο στον λογαριασμό σας στο GitHub, μετά κλωνοποιήστε το τοπικά.",
@@ -249,7 +253,11 @@
       "disconnect": "Αποσύνδεση",
       "disconnecting": "Αποσύνδεση…",
       "uploadSshKey": "Μεταφόρτωση SSH κλειδιού",
-      "uploading": "Μεταφόρτωση…"
+      "uploading": "Μεταφόρτωση…",
+      "sshKeyActive": "Ενεργό SSH κλειδί",
+      "sshKeyIdentifier": "{{title}}",
+      "sshKeyMissing": "Δεν βρέθηκε SSH κλειδί GitFreddo σε αυτόν τον λογαριασμό.",
+      "sshKeyUploaded": "SSH: {{title}}"
     },
     "maintenance": {
       "updates": "Ενημερώσεις εφαρμογής",
@@ -276,7 +284,17 @@
       "removeStaleBranches": "Αφαίρεση παλιών κλάδων",
       "confirmPruneTitle": "Αφαίρεση μη προσβάσιμων commits;",
       "confirmPruneMessage": "Αυτό θα αφαιρέσει μόνιμα {{count}} μη προσβάσιμα commits.",
-      "confirmPrune": "Αφαίρεση"
+      "confirmPrune": "Αφαίρεση",
+      "settingsBackup": "Αντίγραφο ρυθμίσεων",
+      "settingsBackupDesc": "Εξαγωγή ή επαναφορά προτιμήσεων GitFreddo, ρυθμίσεων AI και συνδέσεων ενοποίησης. Τα αρχεία αντιγράφου μπορεί να περιέχουν κλειδιά API και tokens — φυλάξτε τα με ασφάλεια.",
+      "exportSettings": "Εξαγωγή ρυθμίσεων",
+      "importSettings": "Εισαγωγή ρυθμίσεων",
+      "exportingSettings": "Εξαγωγή…",
+      "importingSettings": "Εισαγωγή…",
+      "exportSettingsSuccess": "Οι ρυθμίσεις εξήχθησαν στο {{path}}.",
+      "importSettingsSuccess": "Οι ρυθμίσεις επαναφέρθηκαν από το αντίγραφο.",
+      "confirmImportTitle": "Επαναφορά ρυθμίσεων από αντίγραφο;",
+      "confirmImportMessage": "Αυτό αντικαθιστά τις τρέχουσες ρυθμίσεις GitFreddo με τις τιμές από το αρχείο αντιγράφου. Τα tokens ενοποίησης που περιλαμβάνονται στο αντίγραφο θα επαναφερθούν επίσης."
     },
     "repoFiles": {
       "connectRequired": "Ανοίξτε αποθετήριο για επεξεργασία αρχείων.",
