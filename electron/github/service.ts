@@ -54,13 +54,19 @@ async function resolveGitHubSshKeyTitle(
     return { settings, sshKeyTitle: stored }
   }
 
-  const discovered = await findGitFreddoSshKeyTitle(token)
-  if (!discovered) {
+  try {
+    const discovered = await findGitFreddoSshKeyTitle(token)
+    if (!discovered) {
+      return { settings, sshKeyTitle: '' }
+    }
+
+    const next = await saveSettings({ githubSshKeyTitle: discovered })
+    return { settings: next, sshKeyTitle: discovered }
+  } catch {
+    // Listing keys can fail for valid tokens that lack admin:public_key.
+    // Keep the authenticated connection and leave SSH status unknown.
     return { settings, sshKeyTitle: '' }
   }
-
-  const next = await saveSettings({ githubSshKeyTitle: discovered })
-  return { settings: next, sshKeyTitle: discovered }
 }
 
 export async function getGitHubStatus(

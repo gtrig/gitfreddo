@@ -74,17 +74,22 @@ async function resolveBitbucketSshKeyTitle(
     return { settings, sshKeyTitle: stored }
   }
 
-  const discovered = await findGitFreddoSshKeyTitle(username, {
-    bitbucketLogin: username,
-    bitbucketAuthLogin: authLogin ?? settings.bitbucketAuthLogin,
-    bitbucketAuthType: authType
-  })
-  if (!discovered) {
+  try {
+    const discovered = await findGitFreddoSshKeyTitle(username, {
+      bitbucketLogin: username,
+      bitbucketAuthLogin: authLogin ?? settings.bitbucketAuthLogin,
+      bitbucketAuthType: authType
+    })
+    if (!discovered) {
+      return { settings, sshKeyTitle: '' }
+    }
+
+    const next = await saveSettings({ bitbucketSshKeyTitle: discovered })
+    return { settings: next, sshKeyTitle: discovered }
+  } catch {
+    // Listing keys can fail without account/ssh scopes. Keep the connection.
     return { settings, sshKeyTitle: '' }
   }
-
-  const next = await saveSettings({ bitbucketSshKeyTitle: discovered })
-  return { settings: next, sshKeyTitle: discovered }
 }
 
 async function buildConnectedBitbucketStatus(

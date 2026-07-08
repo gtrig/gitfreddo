@@ -93,4 +93,30 @@ describe('github service ssh key state', () => {
     expect(saveSettings).toHaveBeenCalledWith({ githubSshKeyTitle: 'GitFreddo key' })
     expect(uploaded.settings.githubSshKeyTitle).toBe('GitFreddo key')
   })
+
+  it('keeps the connection when ssh key discovery fails after a valid token auth', async () => {
+    vi.mocked(findGitFreddoSshKeyTitle).mockRejectedValue(
+      new Error('GitHub API error (403): Resource not accessible by personal access token')
+    )
+
+    const { status, settings } = await getGitHubStatus({
+      githubLogin: 'octo',
+      githubConnectedAt: Date.now(),
+      githubSshKeyTitle: ''
+    } as AppSettings)
+
+    expect(status).toEqual({
+      connected: true,
+      login: 'octo',
+      avatarUrl: 'https://avatar.example/octo',
+      sshKeyTitle: null
+    })
+    expect(settings.githubLogin).toBe('octo')
+    expect(saveSettings).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        githubLogin: '',
+        githubConnectedAt: null
+      })
+    )
+  })
 })

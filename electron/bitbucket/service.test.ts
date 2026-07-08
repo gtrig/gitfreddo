@@ -157,6 +157,27 @@ describe('bitbucket service auth', () => {
     expect(nextSettings.bitbucketAuthType).toBe('app_password')
   })
 
+  it('keeps the connection when ssh key discovery fails after valid auth', async () => {
+    const { findGitFreddoSshKeyTitle } = await import('./ssh-keys')
+    vi.mocked(findGitFreddoSshKeyTitle).mockRejectedValue(
+      new Error('Bitbucket API error (403): insufficient scopes')
+    )
+
+    const settings = {
+      bitbucketLogin: 'gtrig',
+      bitbucketAuthLogin: 'user@example.com',
+      bitbucketConnectedAt: Date.now(),
+      bitbucketAuthType: 'app_password' as const,
+      bitbucketSshKeyTitle: ''
+    }
+
+    const { status } = await getBitbucketStatus(settings as never)
+
+    expect(status.connected).toBe(true)
+    expect(status.login).toBe('gtrig')
+    expect(status.sshKeyTitle).toBeNull()
+  })
+
   it('uploads ssh keys using the Bitbucket username slug', async () => {
     const settings = {
       bitbucketLogin: 'gtrig',
