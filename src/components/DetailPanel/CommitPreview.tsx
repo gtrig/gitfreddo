@@ -109,10 +109,12 @@ function parseCommitMessage(text: string): { summary: string; description: strin
 }
 
 function CommitAiButton({
+  commit,
   filePaths,
   fullMessage,
   onSuggestion
 }: {
+  commit: GitCommit
   filePaths: string[]
   fullMessage: string
   onSuggestion: (summary: string, description: string) => void
@@ -135,9 +137,17 @@ function CommitAiButton({
       onClick={() =>
         void aiFill
           .mutateAsync({
-            purpose: 'commit_message',
+            purpose: 'recompose_commit',
             context: {
-              filePaths,
+              commits: [
+                {
+                  hash: commit.hash,
+                  shortHash: commit.shortHash,
+                  subject: commit.subject,
+                  message: fullMessage,
+                  filePaths
+                }
+              ],
               currentText: fullMessage
             }
           })
@@ -446,6 +456,7 @@ export function CommitPreview({
             {t('detail.reword')}
           </button>
           <CommitAiButton
+            commit={commit}
             filePaths={changedFiles.map((file) => file.path)}
             fullMessage={fullMessage}
             onSuggestion={(summary, description) => {

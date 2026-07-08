@@ -66,6 +66,34 @@ describe('buildAiMessages', () => {
     expect(user).toContain('fix bug')
   })
 
+  it('appends commit message instructions when recomposing an existing commit', () => {
+    const { user } = buildAiMessages(
+      'recompose_commit',
+      {
+        branch: 'main',
+        filePaths: ['src/auth.ts'],
+        currentText: 'fix: auth bug\n\nHandle expired tokens.',
+        diffText: '+++ b/src/auth.ts\n+export function refresh() {}',
+        commits: [
+          {
+            hash: 'abc123def456',
+            shortHash: 'abc123d',
+            subject: 'fix: auth bug',
+            message: 'fix: auth bug\n\nHandle expired tokens.',
+            filePaths: ['src/auth.ts']
+          }
+        ]
+      },
+      { commitMessage: 'Use Conventional Commits with a scope.' }
+    )
+    expect(user).toContain('Commit message instructions:')
+    expect(user).toContain('Use Conventional Commits with a scope.')
+    expect(user).toContain('commit message instructions below')
+    expect(user).toContain('abc123d')
+    expect(user).toContain('Current message:')
+    expect(user).toContain('+++ b/src/auth.ts')
+  })
+
   it('asks for JSON commit groups when composing commits', () => {
     const { system, user } = buildAiMessages('compose_commits', {
       branch: 'main',

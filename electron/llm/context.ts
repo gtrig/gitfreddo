@@ -218,6 +218,30 @@ export async function enrichAiContext(
     }
   }
 
+  if (params.purpose === 'recompose_commit') {
+    const commits = params.context?.commits
+    if (!commits || commits.length === 0 || params.context?.diffText) {
+      return params
+    }
+
+    try {
+      const loaded = await loadExplainCommitContext(manager, repoPath, commits)
+      if (!loaded.diffText && (!loaded.commits || loaded.commits.length === 0)) {
+        return params
+      }
+
+      return {
+        ...params,
+        context: {
+          ...params.context,
+          ...loaded
+        }
+      }
+    } catch {
+      return params
+    }
+  }
+
   if (!DIFF_PURPOSES.has(params.purpose) || params.context?.diffText) {
     return params
   }

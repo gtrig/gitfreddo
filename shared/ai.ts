@@ -1,5 +1,6 @@
 export type AiFillPurpose =
   | 'commit_message'
+  | 'recompose_commit'
   | 'stash_message'
   | 'compose_commits'
   | 'resolve_conflict'
@@ -172,10 +173,30 @@ export function buildAiMessages(
           (files ? `Staged files:\n${files}\n` : '') +
           diffBlock +
           (seed ? `Starting idea: ${seed}\n` : '') +
-          'Summarize the actual code changes clearly based on the diff when provided.',
+          'Summarize the actual code changes clearly based on the diff when provided.\n' +
+          '- Follow the commit message instructions below when writing the subject and body',
         instructions.commitMessage
       )
       break
+    case 'recompose_commit': {
+      const recomposeCommit = context.commits?.[0]
+      const commitLabel = recomposeCommit
+        ? `Commit ${recomposeCommit.shortHash}: ${recomposeCommit.subject}\n`
+        : ''
+      user = appendCommitMessageInstructions(
+        'Improve or rewrite the commit message for an existing commit.\n' +
+          'Use an imperative subject line (≤72 chars) and an optional body separated by a blank line.\n' +
+          (branch ? `Branch: ${branch}\n` : '') +
+          commitLabel +
+          (files ? `Changed files:\n${files}\n` : '') +
+          diffBlock +
+          (seed ? `Current message:\n${seed}\n` : '') +
+          'Base the new message on the actual code changes in the diff when provided.\n' +
+          '- Follow the commit message instructions below when writing the subject and body',
+        instructions.commitMessage
+      )
+      break
+    }
     case 'stash_message':
       user = appendCustomInstructions(
         'Write a short git stash message describing work in progress.\n' +

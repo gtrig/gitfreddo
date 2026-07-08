@@ -107,6 +107,46 @@ describe('enrichAiContext explain_commit', () => {
   })
 })
 
+describe('enrichAiContext recompose_commit', () => {
+  it('loads commit message and diff when missing', async () => {
+    const invoke = vi.fn(async (_repoPath: string, method: string, params?: unknown) => {
+      if (method === 'log.message') {
+        return 'fix: auth bug\n\nHandle expired tokens.'
+      }
+      if (method === 'diff.show') {
+        const ref = (params as { ref: string }).ref
+        return { unified: `diff for ${ref}` }
+      }
+      if (method === 'repo.status') {
+        return { branch: 'main' }
+      }
+      throw new Error(`unexpected ${method}`)
+    })
+
+    const enriched = await enrichAiContext(createManager(invoke), {
+      purpose: 'recompose_commit',
+      context: {
+        currentText: 'fix: auth bug',
+        commits: [
+          {
+            hash: 'abc123def456',
+            shortHash: 'abc123d',
+            subject: 'fix: auth bug',
+            filePaths: ['src/auth.ts']
+          }
+        ]
+      }
+    })
+
+    expect(invoke).toHaveBeenCalledWith('/repo', 'log.message', { hash: 'abc123def456' })
+    expect(invoke).toHaveBeenCalledWith('/repo', 'diff.show', { ref: 'abc123def456' })
+    expect(enriched.context?.branch).toBe('main')
+    expect(enriched.context?.diffText).toContain('abc123d')
+    expect(enriched.context?.diffText).toContain('diff for abc123def456')
+    expect(enriched.context?.commits?.[0]?.message).toContain('fix: auth bug')
+  })
+})
+
 describe('enrichAiContext pull_request', () => {
   it('loads diff between base and head branches', async () => {
     const invoke = vi.fn(async (_repoPath: string, method: string, params?: unknown) => {
