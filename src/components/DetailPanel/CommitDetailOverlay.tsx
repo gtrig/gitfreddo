@@ -1,90 +1,80 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { ClockIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { DocumentTextIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { LoadingRow } from '@/components/Ui/Spinner'
 import { UnifiedDiffView } from '@/components/DiffViewer/UnifiedDiffView'
 import { SplitDiffView } from '@/components/DiffViewer/SplitDiffView'
 import { FullFileView } from '@/components/DiffViewer/FullFileView'
 import { FileViewModeToggle } from '@/components/DiffViewer/FileViewModeToggle'
+import { CommitFileList } from '@/components/DetailPanel/CommitFileList'
 import { useDiffShow, useFileRead } from '@/hooks/useGit'
+import { useCommitDisplayFiles } from '@/hooks/useCommitDisplayFiles'
 import { useAppSettings } from '@/hooks/useAppSettings'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { useSelectionStore } from '@/stores/selection'
+import { commitMessageBody } from '@/lib/workspace/fileTree'
 import { defaultFileContentViewMode, type FileContentViewMode } from '@/lib/diff/fileViewMode'
 import { parseUnifiedDiffRows, splitRowsForDisplay } from '@/lib/diff/unifiedDiff'
 import type { GitCommit } from '@/lib/types'
 
-interface FileHistoryOverlayProps {
-  path: string
+interface CommitDetailOverlayProps {
+  commit: GitCommit
   onClose: () => void
 }
 
 type DiffViewMode = FileContentViewMode
 
-function CommitRow({
-  commit,
-  selected,
-  onSelect
-}: {
-  commit: GitCommit
-  selected: boolean
-  onSelect: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      aria-current={selected ? 'true' : undefined}
-      className={`flex w-full flex-col gap-0.5 border-b border-gf-border/60 px-3 py-2 text-left last:border-b-0 ${
-        selected ? 'bg-gf-surface text-gf-fg' : 'text-gf-fg-muted hover:bg-gf-surface-hover'
-      }`}
-    >
-      <span className="font-mono text-xs text-gf-fg-muted">{commit.shortHash}</span>
-      <span className="text-sm">{commit.subject}</span>
-      <span className="text-xs text-gf-fg-subtle">
-        {commit.author.name} · {new Date(commit.author.date).toLocaleDateString()}
-      </span>
-    </button>
-  )
-}
-
-export function FileHistoryOverlay({ path, onClose }: FileHistoryOverlayProps) {
+export function CommitDetailOverlay({ commit, onClose }: CommitDetailOverlayProps) {
   const { t } = useTranslation()
   const { data: settings } = useAppSettings()
   const connected = useWorkspaceStore((s) => s.connected)
   const repoPath = useWorkspaceStore((s) => s.activePath)
-  const [selectedHash, setSelectedHash] = useState<string | null>(null)
+  const selectedCommitFile = useSelectionStore((s) => s.selectedCommitFile)
+  const setSelectedCommitFile = useSelectionStore((s) => s.setSelectedCommitFile)
+  const openFileHistory = useSelectionStore((s) => s.openFileHistory)
+
+  const [showAllFiles, setShowAllFiles] = useState(false)
   const [viewMode, setViewMode] = useState<DiffViewMode>(() =>
     defaultFileContentViewMode(settings?.diffViewMode)
   )
 
-  const { data: commits, isLoading, error } = useQuery({
-    queryKey: ['repo', repoPath, 'log.file', path],
+  const { files, loading, loadingAllFiles, error } = useCommitDisplayFiles(
+    commit.hash,
+    showAllFiles,
+    connected && Boolean(repoPath)
+  )
+
+  const fullMessageQuery = useQuery({
+    queryKey: ['repo', repoPath, 'log.message', commit.hash],
     queryFn: async () =>
-      (await window.gitfreddo.invoke('log.file', { path, maxCount: 100 })) as GitCommit[],
-    enabled: connected && Boolean(repoPath) && Boolean(path)
+      window.gitfreddo.invoke('log.message', { hash: commit.hash }) as Promise<string>,
+    enabled: connected && Boolean(repoPath) && Boolean(commit.hash)
   })
 
+  const fullMessage = fullMessageQuery.data ?? commit.message
+  const body = useMemo(
+    () => commitMessageBody(fullMessage, commit.subject),
+    [fullMessage, commit.subject]
+  )
+
   useEffect(() => {
-    if (!commits?.length) {
-      setSelectedHash(null)
-      return
-    }
-    setSelectedHash((current) =>
-      current && commits.some((commit) => commit.hash === current) ? current : commits[0]!.hash
-    )
-  }, [commits])
+    if (files.length === 0) return
+    const current = useSelectionStore.getState().selectedCommitFile
+    if (current && files.some((file) => file.path === current)) return
+    setSelectedCommitFile(files[0]!.path)
+  }, [files, setSelectedCommitFile])
 
   const diffQuery = useDiffShow(
-    selectedHash,
-    path,
-    Boolean(selectedHash) && viewMode !== 'full'
+    commit.hash,
+    selectedCommitFile ?? undefined,
+    Boolean(selectedCommitFile) && viewMode !== 'full'
   )
 
   const fileReadQuery = useFileRead(
-    selectedHash,
-    path,
-    Boolean(selectedHash) && viewMode === 'full'
+    commit.hash,
+    selectedCommitFile ?? undefined,
+    Boolean(selectedCommitFile) && viewMode === 'full'
   )
 
   const rows = useMemo(
@@ -96,10 +86,13 @@ export function FileHistoryOverlay({ path, onClose }: FileHistoryOverlayProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-gf-bg-deep">
       <header className="flex shrink-0 items-center gap-2 border-b border-gf-border px-3 py-2">
-        <ClockIcon className="h-4 w-4 shrink-0 text-gf-fg-subtle" aria-hidden />
-        <h2 className="min-w-0 flex-1 truncate text-sm font-medium text-gf-fg">
-          {t('modals.fileHistory.title', { path })}
-        </h2>
+        <DocumentTextIcon className="h-4 w-4 shrink-0 text-gf-fg-subtle" aria-hidden />
+        <div className="min-w-0 flex-1">
+          <h2 className="truncate text-sm font-medium text-gf-fg">{commit.subject}</h2>
+          <p className="truncate font-mono text-xs text-gf-fg-subtle">
+            {commit.shortHash} · {commit.author.name}
+          </p>
+        </div>
         <button
           type="button"
           onClick={onClose}
@@ -110,43 +103,44 @@ export function FileHistoryOverlay({ path, onClose }: FileHistoryOverlayProps) {
         </button>
       </header>
 
+      {body && (
+        <div className="shrink-0 border-b border-gf-border px-4 py-2">
+          <p className="line-clamp-2 whitespace-pre-wrap text-sm text-gf-fg-subtle">{body}</p>
+        </div>
+      )}
+
       <div className="flex min-h-0 flex-1">
         <aside className="flex w-72 shrink-0 flex-col border-r border-gf-border">
-          {isLoading && (
+          {loading && files.length === 0 ? (
             <div className="p-3">
-              <LoadingRow label={t('modals.fileHistory.loading')} />
+              <LoadingRow label={t('detail.loadingFiles')} />
             </div>
-          )}
-          {error && (
-            <p className="p-3 text-sm text-red-400">
-              {error instanceof Error ? error.message : t('modals.fileHistory.loadFailed')}
-            </p>
-          )}
-          {commits && (
-            <div className="min-h-0 flex-1 overflow-y-auto">
-              {commits.length === 0 ? (
-                <p className="px-3 py-2 text-sm text-gf-fg-subtle">{t('modals.fileHistory.noCommits')}</p>
-              ) : (
-                commits.map((commit) => (
-                  <CommitRow
-                    key={commit.hash}
-                    commit={commit}
-                    selected={commit.hash === selectedHash}
-                    onSelect={() => setSelectedHash(commit.hash)}
-                  />
-                ))
-              )}
-            </div>
+          ) : (
+            <CommitFileList
+              files={files}
+              loading={loading}
+              error={error}
+              selectedPath={selectedCommitFile}
+              onSelectFile={setSelectedCommitFile}
+              onFileHistory={openFileHistory}
+              showAllFiles={showAllFiles}
+              onShowAllFilesChange={setShowAllFiles}
+              loadingAllFiles={loadingAllFiles}
+              showBadges={false}
+            />
           )}
         </aside>
 
         <main className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <div className="flex shrink-0 items-center justify-end gap-2 border-b border-gf-border px-3 py-1.5">
+          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-gf-border px-3 py-1.5">
+            <p className="min-w-0 truncate font-mono text-xs text-gf-fg-muted">
+              {selectedCommitFile ?? t('detail.selectFileForDiff')}
+            </p>
             <FileViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
           </div>
           <div className="min-h-0 flex-1 overflow-auto p-4">
-            {!selectedHash ? (
-              <p className="text-sm text-gf-fg-subtle">{t('modals.fileHistory.selectCommit')}</p>
+            {!selectedCommitFile ? (
+              <p className="text-sm text-gf-fg-subtle">{t('detail.selectFileForDiff')}</p>
             ) : viewMode === 'full' ? (
               fileReadQuery.isLoading ? (
                 <FullFileView content="" loading />

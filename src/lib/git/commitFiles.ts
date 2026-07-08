@@ -60,6 +60,34 @@ export function commitFileKindLabel(kind: CommitFileChangeKind): string {
   }
 }
 
+/** Parse `git ls-tree -r --name-only` output into repo paths. */
+export function parseCommitTreePaths(output: string): string[] {
+  return output
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+}
+
+/** Union commit name-status rows with full tree paths; tree-only paths are unchanged. */
+export function mergeCommitFilesWithTree(
+  changedFiles: CommitFileItem[],
+  allPaths: string[]
+): CommitFileItem[] {
+  const changedByPath = new Map(changedFiles.map((file) => [file.path, file]))
+  const treePaths = new Set(allPaths)
+  const merged: CommitFileItem[] = allPaths.map(
+    (path) => changedByPath.get(path) ?? { path, kind: 'unchanged' }
+  )
+
+  for (const file of changedFiles) {
+    if (!treePaths.has(file.path)) {
+      merged.push(file)
+    }
+  }
+
+  return merged
+}
+
 export function commitFileKindColor(kind: CommitFileChangeKind): string {
   switch (kind) {
     case 'added':

@@ -3,6 +3,7 @@ import { RepoSidebar } from '@/components/Layout/RepoSidebar'
 import { TimelinePanel } from '@/components/TimelineGraph/TimelinePanel'
 import { DiffOverlay } from '@/components/DiffViewer/DiffOverlay'
 import { MergeConflictScreen } from '@/components/MergeConflicts/MergeConflictScreen'
+import { CommitDetailScreen } from '@/components/DetailPanel/CommitDetailScreen'
 import { FileHistoryScreen } from '@/components/History/FileHistoryScreen'
 import { DetailPanel } from '@/components/DetailPanel/DetailPanel'
 import { ActionBar } from '@/components/Layout/ActionBar'
@@ -47,14 +48,16 @@ export default function App() {
   const selectedStashFile = useSelectionStore((s) => s.selectedStashFile)
   const diffMode = useSelectionStore((s) => s.diffMode)
   const closeDiffOverlay = useSelectionStore((s) => s.closeDiffOverlay)
+  const commitDetailHash = useSelectionStore((s) => s.commitDetailHash)
 
   const selectedStashIndex = useSelectionStore((s) => s.selectedStashIndex)
   const diffOverlayOpen = Boolean(
-    selectedWorkingFile ||
-      selectedCommitFile ||
-      selectedStashFile ||
-      (diffMode === 'stash' && selectedStashIndex !== null) ||
-      diffMode === 'commit-range'
+    !commitDetailHash &&
+      (selectedWorkingFile ||
+        selectedCommitFile ||
+        selectedStashFile ||
+        (diffMode === 'stash' && selectedStashIndex !== null) ||
+        diffMode === 'commit-range')
   )
   useAutoRefresh()
   useRepoChangeListener()
@@ -184,6 +187,7 @@ export default function App() {
 
       <GlobalOperationOverlay />
       <MergeConflictScreen />
+      <CommitDetailScreen />
       <FileHistoryScreen />
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <DocsModal open={docsOpen} onClose={() => setDocsOpen(false)} />

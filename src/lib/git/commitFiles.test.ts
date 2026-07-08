@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { commitFileKindColor, commitFileKindLabel, parseCommitNameStatus } from '@/lib/git/commitFiles'
+import {
+  commitFileKindColor,
+  commitFileKindLabel,
+  mergeCommitFilesWithTree,
+  parseCommitNameStatus,
+  parseCommitTreePaths
+} from '@/lib/git/commitFiles'
 
 describe('parseCommitNameStatus', () => {
   it('parses added, modified, and deleted files', () => {
@@ -38,5 +44,33 @@ describe('commitFileKindColor', () => {
   it('returns tailwind classes per kind', () => {
     expect(commitFileKindColor('added')).toContain('emerald')
     expect(commitFileKindColor('removed')).toContain('rose')
+  })
+})
+
+describe('parseCommitTreePaths', () => {
+  it('parses newline-separated paths from ls-tree output', () => {
+    expect(parseCommitTreePaths('src/a.ts\nsrc/b.ts\n\n')).toEqual(['src/a.ts', 'src/b.ts'])
+  })
+})
+
+describe('mergeCommitFilesWithTree', () => {
+  it('marks paths only in the tree as unchanged', () => {
+    const changed = parseCommitNameStatus('M\tsrc/app.ts\nA\tsrc/new.ts')
+    const merged = mergeCommitFilesWithTree(changed, ['README.md', 'src/app.ts', 'src/new.ts', 'src/old.ts'])
+    expect(merged).toEqual([
+      { path: 'README.md', kind: 'unchanged' },
+      { path: 'src/app.ts', kind: 'changed' },
+      { path: 'src/new.ts', kind: 'added' },
+      { path: 'src/old.ts', kind: 'unchanged' }
+    ])
+  })
+
+  it('keeps deleted files that are absent from the tree', () => {
+    const changed = parseCommitNameStatus('D\tsrc/removed.ts')
+    const merged = mergeCommitFilesWithTree(changed, ['src/kept.ts'])
+    expect(merged).toEqual([
+      { path: 'src/kept.ts', kind: 'unchanged' },
+      { path: 'src/removed.ts', kind: 'removed' }
+    ])
   })
 })

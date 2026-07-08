@@ -39,6 +39,7 @@ describe('useSelectionStore', () => {
       selectedStashIndex: null,
       selectedStashFile: null,
       fileHistoryPath: null,
+      commitDetailHash: null,
       diffMode: null,
       compareCommitRange: null,
       pendingAiProposals: {}
@@ -108,5 +109,15 @@ describe('selection workspace snapshots', () => {
 
     restoreSelectionForWorkspace('/new')
     expect(useSelectionStore.getState().selectedCommitHashes).toEqual(['hash1'])
+  })
+
+  it('opens and closes full-page commit detail', () => {
+    useSelectionStore.getState().openCommitDetail('abc123')
+    expect(useSelectionStore.getState().commitDetailHash).toBe('abc123')
+    expect(useSelectionStore.getState().selectedCommitHash).toBe('abc123')
+
+    useSelectionStore.getState().closeCommitDetail()
+    expect(useSelectionStore.getState().commitDetailHash).toBeNull()
+    expect(useSelectionStore.getState().selectedCommitFile).toBeNull()
   })
 })

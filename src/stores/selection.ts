@@ -14,6 +14,7 @@ interface SelectionState {
   selectedStashIndex: number | null
   selectedStashFile: string | null
   fileHistoryPath: string | null
+  commitDetailHash: string | null
   diffMode: 'working' | 'staged' | 'commit' | 'commit-range' | 'stash' | 'conflict' | null
   compareCommitRange: { oldestHash: string; newestHash: string; label: string } | null
   pendingAiProposals: Record<string, AiConflictResolutionProposal[]>
@@ -31,6 +32,8 @@ interface SelectionState {
   clearPendingAiProposals: (path: string) => void
   openFileHistory: (path: string) => void
   closeFileHistory: () => void
+  openCommitDetail: (hash: string) => void
+  closeCommitDetail: () => void
   closeDiffOverlay: () => void
 }
 
@@ -66,17 +69,20 @@ export const useSelectionStore = create<SelectionState>((set) => ({
   selectedStashIndex: null,
   selectedStashFile: null,
   fileHistoryPath: null,
+  commitDetailHash: null,
   diffMode: null,
   compareCommitRange: null,
   pendingAiProposals: {},
   selectTimelineNode: (kind, id) =>
-    set({
+    set((state) => ({
       timelineSelection: { kind, id },
       selectedCommitHashes: kind === 'commit' ? [id] : [],
       selectionAnchorHash: kind === 'commit' ? id : null,
       selectedCommitHash: kind === 'commit' ? id : null,
+      commitDetailHash:
+        kind === 'commit' && state.commitDetailHash === id ? state.commitDetailHash : null,
       ...clearNonTimelineSelection()
-    }),
+    })),
   toggleCommitSelection: (hash) =>
     set((state) => {
       const nextHashes = toggleHashInList(state.selectedCommitHashes, hash)
@@ -203,6 +209,7 @@ export const useSelectionStore = create<SelectionState>((set) => ({
   openFileHistory: (path) =>
     set({
       fileHistoryPath: path,
+      commitDetailHash: null,
       selectedWorkingFile: null,
       selectedConflictFile: null,
       selectedCommitFile: null,
@@ -212,6 +219,28 @@ export const useSelectionStore = create<SelectionState>((set) => ({
       diffMode: null
     }),
   closeFileHistory: () => set({ fileHistoryPath: null }),
+  openCommitDetail: (hash) =>
+    set({
+      commitDetailHash: hash,
+      fileHistoryPath: null,
+      selectedWorkingFile: null,
+      selectedConflictFile: null,
+      selectedStashFile: null,
+      selectedStashIndex: null,
+      compareCommitRange: null,
+      selectedCommitFile: null,
+      diffMode: null,
+      timelineSelection: { kind: 'commit', id: hash },
+      selectedCommitHashes: [hash],
+      selectionAnchorHash: hash,
+      selectedCommitHash: hash
+    }),
+  closeCommitDetail: () =>
+    set({
+      commitDetailHash: null,
+      selectedCommitFile: null,
+      diffMode: null
+    }),
   closeDiffOverlay: () =>
     set({
       selectedWorkingFile: null,
@@ -235,6 +264,7 @@ interface SelectionSnapshot {
   selectedStashIndex: number | null
   selectedStashFile: string | null
   fileHistoryPath: string | null
+  commitDetailHash: string | null
   diffMode: SelectionState['diffMode']
   compareCommitRange: SelectionState['compareCommitRange']
 }
@@ -250,6 +280,7 @@ const EMPTY_SNAPSHOT: SelectionSnapshot = {
   selectedStashIndex: null,
   selectedStashFile: null,
   fileHistoryPath: null,
+  commitDetailHash: null,
   diffMode: null,
   compareCommitRange: null
 }
@@ -268,6 +299,7 @@ function snapshotFromState(state: SelectionState): SelectionSnapshot {
     selectedStashIndex: state.selectedStashIndex,
     selectedStashFile: state.selectedStashFile,
     fileHistoryPath: state.fileHistoryPath,
+    commitDetailHash: state.commitDetailHash,
     diffMode: state.diffMode,
     compareCommitRange: state.compareCommitRange
   }

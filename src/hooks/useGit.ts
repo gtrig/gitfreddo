@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import type {
+  CommitFileItem,
   GitBranch,
   GitDiffResult,
   GitLogGraphResult,
@@ -12,6 +13,7 @@ import type {
   GitWorktreeEntry,
   GitWorkingStatus
 } from '@/lib/types'
+import { parseCommitNameStatus } from '@/lib/git/commitFiles'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useLogMaxCount } from '@/hooks/useAppSettings'
 
@@ -37,6 +39,29 @@ export function useLogGraph(enabled = true) {
     queryKey: ['repo', repoPath, 'log.graph', maxCount],
     queryFn: () => window.gitfreddo.invoke('log.graph', { maxCount }),
     enabled: enabled && connected && Boolean(repoPath)
+  })
+}
+
+export function useCommitChangedFiles(hash: string | null, enabled = true) {
+  const { repoPath, connected } = useRepoScope()
+  return useQuery<CommitFileItem[]>({
+    queryKey: ['repo', repoPath, 'log.show', hash],
+    queryFn: async () => {
+      const output = (await window.gitfreddo.invoke('log.show', {
+        hash: hash!
+      })) as unknown as string
+      return parseCommitNameStatus(output)
+    },
+    enabled: enabled && connected && Boolean(repoPath) && Boolean(hash)
+  })
+}
+
+export function useCommitTreeFiles(hash: string | null, enabled = true) {
+  const { repoPath, connected } = useRepoScope()
+  return useQuery<string[]>({
+    queryKey: ['repo', repoPath, 'log.tree', hash],
+    queryFn: () => window.gitfreddo.invoke('log.tree', { hash: hash! }),
+    enabled: enabled && connected && Boolean(repoPath) && Boolean(hash)
   })
 }
 
@@ -199,6 +224,15 @@ export function useDiffShow(ref: string | null, path?: string, enabled = true) {
     queryKey: ['repo', repoPath, 'diff.show', ref, path],
     queryFn: () => window.gitfreddo.invoke('diff.show', { ref: ref!, path }),
     enabled: enabled && connected && Boolean(repoPath) && Boolean(ref)
+  })
+}
+
+export function useFileRead(ref: string | null | undefined, path?: string, enabled = true) {
+  const { repoPath, connected } = useRepoScope()
+  return useQuery<string>({
+    queryKey: ['repo', repoPath, 'file.read', ref, path],
+    queryFn: () => window.gitfreddo.invoke('file.read', { ref: ref!, path: path! }),
+    enabled: enabled && connected && Boolean(repoPath) && Boolean(ref) && Boolean(path)
   })
 }
 
