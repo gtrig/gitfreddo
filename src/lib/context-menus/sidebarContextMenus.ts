@@ -51,6 +51,8 @@ export function localBranchContextMenuItems(
     onUnsetUpstream?: (name: string) => void
     onCreatePr?: (name: string) => void
     onCheckoutInWorktree?: (name: string) => void
+    onToggleGraphVisibility?: (name: string) => void
+    isHiddenInGraph?: boolean
   },
   t?: TFunction
 ): ContextMenuItem[] {
@@ -75,6 +77,23 @@ export function localBranchContextMenuItems(
       label: t ? t('contextMenu.sidebar.focusCommit') : 'Focus commit',
       onClick: () => handlers.onSelectCommit(branch.head)
     },
+    ...(handlers.onToggleGraphVisibility
+      ? [
+          {
+            id: 'toggle-graph-visibility',
+            label: handlers.isHiddenInGraph
+              ? t
+                ? t('contextMenu.sidebar.showInGraph')
+                : 'Show in graph'
+              : t
+                ? t('contextMenu.sidebar.hideFromGraph')
+                : 'Hide from graph',
+            checked: !handlers.isHiddenInGraph,
+            disabled: branch.isCurrent,
+            onClick: () => handlers.onToggleGraphVisibility!(branch.name)
+          } as ContextMenuItem
+        ]
+      : []),
     {
       id: 'copy',
       label: t ? t('contextMenu.sidebar.copyBranchName') : 'Copy branch name',
@@ -246,6 +265,8 @@ export function remoteBranchContextMenuItems(
     onSelectCommit: (hash: string) => void
     onCheckout?: (remoteBranch: string) => void
     onDeleteRemote?: (remoteBranch: string) => void
+    onToggleGraphVisibility?: (remoteBranch: string) => void
+    isHiddenInGraph?: boolean
   },
   t?: TFunction
 ): ContextMenuItem[] {
@@ -261,6 +282,22 @@ export function remoteBranchContextMenuItems(
       label: t ? t('contextMenu.sidebar.focusCommit') : 'Focus commit',
       onClick: () => handlers.onSelectCommit(branch.head)
     },
+    ...(handlers.onToggleGraphVisibility
+      ? [
+          {
+            id: 'toggle-graph-visibility',
+            label: handlers.isHiddenInGraph
+              ? t
+                ? t('contextMenu.sidebar.showInGraph')
+                : 'Show in graph'
+              : t
+                ? t('contextMenu.sidebar.hideFromGraph')
+                : 'Hide from graph',
+            checked: !handlers.isHiddenInGraph,
+            onClick: () => handlers.onToggleGraphVisibility!(branch.name)
+          } as ContextMenuItem
+        ]
+      : []),
     {
       id: 'copy-short',
       label: t ? t('contextMenu.sidebar.copyBranchName') : 'Copy branch name',

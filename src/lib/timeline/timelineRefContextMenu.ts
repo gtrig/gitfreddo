@@ -8,6 +8,7 @@ import {
   tagContextMenuItems
 } from '@/lib/context-menus/sidebarContextMenus'
 import { localTagName } from '@/lib/format/tagNames'
+import { branchVisibilityKey } from '@/lib/timeline/branchVisibility'
 import type { TimelineRef } from '@/lib/timeline/timelineRefs'
 
 export interface TimelineRefContextMenuHandlers {
@@ -26,6 +27,8 @@ export interface TimelineRefContextMenuHandlers {
   onRenameTag?: (tag: GitTag) => void
   onDeleteTag?: (tag: GitTag, remote?: string) => void
   defaultRemote?: string
+  onToggleGraphVisibility?: (branchKey: string) => void
+  isBranchHiddenInGraph?: (branchKey: string) => boolean
 }
 
 export function findBranchForTimelineRef(
@@ -122,7 +125,9 @@ export function buildTimelineRefContextMenuItems(
       {
         onSelectCommit: handlers.onSelectCommit,
         onCheckout: handlers.onCheckoutRemote,
-        onDeleteRemote: handlers.onDeleteRemoteBranch
+        onDeleteRemote: handlers.onDeleteRemoteBranch,
+        onToggleGraphVisibility: handlers.onToggleGraphVisibility,
+        isHiddenInGraph: handlers.isBranchHiddenInGraph?.(branchVisibilityKey(branch))
       },
       t
     )
@@ -139,7 +144,9 @@ export function buildTimelineRefContextMenuItems(
       onCreatePr: handlers.onCreatePr,
       onCheckoutInWorktree: handlers.onCheckoutInWorktree,
       onSetUpstream: handlers.onSetUpstream,
-      onUnsetUpstream: handlers.onUnsetUpstream
+      onUnsetUpstream: handlers.onUnsetUpstream,
+      onToggleGraphVisibility: handlers.onToggleGraphVisibility,
+      isHiddenInGraph: handlers.isBranchHiddenInGraph?.(branchVisibilityKey(branch))
     },
     t
   )
