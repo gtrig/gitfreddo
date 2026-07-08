@@ -10,6 +10,7 @@ import type { AppSettings, BitbucketAuthSettings, BitbucketStatus } from '../../
 import { saveSettings } from '../settings'
 import { resolveBitbucketAuthLogin } from './auth'
 import { inferBitbucketAuthType } from '../../shared/integration-settings'
+import { isForgeAuthFailure } from '../../shared/forge-auth'
 import { getAuthenticatedUser } from './client'
 import { listIssues, createIssue, updateIssue } from './api/issues'
 import { createPullRequest, listPullRequests, mergePullRequest } from './api/pulls'
@@ -162,7 +163,18 @@ export async function getBitbucketStatus(
       return buildConnectedBitbucketStatus(updated, token, authType, authLogin, user)
     }
     return buildConnectedBitbucketStatus(settings, token, authType, authLogin, user)
-  } catch {
+  } catch (error) {
+    if (!isForgeAuthFailure(error) && settings.bitbucketLogin?.trim()) {
+      return {
+        settings,
+        status: toStatus(
+          settings.bitbucketLogin,
+          '',
+          inferBitbucketAuthType(settings),
+          settings.bitbucketSshKeyTitle
+        )
+      }
+    }
     const cleared = await clearBitbucketConnection(settings)
     return { settings: cleared, status: disconnectedStatus() }
   }

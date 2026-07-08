@@ -29,7 +29,7 @@ vi.mock('./ssh-keys', () => ({
 
 import type { AppSettings } from '../../shared/ipc'
 import { getGitHubStatus, uploadGitHubSshKey } from './service'
-import { hasGitHubToken, loadGitHubToken } from './token-store'
+import { hasGitHubToken, loadGitHubToken, clearGitHubToken } from './token-store'
 import { getAuthenticatedUser } from './client'
 import { saveSettings } from '../settings'
 import { findGitFreddoSshKeyTitle } from './ssh-keys'
@@ -118,5 +118,50 @@ describe('github service ssh key state', () => {
         githubConnectedAt: null
       })
     )
+  })
+
+  it('keeps a stored connection when status refresh hits a non-auth failure', async () => {
+    vi.mocked(getAuthenticatedUser).mockRejectedValue(new Error('fetch failed'))
+
+    const { status, settings } = await getGitHubStatus({
+      githubLogin: 'octo',
+      githubConnectedAt: Date.now(),
+      githubSshKeyTitle: 'GitFreddo key'
+    } as AppSettings)
+
+    expect(status).toEqual({
+      connected: true,
+      login: 'octo',
+      avatarUrl: '',
+      sshKeyTitle: 'GitFreddo key'
+    })
+    expect(settings.githubLogin).toBe('octo')
+    expect(saveSettings).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        githubLogin: '',
+        githubConnectedAt: null
+      })
+    )
+  })
+
+  it('clears the connection on auth failures during status refresh', async () => {
+    vi.mocked(getAuthenticatedUser).mockRejectedValue(
+      new Error('GitHub API error (401): Bad credentials')
+    )
+    vi.mocked(clearGitHubToken).mockResolvedValue(undefined)
+
+    const { status } = await getGitHubStatus({
+      githubLogin: 'octo',
+      githubConnectedAt: Date.now(),
+      githubSshKeyTitle: 'GitFreddo key'
+    } as AppSettings)
+
+    expect(status.connected).toBe(false)
+    expect(clearGitHubToken).toHaveBeenCalled()
+    expect(saveSettings).toHaveBeenCalledWith({
+      githubLogin: '',
+      githubConnectedAt: null,
+      githubSshKeyTitle: ''
+    })
   })
 })

@@ -8,6 +8,7 @@ import type {
 } from '../../shared/github'
 import type { AppSettings, GitHubStatus } from '../../shared/ipc'
 import { saveSettings } from '../settings'
+import { isForgeAuthFailure } from '../../shared/forge-auth'
 import { getAuthenticatedUser } from './client'
 import { listIssues, createIssue, updateIssue } from './api/issues'
 import { createPullRequest, listPullRequests, mergePullRequest } from './api/pulls'
@@ -95,7 +96,13 @@ export async function getGitHubStatus(
       settings: sshKey.settings,
       status: toStatus(user.login, user.avatar_url, sshKey.sshKeyTitle)
     }
-  } catch {
+  } catch (error) {
+    if (!isForgeAuthFailure(error) && settings.githubLogin?.trim()) {
+      return {
+        settings,
+        status: toStatus(settings.githubLogin, '', settings.githubSshKeyTitle)
+      }
+    }
     const cleared = await clearGitHubConnection(settings)
     return { settings: cleared, status: disconnectedStatus() }
   }

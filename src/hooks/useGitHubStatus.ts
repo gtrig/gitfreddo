@@ -13,3 +13,10 @@ export function useInvalidateGitHubStatus() {
   const queryClient = useQueryClient()
   return () => queryClient.invalidateQueries({ queryKey: ['github-status'] })
 }
+
+export function useSetGitHubStatus() {
+  const queryClient = useQueryClient()
+  return (status: GitHubStatus) => {
+    queryClient.setQueryData(['github-status'], status)
+  }
+}

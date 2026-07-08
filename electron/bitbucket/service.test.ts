@@ -178,6 +178,28 @@ describe('bitbucket service auth', () => {
     expect(status.sshKeyTitle).toBeNull()
   })
 
+  it('keeps a stored connection when status refresh hits a non-auth failure', async () => {
+    vi.mocked(getAuthenticatedUser).mockRejectedValue(new Error('fetch failed'))
+
+    const settings = {
+      bitbucketLogin: 'gtrig',
+      bitbucketAuthLogin: 'user@example.com',
+      bitbucketConnectedAt: Date.now(),
+      bitbucketAuthType: 'app_password' as const,
+      bitbucketSshKeyTitle: 'GitFreddo key'
+    }
+
+    const { status } = await getBitbucketStatus(settings as never)
+
+    expect(status).toEqual({
+      connected: true,
+      login: 'gtrig',
+      avatarUrl: '',
+      authType: 'app_password',
+      sshKeyTitle: 'GitFreddo key'
+    })
+  })
+
   it('uploads ssh keys using the Bitbucket username slug', async () => {
     const settings = {
       bitbucketLogin: 'gtrig',

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActionButton, TextInput } from '@/components/Ui/Modal'
-import { useGitHubStatus, useInvalidateGitHubStatus } from '@/hooks/useGitHubStatus'
+import { useGitHubStatus, useInvalidateGitHubStatus, useSetGitHubStatus } from '@/hooks/useGitHubStatus'
 import { IntegrationSshKeyStatus } from '@/components/Settings/panels/IntegrationSshKeyStatus'
 import { useToastStore } from '@/stores/toast'
 
@@ -11,6 +11,7 @@ export function GithubIntegrationCard() {
   const { t } = useTranslation()
   const { data: status, isLoading } = useGitHubStatus()
   const invalidate = useInvalidateGitHubStatus()
+  const setStatus = useSetGitHubStatus()
   const show = useToastStore((s) => s.show)
   const [connecting, setConnecting] = useState(false)
   const [disconnecting, setDisconnecting] = useState(false)
@@ -41,6 +42,7 @@ export function GithubIntegrationCard() {
         mode === 'pat'
           ? await window.gitfreddo.githubConnectPat(pat)
           : await window.gitfreddo.githubConnect()
+      setStatus(result)
       await invalidate()
       show(t('toast.github.connected', { login: result.login }), 'success')
       setPat('')
