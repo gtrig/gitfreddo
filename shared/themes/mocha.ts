@@ -1,8 +1,8 @@
 import type { ThemeDefinition } from './types'
 
-export const sage = {
-  id: 'sage',
-  label: 'Sage',
-  bgColor: '#141a16',
+export const mocha = {
+  id: 'mocha',
+  label: 'Mocha',
+  bgColor: '#18151f',
   mode: 'dark'
 } as const satisfies ThemeDefinition

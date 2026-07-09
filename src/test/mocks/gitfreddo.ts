@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 import type { AppSettings, GitFreddoAPI } from '@shared/ipc'
 
 export const defaultMockSettings: AppSettings = {
-  theme: 'dark',
+  theme: 'black',
   gitBinaryPath: 'git',
   recentRepos: [],
   openRepoTabs: [],

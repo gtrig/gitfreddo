@@ -7,7 +7,7 @@ import {
 } from './integration-settings'
 
 const baseSettings = {
-  theme: 'dark',
+  theme: 'black',
   locale: 'en',
   gitBinaryPath: 'git',
   recentRepos: [],
@@ -48,7 +48,7 @@ describe('pickUserSettings', () => {
   it('removes forge integration fields from settings saves', () => {
     const patch = pickUserSettings(baseSettings)
 
-    expect(patch.theme).toBe('dark')
+    expect(patch.theme).toBe('black')
     expect(patch.githubLogin).toBeUndefined()
     expect(patch.bitbucketLogin).toBeUndefined()
     expect(patch.bitbucketAuthLogin).toBeUndefined()
@@ -66,7 +66,7 @@ describe('pickUserSettings', () => {
     expect(patch.recentRepos).toBeUndefined()
     expect(patch.openRepoTabs).toBeUndefined()
     expect(patch.activeRepoTab).toBeUndefined()
-    expect(patch.theme).toBe('dark')
+    expect(patch.theme).toBe('black')
   })
 })
 
@@ -75,7 +75,7 @@ describe('preserveIntegrationSettings', () => {
     const patch = preserveIntegrationSettings(
       baseSettings,
       {
-        theme: 'mint',
+        theme: 'iced-matcha',
         bitbucketLogin: '',
         bitbucketAuthLogin: '',
         bitbucketConnectedAt: null,
@@ -84,7 +84,7 @@ describe('preserveIntegrationSettings', () => {
       { hasBitbucketToken: true, hasGitHubToken: false }
     )
 
-    expect(patch.theme).toBe('mint')
+    expect(patch.theme).toBe('iced-matcha')
     expect(patch.bitbucketLogin).toBe('gtrig')
     expect(patch.bitbucketAuthLogin).toBe('user@example.com')
     expect(patch.bitbucketAuthType).toBe('app_password')

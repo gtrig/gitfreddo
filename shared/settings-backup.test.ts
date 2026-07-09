@@ -8,7 +8,7 @@ import {
 } from './settings-backup'
 
 const sampleSettings: AppSettings = {
-  theme: 'dark',
+  theme: 'black',
   locale: 'en',
   gitBinaryPath: 'git',
   recentRepos: ['/tmp/repo'],
@@ -81,7 +81,7 @@ describe('settings backup format', () => {
   })
 
   it('rejects backups without recognizable settings', () => {
-    const parsed = parseSettingsBackup(JSON.stringify({ formatVersion: 1, settings: { theme: 'dark' } }))
+    const parsed = parseSettingsBackup(JSON.stringify({ formatVersion: 1, settings: { theme: 'black' } }))
     expect(parsed.ok).toBe(false)
     if (parsed.ok) return
     expect(parsed.error).toMatch(/settings/i)

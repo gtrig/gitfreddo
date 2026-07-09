@@ -1,8 +1,25 @@
 import type { AppTheme } from '@shared/themes'
-import { APP_THEMES, isAppTheme, normalizeAppTheme, THEME_BG_COLORS, THEME_LABELS, THEME_MODE_LABELS, THEME_MODES, THEMES } from '@shared/themes'
+import {
+  APP_THEMES,
+  normalizeAppTheme,
+  resolveStoredTheme,
+  THEME_BG_COLORS,
+  THEME_LABELS,
+  THEME_MODE_LABELS,
+  THEME_MODES,
+  THEMES
+} from '@shared/themes'
 
 export type { AppTheme }
-export { APP_THEMES, THEME_BG_COLORS, THEME_LABELS, THEME_MODE_LABELS, THEME_MODES, THEMES }
+export {
+  APP_THEMES,
+  resolveStoredTheme,
+  THEME_BG_COLORS,
+  THEME_LABELS,
+  THEME_MODE_LABELS,
+  THEME_MODES,
+  THEMES
+}
 
 export const THEME_STORAGE_KEY = 'gitfreddo:theme'
 
@@ -23,10 +40,7 @@ export function applyTheme(theme: AppTheme): void {
 export function readStoredTheme(): AppTheme | null {
   try {
     const stored = localStorage.getItem(THEME_STORAGE_KEY)
-    if (stored === 'fredo') {
-      return 'freddo'
-    }
-    return isAppTheme(stored) ? stored : null
+    return resolveStoredTheme(stored)
   } catch {
     return null
   }

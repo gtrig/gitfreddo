@@ -1,8 +1,8 @@
 import type { ThemeDefinition } from './types'
 
-export const sand = {
-  id: 'sand',
-  label: 'Sand',
-  bgColor: '#faf8f4',
+export const icedMatcha = {
+  id: 'iced-matcha',
+  label: 'Iced Matcha',
+  bgColor: '#f4f9f6',
   mode: 'light'
 } as const satisfies ThemeDefinition

@@ -1,9 +1,9 @@
-[data-theme='dark'],
+[data-theme='black'],
 [data-theme='freddo'],
-[data-theme='midnight'],
-[data-theme='sage'],
-[data-theme='lavender'],
-[data-theme='dusk'] {
+[data-theme='americano'],
+[data-theme='matcha'],
+[data-theme='mocha'],
+[data-theme='caramel'] {
   --gf-ref-tag-fg: #e4e4e7;
   --gf-ref-tag-border: rgb(228 228 231 / 0.28);
   --gf-ref-tag-bg: rgb(228 228 231 / 0.1);
@@ -22,11 +22,11 @@
   --gf-ref-branch-5: #22d3ee;
 }
 
-[data-theme='paper'],
-[data-theme='cloud'],
-[data-theme='blossom'],
-[data-theme='mint'],
-[data-theme='sand'] {
+[data-theme='iced-latte'],
+[data-theme='iced-americano'],
+[data-theme='iced-vanilla'],
+[data-theme='iced-matcha'],
+[data-theme='iced-caramel'] {
   --gf-ref-tag-fg: #57534e;
   --gf-ref-tag-border: rgb(87 83 78 / 0.22);
   --gf-ref-tag-bg: rgb(87 83 78 / 0.08);

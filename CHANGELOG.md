@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-09 — Coffee-themed color schemes
+
+- **Why:** Theme names should match GitFreddo’s coffee identity and be easier to browse in Settings.
+- **What:** Renamed all 11 themes to coffee drink names — dark: Black, Freddo, Americano, Matcha, Mocha, Caramel; light: Iced Latte, Iced Americano, Iced Vanilla, Iced Matcha, Iced Caramel. Legacy theme ids (`dark`, `paper`, `mint`, etc.) migrate automatically on load.
+
 ### 2026-07-09 — Graph drag-to-select commits
 
 - **Why:** Users expect to select a range of commits by clicking and dragging in the commit graph, like other git clients.

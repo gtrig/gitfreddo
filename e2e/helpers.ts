@@ -67,7 +67,7 @@ export function seedWorkspaceSettings(settingsDir: string, repoPath: string, ove
     join(settingsDir, 'settings.json'),
     JSON.stringify(
       {
-        theme: 'dark',
+        theme: 'black',
         locale: 'en',
         gitBinaryPath: 'git',
         recentRepos: [repoPath],

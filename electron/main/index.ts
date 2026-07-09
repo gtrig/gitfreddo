@@ -107,7 +107,7 @@ if (process.platform === 'linux') {
 }
 
 let settings: AppSettings = {
-  theme: 'dark',
+  theme: 'black',
   locale: 'en',
   gitBinaryPath: 'git',
   recentRepos: [],

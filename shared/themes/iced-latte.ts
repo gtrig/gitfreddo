@@ -1,8 +1,8 @@
 import type { ThemeDefinition } from './types'
 
-export const mint = {
-  id: 'mint',
-  label: 'Mint',
-  bgColor: '#f4f9f6',
+export const icedLatte = {
+  id: 'iced-latte',
+  label: 'Iced Latte',
+  bgColor: '#f8f6f2',
   mode: 'light'
 } as const satisfies ThemeDefinition

@@ -4,18 +4,20 @@ import { applyTheme, normalizeTheme, readStoredTheme, THEME_STORAGE_KEY } from '
 
 describe('normalizeTheme', () => {
   it('accepts all app themes', () => {
-    expect(normalizeTheme('dark')).toBe('dark')
+    expect(normalizeTheme('black')).toBe('black')
     expect(normalizeTheme('freddo')).toBe('freddo')
-    expect(normalizeTheme('midnight')).toBe('midnight')
-    expect(normalizeTheme('sage')).toBe('sage')
-    expect(normalizeTheme('lavender')).toBe('lavender')
-    expect(normalizeTheme('dusk')).toBe('dusk')
-    expect(normalizeTheme('paper')).toBe('paper')
-    expect(normalizeTheme('cloud')).toBe('cloud')
+    expect(normalizeTheme('americano')).toBe('americano')
+    expect(normalizeTheme('matcha')).toBe('matcha')
+    expect(normalizeTheme('mocha')).toBe('mocha')
+    expect(normalizeTheme('caramel')).toBe('caramel')
+    expect(normalizeTheme('iced-latte')).toBe('iced-latte')
+    expect(normalizeTheme('iced-americano')).toBe('iced-americano')
     expect(normalizeTheme('fredo')).toBe('freddo')
-    expect(normalizeTheme('light')).toBe('dark')
-    expect(normalizeTheme(undefined)).toBe('dark')
-    expect(normalizeAppTheme('invalid')).toBe('dark')
+    expect(normalizeTheme('dark')).toBe('black')
+    expect(normalizeTheme('paper')).toBe('iced-latte')
+    expect(normalizeTheme('light')).toBe('black')
+    expect(normalizeTheme(undefined)).toBe('black')
+    expect(normalizeAppTheme('invalid')).toBe('black')
   })
 })
 
@@ -53,9 +55,9 @@ describe('applyTheme', () => {
   })
 
   it('mirrors the theme to localStorage', () => {
-    applyTheme('dark')
-    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark')
-    expect(readStoredTheme()).toBe('dark')
+    applyTheme('black')
+    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('black')
+    expect(readStoredTheme()).toBe('black')
   })
 
   it('normalizes legacy fredo in localStorage', () => {
@@ -63,14 +65,14 @@ describe('applyTheme', () => {
     expect(readStoredTheme()).toBe('freddo')
   })
 
-  it('reads new themes from localStorage', () => {
+  it('reads legacy themes from localStorage', () => {
     localStorage.setItem(THEME_STORAGE_KEY, 'midnight')
-    expect(readStoredTheme()).toBe('midnight')
+    expect(readStoredTheme()).toBe('americano')
   })
 
-  it('normalizes invalid themes to dark', () => {
+  it('normalizes invalid themes to black', () => {
     applyTheme('freddo')
-    applyTheme('bogus' as 'dark')
-    expect(document.documentElement.dataset.theme).toBe('dark')
+    applyTheme('bogus' as 'black')
+    expect(document.documentElement.dataset.theme).toBe('black')
   })
 })

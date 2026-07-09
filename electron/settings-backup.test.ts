@@ -33,7 +33,7 @@ import { buildSettingsBackup, exportSettingsBackup, importSettingsBackup } from 
 import type { AppSettings } from '../shared/ipc'
 
 const sampleSettings = {
-  theme: 'dark',
+  theme: 'black',
   locale: 'en',
   gitBinaryPath: 'git',
   recentRepos: [],
@@ -126,7 +126,7 @@ describe('settings backup service', () => {
         {
           formatVersion: 1,
           exportedAt: '2026-07-08T08:00:00.000Z',
-          settings: { ...sampleSettings, theme: 'paper', locale: 'el' },
+          settings: { ...sampleSettings, theme: 'iced-latte', locale: 'el' },
           secrets: { githubToken: 'gho_restore', bitbucketToken: 'bb_restore' }
         },
         null,
@@ -139,12 +139,12 @@ describe('settings backup service', () => {
       canceled: false,
       filePaths: [importPath]
     })
-    vi.mocked(loadSettings).mockResolvedValue({ ...sampleSettings, theme: 'paper', locale: 'el' })
-    vi.mocked(saveSettings).mockResolvedValue({ ...sampleSettings, theme: 'paper', locale: 'el' })
+    vi.mocked(loadSettings).mockResolvedValue({ ...sampleSettings, theme: 'iced-latte', locale: 'el' })
+    vi.mocked(saveSettings).mockResolvedValue({ ...sampleSettings, theme: 'iced-latte', locale: 'el' })
 
     const restored = await importSettingsBackup()
-    expect(restored).toEqual({ ...sampleSettings, theme: 'paper', locale: 'el' })
-    expect(saveSettings).toHaveBeenCalledWith({ ...sampleSettings, theme: 'paper', locale: 'el' })
+    expect(restored).toEqual({ ...sampleSettings, theme: 'iced-latte', locale: 'el' })
+    expect(saveSettings).toHaveBeenCalledWith({ ...sampleSettings, theme: 'iced-latte', locale: 'el' })
     expect(saveGitHubToken).toHaveBeenCalledWith('gho_restore')
     expect(saveBitbucketToken).toHaveBeenCalledWith('bb_restore')
   })

@@ -6,14 +6,16 @@ Open **Settings → Interface** to configure.
 
 ## Theme
 
-GitFreddo includes 11 themes in dark and light modes:
+GitFreddo includes 11 coffee-themed color schemes in dark and light modes:
 
 | Mode | Themes |
 |------|--------|
-| Dark | dark, freddo, midnight, sage, lavender, dusk |
-| Light | paper, cloud, blossom, mint, sand |
+| Dark | Black, Freddo, Americano, Matcha, Mocha, Caramel |
+| Light | Iced Latte, Iced Americano, Iced Vanilla, Iced Matcha, Iced Caramel |
 
 Select a theme from the dropdown. Changes apply immediately.
+
+Older theme ids from previous versions (for example `dark`, `paper`, `mint`) are migrated automatically when settings load.
 
 ## Poll interval
 

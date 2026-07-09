@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { APP_THEMES, isAppTheme, normalizeAppTheme, THEME_BG_COLORS, THEME_LABELS, THEMES } from './index'
+import { APP_THEMES, isAppTheme, normalizeAppTheme, resolveStoredTheme, THEME_BG_COLORS, THEME_LABELS, THEMES } from './index'
 
 describe('normalizeAppTheme', () => {
   it('accepts all known themes', () => {
@@ -8,28 +8,56 @@ describe('normalizeAppTheme', () => {
     }
   })
 
+  it('maps legacy theme ids to coffee names', () => {
+    expect(normalizeAppTheme('dark')).toBe('black')
+    expect(normalizeAppTheme('midnight')).toBe('americano')
+    expect(normalizeAppTheme('sage')).toBe('matcha')
+    expect(normalizeAppTheme('lavender')).toBe('mocha')
+    expect(normalizeAppTheme('dusk')).toBe('caramel')
+    expect(normalizeAppTheme('paper')).toBe('iced-latte')
+    expect(normalizeAppTheme('cloud')).toBe('iced-americano')
+    expect(normalizeAppTheme('blossom')).toBe('iced-vanilla')
+    expect(normalizeAppTheme('mint')).toBe('iced-matcha')
+    expect(normalizeAppTheme('sand')).toBe('iced-caramel')
+  })
+
   it('maps legacy fredo to freddo', () => {
     expect(normalizeAppTheme('fredo')).toBe('freddo')
   })
 
-  it('falls back to dark for unknown values', () => {
-    expect(normalizeAppTheme('light')).toBe('dark')
-    expect(normalizeAppTheme(null)).toBe('dark')
-    expect(normalizeAppTheme(undefined)).toBe('dark')
-    expect(normalizeAppTheme('invalid')).toBe('dark')
+  it('falls back to black for unknown values', () => {
+    expect(normalizeAppTheme('light')).toBe('black')
+    expect(normalizeAppTheme(null)).toBe('black')
+    expect(normalizeAppTheme(undefined)).toBe('black')
+    expect(normalizeAppTheme('invalid')).toBe('black')
+  })
+})
+
+describe('resolveStoredTheme', () => {
+  it('returns null for unknown values', () => {
+    expect(resolveStoredTheme(null)).toBeNull()
+    expect(resolveStoredTheme('invalid')).toBeNull()
+    expect(resolveStoredTheme('light')).toBeNull()
+  })
+
+  it('resolves legacy ids without falling back', () => {
+    expect(resolveStoredTheme('paper')).toBe('iced-latte')
+    expect(resolveStoredTheme('dark')).toBe('black')
   })
 })
 
 describe('isAppTheme', () => {
   it('recognizes valid theme ids', () => {
-    expect(isAppTheme('midnight')).toBe(true)
-    expect(isAppTheme('sage')).toBe(true)
-    expect(isAppTheme('paper')).toBe(true)
-    expect(isAppTheme('cloud')).toBe(true)
+    expect(isAppTheme('black')).toBe(true)
+    expect(isAppTheme('americano')).toBe(true)
+    expect(isAppTheme('iced-latte')).toBe(true)
+    expect(isAppTheme('iced-caramel')).toBe(true)
   })
 
-  it('rejects unknown values', () => {
+  it('rejects legacy and unknown values', () => {
     expect(isAppTheme('fredo')).toBe(false)
+    expect(isAppTheme('dark')).toBe(false)
+    expect(isAppTheme('paper')).toBe(false)
     expect(isAppTheme('light')).toBe(false)
   })
 })
@@ -42,9 +70,14 @@ describe('theme metadata', () => {
     }
   })
 
-  it('assigns every theme to dark or light mode', () => {
+  it('uses coffee drink names with Iced prefix for light themes', () => {
     for (const theme of THEMES) {
       expect(theme.mode === 'dark' || theme.mode === 'light').toBe(true)
+      if (theme.mode === 'light') {
+        expect(theme.label.startsWith('Iced ')).toBe(true)
+      } else {
+        expect(theme.label.startsWith('Iced ')).toBe(false)
+      }
     }
   })
 })

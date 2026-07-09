@@ -29,12 +29,12 @@ describe('settings persistence', () => {
 
   it('merges partial patches without dropping unrelated fields', async () => {
     const { saveSettings, loadSettings } = await loadModule()
-    await saveSettings({ recentRepos: ['/tmp/a'], theme: 'mint' })
+    await saveSettings({ recentRepos: ['/tmp/a'], theme: 'iced-matcha' })
     await saveSettings({ pollIntervalMs: 9000 })
 
     const settings = await loadSettings()
     expect(settings.recentRepos).toEqual(['/tmp/a'])
-    expect(settings.theme).toBe('mint')
+    expect(settings.theme).toBe('iced-matcha')
     expect(settings.pollIntervalMs).toBe(9000)
   })
 
@@ -43,25 +43,25 @@ describe('settings persistence', () => {
     await saveSettings({ recentRepos: ['/tmp/seed'] })
 
     await Promise.all([
-      saveSettings({ theme: 'paper' }),
+      saveSettings({ theme: 'iced-latte' }),
       saveSettings({ editorCommand: 'code' })
     ])
 
     const settings = await loadSettings()
     expect(settings.recentRepos).toEqual(['/tmp/seed'])
-    expect(settings.theme).toBe('paper')
+    expect(settings.theme).toBe('iced-latte')
     expect(settings.editorCommand).toBe('code')
   })
 
   it('writes settings atomically without leaving a temp file', async () => {
     const { saveSettings } = await loadModule()
-    await saveSettings({ theme: 'dark' })
+    await saveSettings({ theme: 'black' })
 
     const tmpPath = join(settingsDir, 'settings.json.tmp')
     await expect(access(tmpPath)).rejects.toThrow()
 
     const raw = await readFile(join(settingsDir, 'settings.json'), 'utf8')
-    expect(JSON.parse(raw).theme).toBe('dark')
+    expect(JSON.parse(raw).theme).toBe('black')
   })
 
   it('logs a warning when settings.json is invalid JSON', async () => {
@@ -69,7 +69,7 @@ describe('settings persistence', () => {
     const { loadSettings } = await loadModule()
 
     const settings = await loadSettings()
-    expect(settings.theme).toBe('dark')
+    expect(settings.theme).toBe('black')
     expect(emitLog).toHaveBeenCalledWith(
       'app',
       'warn',

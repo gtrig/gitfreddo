@@ -1,8 +1,8 @@
 import type { ThemeDefinition } from './types'
 
-export const dark = {
-  id: 'dark',
-  label: 'Dark',
+export const black = {
+  id: 'black',
+  label: 'Black',
   bgColor: '#18181b',
   mode: 'dark'
 } as const satisfies ThemeDefinition

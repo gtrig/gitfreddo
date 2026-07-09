@@ -10,7 +10,7 @@ const SETTINGS_PATH = join(SETTINGS_DIR, 'settings.json')
 const SETTINGS_TMP_PATH = join(SETTINGS_DIR, 'settings.json.tmp')
 
 const DEFAULT_SETTINGS: AppSettings = {
-  theme: 'dark',
+  theme: 'black',
   locale: 'en',
   gitBinaryPath: 'git',
   recentRepos: [],

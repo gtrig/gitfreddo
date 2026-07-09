@@ -1,30 +1,30 @@
 import type { ThemeMode } from './types'
-import { blossom } from './blossom'
-import { cloud } from './cloud'
-import { dark } from './dark'
-import { dusk } from './dusk'
+import { americano } from './americano'
+import { black } from './black'
+import { caramel } from './caramel'
 import { freddo } from './freddo'
-import { lavender } from './lavender'
-import { midnight } from './midnight'
-import { mint } from './mint'
-import { paper } from './paper'
-import { sage } from './sage'
-import { sand } from './sand'
+import { icedAmericano } from './iced-americano'
+import { icedCaramel } from './iced-caramel'
+import { icedLatte } from './iced-latte'
+import { icedMatcha } from './iced-matcha'
+import { icedVanilla } from './iced-vanilla'
+import { matcha } from './matcha'
+import { mocha } from './mocha'
 
 export type { ThemeDefinition, ThemeMode } from './types'
 
 export const THEMES = [
-  dark,
+  black,
   freddo,
-  midnight,
-  sage,
-  lavender,
-  dusk,
-  paper,
-  cloud,
-  blossom,
-  mint,
-  sand
+  americano,
+  matcha,
+  mocha,
+  caramel,
+  icedLatte,
+  icedAmericano,
+  icedVanilla,
+  icedMatcha,
+  icedCaramel
 ] as const
 
 export type AppTheme = (typeof THEMES)[number]['id']
@@ -48,16 +48,40 @@ export const THEME_BG_COLORS = Object.fromEntries(THEMES.map((theme) => [theme.i
   string
 >
 
+const LEGACY_THEME_IDS = {
+  dark: 'black',
+  midnight: 'americano',
+  sage: 'matcha',
+  lavender: 'mocha',
+  dusk: 'caramel',
+  paper: 'iced-latte',
+  cloud: 'iced-americano',
+  blossom: 'iced-vanilla',
+  mint: 'iced-matcha',
+  sand: 'iced-caramel'
+} as const satisfies Record<string, AppTheme>
+
 export function isAppTheme(value: unknown): value is AppTheme {
   return typeof value === 'string' && (APP_THEMES as readonly string[]).includes(value)
 }
 
-export function normalizeAppTheme(value: unknown): AppTheme {
+export function resolveStoredTheme(value: string | null | undefined): AppTheme | null {
+  if (value == null) {
+    return null
+  }
   if (value === 'fredo') {
     return 'freddo'
   }
-  if (isAppTheme(value)) {
-    return value
+  const legacy = LEGACY_THEME_IDS[value as keyof typeof LEGACY_THEME_IDS]
+  if (legacy) {
+    return legacy
   }
-  return 'dark'
+  return isAppTheme(value) ? value : null
+}
+
+export function normalizeAppTheme(value: unknown): AppTheme {
+  if (typeof value !== 'string') {
+    return 'black'
+  }
+  return resolveStoredTheme(value) ?? 'black'
 }
