@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { normalizeAppTheme } from '@shared/themes'
-import { applyTheme, normalizeTheme, readStoredTheme, THEME_STORAGE_KEY } from '@/lib/themes'
+import { applyTheme, normalizeTheme, readStoredTheme, setDocumentTheme, THEME_STORAGE_KEY } from '@/lib/themes'
 
 describe('normalizeTheme', () => {
   it('accepts all app themes', () => {
@@ -52,6 +52,13 @@ describe('applyTheme', () => {
   it('sets data-theme on the document root', () => {
     applyTheme('freddo')
     expect(document.documentElement.dataset.theme).toBe('freddo')
+  })
+
+  it('previews a theme on the document root without persisting to localStorage', () => {
+    localStorage.setItem(THEME_STORAGE_KEY, 'black')
+    setDocumentTheme('freddo')
+    expect(document.documentElement.dataset.theme).toBe('freddo')
+    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('black')
   })
 
   it('mirrors the theme to localStorage', () => {

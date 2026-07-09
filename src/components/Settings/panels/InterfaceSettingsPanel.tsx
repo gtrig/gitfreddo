@@ -26,8 +26,9 @@ export function InterfaceSettingsPanel({ form, onChange }: PanelProps) {
         </select>
       </div>
       <div>
-        <FieldLabel>{t('settings.interface.theme')}</FieldLabel>
+        <FieldLabel htmlFor="theme-select">{t('settings.interface.theme')}</FieldLabel>
         <select
+          id="theme-select"
           value={form.theme}
           onChange={(e) => onChange({ theme: e.target.value as AppSettings['theme'] })}
           className="w-full rounded border border-gf-border-strong bg-gf-bg-deep px-2 py-1.5 text-sm text-gf-fg"

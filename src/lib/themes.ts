@@ -27,9 +27,13 @@ export function normalizeTheme(value: unknown): AppTheme {
   return normalizeAppTheme(value)
 }
 
+export function setDocumentTheme(theme: AppTheme): void {
+  document.documentElement.dataset.theme = normalizeTheme(theme)
+}
+
 export function applyTheme(theme: AppTheme): void {
   const normalized = normalizeTheme(theme)
-  document.documentElement.dataset.theme = normalized
+  setDocumentTheme(normalized)
   try {
     localStorage.setItem(THEME_STORAGE_KEY, normalized)
   } catch {

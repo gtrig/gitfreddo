@@ -5,6 +5,8 @@ import { Modal, ActionButton } from '@/components/Ui/Modal'
 import { LoadingRow } from '@/components/Ui/Spinner'
 import type { AppSettings } from '@/hooks/useAppSettings'
 import { pickUserSettings } from '@shared/integration-settings'
+import type { AppTheme } from '@/lib/themes'
+import { setDocumentTheme } from '@/lib/themes'
 import { useToastStore } from '@/stores/toast'
 import { SettingsSidebar } from '@/components/Settings/SettingsSidebar'
 import { GitSettingsPanel } from '@/components/Settings/panels/GitSettingsPanel'
@@ -30,6 +32,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
   const [form, setForm] = useState<AppSettings | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [committedTheme, setCommittedTheme] = useState<AppTheme | null>(null)
   const [section, setSection] = useState<SettingsSection>(() => loadSettingsSection())
 
   useEffect(() => {
@@ -38,12 +41,27 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
     setSection(loadSettingsSection())
     void window.gitfreddo
       .getSettings()
-      .then((settings) => setForm(settings))
+      .then((settings) => {
+        setForm(settings)
+        setCommittedTheme(settings.theme)
+      })
       .finally(() => setLoading(false))
   }, [open])
 
+  useEffect(() => {
+    if (!open || !form?.theme) return
+    setDocumentTheme(form.theme)
+  }, [open, form?.theme])
+
   function updateForm(patch: Partial<AppSettings>) {
     setForm((current) => (current ? { ...current, ...patch } : current))
+  }
+
+  function handleClose() {
+    if (committedTheme) {
+      setDocumentTheme(committedTheme)
+    }
+    onClose()
   }
 
   function selectSection(next: SettingsSection) {
@@ -64,6 +82,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
     try {
       const saved = await window.gitfreddo.setSettings(pickUserSettings(form))
       setForm(saved)
+      setCommittedTheme(saved.theme)
       await queryClient.invalidateQueries({ queryKey: ['app-settings'] })
       show(t('settings.saved'), 'success')
       onClose()
@@ -75,7 +94,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
   }
 
   return (
-    <Modal title={t('settings.title')} open={open} onClose={onClose} size="xl">
+    <Modal title={t('settings.title')} open={open} onClose={handleClose} size="xl">
       {loading || !form ? (
         <LoadingRow />
       ) : (
@@ -97,7 +116,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
             </div>
           </div>
           <div className="mt-4 flex justify-end gap-2 border-t border-gf-border pt-4">
-            <ActionButton onClick={onClose}>{t('common.cancel')}</ActionButton>
+            <ActionButton onClick={handleClose}>{t('common.cancel')}</ActionButton>
             <ActionButton variant="primary" onClick={() => void handleSave()} loading={saving}>
               {saving ? t('common.saving') : t('common.save')}
             </ActionButton>
