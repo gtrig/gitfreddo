@@ -6,6 +6,7 @@ import { useLogGraph, useBranches, useRepoStatus, useRemotes, useStashList, useT
 import { useTimelineColumnSizes } from '@/hooks/useTimelineColumnSizes'
 import { useTimelineColumnVisibility } from '@/hooks/useTimelineColumnVisibility'
 import { useTimelineVirtualWindow } from '@/hooks/useTimelineVirtualWindow'
+import { useTimelineDragSelect } from '@/hooks/useTimelineDragSelect'
 import { useCommitContextMenu } from '@/hooks/useCommitContextMenu'
 import { useTimelineRefContextMenu } from '@/hooks/useTimelineRefContextMenu'
 import { useContextMenu } from '@/hooks/useContextMenu'
@@ -39,6 +40,7 @@ import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 import { AnalyzeChangesWithAi } from '@/components/WorkingTree/AnalyzeChangesWithAi'
 import { SidebarIconStash } from '@/components/Layout/sidebar/SidebarIcons'
 import { CommitGraphOverlay } from './CommitGraphOverlay'
+import { TimelineDragSelectOverlay } from './TimelineDragSelectOverlay'
 import { TimelineCommitColumn, TIMELINE_ROW_HEIGHT } from './TimelineCommitColumn'
 import { TimelineRefStack } from './TimelineRefStack'
 import { REF_STASH_BADGE_STYLE } from './TimelineRefBadge'
@@ -87,11 +89,8 @@ function BranchTagRow({
   isPrimary,
   searchDimClass,
   hiddenBranches,
-  onRowContextMenu,
   onRefContextMenu,
   onRefDoubleClick,
-  handleCommitClick,
-  handleCommitDoubleClick,
   t
 }: {
   commit: GitCommit
@@ -104,11 +103,8 @@ function BranchTagRow({
   isPrimary: boolean
   searchDimClass: string
   hiddenBranches: ReadonlySet<string>
-  onRowContextMenu: (event: React.MouseEvent) => void
   onRefContextMenu: (event: React.MouseEvent, timelineRef: TimelineRef) => void
   onRefDoubleClick: (event: React.MouseEvent, timelineRef: TimelineRef) => void
-  handleCommitClick: (event: React.MouseEvent) => void
-  handleCommitDoubleClick: (event: React.MouseEvent) => void
   t: (key: string, options?: Record<string, unknown>) => string
 }) {
   const refConnectorAnchor = useConnectorAnchor(`ref:${commit.hash}`)
@@ -121,10 +117,7 @@ function BranchTagRow({
 
   return (
     <div
-      onContextMenu={onRowContextMenu}
-      onClick={handleCommitClick}
-      onDoubleClick={handleCommitDoubleClick}
-      className={`flex cursor-pointer items-center gap-1 overflow-visible border-b border-gf-border/30 px-2 hover:bg-gf-bg/50 ${commitRowHighlightClass(isSelected, isPrimary)} ${searchDimClass}`}
+      className={`flex items-center gap-1 overflow-visible border-b border-gf-border/30 px-2 pointer-events-none ${commitRowHighlightClass(isSelected, isPrimary)} ${searchDimClass}`}
       style={{ height: TIMELINE_ROW_HEIGHT }}
     >
       {stash && (
@@ -136,15 +129,17 @@ function BranchTagRow({
           {t('timeline.stash')}
         </span>
       )}
-      <TimelineRefStack
-        refs={refs}
-        isHeadCommit={commit.hash === head}
-        currentBranch={currentBranch}
-        isDetached={isDetached}
-        onRefContextMenu={onRefContextMenu}
-        onRefDoubleClick={onRefDoubleClick}
-        connectorAnchorRef={refConnectorAnchor}
-      />
+      <div className="pointer-events-auto">
+        <TimelineRefStack
+          refs={refs}
+          isHeadCommit={commit.hash === head}
+          currentBranch={currentBranch}
+          isDetached={isDetached}
+          onRefContextMenu={onRefContextMenu}
+          onRefDoubleClick={onRefDoubleClick}
+          connectorAnchorRef={refConnectorAnchor}
+        />
+      </div>
     </div>
   )
 }
@@ -238,26 +233,6 @@ export function CommitTimeline() {
     }
 
     selectTimelineNode('commit', nextCommit.hash)
-  }
-
-  const handleCommitClick = (commit: GitCommit) => (event: React.MouseEvent) => {
-    if (isStashCommit(commit)) {
-      const stashEntry = resolveStashEntry(commit, stashes)
-      if (stashEntry) {
-        selectStash(stashEntry.index, stashEntry.hash)
-        return
-      }
-    }
-
-    if (event.shiftKey) {
-      selectCommitRange(commit.hash, commits)
-      return
-    }
-    if (event.metaKey || event.ctrlKey) {
-      toggleCommitSelection(commit.hash)
-      return
-    }
-    selectTimelineNode('commit', commit.hash)
   }
 
   const { checkout, stashApply, stashPop, stashDrop } = useGitMutations()
@@ -436,6 +411,19 @@ export function CommitTimeline() {
     TIMELINE_ROW_HEIGHT,
     timelinePrefixHeight
   )
+  const dragSelect = useTimelineDragSelect({
+    scrollRef,
+    commits,
+    stashes,
+    prefixHeight: timelinePrefixHeight,
+    rowHeight: TIMELINE_ROW_HEIGHT,
+    actions: {
+      selectTimelineNode,
+      selectCommitRange,
+      selectStash,
+      toggleCommitSelection
+    }
+  })
   const visibleCommits = useMemo(
     () => commits.slice(virtualWindow.start, virtualWindow.end),
     [commits, virtualWindow.end, virtualWindow.start]
@@ -539,11 +527,8 @@ export function CommitTimeline() {
                 isPrimary={isPrimary}
                 searchDimClass={searchDimClass}
                 hiddenBranches={hiddenBranches}
-                onRowContextMenu={onRowContextMenu(commit)}
                 onRefContextMenu={onRefContextMenu(commit)}
                 onRefDoubleClick={handleRefDoubleClick(commit)}
-                handleCommitClick={handleCommitClick(commit)}
-                handleCommitDoubleClick={handleCommitDoubleClick(commit)}
                 t={t}
               />
             )
@@ -562,7 +547,10 @@ export function CommitTimeline() {
           className={`${stickyClass}shrink-0 overflow-visible ${embeddedInGraphBlock ? '' : 'bg-gf-bg-deep'}`}
           style={{ width: graphColumnWidth }}
         >
-          <div className="relative overflow-visible">
+          <div
+            className="relative overflow-visible"
+            style={{ height: dragSelect.commitRowAreaTop + dragSelect.commitRowAreaHeight }}
+          >
             <CommitGraphOverlay
               layout={layout}
               prefixRows={timelinePrefixRows}
@@ -575,24 +563,6 @@ export function CommitTimeline() {
               metrics={metrics}
               visibleRowRange={virtualWindow}
             />
-            {visibleCommits.map((commit, sliceIndex) => {
-              const index = virtualWindow.start + sliceIndex
-              return (
-              <div
-                key={`graph-hit-${commit.hash}`}
-                role="button"
-                tabIndex={-1}
-                aria-label={t('timeline.selectCommit', { hash: commit.shortHash, subject: commit.subject })}
-                onContextMenu={onRowContextMenu(commit)}
-                onClick={handleCommitClick(commit)}
-                onDoubleClick={handleCommitDoubleClick(commit)}
-                className="absolute left-0 right-0 cursor-pointer hover:bg-gf-bg/30"
-                style={{
-                  top: timelinePrefixHeight + index * TIMELINE_ROW_HEIGHT,
-                  height: TIMELINE_ROW_HEIGHT
-                }}
-              />
-            )})}
           </div>
         </div>
       )
@@ -692,14 +662,10 @@ export function CommitTimeline() {
             const { isSelected, isPrimary, searchDimClass } = rowState(commit.hash)
             const stash = isStashCommit(commit)
             return (
-              <button
+              <div
                 key={commit.hash}
-                type="button"
-                onClick={handleCommitClick(commit)}
-                onDoubleClick={handleCommitDoubleClick(commit)}
-                onContextMenu={onRowContextMenu(commit)}
                 style={{ height: TIMELINE_ROW_HEIGHT }}
-                className={`flex w-full items-center gap-2 overflow-hidden border-b border-gf-border/30 px-2.5 text-left hover:bg-gf-bg/50 ${commitRowHighlightClass(isSelected, isPrimary)} ${searchDimClass}`}
+                className={`pointer-events-none flex w-full items-center gap-2 overflow-hidden border-b border-gf-border/30 px-2.5 text-left ${commitRowHighlightClass(isSelected, isPrimary)} ${searchDimClass}`}
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
@@ -723,7 +689,7 @@ export function CommitTimeline() {
                     </p>
                   </div>
                 </div>
-              </button>
+              </div>
             )
           })}
           {virtualWindow.bottomSpacerHeight > 0 && (
@@ -743,9 +709,6 @@ export function CommitTimeline() {
           prefixRows={timelinePrefixRows}
           commits={commits}
           rowState={rowState}
-          onRowContextMenu={onRowContextMenu}
-          handleCommitClick={handleCommitClick}
-          handleCommitDoubleClick={handleCommitDoubleClick}
           getCellContent={(commit) => formatTimeSince(commit.author.date, relativeNow)}
           getCellTitle={(commit) => formatAuthoredDateTooltip(commit.author.date)}
           virtualWindow={virtualWindow}
@@ -764,9 +727,6 @@ export function CommitTimeline() {
         prefixRows={timelinePrefixRows}
         commits={commits}
         rowState={rowState}
-        onRowContextMenu={onRowContextMenu}
-        handleCommitClick={handleCommitClick}
-        handleCommitDoubleClick={handleCommitDoubleClick}
         virtualWindow={virtualWindow}
       />
     )
@@ -878,7 +838,7 @@ export function CommitTimeline() {
       role="region"
       aria-label={t('timeline.commitList')}
       onKeyDown={handleTimelineKeyDown}
-      className={`min-h-0 flex-1 overflow-y-auto outline-none focus-visible:ring-1 focus-visible:ring-gf-accent/60 ${resizing ? 'select-none' : ''}`}
+      className={`min-h-0 flex-1 overflow-y-auto outline-none focus-visible:ring-1 focus-visible:ring-gf-accent/60 ${resizing || dragSelect.isDragging ? 'select-none' : ''}`}
     >
       <div className="flex min-w-max flex-col">
         <div
@@ -890,7 +850,12 @@ export function CommitTimeline() {
           {TIMELINE_COLUMN_ORDER.map((columnId) => renderColumnBlock(columnId))}
         </div>
 
-        <div className="flex">
+        <div className="relative flex">
+          <TimelineDragSelectOverlay
+            dragSelect={dragSelect}
+            onRowContextMenu={onRowContextMenu}
+            onCommitDoubleClick={handleCommitDoubleClick}
+          />
           {TIMELINE_COLUMN_ORDER.map((columnId) => {
             if (columnId === 'branchTag') {
               return renderGraphBodyBlock()

@@ -12,9 +12,6 @@ export function TimelineCommitColumn({
   prefixRows = 0,
   commits,
   rowState,
-  onRowContextMenu,
-  handleCommitClick,
-  handleCommitDoubleClick,
   getCellContent,
   getCellTitle,
   virtualWindow
@@ -29,9 +26,6 @@ export function TimelineCommitColumn({
     isPrimary: boolean
     searchDimClass: string
   }
-  onRowContextMenu: (commit: GitCommit) => (event: React.MouseEvent) => void
-  handleCommitClick: (commit: GitCommit) => (event: React.MouseEvent) => void
-  handleCommitDoubleClick: (commit: GitCommit) => (event: React.MouseEvent) => void
   getCellContent?: (commit: GitCommit) => string
   getCellTitle?: (commit: GitCommit) => string | undefined
   virtualWindow?: {
@@ -61,11 +55,8 @@ export function TimelineCommitColumn({
         return (
           <div
             key={`${columnId}-${commit.hash}`}
-            onContextMenu={onRowContextMenu(commit)}
-            onClick={handleCommitClick(commit)}
-            onDoubleClick={handleCommitDoubleClick(commit)}
             title={title}
-            className={`flex cursor-pointer items-center border-b border-gf-border/30 px-2 text-[11px] text-gf-fg-subtle hover:bg-gf-bg/50 ${align === 'right' ? 'justify-end tabular-nums' : ''} ${commitRowHighlightClass(isSelected, isPrimary)} ${searchDimClass}`}
+            className={`pointer-events-none flex items-center border-b border-gf-border/30 px-2 text-[11px] text-gf-fg-subtle ${align === 'right' ? 'justify-end tabular-nums' : ''} ${commitRowHighlightClass(isSelected, isPrimary)} ${searchDimClass}`}
             style={{ height: COMPACT_ROW_HEIGHT }}
           >
             <span className="truncate">{content}</span>

@@ -5,12 +5,11 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+- Click and drag anywhere on the commit timeline to select a range of commits.
 - **Open in editor** respects the external editor command from Settings → Interface (e.g. `code --wait`).
 - Drag workspace tabs to reorder them; tab order is remembered across restarts.
 - Recent projects and workspace tabs persist reliably across restarts (no more lost recents when saving Settings or launching a second window).
 - Full-page commit view: file list on the left, diff on the right, with **Show all files** to list every path at that revision.
-- **Full file** view mode in commit detail and file history (alongside unified and side-by-side).
-- **Open in editor** on commit detail, file history, and diff overlays.
 
 ## [0.3.4]
 

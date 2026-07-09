@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-09 — Graph drag-to-select commits
+
+- **Why:** Users expect to select a range of commits by clicking and dragging in the commit graph, like other git clients.
+- **What:** Pointer drag across any timeline column selects contiguous commits (reuses shift-range selection); auto-scrolls near viewport edges; ref badges stay interactive (`useTimelineDragSelect`, `TimelineDragSelectOverlay`, `timelinePointerSelection`). Fixed click offset that selected the row below by mapping pointer Y to the overlay element instead of the scroll container (which includes the sticky header).
+
 ### 2026-07-09 — Header branding
 
 - **Why:** Reinforce GitFreddo identity in the main chrome while a repository is open.

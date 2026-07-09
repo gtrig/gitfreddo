@@ -29,12 +29,12 @@ describe('StartupModal', () => {
 
     expect(
       screen.getByText(
-        'Full-page commit view: file list on the left, diff on the right, with **Show all files** to list every path at that revision.'
+        'Click and drag anywhere on the commit timeline to select a range of commits.'
       )
     ).toBeInTheDocument()
     expect(
       screen.getByText(
-        '**Full file** view mode in commit detail and file history (alongside unified and side-by-side).'
+        'Full-page commit view: file list on the left, diff on the right, with **Show all files** to list every path at that revision.'
       )
     ).toBeInTheDocument()
   })
