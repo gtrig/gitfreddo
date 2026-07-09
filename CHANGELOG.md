@@ -7,6 +7,16 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-09 — Selective AI commit creation
+
+- **Why:** Users may want only some of the AI-proposed commits, leaving the rest unstaged for re-analysis or manual commits.
+- **What:** AI change analysis adds per-commit checkboxes; create only stages and commits selected proposals; unselected files stay unstaged (`AnalyzeChangesWithAi.tsx`, locales, tests).
+
+### 2026-07-09 — Live theme preview in Settings
+
+- **Why:** Users should see a color scheme immediately when picking it in Settings, without saving first.
+- **What:** Theme dropdown previews via `setDocumentTheme` while the modal is open; cancel restores the saved theme; save persists through `setSettings` and `applyTheme` (`SettingsModal`, `themes.ts`).
+
 ### 2026-07-09 — Coffee-themed color schemes
 
 - **Why:** Theme names should match GitFreddo’s coffee identity and be easier to browse in Settings.

@@ -28,13 +28,11 @@ describe('StartupModal', () => {
     )
 
     expect(
-      screen.getByText(
-        'Click and drag anywhere on the commit timeline to select a range of commits.'
-      )
+      screen.getByText('Themes preview instantly in Settings before you save.')
     ).toBeInTheDocument()
     expect(
       screen.getByText(
-        'Full-page commit view: file list on the left, diff on the right, with **Show all files** to list every path at that revision.'
+        'Click and drag anywhere on the commit timeline to select a range of commits.'
       )
     ).toBeInTheDocument()
   })

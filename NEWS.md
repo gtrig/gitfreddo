@@ -5,6 +5,8 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+- AI change analysis lets you choose which proposed commits to create; unselected files stay unstaged.
+- Themes preview instantly in Settings before you save.
 - Themes now use coffee drink names (Iced prefix on light schemes).
 - Click and drag anywhere on the commit timeline to select a range of commits.
 - **Open in editor** respects the external editor command from Settings → Interface (e.g. `code --wait`).
