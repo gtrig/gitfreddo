@@ -62,6 +62,7 @@ export function AnalyzeChangesWithAi({
   const [open, setOpen] = useState(false)
   const [result, setResult] = useState<AiAnalyzeChangesResult | null>(null)
   const [proposals, setProposals] = useState<AiAnalyzeCommitProposal[]>([])
+  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set())
 
   const filePaths = [...stagedPaths, ...unstagedPaths]
   const hasChanges = filePaths.length > 0
@@ -74,6 +75,7 @@ export function AnalyzeChangesWithAi({
     setOpen(true)
     setResult(null)
     setProposals([])
+    setSelectedIndices(new Set())
 
     try {
       const text = await aiFill.mutateAsync({
@@ -88,6 +90,7 @@ export function AnalyzeChangesWithAi({
       const parsed = parseAnalyzeChangesResponse(text, filePaths)
       setResult(parsed)
       setProposals(parsed.commits)
+      setSelectedIndices(new Set(parsed.commits.map((_, index) => index)))
     } catch (error) {
       setOpen(false)
       showToast(error instanceof Error ? error.message : String(error), 'error')
@@ -100,8 +103,27 @@ export function AnalyzeChangesWithAi({
     )
   }
 
-  async function handleCreateAll() {
-    const invalid = proposals.find((proposal) => !proposal.summary.trim())
+  function toggleProposalSelected(index: number, selected: boolean) {
+    setSelectedIndices((current) => {
+      const next = new Set(current)
+      if (selected) {
+        next.add(index)
+      } else {
+        next.delete(index)
+      }
+      return next
+    })
+  }
+
+  async function handleCreateSelected() {
+    const selectedProposals = proposals.filter((_, index) => selectedIndices.has(index))
+
+    if (selectedProposals.length === 0) {
+      showToast(t('workingTree.noCommitsSelected'), 'error')
+      return
+    }
+
+    const invalid = selectedProposals.find((proposal) => !proposal.summary.trim())
     if (invalid) {
       showToast(t('workingTree.everyCommitNeedsSummary'), 'error')
       return
@@ -110,15 +132,15 @@ export function AnalyzeChangesWithAi({
     try {
       await stageReset.mutateAsync({ paths: [] })
 
-      for (const proposal of proposals) {
+      for (const proposal of selectedProposals) {
         await stageAdd.mutateAsync({ paths: proposal.files })
         await commit.mutateAsync({ message: buildCommitMessage(proposal.summary, proposal.description) })
       }
 
       showToast(
-        proposals.length === 1
+        selectedProposals.length === 1
           ? t('workingTree.commitCreated')
-          : t('workingTree.commitsCreated', { count: proposals.length }),
+          : t('workingTree.commitsCreated', { count: selectedProposals.length }),
         'success'
       )
       setOpen(false)
@@ -130,6 +152,7 @@ export function AnalyzeChangesWithAi({
   const aiBusy = aiFill.isPending
   const gitBusy = commit.isPending || stageAdd.isPending || stageReset.isPending
   const busy = aiBusy || gitBusy
+  const selectedCount = selectedIndices.size
 
   const label = aiBusy ? t('workingTree.analyzing') : t('workingTree.analyzeWithAi')
 
@@ -176,19 +199,32 @@ export function AnalyzeChangesWithAi({
               <div className="space-y-4">
                 {proposals.map((proposal, index) => {
                   const subjectRemaining = SUBJECT_MAX - proposal.summary.length
+                  const selected = selectedIndices.has(index)
 
                   return (
                     <div
                       key={`${index}-${proposal.files.join(',')}`}
-                      className="rounded border border-gf-border-strong bg-gf-bg-deep p-3"
+                      className={`rounded border border-gf-border-strong bg-gf-bg-deep p-3 ${
+                        selected ? '' : 'opacity-60'
+                      }`}
                     >
                       <div className="mb-2 flex items-center justify-between gap-2">
-                        <span className="text-xs font-medium text-gf-fg-muted">
-                          {t('workingTree.commitNumber', {
-                            number: index + 1,
-                            count: proposal.files.length
-                          })}
-                        </span>
+                        <label className="flex min-w-0 items-center gap-2 text-xs font-medium text-gf-fg-muted">
+                          <input
+                            type="checkbox"
+                            checked={selected}
+                            disabled={busy}
+                            aria-label={t('workingTree.includeCommit')}
+                            onChange={(event) => toggleProposalSelected(index, event.target.checked)}
+                            className="rounded border-gf-border-strong bg-gf-bg"
+                          />
+                          <span className="truncate">
+                            {t('workingTree.commitNumber', {
+                              number: index + 1,
+                              count: proposal.files.length
+                            })}
+                          </span>
+                        </label>
                       </div>
 
                       {proposal.rationale && (
@@ -257,8 +293,13 @@ export function AnalyzeChangesWithAi({
               <ActionButton variant="secondary" onClick={() => setOpen(false)} disabled={gitBusy}>
                 {t('common.cancel')}
               </ActionButton>
-              <ActionButton variant="primary" loading={gitBusy} onClick={() => void handleCreateAll()}>
-                {t('workingTree.createCommitCount', { count: proposals.length })}
+              <ActionButton
+                variant="primary"
+                loading={gitBusy}
+                disabled={selectedCount === 0}
+                onClick={() => void handleCreateSelected()}
+              >
+                {t('workingTree.createCommitCount', { count: selectedCount })}
               </ActionButton>
             </>
           ) : (
