@@ -103,6 +103,7 @@ export async function launchApp(settingsDir: string): Promise<ElectronApplicatio
     env: {
       ...process.env,
       NO_SANDBOX: '1',
+      GITFREDDO_E2E: '1',
       GITFREDDO_SETTINGS_DIR: settingsDir
     }
   })
