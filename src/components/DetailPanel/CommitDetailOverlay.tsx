@@ -7,6 +7,7 @@ import { UnifiedDiffView } from '@/components/DiffViewer/UnifiedDiffView'
 import { SplitDiffView } from '@/components/DiffViewer/SplitDiffView'
 import { FullFileView } from '@/components/DiffViewer/FullFileView'
 import { FileViewModeToggle } from '@/components/DiffViewer/FileViewModeToggle'
+import { OpenInEditorButton } from '@/components/DiffViewer/OpenInEditorButton'
 import { CommitFileList } from '@/components/DetailPanel/CommitFileList'
 import { useDiffShow, useFileRead } from '@/hooks/useGit'
 import { useCommitDisplayFiles } from '@/hooks/useCommitDisplayFiles'
@@ -136,7 +137,10 @@ export function CommitDetailOverlay({ commit, onClose }: CommitDetailOverlayProp
             <p className="min-w-0 truncate font-mono text-xs text-gf-fg-muted">
               {selectedCommitFile ?? t('detail.selectFileForDiff')}
             </p>
-            <FileViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+            <div className="flex shrink-0 items-center gap-2">
+              <OpenInEditorButton path={selectedCommitFile} />
+              <FileViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+            </div>
           </div>
           <div className="min-h-0 flex-1 overflow-auto p-4">
             {!selectedCommitFile ? (

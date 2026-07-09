@@ -104,4 +104,16 @@ describe('FileHistoryOverlay', () => {
     await user.click(screen.getByRole('button', { name: /close/i }))
     expect(onClose).toHaveBeenCalled()
   })
+
+  it('opens the file in the configured editor', async () => {
+    const user = userEvent.setup()
+    const openInEditor = vi.fn(async () => undefined)
+    window.gitfreddo.openInEditor = openInEditor
+
+    renderWithProviders(<FileHistoryOverlay path="README.md" onClose={() => undefined} />)
+
+    await screen.findByText('Update readme')
+    await user.click(screen.getByRole('button', { name: 'Open in editor' }))
+    expect(openInEditor).toHaveBeenCalledWith('README.md')
+  })
 })

@@ -15,6 +15,7 @@ import { useAppSettings } from '@/hooks/useAppSettings'
 import { useToastStore } from '@/stores/toast'
 import { UnifiedDiffView } from '@/components/DiffViewer/UnifiedDiffView'
 import { SplitDiffView } from '@/components/DiffViewer/SplitDiffView'
+import { OpenInEditorButton } from '@/components/DiffViewer/OpenInEditorButton'
 import {
   buildHunkPatch,
   groupRowsByHunk,
@@ -176,6 +177,7 @@ export function DiffOverlay({ onClose }: DiffOverlayProps) {
 
   const canBlame =
     Boolean(filePath) && diffMode !== 'commit-range' && diffMode !== 'stash'
+  const editorPath = diffMode === 'commit-range' ? null : filePath ?? selectedStashFile
   const hunkStageMode =
     diffMode === 'working' ? 'stage' : diffMode === 'staged' ? 'unstage' : null
   const patchPath = active?.path ?? filePath ?? path ?? ''
@@ -229,6 +231,7 @@ export function DiffOverlay({ onClose }: DiffOverlayProps) {
               </button>
             ))}
           </div>
+          <OpenInEditorButton path={editorPath} />
           <button
             type="button"
             onClick={onClose}

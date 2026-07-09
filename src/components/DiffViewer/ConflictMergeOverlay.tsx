@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ExclamationTriangleIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { AiActionButton } from '@/components/Ui/AiActionButton'
+import { OpenInEditorButton } from '@/components/DiffViewer/OpenInEditorButton'
 import { useConflictFileStages } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useMergeStatus } from '@/hooks/useGit'
@@ -362,13 +363,7 @@ export function ConflictMergeOverlay({ path, onClose }: ConflictMergeOverlayProp
             {t('diff.autoResolveWithAi')}
           </AiActionButton>
         )}
-        <button
-          type="button"
-          onClick={() => void window.gitfreddo.openInEditor(path)}
-          className="rounded border border-gf-border-strong px-2 py-1 text-xs text-gf-fg-muted hover:bg-gf-surface"
-        >
-          {t('diff.openInEditor')}
-        </button>
+        <OpenInEditorButton path={path} />
         <button
           type="button"
           disabled={saving || isLoading}

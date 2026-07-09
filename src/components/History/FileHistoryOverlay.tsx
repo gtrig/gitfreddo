@@ -7,6 +7,7 @@ import { UnifiedDiffView } from '@/components/DiffViewer/UnifiedDiffView'
 import { SplitDiffView } from '@/components/DiffViewer/SplitDiffView'
 import { FullFileView } from '@/components/DiffViewer/FullFileView'
 import { FileViewModeToggle } from '@/components/DiffViewer/FileViewModeToggle'
+import { OpenInEditorButton } from '@/components/DiffViewer/OpenInEditorButton'
 import { useDiffShow, useFileRead } from '@/hooks/useGit'
 import { useAppSettings } from '@/hooks/useAppSettings'
 import { useWorkspaceStore } from '@/stores/workspace'
@@ -142,6 +143,7 @@ export function FileHistoryOverlay({ path, onClose }: FileHistoryOverlayProps) {
 
         <main className="flex min-h-0 min-w-0 flex-1 flex-col">
           <div className="flex shrink-0 items-center justify-end gap-2 border-b border-gf-border px-3 py-1.5">
+            <OpenInEditorButton path={path} />
             <FileViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
           </div>
           <div className="min-h-0 flex-1 overflow-auto p-4">
