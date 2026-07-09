@@ -1,18 +1,14 @@
 import { dialog } from 'electron'
 import { writeFile } from 'fs/promises'
-import { join } from 'path'
 import {
   parseSettingsBackup,
   serializeSettingsBackup,
   type SettingsBackupFile
 } from '../shared/settings-backup'
 import type { AppSettings } from '../shared/ipc'
-import { loadSettings } from './settings'
-import { getAppDataDir } from './paths'
+import { loadSettings, saveSettings } from './settings'
 import { loadGitHubToken, saveGitHubToken } from './github/token-store'
 import { loadBitbucketToken, saveBitbucketToken } from './bitbucket/token-store'
-
-const SETTINGS_PATH = () => join(getAppDataDir(), 'settings.json')
 
 function defaultBackupFilename(): string {
   const date = new Date().toISOString().slice(0, 10)
@@ -83,7 +79,7 @@ export async function importSettingsBackupFromFile(filePath: string): Promise<Ap
     throw new Error(parsed.error)
   }
 
-  await writeFile(SETTINGS_PATH(), JSON.stringify(parsed.backup.settings, null, 2), 'utf8')
+  await saveSettings(parsed.backup.settings)
   await restoreIntegrationTokens(parsed.backup.secrets)
   return loadSettings()
 }

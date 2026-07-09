@@ -11,11 +11,20 @@ export const INTEGRATION_SETTINGS_KEYS = [
   'bitbucketSshKeyTitle'
 ] as const satisfies readonly (keyof AppSettings)[]
 
-const integrationKeySet = new Set<string>(INTEGRATION_SETTINGS_KEYS)
+export const SESSION_SETTINGS_KEYS = [
+  'recentRepos',
+  'openRepoTabs',
+  'activeRepoTab'
+] as const satisfies readonly (keyof AppSettings)[]
+
+const excludedFromUserSave = new Set<string>([
+  ...INTEGRATION_SETTINGS_KEYS,
+  ...SESSION_SETTINGS_KEYS
+])
 
 export function pickUserSettings(settings: AppSettings): Partial<AppSettings> {
   return Object.fromEntries(
-    Object.entries(settings).filter(([key]) => !integrationKeySet.has(key))
+    Object.entries(settings).filter(([key]) => !excludedFromUserSave.has(key))
   ) as Partial<AppSettings>
 }
 

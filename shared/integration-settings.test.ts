@@ -54,6 +54,20 @@ describe('pickUserSettings', () => {
     expect(patch.bitbucketAuthLogin).toBeUndefined()
     expect(patch.bitbucketAuthType).toBeUndefined()
   })
+
+  it('removes workspace session fields from settings saves', () => {
+    const patch = pickUserSettings({
+      ...baseSettings,
+      recentRepos: ['/tmp/a'],
+      openRepoTabs: ['/tmp/a', '/tmp/b'],
+      activeRepoTab: '/tmp/a'
+    })
+
+    expect(patch.recentRepos).toBeUndefined()
+    expect(patch.openRepoTabs).toBeUndefined()
+    expect(patch.activeRepoTab).toBeUndefined()
+    expect(patch.theme).toBe('dark')
+  })
 })
 
 describe('preserveIntegrationSettings', () => {

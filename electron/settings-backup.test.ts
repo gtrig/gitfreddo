@@ -11,7 +11,8 @@ vi.mock('electron', () => ({
 }))
 
 vi.mock('./settings', () => ({
-  loadSettings: vi.fn()
+  loadSettings: vi.fn(),
+  saveSettings: vi.fn()
 }))
 
 vi.mock('./github/token-store', () => ({
@@ -25,7 +26,7 @@ vi.mock('./bitbucket/token-store', () => ({
 }))
 
 import { dialog } from 'electron'
-import { loadSettings } from './settings'
+import { loadSettings, saveSettings } from './settings'
 import { loadGitHubToken, saveGitHubToken } from './github/token-store'
 import { loadBitbucketToken, saveBitbucketToken } from './bitbucket/token-store'
 import { buildSettingsBackup, exportSettingsBackup, importSettingsBackup } from './settings-backup'
@@ -139,9 +140,11 @@ describe('settings backup service', () => {
       filePaths: [importPath]
     })
     vi.mocked(loadSettings).mockResolvedValue({ ...sampleSettings, theme: 'paper', locale: 'el' })
+    vi.mocked(saveSettings).mockResolvedValue({ ...sampleSettings, theme: 'paper', locale: 'el' })
 
     const restored = await importSettingsBackup()
     expect(restored).toEqual({ ...sampleSettings, theme: 'paper', locale: 'el' })
+    expect(saveSettings).toHaveBeenCalledWith({ ...sampleSettings, theme: 'paper', locale: 'el' })
     expect(saveGitHubToken).toHaveBeenCalledWith('gho_restore')
     expect(saveBitbucketToken).toHaveBeenCalledWith('bb_restore')
   })

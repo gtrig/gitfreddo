@@ -5,7 +5,7 @@ import { RepoManager } from '../git/repo-manager'
 import { hasGitDir } from '../git/repo-path'
 import { deleteRepoFile, resolveRepoFile } from '../git/workspace-files'
 import { normalizeRepoPath } from '../git/repo-path'
-import { addRecentRepo, loadSettings, saveSettings } from '../settings'
+import { loadSettings, nextRecentRepos, saveSettings } from '../settings'
 import { preserveIntegrationSettings } from '../../shared/integration-settings'
 import { hasBitbucketToken } from '../bitbucket/token-store'
 import { hasGitHubToken } from '../github/token-store'
@@ -70,6 +70,28 @@ import { RepoWatcherManager } from '../git/repo-watcher'
 import { loadDotEnvFile } from '../load-dotenv'
 
 loadDotEnvFile()
+
+const gotSingleInstanceLock = app.requestSingleInstanceLock()
+
+if (!gotSingleInstanceLock) {
+  app.quit()
+}
+
+function focusMainWindow(): void {
+  for (const window of BrowserWindow.getAllWindows()) {
+    if (window.isDestroyed()) continue
+    if (window.isMinimized()) window.restore()
+    window.show()
+    window.focus()
+    return
+  }
+}
+
+if (gotSingleInstanceLock) {
+  app.on('second-instance', () => {
+    focusMainWindow()
+  })
+}
 
 const repoManager = new RepoManager()
 const repoWatcherManager = new RepoWatcherManager({
@@ -261,7 +283,9 @@ function registerIpc(): void {
     applyGitConfig()
     const connectedPath = await repoManager.connect(normalized)
     repoWatcherManager.watch(connectedPath)
-    settings = await saveSettings(addRecentRepo(settings, connectedPath))
+    settings = await saveSettings({
+      recentRepos: nextRecentRepos(settings.recentRepos, connectedPath)
+    })
     return connectedPath
   })
 
@@ -583,27 +607,29 @@ function broadcastLogEntry(entry: LogEntry): void {
   }
 }
 
-app.whenReady().then(async () => {
-  settings = await loadSettings()
-  applyGitConfig()
-  onLog(broadcastLogEntry)
-  registerProtocolHandler()
-  buildAppMenu()
-  registerIpc()
-  initAutoUpdater(() => settings)
-  createWindow()
+if (gotSingleInstanceLock) {
+  app.whenReady().then(async () => {
+    settings = await loadSettings()
+    applyGitConfig()
+    onLog(broadcastLogEntry)
+    registerProtocolHandler()
+    buildAppMenu()
+    registerIpc()
+    initAutoUpdater(() => settings)
+    createWindow()
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow()
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        createWindow()
+      }
+    })
+  })
+
+  app.on('window-all-closed', async () => {
+    repoWatcherManager.dispose()
+    await repoManager.disconnectAll()
+    if (process.platform !== 'darwin') {
+      app.quit()
     }
   })
-})
-
-app.on('window-all-closed', async () => {
-  repoWatcherManager.dispose()
-  await repoManager.disconnectAll()
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
+}
