@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { orderPathsForRestore, snapshotFromSettings, workspaceSessionKey } from './workspaceSession'
+import {
+  orderPathsForRestore,
+  reorderTabPaths,
+  snapshotFromSettings,
+  workspaceSessionKey
+} from './workspaceSession'
 
 describe('workspaceSessionKey', () => {
   it('changes when tab order changes', () => {
@@ -24,6 +29,20 @@ describe('snapshotFromSettings', () => {
         activeWorkspaceTab: '/legacy'
       })
     ).toEqual({ tabPaths: ['/legacy'], activePath: '/legacy' })
+  })
+})
+
+describe('reorderTabPaths', () => {
+  it('moves a tab to a new index', () => {
+    expect(reorderTabPaths(['/a', '/b', '/c'], 0, 2)).toEqual(['/b', '/c', '/a'])
+    expect(reorderTabPaths(['/a', '/b', '/c'], 2, 0)).toEqual(['/c', '/a', '/b'])
+  })
+
+  it('returns the same array for no-op moves', () => {
+    const paths = ['/a', '/b']
+    expect(reorderTabPaths(paths, 0, 0)).toBe(paths)
+    expect(reorderTabPaths(paths, -1, 1)).toBe(paths)
+    expect(reorderTabPaths(paths, 0, 5)).toBe(paths)
   })
 })
 

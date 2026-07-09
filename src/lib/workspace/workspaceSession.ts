@@ -19,6 +19,26 @@ export function snapshotFromSettings(settings: {
   }
 }
 
+export function reorderTabPaths(
+  tabPaths: string[],
+  fromIndex: number,
+  toIndex: number
+): string[] {
+  if (
+    fromIndex === toIndex ||
+    fromIndex < 0 ||
+    toIndex < 0 ||
+    fromIndex >= tabPaths.length ||
+    toIndex >= tabPaths.length
+  ) {
+    return tabPaths
+  }
+  const next = [...tabPaths]
+  const [moved] = next.splice(fromIndex, 1)
+  next.splice(toIndex, 0, moved)
+  return next
+}
+
 export function orderPathsForRestore(
   tabPaths: string[],
   activePath: string | null
