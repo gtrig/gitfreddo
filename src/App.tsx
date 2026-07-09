@@ -14,6 +14,7 @@ import { StartupModal } from '@/components/Layout/StartupModal'
 import { UpdateBanner } from '@/components/Layout/UpdateBanner'
 import { LogDrawer, useLogSubscription } from '@/components/Layout/LogDrawer'
 import { HeaderToolsMenu } from '@/components/Layout/HeaderToolsMenu'
+import { AppBrandRail } from '@/components/Layout/AppBrandRail'
 import { ResizableMainLayout } from '@/components/Layout/ResizableMainLayout'
 import { SettingsModal } from '@/components/Settings/SettingsModal'
 import { DocsModal } from '@/components/Help/DocsModal'
@@ -160,19 +161,24 @@ export default function App() {
           {error}
         </div>
       )}
-      <WorkspaceTabs />
-      <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-gf-border px-4 py-2">
-        <p className="min-w-0 truncate text-sm text-gf-fg-subtle" title={activePath ?? undefined}>
-          {activePath}
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <ActionBar />
+      <div className="flex min-w-0 border-b border-gf-border">
+        <AppBrandRail />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <WorkspaceTabs />
+          <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-2">
+            <p className="min-w-0 truncate text-sm text-gf-fg-subtle" title={activePath ?? undefined}>
+              {activePath}
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <ActionBar />
+            </div>
+            <HeaderToolsMenu
+              onOpenSettings={() => setSettingsOpen(true)}
+              onOpenDocs={() => setDocsOpen(true)}
+            />
+          </header>
         </div>
-        <HeaderToolsMenu
-          onOpenSettings={() => setSettingsOpen(true)}
-          onOpenDocs={() => setDocsOpen(true)}
-        />
-      </header>
+      </div>
 
       <ResizableMainLayout
         left={<RepoSidebar />}

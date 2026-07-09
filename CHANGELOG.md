@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-09 — Header branding
+
+- **Why:** Reinforce GitFreddo identity in the main chrome while a repository is open.
+- **What:** Left brand rail spanning workspace tabs and the header bar (`AppBrandRail`, `src/App.tsx`).
+
 ### 2026-07-09 — Parallel e2e Electron launches
 
 - **Why:** Playwright runs e2e specs with multiple workers; only the first Electron instance acquired the desktop single-instance lock and the rest exited immediately.
