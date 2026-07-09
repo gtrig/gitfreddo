@@ -14,6 +14,7 @@ import {
 import { appLog } from '@/stores/logs'
 import {
   orderPathsForRestore,
+  reorderTabPaths,
   snapshotFromSettings,
   type WorkspaceSessionSnapshot
 } from '@/lib/workspace/workspaceSession'
@@ -34,6 +35,7 @@ interface WorkspaceState {
   openWorkspace: (path: string) => Promise<void>
   switchWorkspace: (path: string) => Promise<void>
   closeWorkspace: (path: string) => Promise<void>
+  reorderWorkspaceTabs: (fromIndex: number, toIndex: number) => void
   openWorkspacePicker: () => void
   closeWorkspacePicker: () => void
   openWorkspaceDialog: () => void
@@ -235,6 +237,19 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       ...syncLegacyFields(remaining, nextActive)
     })
     appLog('info', 'Closed workspace tab', canonical)
+  },
+
+  reorderWorkspaceTabs: (fromIndex, toIndex) => {
+    const { tabs, activePath } = get()
+    const currentPaths = tabs.map((tab) => tab.path)
+    const nextPaths = reorderTabPaths(currentPaths, fromIndex, toIndex)
+    if (nextPaths === currentPaths) {
+      return
+    }
+    const tabByPath = new Map(tabs.map((tab) => [tab.path, tab]))
+    const nextTabs = nextPaths.map((path) => tabByPath.get(path)!)
+    set({ tabs: nextTabs, ...syncLegacyFields(nextTabs, activePath) })
+    appLog('info', 'Reordered workspace tabs')
   },
 
   openWorkspacePicker: () => {

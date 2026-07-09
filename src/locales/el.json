@@ -71,6 +71,7 @@
     },
     "tabs": {
       "close": "Κλείσιμο {{label}}",
+      "dragToReorder": "Σύρετε για αναδιάταξη",
       "openWorkspace": "Άνοιγμα workspace"
     },
     "overlay": {

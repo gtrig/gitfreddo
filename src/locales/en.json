@@ -71,6 +71,7 @@
     },
     "tabs": {
       "close": "Close {{label}}",
+      "dragToReorder": "Drag to reorder",
       "openWorkspace": "Open workspace"
     },
     "overlay": {

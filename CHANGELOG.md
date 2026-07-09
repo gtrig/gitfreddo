@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-09 — Reorderable workspace tabs
+
+- **Why:** Users wanted to arrange open repository tabs in a preferred order.
+- **What:** Drag-and-drop reordering on workspace tab labels; order persists via existing session settings (`reorderTabPaths`, `reorderWorkspaceTabs`, `WorkspaceTabs`).
+
 ### 2026-07-09 — Reliable settings persistence
 
 - **Why:** Recent projects and open tabs could reset when multiple app instances ran or settings saves raced each other.
