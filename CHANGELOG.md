@@ -7,6 +7,16 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-09 — Parallel e2e Electron launches
+
+- **Why:** Playwright runs e2e specs with multiple workers; only the first Electron instance acquired the desktop single-instance lock and the rest exited immediately.
+- **What:** Set `GITFREDDO_E2E=1` in the Playwright launcher and skip `requestSingleInstanceLock` in that mode (`e2e/helpers.ts`, `electron/main/index.ts`).
+
+### 2026-07-09 — Honor external editor command
+
+- **Why:** **Open in editor** always used the OS default app and ignored the optional command in Settings → Interface.
+- **What:** `gitfreddo:open-in-editor` now spawns the configured editor (e.g. `code --wait`) when set; falls back to `shell.openPath` when unset (`electron/open-in-editor.ts`).
+
 ### 2026-07-09 — Reorderable workspace tabs
 
 - **Why:** Users wanted to arrange open repository tabs in a preferred order.

@@ -4,6 +4,7 @@ import { join, relative, resolve } from 'path'
 import { RepoManager } from '../git/repo-manager'
 import { hasGitDir } from '../git/repo-path'
 import { deleteRepoFile, resolveRepoFile } from '../git/workspace-files'
+import { openInEditor } from '../open-in-editor'
 import { normalizeRepoPath } from '../git/repo-path'
 import { loadSettings, nextRecentRepos, saveSettings } from '../settings'
 import { preserveIntegrationSettings } from '../../shared/integration-settings'
@@ -71,7 +72,9 @@ import { loadDotEnvFile } from '../load-dotenv'
 
 loadDotEnvFile()
 
-const gotSingleInstanceLock = app.requestSingleInstanceLock()
+/** Playwright runs multiple Electron apps in parallel; skip the desktop single-instance lock. */
+const isE2e = process.env.GITFREDDO_E2E === '1'
+const gotSingleInstanceLock = isE2e || app.requestSingleInstanceLock()
 
 if (!gotSingleInstanceLock) {
   app.quit()
@@ -557,8 +560,7 @@ function registerIpc(): void {
     const repo = repoManager.getRepoPath()
     if (!repo) throw new Error('No repository connected')
     const fullPath = resolveRepoFile(repo, relativePath)
-    const error = await shell.openPath(fullPath)
-    if (error) throw new Error(error)
+    await openInEditor(settings.editorCommand, fullPath)
   })
 
   ipcMain.handle('gitfreddo:get-zoom-factor', async () => getZoomFactor())
