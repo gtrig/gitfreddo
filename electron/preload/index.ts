@@ -62,6 +62,13 @@ const api: GitFreddoAPI = {
     ),
   githubListPullRequestReviews: (repoPath, number, repository) =>
     ipcRenderer.invoke('gitfreddo:github-list-pull-request-reviews', repoPath, number, repository),
+  githubListPullRequestReviewThreads: (repoPath, number, repository) =>
+    ipcRenderer.invoke(
+      'gitfreddo:github-list-pull-request-review-threads',
+      repoPath,
+      number,
+      repository
+    ),
   githubCreatePullRequest: (repoPath, params) =>
     ipcRenderer.invoke('gitfreddo:github-create-pull-request', repoPath, params),
   githubMergePullRequest: (repoPath, number, method) =>
@@ -78,6 +85,19 @@ const api: GitFreddoAPI = {
       params,
       repository
     ),
+  githubReplyPullRequestReviewComment: (repoPath, number, commentId, body, repository) =>
+    ipcRenderer.invoke(
+      'gitfreddo:github-reply-pull-request-review-comment',
+      repoPath,
+      number,
+      commentId,
+      body,
+      repository
+    ),
+  githubResolvePullRequestReviewThread: (repoPath, threadId) =>
+    ipcRenderer.invoke('gitfreddo:github-resolve-pull-request-review-thread', repoPath, threadId),
+  githubUnresolvePullRequestReviewThread: (repoPath, threadId) =>
+    ipcRenderer.invoke('gitfreddo:github-unresolve-pull-request-review-thread', repoPath, threadId),
   githubListIssues: (repoPath, assigneeLogin) =>
     ipcRenderer.invoke('gitfreddo:github-list-issues', repoPath, assigneeLogin),
   githubCreateIssue: (repoPath, params) =>

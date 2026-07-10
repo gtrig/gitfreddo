@@ -1,4 +1,6 @@
 import type { GitHubPullRequestReviewThread } from '@shared/github'
+import { githubGraphql } from './graphql'
+import { githubJson } from './http'
 
 interface GraphqlReviewThreadsResponse {
   repository: {
@@ -110,7 +112,7 @@ export async function listPullRequestReviewThreads(
   owner: string,
   repo: string,
   number: number,
-  graphql: typeof import('./graphql').githubGraphql = (await import('./graphql')).githubGraphql
+  graphql: typeof githubGraphql = githubGraphql
 ): Promise<GitHubPullRequestReviewThread[]> {
   const data = await graphql<GraphqlReviewThreadsResponse>(REVIEW_THREADS_QUERY, {
     owner,
@@ -122,14 +124,14 @@ export async function listPullRequestReviewThreads(
 
 export async function resolvePullRequestReviewThread(
   threadId: string,
-  graphql: typeof import('./graphql').githubGraphql = (await import('./graphql')).githubGraphql
+  graphql: typeof githubGraphql = githubGraphql
 ): Promise<void> {
   await graphql(RESOLVE_THREAD_MUTATION, { threadId })
 }
 
 export async function unresolvePullRequestReviewThread(
   threadId: string,
-  graphql: typeof import('./graphql').githubGraphql = (await import('./graphql')).githubGraphql
+  graphql: typeof githubGraphql = githubGraphql
 ): Promise<void> {
   await graphql(UNRESOLVE_THREAD_MUTATION, { threadId })
 }
@@ -140,11 +142,17 @@ export async function replyToPullRequestReviewComment(
   number: number,
   commentId: number,
   body: string,
-  githubJson: typeof import('./http').githubJson = (await import('./http')).githubJson
+  pendingReviewId?: number | null,
+  json: typeof githubJson = githubJson
 ): Promise<void> {
-  await githubJson(`/repos/${owner}/${repo}/pulls/${number}/comments/${commentId}/replies`, {
+  const payload: Record<string, unknown> = { body }
+  if (pendingReviewId != null) {
+    payload.pull_request_review_id = pendingReviewId
+  }
+
+  await json(`/repos/${owner}/${repo}/pulls/${number}/comments/${commentId}/replies`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ body })
+    body: JSON.stringify(payload)
   })
 }

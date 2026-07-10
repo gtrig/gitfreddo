@@ -45,13 +45,17 @@ import {
   listGitHubPullRequestConversationComments,
   listGitHubPullRequestReviewComments,
   listGitHubPullRequestReviews,
+  listGitHubPullRequestReviewThreads,
   listGitHubPullRequests,
   listGitHubRepos,
   mergeGitHubPullRequest,
   postGitHubPullRequestComment,
   postGitHubPullRequestReviewComment,
+  replyGitHubPullRequestReviewComment,
   reopenGitHubPullRequest,
+  resolveGitHubPullRequestReviewThread,
   tryGetGitHubRepoContext,
+  unresolveGitHubPullRequestReviewThread,
   updateGitHubIssue,
   uploadGitHubSshKey
 } from '../github/service'
@@ -462,6 +466,13 @@ function registerIpc(): void {
     repository
   ) => listGitHubPullRequestReviews(repoPath, settings, number, repository))
 
+  ipcMain.handle('gitfreddo:github-list-pull-request-review-threads', async (
+    _event,
+    repoPath: string,
+    number: number,
+    repository
+  ) => listGitHubPullRequestReviewThreads(repoPath, settings, number, repository))
+
   ipcMain.handle('gitfreddo:github-create-pull-request', async (_event, repoPath: string, params) =>
     createGitHubPullRequest(repoPath, settings, params)
   )
@@ -494,6 +505,27 @@ function registerIpc(): void {
     params,
     repository
   ) => postGitHubPullRequestReviewComment(repoPath, settings, number, params, repository))
+
+  ipcMain.handle('gitfreddo:github-reply-pull-request-review-comment', async (
+    _event,
+    repoPath: string,
+    number: number,
+    commentId: number,
+    body: string,
+    repository
+  ) => replyGitHubPullRequestReviewComment(repoPath, settings, number, commentId, body, repository))
+
+  ipcMain.handle('gitfreddo:github-resolve-pull-request-review-thread', async (
+    _event,
+    repoPath: string,
+    threadId: string
+  ) => resolveGitHubPullRequestReviewThread(repoPath, settings, threadId))
+
+  ipcMain.handle('gitfreddo:github-unresolve-pull-request-review-thread', async (
+    _event,
+    repoPath: string,
+    threadId: string
+  ) => unresolveGitHubPullRequestReviewThread(repoPath, settings, threadId))
 
   ipcMain.handle(
     'gitfreddo:github-list-issues',

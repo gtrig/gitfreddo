@@ -20,6 +20,22 @@
     "head": "HEAD",
     "currentHead": "Τρέχον HEAD"
   },
+  "markdown": {
+    "write": "Σύνταξη",
+    "preview": "Προεπισκόπηση",
+    "supported": "Υποστηρίζεται Markdown",
+    "nothingToPreview": "Δεν υπάρχει κάτι για προεπισκόπηση",
+    "bold": "Έντονα",
+    "italic": "Πλάγια",
+    "strikethrough": "Διαγραφή",
+    "link": "Σύνδεσμος",
+    "quote": "Παράθεση",
+    "code": "Κώδικας",
+    "codeBlock": "Μπλοκ κώδικα",
+    "bulletList": "Λίστα με κουκκίδες",
+    "numberedList": "Αριθμημένη λίστα",
+    "taskList": "Λίστα εργασιών"
+  },
   "workspace": {
     "hub": {
       "title": "GitFreddo",
@@ -902,6 +918,8 @@
     "path": "Διαδρομή",
     "tree": "Δέντρο",
     "expandAll": "Ανάπτυξη όλων",
+    "showMore": "Εμφάνιση περισσότερων",
+    "showLess": "Εμφάνιση λιγότερων",
     "showAllFiles": "Εμφάνιση όλων των αρχείων",
     "openCommitDetail": "Άνοιγμα πλήρους προβολής commit",
     "selectFileForDiff": "Επιλέξτε αρχείο για προβολή diff",
@@ -1029,7 +1047,21 @@
       "fileComments": "{{count}} σχόλια γραμμής σε αυτό το αρχείο",
       "lineNumber": "Γραμμή {{line}}",
       "commentOnLine": "Σχόλιο σε αυτή τη γραμμή",
-      "commentOnLineHint": "Κάντε hover σε μια γραμμή και κάντε κλικ στο εικονίδιο σχολίου"
+      "commentOnLineHint": "Κάντε hover σε μια γραμμή και κάντε κλικ στο εικονίδιο σχολίου",
+      "reviewThreads": "Νήματα κώδικα αναθεώρησης",
+      "loadingReviewThreads": "Φόρτωση νημάτων αναθεώρησης…",
+      "reviewThreadsFailed": "Αδυναμία φόρτωσης νημάτων αναθεώρησης.",
+      "reply": "Απάντηση",
+      "postReply": "Δημοσίευση απάντησης",
+      "replyPlaceholder": "Γράψτε μια απάντηση…",
+      "replySaved": "Η απάντηση δημοσιεύτηκε.",
+      "replyNoRepo": "Συνδέστε ένα αποθετήριο πριν απαντήσετε.",
+      "resolveThread": "Επίλυση",
+      "unresolveThread": "Αναίρεση επίλυσης",
+      "threadResolved": "Το νήμα επιλύθηκε.",
+      "threadUnresolved": "Η επίλυση του νήματος αναιρέθηκε.",
+      "threadResolvedBadge": "Επιλυμένο",
+      "threadOutdated": "Παρωχημένο"
     }
   },
   "contextMenu": {

@@ -4,8 +4,8 @@ import { ChatBubbleLeftEllipsisIcon } from '@heroicons/react/24/outline'
 import { diffRowCommentTarget, groupRowsByHunk, type DiffLineCommentTarget } from '@/lib/diff/unifiedDiff'
 import { lineCommentTargetKey } from '@/lib/github/prTimeline'
 import { DiffLineCommentBlocks } from '@/components/DiffViewer/DiffLineCommentBlocks'
+import type { DiffReviewThreadContext } from '@/components/DiffViewer/SplitDiffView'
 import type { GitBlameLine } from '@/lib/types'
-import type { GitHubPullRequestTimelineItem } from '@shared/github'
 
 export type { DiffLineCommentTarget }
 
@@ -66,7 +66,7 @@ interface UnifiedDiffViewProps {
   onHunkAction?: (groupIndex: number) => void
   hunkBusy?: boolean
   onRequestLineComment?: (target: DiffLineCommentTarget) => void
-  commentsByTarget?: Map<string, GitHubPullRequestTimelineItem[]>
+  reviewThreads?: DiffReviewThreadContext
 }
 
 export function UnifiedDiffView({
@@ -79,7 +79,7 @@ export function UnifiedDiffView({
   onHunkAction,
   hunkBusy = false,
   onRequestLineComment,
-  commentsByTarget
+  reviewThreads
 }: UnifiedDiffViewProps) {
   const { t } = useTranslation()
 
@@ -134,9 +134,9 @@ export function UnifiedDiffView({
                   ? blameByNewLine?.get(row.newLine)
                   : undefined
               const commentTarget = onRequestLineComment ? diffRowCommentTarget(row) : null
-              const lineComments =
-                commentTarget && commentsByTarget
-                  ? (commentsByTarget.get(
+              const lineThreads =
+                commentTarget && reviewThreads
+                  ? (reviewThreads.byTarget.get(
                       lineCommentTargetKey(commentTarget.side, commentTarget.line)
                     ) ?? [])
                   : []
@@ -187,7 +187,14 @@ export function UnifiedDiffView({
                     {row.content || ' '}
                   </code>
                   </div>
-                  <DiffLineCommentBlocks comments={lineComments} />
+                  {reviewThreads && lineThreads.length > 0 ? (
+                    <DiffLineCommentBlocks
+                      threads={lineThreads}
+                      prNumber={reviewThreads.prNumber}
+                      repository={reviewThreads.repository}
+                      onUpdated={reviewThreads.onUpdated}
+                    />
+                  ) : null}
                 </div>
               )
             })}

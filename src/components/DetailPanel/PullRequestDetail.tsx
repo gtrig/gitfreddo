@@ -21,6 +21,7 @@ import { useAppSettings } from '@/hooks/useAppSettings'
 import {
   useGitHubPullRequestCommits,
   useGitHubPullRequestFiles,
+  useGitHubPullRequestReviewThreads,
   useGitHubPullRequestTimeline,
   useInvalidateGitHubPullRequestDetail
 } from '@/hooks/useGitHubPullRequest'
@@ -35,7 +36,7 @@ import {
   pullRequestStatusMeta,
   sumPullRequestFileStats
 } from '@/lib/github/prFiles'
-import { groupLineCommentsByTarget, lineCommentsForPath } from '@/lib/github/prTimeline'
+import { groupThreadsByTarget, threadsForPath } from '@/lib/github/prThreads'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
 import type { GitHubPullRequest } from '@shared/github'
@@ -66,19 +67,34 @@ export function PullRequestDetail({ pr, onClose }: PullRequestDetailProps) {
   const filesQuery = useGitHubPullRequestFiles(repoPath, pr.number, pr.repository, Boolean(repoPath))
   const commitsQuery = useGitHubPullRequestCommits(repoPath, pr.number, pr.repository, Boolean(repoPath))
   const timelineQuery = useGitHubPullRequestTimeline(repoPath, pr.number, pr.repository, Boolean(repoPath))
+  const threadsQuery = useGitHubPullRequestReviewThreads(repoPath, pr.number, pr.repository, Boolean(repoPath))
   const files = filesQuery.data ?? []
   const commits = commitsQuery.data ?? []
   const timeline = timelineQuery.data
+  const reviewThreads = threadsQuery.data ?? []
   const totals = useMemo(() => sumPullRequestFileStats(files), [files])
   const status = pullRequestStatusMeta(pr)
   const selectedPath = isPullRequestFilePane(pane) ? pane.path : null
-  const fileLineComments = useMemo(
-    () => (selectedPath ? lineCommentsForPath(timeline, selectedPath) : []),
-    [timeline, selectedPath]
+  const fileReviewThreads = useMemo(
+    () => (selectedPath ? threadsForPath(reviewThreads, selectedPath) : []),
+    [reviewThreads, selectedPath]
   )
-  const fileCommentsByTarget = useMemo(
-    () => groupLineCommentsByTarget(fileLineComments),
-    [fileLineComments]
+  const fileThreadsByTarget = useMemo(
+    () => groupThreadsByTarget(fileReviewThreads),
+    [fileReviewThreads]
+  )
+
+  const reviewThreadContext = useMemo(
+    () =>
+      repoPath
+        ? {
+            byTarget: fileThreadsByTarget,
+            prNumber: pr.number,
+            repository: pr.repository,
+            onUpdated: () => invalidateDetail(repoPath, pr.number)
+          }
+        : undefined,
+    [fileThreadsByTarget, pr.number, pr.repository, repoPath, invalidateDetail]
   )
 
   const diffQuery = useDiffCommits(
@@ -267,14 +283,14 @@ export function PullRequestDetail({ pr, onClose }: PullRequestDetailProps) {
                       rows={splitRows}
                       loading={diffQuery.isLoading}
                       onRequestLineComment={handleLineCommentRequest}
-                      commentsByTarget={fileCommentsByTarget}
+                      reviewThreads={reviewThreadContext}
                     />
                   ) : (
                     <UnifiedDiffView
                       rows={rows}
                       loading={diffQuery.isLoading}
                       onRequestLineComment={handleLineCommentRequest}
-                      commentsByTarget={fileCommentsByTarget}
+                      reviewThreads={reviewThreadContext}
                     />
                   )}
                 </div>
@@ -287,9 +303,15 @@ export function PullRequestDetail({ pr, onClose }: PullRequestDetailProps) {
               <PullRequestOverviewPanel
                 pr={pr}
                 items={timeline}
+                threads={reviewThreads}
+                threadsLoading={threadsQuery.isLoading}
+                threadsError={threadsQuery.error as Error | null}
                 loading={timelineQuery.isLoading}
                 error={timelineQuery.error}
                 onOpenFile={(path) => setPane({ kind: 'file', path })}
+                onThreadsUpdated={() => {
+                  if (repoPath) invalidateDetail(repoPath, pr.number)
+                }}
               />
             )}
           </main>

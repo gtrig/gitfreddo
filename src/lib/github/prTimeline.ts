@@ -15,7 +15,7 @@ export function normalizeReviewCommentAnchor(
 
 export function mergePullRequestTimeline(
   conversation: GitHubPullRequestConversationComment[],
-  lineComments: GitHubPullRequestReviewComment[],
+  _lineComments: GitHubPullRequestReviewComment[],
   reviews: GitHubPullRequestReview[]
 ): GitHubPullRequestTimelineItem[] {
   const items: GitHubPullRequestTimelineItem[] = []
@@ -30,19 +30,7 @@ export function mergePullRequestTimeline(
     })
   }
 
-  for (const comment of lineComments) {
-    const anchor = normalizeReviewCommentAnchor(comment)
-    items.push({
-      id: `line-${comment.id}`,
-      kind: 'line',
-      body: comment.body,
-      user: comment.user,
-      createdAt: comment.createdAt,
-      path: comment.path,
-      line: anchor?.line ?? comment.line,
-      side: anchor?.side ?? comment.side
-    })
-  }
+  // Line review comments are shown as threaded cards (GraphQL), not flat timeline items.
 
   for (const review of reviews) {
     items.push({

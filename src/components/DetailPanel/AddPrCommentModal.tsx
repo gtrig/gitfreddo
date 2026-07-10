@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ActionButton, FieldLabel, Modal, TextArea } from '@/components/Ui/Modal'
+import { ActionButton, FieldLabel, Modal } from '@/components/Ui/Modal'
+import { GitHubMarkdownEditor } from '@/components/Ui/GitHubMarkdownEditor'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
 
@@ -58,11 +59,11 @@ export function AddPrCommentModal({ prNumber, repository, open, onClose, onSaved
 
       <div>
         <FieldLabel>{t('modals.addPrComment.message')}</FieldLabel>
-        <TextArea
+        <GitHubMarkdownEditor
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={setMessage}
           placeholder={t('modals.addPrComment.placeholder', { number: prNumber })}
-          rows={6}
+          rows={8}
         />
       </div>
 

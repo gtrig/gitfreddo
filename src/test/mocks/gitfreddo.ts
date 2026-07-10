@@ -128,6 +128,10 @@ export function createGitFreddoMock(overrides: Partial<GitFreddoAPI> = {}): GitF
     githubListPullRequestConversationComments: vi.fn(async () => []),
     githubListPullRequestReviewComments: vi.fn(async () => []),
     githubListPullRequestReviews: vi.fn(async () => []),
+    githubListPullRequestReviewThreads: vi.fn(async () => []),
+    githubReplyPullRequestReviewComment: vi.fn(async () => undefined),
+    githubResolvePullRequestReviewThread: vi.fn(async () => undefined),
+    githubUnresolvePullRequestReviewThread: vi.fn(async () => undefined),
     githubCreatePullRequest: vi.fn(async () => ({
       number: 1,
       title: 'PR',

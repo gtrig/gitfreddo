@@ -5,6 +5,7 @@ import type {
   GitHubPullRequestCommit,
   GitHubPullRequestFile,
   GitHubPullRequestRepository,
+  GitHubPullRequestReviewThread,
   GitHubPullRequestTimelineItem
 } from '@shared/github'
 import { mergePullRequestTimeline } from '@/lib/github/prTimeline'
@@ -72,6 +73,35 @@ export function useGitHubPullRequestCommits(
         throw new Error('Repository and pull request number are required')
       }
       return window.gitfreddo.githubListPullRequestCommits(
+        repoPath,
+        number,
+        hasPullRepository(repository) ? repository! : undefined
+      )
+    },
+    enabled: enabled && Boolean(repoPath) && number !== null,
+    staleTime: 30_000
+  })
+}
+
+export function useGitHubPullRequestReviewThreads(
+  repoPath: string | null,
+  number: number | null,
+  repository: GitHubPullRequestRepository | null | undefined,
+  enabled = true
+) {
+  return useQuery<GitHubPullRequestReviewThread[]>({
+    queryKey: [
+      'github-pull-request-review-threads',
+      repoPath,
+      number,
+      repository?.owner,
+      repository?.repo
+    ],
+    queryFn: () => {
+      if (!repoPath || number === null) {
+        throw new Error('Repository and pull request number are required')
+      }
+      return window.gitfreddo.githubListPullRequestReviewThreads(
         repoPath,
         number,
         hasPullRepository(repository) ? repository! : undefined
@@ -191,6 +221,9 @@ export function useInvalidateGitHubPullRequestDetail() {
     })
     void queryClient.invalidateQueries({
       queryKey: ['github-pull-request-reviews', repoPath, number]
+    })
+    void queryClient.invalidateQueries({
+      queryKey: ['github-pull-request-review-threads', repoPath, number]
     })
     void queryClient.invalidateQueries({ queryKey: ['github-pull-requests', repoPath] })
   }

@@ -44,103 +44,85 @@ describe('prTimeline', () => {
       ]
     )
 
-    expect(items.map((item) => item.kind)).toEqual(['conversation', 'line', 'review'])
-    expect(items[1]?.path).toBe('src/a.ts')
+    expect(items.map((item) => item.kind)).toEqual(['conversation', 'review'])
   })
 
   it('filters line comments for a file path', () => {
-    const items = mergePullRequestTimeline(
-      [],
-      [
-        {
-          id: 1,
-          body: 'A',
-          user: 'bob',
-          createdAt: '2026-01-02T11:00:00Z',
-          updatedAt: '2026-01-02T11:00:00Z',
-          path: 'src/a.ts',
-          line: 1,
-          originalLine: 1,
-          side: 'RIGHT',
-          commitId: 'abc'
-        },
-        {
-          id: 2,
-          body: 'B',
-          user: 'bob',
-          createdAt: '2026-01-02T12:00:00Z',
-          updatedAt: '2026-01-02T12:00:00Z',
-          path: 'src/b.ts',
-          line: 2,
-          originalLine: 2,
-          side: 'RIGHT',
-          commitId: 'def'
-        }
-      ],
-      []
-    )
+    const items: ReturnType<typeof mergePullRequestTimeline> = [
+      {
+        id: 'line-1',
+        kind: 'line',
+        body: 'A',
+        user: 'bob',
+        createdAt: '2026-01-02T11:00:00Z',
+        path: 'src/a.ts',
+        line: 1,
+        side: 'RIGHT'
+      },
+      {
+        id: 'line-2',
+        kind: 'line',
+        body: 'B',
+        user: 'bob',
+        createdAt: '2026-01-02T12:00:00Z',
+        path: 'src/b.ts',
+        line: 2,
+        side: 'RIGHT'
+      }
+    ]
 
     expect(lineCommentsForPath(items, 'src/a.ts')).toHaveLength(1)
   })
 
   it('groups line comments by diff target', () => {
-    const items = mergePullRequestTimeline(
-      [],
-      [
-        {
-          id: 1,
-          body: 'A',
-          user: 'bob',
-          createdAt: '2026-01-02T11:00:00Z',
-          updatedAt: '2026-01-02T11:00:00Z',
-          path: 'src/a.ts',
-          line: 4,
-          originalLine: 4,
-          side: 'RIGHT',
-          commitId: 'abc'
-        },
-        {
-          id: 2,
-          body: 'B',
-          user: 'alice',
-          createdAt: '2026-01-02T12:00:00Z',
-          updatedAt: '2026-01-02T12:00:00Z',
-          path: 'src/a.ts',
-          line: 4,
-          originalLine: 4,
-          side: 'RIGHT',
-          commitId: 'abc'
-        }
-      ],
-      []
-    )
+    const items: ReturnType<typeof mergePullRequestTimeline> = [
+      {
+        id: 'line-1',
+        kind: 'line',
+        body: 'A',
+        user: 'bob',
+        createdAt: '2026-01-02T11:00:00Z',
+        path: 'src/a.ts',
+        line: 4,
+        side: 'RIGHT'
+      },
+      {
+        id: 'line-2',
+        kind: 'line',
+        body: 'B',
+        user: 'alice',
+        createdAt: '2026-01-02T12:00:00Z',
+        path: 'src/a.ts',
+        line: 4,
+        side: 'RIGHT'
+      }
+    ]
 
     const grouped = groupLineCommentsByTarget(items)
     expect(grouped.get('RIGHT:4')).toHaveLength(2)
   })
 
   it('anchors line comments using original_line when line is null', () => {
-    const items = mergePullRequestTimeline(
-      [],
-      [
-        {
-          id: 1,
-          body: 'Check this describe block',
-          user: 'reviewer',
-          createdAt: '2026-01-02T11:00:00Z',
-          updatedAt: '2026-01-02T11:00:00Z',
-          path: 'electron/github/api/pulls.test.ts',
-          line: null,
-          originalLine: 9,
-          side: null,
-          commitId: 'abc'
-        }
-      ],
-      []
-    )
+    const anchor = normalizeReviewCommentAnchor({
+      line: null,
+      originalLine: 9,
+      side: null
+    })
 
-    expect(items[0]?.line).toBe(9)
-    expect(items[0]?.side).toBe('RIGHT')
+    expect(anchor).toEqual({ line: 9, side: 'RIGHT' })
+    const items: ReturnType<typeof mergePullRequestTimeline> = [
+      {
+        id: 'line-1',
+        kind: 'line',
+        body: 'Check this describe block',
+        user: 'reviewer',
+        createdAt: '2026-01-02T11:00:00Z',
+        path: 'electron/github/api/pulls.test.ts',
+        line: anchor?.line ?? null,
+        side: anchor?.side ?? null
+      }
+    ]
+
     expect(groupLineCommentsByTarget(items).get('RIGHT:9')).toHaveLength(1)
   })
 })

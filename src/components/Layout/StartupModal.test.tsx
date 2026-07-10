@@ -28,11 +28,13 @@ describe('StartupModal', () => {
     )
 
     expect(
-      screen.getByText('Themes preview instantly in Settings before you save.')
+      screen.getByText(
+        'PR comments and replies use a GitHub-style markdown editor with Write/Preview tabs and a formatting toolbar.'
+      )
     ).toBeInTheDocument()
     expect(
       screen.getByText(
-        'Click and drag anywhere on the commit timeline to select a range of commits.'
+        'Commit detail sidebar scrolls when content is long; descriptions show ~200 characters with Show more / Show less.'
       )
     ).toBeInTheDocument()
   })

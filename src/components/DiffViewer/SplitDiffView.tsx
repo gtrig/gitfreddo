@@ -4,7 +4,14 @@ import { ChatBubbleLeftEllipsisIcon } from '@heroicons/react/24/outline'
 import { splitCellCommentTarget, type DiffLineCommentTarget } from '@/lib/diff/unifiedDiff'
 import { lineCommentTargetKey } from '@/lib/github/prTimeline'
 import { DiffLineCommentBlocks } from '@/components/DiffViewer/DiffLineCommentBlocks'
-import type { GitHubPullRequestTimelineItem } from '@shared/github'
+import type { GitHubPullRequestRepository, GitHubPullRequestReviewThread } from '@shared/github'
+
+export interface DiffReviewThreadContext {
+  byTarget: Map<string, GitHubPullRequestReviewThread[]>
+  prNumber: number
+  repository: GitHubPullRequestRepository
+  onUpdated?: () => void
+}
 
 function formatLineNo(value: number | null): string {
   return value == null ? '' : String(value)
@@ -28,7 +35,7 @@ interface SplitDiffViewProps {
   loading?: boolean
   emptyMessage?: string
   onRequestLineComment?: (target: DiffLineCommentTarget) => void
-  commentsByTarget?: Map<string, GitHubPullRequestTimelineItem[]>
+  reviewThreads?: DiffReviewThreadContext
 }
 
 export function SplitDiffView({
@@ -36,7 +43,7 @@ export function SplitDiffView({
   loading,
   emptyMessage,
   onRequestLineComment,
-  commentsByTarget
+  reviewThreads
 }: SplitDiffViewProps) {
   const { t } = useTranslation()
 
@@ -61,19 +68,22 @@ export function SplitDiffView({
       {rows.map((row, index) => {
         const leftTarget = splitCellCommentTarget('left', row.leftLineNo)
         const rightTarget = splitCellCommentTarget('right', row.rightLineNo)
-        const leftComments =
-          leftTarget && commentsByTarget
-            ? (commentsByTarget.get(
+        const leftThreads =
+          leftTarget && reviewThreads
+            ? (reviewThreads.byTarget.get(
                 lineCommentTargetKey(leftTarget.side, leftTarget.line)
               ) ?? [])
             : []
-        const rightComments =
-          rightTarget && commentsByTarget
-            ? (commentsByTarget.get(
+        const rightThreads =
+          rightTarget && reviewThreads
+            ? (reviewThreads.byTarget.get(
                 lineCommentTargetKey(rightTarget.side, rightTarget.line)
               ) ?? [])
             : []
-        const rowComments = [...leftComments, ...rightComments]
+        const rowThreads = [...leftThreads, ...rightThreads]
+        const uniqueRowThreads = rowThreads.filter(
+          (thread, index) => rowThreads.findIndex((item) => item.id === thread.id) === index
+        )
 
         return (
           <div key={index}>
@@ -94,7 +104,14 @@ export function SplitDiffView({
                 borderLeft
               />
             </div>
-            <DiffLineCommentBlocks comments={rowComments} />
+            {reviewThreads && uniqueRowThreads.length > 0 ? (
+              <DiffLineCommentBlocks
+                threads={uniqueRowThreads}
+                prNumber={reviewThreads.prNumber}
+                repository={reviewThreads.repository}
+                onUpdated={reviewThreads.onUpdated}
+              />
+            ) : null}
           </div>
         )
       })}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, forwardRef, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { XMarkIcon } from '@heroicons/react/24/solid'
 import { Spinner } from '@/components/Ui/Spinner'
@@ -167,14 +167,17 @@ export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   )
 }
 
-export function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return (
-    <textarea
-      {...props}
-      className={`w-full rounded border border-gf-border-strong bg-gf-bg-deep px-3 py-2 text-sm text-gf-fg outline-none focus:border-gf-accent ${props.className ?? ''}`}
-    />
-  )
-}
+export const TextArea = forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
+  function TextArea(props, ref) {
+    return (
+      <textarea
+        ref={ref}
+        {...props}
+        className={`w-full rounded border border-gf-border-strong bg-gf-bg-deep px-3 py-2 text-sm text-gf-fg outline-none focus:border-gf-accent ${props.className ?? ''}`}
+      />
+    )
+  }
+)
 
 export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (

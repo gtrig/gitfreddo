@@ -27,16 +27,26 @@ const items: GitHubPullRequestTimelineItem[] = [
     body: 'Please update the docs',
     user: 'alice',
     createdAt: '2026-01-02T10:00:00Z'
-  },
+  }
+]
+
+const threads = [
   {
-    id: 'line-2',
-    kind: 'line',
-    body: 'Rename this variable',
-    user: 'bob',
-    createdAt: '2026-01-02T11:00:00Z',
+    id: 'PRRT_1',
+    isResolved: false,
+    isOutdated: false,
     path: 'src/a.ts',
     line: 12,
-    side: 'RIGHT'
+    comments: [
+      {
+        id: 2,
+        body: 'Rename this variable',
+        user: 'bob',
+        createdAt: '2026-01-02T11:00:00Z',
+        path: 'src/a.ts',
+        line: 12
+      }
+    ]
   }
 ]
 
@@ -45,24 +55,10 @@ describe('PullRequestConversationTimeline', () => {
     cleanup()
   })
 
-  it('renders conversation and line comments', () => {
+  it('renders conversation comments', () => {
     renderWithProviders(<PullRequestConversationTimeline items={items} />)
 
     expect(screen.getByText('Please update the docs')).toBeInTheDocument()
-    expect(screen.getByText('Rename this variable')).toBeInTheDocument()
-    expect(screen.getByText('src/a.ts:12')).toBeInTheDocument()
-  })
-
-  it('opens a file when a line comment location is clicked', async () => {
-    const user = userEvent.setup()
-    const onOpenFile = vi.fn()
-
-    renderWithProviders(
-      <PullRequestConversationTimeline items={items} onOpenFile={onOpenFile} />
-    )
-
-    await user.click(screen.getByRole('button', { name: 'src/a.ts:12' }))
-    expect(onOpenFile).toHaveBeenCalledWith('src/a.ts')
   })
 })
 
@@ -71,13 +67,25 @@ describe('PullRequestOverviewPanel', () => {
     cleanup()
   })
 
-  it('shows the opening post and conversation feed', () => {
+  it('shows the opening post, review threads, and conversation feed', async () => {
+    const user = userEvent.setup()
+    const onOpenFile = vi.fn()
+
     renderWithProviders(
-      <PullRequestOverviewPanel pr={pr} items={items} onOpenFile={vi.fn()} />
+      <PullRequestOverviewPanel
+        pr={pr}
+        items={items}
+        threads={threads}
+        onOpenFile={onOpenFile}
+      />
     )
 
     expect(screen.getByText('Summary of the change')).toBeInTheDocument()
     expect(screen.getByText(/opened this pull request/i)).toBeInTheDocument()
+    expect(screen.getByText('Rename this variable')).toBeInTheDocument()
     expect(screen.getByText('Please update the docs')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'src/a.ts:12' }))
+    expect(onOpenFile).toHaveBeenCalledWith('src/a.ts')
   })
 })

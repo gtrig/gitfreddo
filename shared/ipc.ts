@@ -176,6 +176,26 @@ export interface GitFreddoAPI {
     number: number,
     repository?: import('./github').GitHubPullRequestRepository
   ) => Promise<import('./github').GitHubPullRequestReview[]>
+  githubListPullRequestReviewThreads: (
+    repoPath: string,
+    number: number,
+    repository?: import('./github').GitHubPullRequestRepository
+  ) => Promise<import('./github').GitHubPullRequestReviewThread[]>
+  githubReplyPullRequestReviewComment: (
+    repoPath: string,
+    number: number,
+    commentId: number,
+    body: string,
+    repository?: import('./github').GitHubPullRequestRepository
+  ) => Promise<void>
+  githubResolvePullRequestReviewThread: (
+    repoPath: string,
+    threadId: string
+  ) => Promise<void>
+  githubUnresolvePullRequestReviewThread: (
+    repoPath: string,
+    threadId: string
+  ) => Promise<void>
   githubCreatePullRequest: (
     repoPath: string,
     params: import('./github').GitHubCreatePullRequestParams

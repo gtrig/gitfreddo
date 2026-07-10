@@ -120,7 +120,7 @@ export function DetailPanel() {
             }
           />
         )}
-        <div className={multiSelect ? 'min-h-0 flex-1' : 'h-full'}>
+        <div className={multiSelect ? 'min-h-0 flex-1' : 'h-full min-h-0'}>
           <CommitPreview commit={commit} />
         </div>
       </aside>

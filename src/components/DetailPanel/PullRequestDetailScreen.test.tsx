@@ -65,6 +65,7 @@ describe('PullRequestDetailScreen', () => {
     ])
     vi.mocked(window.gitfreddo.githubListPullRequestReviewComments).mockResolvedValue([])
     vi.mocked(window.gitfreddo.githubListPullRequestReviews).mockResolvedValue([])
+    vi.mocked(window.gitfreddo.githubListPullRequestReviewThreads).mockResolvedValue([])
   })
 
   it('renders pull request detail when opened from the sidebar', async () => {

@@ -11,6 +11,7 @@ import { useSelectionStore } from '@/stores/selection'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { RewordCommitModal } from '@/components/DetailPanel/RewordCommitModal'
 import { ExplainCommitButton } from '@/components/DetailPanel/ExplainCommitWithAi'
+import { CommitDescriptionPreview } from '@/components/DetailPanel/CommitDescriptionPreview'
 import { CommitFileList } from '@/components/DetailPanel/CommitFileList'
 import { commitMessageBody, countCommitFiles } from '@/lib/workspace/fileTree'
 import { useCommitDisplayFiles } from '@/hooks/useCommitDisplayFiles'
@@ -198,8 +199,8 @@ export function CommitPreview({ commit }: { commit: GitCommit }) {
   }
 
   return (
-    <div className="flex h-full flex-col border-l border-gf-border bg-gf-bg-deep">
-      <div className="flex items-center justify-between border-b border-gf-border px-4 py-2.5">
+    <div className="flex h-full min-h-0 flex-col border-l border-gf-border bg-gf-bg-deep">
+      <div className="flex shrink-0 items-center justify-between border-b border-gf-border px-4 py-2.5">
         <p className="text-sm text-gf-fg-muted">
           {loading
             ? t('detail.loadingFileChanges')
@@ -228,7 +229,7 @@ export function CommitPreview({ commit }: { commit: GitCommit }) {
         </div>
       </div>
 
-      <div className="flex items-center justify-between border-b border-gf-border px-4 py-2">
+      <div className="flex shrink-0 items-center justify-between border-b border-gf-border px-4 py-2">
         <p className="font-mono text-xs text-gf-fg-subtle">
           {t('detail.commitLabel')}{' '}
           <span className="text-gf-fg-muted">{commit.shortHash}</span>
@@ -272,51 +273,52 @@ export function CommitPreview({ commit }: { commit: GitCommit }) {
         }}
       />
 
-      <div className="border-b border-gf-border px-4 py-4">
-        <h2 className="text-lg font-semibold leading-snug text-gf-fg">{commit.subject}</h2>
-        {body && (
-          <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-gf-fg-subtle">{body}</p>
-        )}
-      </div>
-
-      <div className="flex items-center justify-between gap-3 border-b border-gf-border px-4 py-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-gf-surface text-xs font-semibold text-gf-fg-muted">
-            {authorInitials(commit.author.name)}
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm text-gf-fg">{commit.author.name}</p>
-            <p className="text-xs text-gf-fg-subtle">{formatAuthoredDate(commit.author.date, t)}</p>
-          </div>
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="border-b border-gf-border px-4 py-4">
+          <h2 className="text-lg font-semibold leading-snug text-gf-fg">{commit.subject}</h2>
+          {body && <CommitDescriptionPreview key={commit.hash} text={body} />}
         </div>
-        {parentShort && (
-          <button
-            type="button"
-            onClick={() => parentHash && selectTimelineNode('commit', parentHash)}
-            className="shrink-0 font-mono text-xs text-gf-fg-subtle hover:text-gf-accent-fg"
-          >
-            {t('detail.parent')}{' '}
-            <span className="text-gf-fg-muted">{parentShort}</span>
-          </button>
-        )}
-      </div>
 
-      <div className="border-b border-gf-border px-4 py-2.5">
-        <FileChangeBadges counts={counts} t={t} />
-      </div>
+        <div className="flex items-center justify-between gap-3 border-b border-gf-border px-4 py-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-gf-surface text-xs font-semibold text-gf-fg-muted">
+              {authorInitials(commit.author.name)}
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-sm text-gf-fg">{commit.author.name}</p>
+              <p className="text-xs text-gf-fg-subtle">{formatAuthoredDate(commit.author.date, t)}</p>
+            </div>
+          </div>
+          {parentShort && (
+            <button
+              type="button"
+              onClick={() => parentHash && selectTimelineNode('commit', parentHash)}
+              className="shrink-0 font-mono text-xs text-gf-fg-subtle hover:text-gf-accent-fg"
+            >
+              {t('detail.parent')}{' '}
+              <span className="text-gf-fg-muted">{parentShort}</span>
+            </button>
+          )}
+        </div>
 
-      <CommitFileList
-        files={files}
-        loading={loading}
-        error={error}
-        selectedPath={selectedCommitFile}
-        onSelectFile={setSelectedCommitFile}
-        onFileHistory={openFileHistory}
-        showAllFiles={showAllFiles}
-        onShowAllFilesChange={setShowAllFiles}
-        loadingAllFiles={loadingAllFiles}
-        showBadges={false}
-      />
+        <div className="border-b border-gf-border px-4 py-2.5">
+          <FileChangeBadges counts={counts} t={t} />
+        </div>
+
+        <CommitFileList
+          embedded
+          files={files}
+          loading={loading}
+          error={error}
+          selectedPath={selectedCommitFile}
+          onSelectFile={setSelectedCommitFile}
+          onFileHistory={openFileHistory}
+          showAllFiles={showAllFiles}
+          onShowAllFilesChange={setShowAllFiles}
+          loadingAllFiles={loadingAllFiles}
+          showBadges={false}
+        />
+      </div>
     </div>
   )
 }

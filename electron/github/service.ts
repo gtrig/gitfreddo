@@ -13,6 +13,12 @@ import { isForgeAuthFailure } from '../../shared/forge-auth'
 import { getAuthenticatedUser } from './client'
 import { listIssues, createIssue, updateIssue } from './api/issues'
 import { createPullRequest, findPendingPullRequestReviewId, getPullRequest, listPullRequestCommits, listPullRequestConversationComments, listPullRequestFiles, listPullRequestReviewComments, listPullRequestReviews, listPullRequests, mergePullRequest, postPullRequestConversationComment, postPullRequestReviewComment, reopenPullRequest } from './api/pulls'
+import {
+  listPullRequestReviewThreads,
+  replyToPullRequestReviewComment,
+  resolvePullRequestReviewThread,
+  unresolvePullRequestReviewThread
+} from './api/pullThreads'
 import { getGitHubTokenOrThrow } from './api/http'
 import { clearRepoCache, createRepo, forkRepo, listUserRepos } from './api/repos'
 import { runGitHubDeviceFlow, type DeviceFlowProgress } from './oauth'
@@ -339,6 +345,59 @@ export async function listGitHubPullRequestReviews(
 ) {
   const ctx = await resolvePullApiOwnerRepo(repoPath, settings, repository)
   return listPullRequestReviews(ctx.owner, ctx.repo, number)
+}
+
+export async function listGitHubPullRequestReviewThreads(
+  repoPath: string,
+  settings: AppSettings,
+  number: number,
+  repository?: GitHubPullRequestRepository | null
+) {
+  const ctx = await resolvePullApiOwnerRepo(repoPath, settings, repository)
+  return listPullRequestReviewThreads(ctx.owner, ctx.repo, number)
+}
+
+export async function replyGitHubPullRequestReviewComment(
+  repoPath: string,
+  settings: AppSettings,
+  number: number,
+  commentId: number,
+  body: string,
+  repository?: GitHubPullRequestRepository | null
+) {
+  const ctx = await resolvePullApiOwnerRepo(repoPath, settings, repository)
+  const token = await getGitHubTokenOrThrow()
+  const user = await getAuthenticatedUser(token)
+  const pendingReviewId = await findPendingPullRequestReviewId(
+    ctx.owner,
+    ctx.repo,
+    number,
+    user.login
+  )
+  await replyToPullRequestReviewComment(
+    ctx.owner,
+    ctx.repo,
+    number,
+    commentId,
+    body,
+    pendingReviewId
+  )
+}
+
+export async function resolveGitHubPullRequestReviewThread(
+  _repoPath: string,
+  _settings: AppSettings,
+  threadId: string
+) {
+  await resolvePullRequestReviewThread(threadId)
+}
+
+export async function unresolveGitHubPullRequestReviewThread(
+  _repoPath: string,
+  _settings: AppSettings,
+  threadId: string
+) {
+  await unresolvePullRequestReviewThread(threadId)
 }
 
 export async function listGitHubIssues(

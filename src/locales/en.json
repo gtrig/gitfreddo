@@ -20,6 +20,22 @@
     "head": "HEAD",
     "currentHead": "Current HEAD"
   },
+  "markdown": {
+    "write": "Write",
+    "preview": "Preview",
+    "supported": "Markdown is supported",
+    "nothingToPreview": "Nothing to preview",
+    "bold": "Bold",
+    "italic": "Italic",
+    "strikethrough": "Strikethrough",
+    "link": "Link",
+    "quote": "Quote",
+    "code": "Code",
+    "codeBlock": "Code block",
+    "bulletList": "Bullet list",
+    "numberedList": "Numbered list",
+    "taskList": "Task list"
+  },
   "workspace": {
     "hub": {
       "title": "GitFreddo",
@@ -902,6 +918,8 @@
     "path": "Path",
     "tree": "Tree",
     "expandAll": "Expand all",
+    "showMore": "Show more",
+    "showLess": "Show less",
     "showAllFiles": "Show all files",
     "openCommitDetail": "Open full commit view",
     "selectFileForDiff": "Select a file to view its diff",
@@ -1029,7 +1047,21 @@
       "fileComments": "{{count}} line comments on this file",
       "lineNumber": "Line {{line}}",
       "commentOnLine": "Comment on this line",
-      "commentOnLineHint": "Hover a line and click the comment icon"
+      "commentOnLineHint": "Hover a line and click the comment icon",
+      "reviewThreads": "Code review threads",
+      "loadingReviewThreads": "Loading review threads…",
+      "reviewThreadsFailed": "Could not load review threads.",
+      "reply": "Reply",
+      "postReply": "Post reply",
+      "replyPlaceholder": "Write a reply…",
+      "replySaved": "Reply posted.",
+      "replyNoRepo": "Connect a repository before replying.",
+      "resolveThread": "Resolve",
+      "unresolveThread": "Unresolve",
+      "threadResolved": "Thread resolved.",
+      "threadUnresolved": "Thread unresolved.",
+      "threadResolvedBadge": "Resolved",
+      "threadOutdated": "Outdated"
     }
   },
   "github": {

@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { GitHubMarkdownBody } from '@/components/Ui/GitHubMarkdownBody'
 import type { GitHubPullRequestTimelineItem } from '@shared/github'
 
 function formatTimestamp(value: string): string {
@@ -116,8 +117,8 @@ export function PullRequestConversationTimeline({
             ) : null}
 
             {item.body.trim() ? (
-              <div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-gf-fg-muted">
-                {item.body}
+              <div className="mt-3">
+                <GitHubMarkdownBody content={item.body} />
               </div>
             ) : item.kind === 'review' ? (
               <p className="mt-3 text-sm text-gf-fg-subtle">

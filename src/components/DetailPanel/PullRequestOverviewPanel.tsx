@@ -1,7 +1,13 @@
 import { useTranslation } from 'react-i18next'
 import { LoadingRow } from '@/components/Ui/Spinner'
+import { GitHubMarkdownBody } from '@/components/Ui/GitHubMarkdownBody'
 import { PullRequestConversationTimeline } from '@/components/DetailPanel/PullRequestConversationTimeline'
-import type { GitHubPullRequest, GitHubPullRequestTimelineItem } from '@shared/github'
+import { PullRequestReviewThreadCard } from '@/components/DetailPanel/PullRequestReviewThreadCard'
+import type {
+  GitHubPullRequest,
+  GitHubPullRequestReviewThread,
+  GitHubPullRequestTimelineItem
+} from '@shared/github'
 
 function UserAvatar({ user }: { user: string }) {
   return (
@@ -17,17 +23,25 @@ function UserAvatar({ user }: { user: string }) {
 interface PullRequestOverviewPanelProps {
   pr: GitHubPullRequest
   items: GitHubPullRequestTimelineItem[]
+  threads?: GitHubPullRequestReviewThread[]
+  threadsLoading?: boolean
+  threadsError?: Error | null
   loading?: boolean
   error?: Error | null
   onOpenFile?: (path: string) => void
+  onThreadsUpdated?: () => void
 }
 
 export function PullRequestOverviewPanel({
   pr,
   items,
+  threads = [],
+  threadsLoading = false,
+  threadsError = null,
   loading = false,
   error = null,
-  onOpenFile
+  onOpenFile,
+  onThreadsUpdated
 }: PullRequestOverviewPanelProps) {
   const { t } = useTranslation()
 
@@ -44,8 +58,8 @@ export function PullRequestOverviewPanel({
                 <span>{t('detail.pullRequest.openedThisPullRequest')}</span>
               </div>
               {pr.body.trim() ? (
-                <div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-gf-fg-muted">
-                  {pr.body}
+                <div className="mt-3">
+                  <GitHubMarkdownBody content={pr.body} />
                 </div>
               ) : (
                 <p className="mt-3 text-sm text-gf-fg-subtle">
@@ -55,6 +69,39 @@ export function PullRequestOverviewPanel({
             </div>
           </article>
         </section>
+
+        {threads.length > 0 || threadsLoading || threadsError ? (
+          <section>
+            <h3 className="text-sm font-medium text-gf-fg">
+              {t('detail.pullRequest.reviewThreads')}
+            </h3>
+            {threadsLoading ? (
+              <div className="mt-4">
+                <LoadingRow label={t('detail.pullRequest.loadingReviewThreads')} />
+              </div>
+            ) : threadsError ? (
+              <p className="mt-4 text-sm text-red-400">
+                {threadsError instanceof Error
+                  ? threadsError.message
+                  : t('detail.pullRequest.reviewThreadsFailed')}
+              </p>
+            ) : (
+              <div className="mt-4 space-y-4">
+                {threads.map((thread) => (
+                  <PullRequestReviewThreadCard
+                    key={thread.id}
+                    thread={thread}
+                    prNumber={pr.number}
+                    repository={pr.repository}
+                    showPath
+                    onOpenFile={onOpenFile}
+                    onUpdated={onThreadsUpdated}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        ) : null}
 
         <section>
           <h3 className="text-sm font-medium text-gf-fg">{t('detail.pullRequest.conversation')}</h3>

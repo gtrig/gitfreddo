@@ -7,6 +7,21 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-10 — GitHub markdown editor for PR comments
+
+- **Why:** PR comment boxes should match GitHub’s markdown write/preview experience, and posted messages should render as formatted markdown.
+- **What:** `GitHubMarkdownEditor` (toolbar + Write/Preview tabs) in PR comment/reply modals; `GitHubMarkdownBody` renders conversation, threads, and PR description as GFM.
+
+### 2026-07-10 — PR review thread reply and resolve
+
+- **Why:** Users need to respond to line review comments and mark threads resolved without leaving GitFreddo.
+- **What:** GraphQL review threads (`listPullRequestReviewThreads`, resolve/unresolve); REST replies with pending-review handling; `PullRequestReviewThreadCard` in Overview and inline on diffs; IPC/hooks/i18n.
+
+### 2026-07-10 — Scrollable commit sidebar and collapsible descriptions
+
+- **Why:** Long commit bodies and file lists could overflow the right detail panel with no way to scroll or skim the message.
+- **What:** Commit detail sidebar scrolls as one pane; commit descriptions truncate to ~200 characters with Show more / Show less (`CommitDescriptionPreview`, `CommitPreview`, `textPreview`).
+
 ### 2026-07-10 — PR API repo targeting and pending review comments
 
 - **Why:** Comments were fetched/posted against the wrong GitHub repo (fork vs upstream), and line comments failed when a pending review already existed (422).

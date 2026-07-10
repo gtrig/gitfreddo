@@ -93,6 +93,24 @@ export interface GitHubPullRequestReview {
   submittedAt: string
 }
 
+export interface GitHubPullRequestReviewThreadComment {
+  id: number
+  body: string
+  user: string
+  createdAt: string
+  path: string | null
+  line: number | null
+}
+
+export interface GitHubPullRequestReviewThread {
+  id: string
+  isResolved: boolean
+  isOutdated: boolean
+  path: string
+  line: number | null
+  comments: GitHubPullRequestReviewThreadComment[]
+}
+
 export type GitHubPullRequestTimelineKind = 'conversation' | 'line' | 'review'
 
 export interface GitHubPullRequestTimelineItem {
