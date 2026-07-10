@@ -146,6 +146,14 @@ export interface GitFreddoAPI {
   githubUploadSshKey: (title: string) => Promise<{ title: string; publicKey: string }>
   githubGetRepoContext: (repoPath: string) => Promise<import('./github').GitHubRepoContext | null>
   githubListPullRequests: (repoPath: string) => Promise<import('./github').GitHubPullRequest[]>
+  githubGetPullRequest: (
+    repoPath: string,
+    number: number
+  ) => Promise<import('./github').GitHubPullRequest>
+  githubListPullRequestFiles: (
+    repoPath: string,
+    number: number
+  ) => Promise<import('./github').GitHubPullRequestFile[]>
   githubCreatePullRequest: (
     repoPath: string,
     params: import('./github').GitHubCreatePullRequestParams
@@ -154,6 +162,15 @@ export interface GitFreddoAPI {
     repoPath: string,
     number: number,
     method: import('./github').GitHubMergeMethod
+  ) => Promise<void>
+  githubReopenPullRequest: (
+    repoPath: string,
+    number: number
+  ) => Promise<import('./github').GitHubPullRequest>
+  githubPostPullRequestComment: (
+    repoPath: string,
+    number: number,
+    body: string
   ) => Promise<void>
   githubListIssues: (repoPath: string, assigneeLogin?: string) => Promise<import('./github').GitHubIssue[]>
   githubCreateIssue: (

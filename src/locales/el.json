@@ -461,6 +461,14 @@
       "emptyMessage": "Εισάγετε κείμενο σημείωσης.",
       "saved": "Η σημείωση αποθηκεύτηκε."
     },
+    "addPrComment": {
+      "title": "Σχόλιο στο αίτημα έλξης #{{number}}",
+      "description": "Δημοσιεύστε σχόλιο στη συζήτηση του αιτήματος έλξης.",
+      "message": "Σχόλιο",
+      "placeholder": "Αφήστε σχόλιο στο αίτημα έλξης #{{number}}…",
+      "emptyMessage": "Εισαγάγετε σχόλιο.",
+      "saved": "Το σχόλιο δημοσιεύτηκε."
+    },
     "createTag": {
       "title": "Δημιουργία ετικέτας",
       "pointAt": "Η ετικέτα θα δείχνει στο",
@@ -961,7 +969,33 @@
     "hashesCopied": "Αντιγράφηκαν {{count}} hashes commits.",
     "cherryPicked": "Έγινε cherry-pick {{count}} commits.",
     "squashed": "Έγινε squash {{count}} commits.",
-    "compareLabel": "{{count}} υποβολές ({{oldest}}..{{newest}})"
+    "compareLabel": "{{count}} υποβολές ({{oldest}}..{{newest}})",
+    "files": "Αρχεία",
+    "pullRequest": {
+      "title": "Αίτημα έλξης",
+      "statusClosed": "Κλειστό",
+      "statusDraft": "Πρόχειρο",
+      "statusMergeable": "Συγχωνεύσιμο",
+      "statusConflicts": "Συγκρούσεις",
+      "statusChecking": "Έλεγχος",
+      "openInBrowser": "Άνοιγμα στο πρόγραμμα περιήγησης",
+      "merge": "Συγχώνευση αιτήματος έλξης",
+      "reopen": "Επανάνοιγμα αιτήματος έλξης",
+      "reopened": "Το αίτημα έλξης #{{number}} επανάνοιξε.",
+      "addComment": "Προσθήκη σχολίου",
+      "fileSummary": "{{count}} αρχεία · +{{additions}} −{{deletions}}",
+      "changeType": "Αλλαγή",
+      "filesFailed": "Αποτυχία φόρτωσης αρχείων αιτήματος έλξης.",
+      "loading": "Φόρτωση αιτήματος έλξης #{{number}}…",
+      "overview": "Επισκόπηση",
+      "byAuthor": "από {{author}}",
+      "noDescription": "Δεν υπάρχει περιγραφή.",
+      "headBranch": "Κλάδος head",
+      "baseBranch": "Κλάδος base",
+      "changedFiles": "Αλλαγμένα αρχεία",
+      "selectFileHint": "Επιλέξτε αρχείο αριστερά για να δείτε το diff του.",
+      "diffUnavailable": "Αυτό το diff δεν είναι διαθέσιμο τοπικά. Κάντε fetch τις τελευταίες αλλαγές ή ανοίξτε το αίτημα έλξης στο GitHub."
+    }
   },
   "contextMenu": {
     "detachedHead": "αποσυνδεδεμένο HEAD",

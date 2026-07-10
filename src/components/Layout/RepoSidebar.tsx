@@ -18,6 +18,7 @@ import { SidebarPullRequestsSection } from '@/components/Layout/sidebar/SidebarP
 import { SidebarIssuesSection } from '@/components/Layout/sidebar/SidebarIssuesSection'
 
 export function RepoSidebar() {
+  const openPrDetail = useWorkspaceStore((s) => s.openPrDetail)
   const { t } = useTranslation()
   const connected = useWorkspaceStore((s) => s.connected)
   const { data: branches, isLoading, error } = useBranches(connected)
@@ -111,7 +112,7 @@ export function RepoSidebar() {
       </div>
 
       <div className="mt-auto max-h-[45%] shrink-0 overflow-y-auto border-t border-gf-border/60">
-        <SidebarPullRequestsSection />
+        <SidebarPullRequestsSection onOpenPrDetail={openPrDetail} />
         <SidebarIssuesSection />
       </div>
 

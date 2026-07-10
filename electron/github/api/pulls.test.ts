@@ -469,6 +469,100 @@ describe('GitHub Pull Request API', () => {
     })
   })
 
+  describe('getPullRequest', () => {
+    it('should fetch a single pull request', async () => {
+      const mockPr = {
+        number: 42,
+        title: 'Feature',
+        state: 'open',
+        html_url: 'https://github.com/owner/repo/pull/42',
+        user: { login: 'user1' },
+        head: { ref: 'feature', sha: 'abc123' },
+        base: { ref: 'main', sha: 'def456' },
+        body: 'Body',
+        draft: false,
+        mergeable: true
+      }
+      vi.mocked(http.githubJson).mockResolvedValue(mockPr)
+
+      const result = await pullApis.getPullRequest(owner, repo, 42)
+
+      expect(result).toEqual({
+        number: 42,
+        title: 'Feature',
+        state: 'open',
+        htmlUrl: 'https://github.com/owner/repo/pull/42',
+        user: 'user1',
+        head: { ref: 'feature', sha: 'abc123' },
+        base: { ref: 'main', sha: 'def456' },
+        body: 'Body',
+        draft: false,
+        mergeable: true
+      })
+      expect(http.githubJson).toHaveBeenCalledWith(`/repos/${owner}/${repo}/pulls/42`)
+    })
+  })
+
+  describe('listPullRequestFiles', () => {
+    it('should map pull request file changes', async () => {
+      vi.mocked(http.githubJson).mockResolvedValue([
+        {
+          filename: 'src/a.ts',
+          status: 'modified',
+          additions: 3,
+          deletions: 1,
+          changes: 4
+        },
+        {
+          filename: 'src/b.ts',
+          status: 'added',
+          additions: 10,
+          deletions: 0,
+          changes: 10
+        }
+      ])
+
+      const files = await pullApis.listPullRequestFiles(owner, repo, number)
+
+      expect(files).toEqual([
+        {
+          path: 'src/a.ts',
+          status: 'modified',
+          additions: 3,
+          deletions: 1,
+          changes: 4
+        },
+        {
+          path: 'src/b.ts',
+          status: 'added',
+          additions: 10,
+          deletions: 0,
+          changes: 10
+        }
+      ])
+      expect(http.githubJson).toHaveBeenCalledWith(
+        `/repos/${owner}/${repo}/pulls/${number}/files`
+      )
+    })
+  })
+
+  describe('postPullRequestConversationComment', () => {
+    it('should post a conversation comment on the pull request issue', async () => {
+      vi.mocked(http.githubJson).mockResolvedValue({ id: 1 })
+
+      await pullApis.postPullRequestConversationComment(owner, repo, number, 'Hello')
+
+      expect(http.githubJson).toHaveBeenCalledWith(
+        `/repos/${owner}/${repo}/issues/${number}/comments`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ body: 'Hello' })
+        }
+      )
+    })
+  })
+
   describe('dismissReview', () => {
     it('should dismiss a review', async () => {
       const mockResult = { 

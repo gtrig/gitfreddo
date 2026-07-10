@@ -108,6 +108,19 @@ export function createGitFreddoMock(overrides: Partial<GitFreddoAPI> = {}): GitF
     githubUploadSshKey: vi.fn(async () => ({ title: 'key', publicKey: 'ssh-rsa test' })),
     githubGetRepoContext: vi.fn(async () => null),
     githubListPullRequests: vi.fn(async () => []),
+    githubGetPullRequest: vi.fn(async () => ({
+      number: 1,
+      title: 'PR',
+      state: 'open',
+      htmlUrl: '',
+      head: { ref: 'feature', sha: 'abc' },
+      base: { ref: 'main', sha: 'def' },
+      body: '',
+      draft: false,
+      mergeable: true,
+      user: 'test'
+    })),
+    githubListPullRequestFiles: vi.fn(async () => []),
     githubCreatePullRequest: vi.fn(async () => ({
       number: 1,
       title: 'PR',
@@ -121,6 +134,19 @@ export function createGitFreddoMock(overrides: Partial<GitFreddoAPI> = {}): GitF
       user: 'test'
     })),
     githubMergePullRequest: vi.fn(async () => undefined),
+    githubReopenPullRequest: vi.fn(async () => ({
+      number: 1,
+      title: 'PR',
+      state: 'open',
+      htmlUrl: '',
+      head: { ref: 'feature', sha: 'abc' },
+      base: { ref: 'main', sha: 'def' },
+      body: '',
+      draft: false,
+      mergeable: true,
+      user: 'test'
+    })),
+    githubPostPullRequestComment: vi.fn(async () => undefined),
     githubListIssues: vi.fn(async () => []),
     githubCreateIssue: vi.fn(async () => ({
       number: 1,

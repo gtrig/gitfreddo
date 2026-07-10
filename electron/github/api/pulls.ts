@@ -1,7 +1,9 @@
 import type {
   GitHubCreatePullRequestParams,
   GitHubMergeMethod,
-  GitHubPullRequest
+  GitHubPullRequest,
+  GitHubPullRequestFile,
+  GitHubPullRequestFileStatus
 } from '../../../shared/github'
 import { githubJson } from './http'
 
@@ -38,6 +40,53 @@ export async function listPullRequests(owner: string, repo: string): Promise<Git
     `/repos/${owner}/${repo}/pulls?state=open&per_page=100`
   )
   return raw.map(mapPull)
+}
+
+export async function getPullRequest(
+  owner: string,
+  repo: string,
+  number: number
+): Promise<GitHubPullRequest> {
+  const raw = await githubJson<GitHubApiPull>(`/repos/${owner}/${repo}/pulls/${number}`)
+  return mapPull(raw)
+}
+
+interface GitHubApiPullFile {
+  filename: string
+  status: GitHubPullRequestFileStatus
+  additions: number
+  deletions: number
+  changes: number
+}
+
+export async function listPullRequestFiles(
+  owner: string,
+  repo: string,
+  number: number
+): Promise<GitHubPullRequestFile[]> {
+  const raw = await githubJson<GitHubApiPullFile[]>(
+    `/repos/${owner}/${repo}/pulls/${number}/files`
+  )
+  return raw.map((file) => ({
+    path: file.filename,
+    status: file.status,
+    additions: file.additions,
+    deletions: file.deletions,
+    changes: file.changes
+  }))
+}
+
+export async function postPullRequestConversationComment(
+  owner: string,
+  repo: string,
+  number: number,
+  body: string
+): Promise<void> {
+  await githubJson(`/repos/${owner}/${repo}/issues/${number}/comments`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ body })
+  })
 }
 
 export async function createPullRequest(

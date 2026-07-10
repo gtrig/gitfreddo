@@ -461,6 +461,14 @@
       "emptyMessage": "Enter a note message.",
       "saved": "Note saved."
     },
+    "addPrComment": {
+      "title": "Comment on pull request #{{number}}",
+      "description": "Post a comment on the pull request conversation.",
+      "message": "Comment",
+      "placeholder": "Leave a comment on pull request #{{number}}…",
+      "emptyMessage": "Enter a comment.",
+      "saved": "Comment posted."
+    },
     "createTag": {
       "title": "Create tag",
       "pointAt": "Tag will point at",
@@ -961,7 +969,33 @@
     "hashesCopied": "{{count}} commit hashes copied.",
     "cherryPicked": "Cherry-picked {{count}} commits.",
     "squashed": "Squashed {{count}} commits.",
-    "compareLabel": "{{count}} commits ({{oldest}}..{{newest}})"
+    "compareLabel": "{{count}} commits ({{oldest}}..{{newest}})",
+    "files": "Files",
+    "pullRequest": {
+      "title": "Pull request",
+      "statusClosed": "Closed",
+      "statusDraft": "Draft",
+      "statusMergeable": "Mergeable",
+      "statusConflicts": "Conflicts",
+      "statusChecking": "Checking",
+      "openInBrowser": "Open in browser",
+      "merge": "Merge pull request",
+      "reopen": "Reopen pull request",
+      "reopened": "Pull request #{{number}} reopened.",
+      "addComment": "Add comment",
+      "fileSummary": "{{count}} files · +{{additions}} −{{deletions}}",
+      "changeType": "Change",
+      "filesFailed": "Could not load pull request files.",
+      "loading": "Loading pull request #{{number}}…",
+      "overview": "Overview",
+      "byAuthor": "by {{author}}",
+      "noDescription": "No description provided.",
+      "headBranch": "Head branch",
+      "baseBranch": "Base branch",
+      "changedFiles": "Changed files",
+      "selectFileHint": "Select a file on the left to review its diff.",
+      "diffUnavailable": "This diff is not available locally. Fetch the latest changes or open the pull request on GitHub."
+    }
   },
   "github": {
     "fork": {

@@ -40,10 +40,18 @@ const api: GitFreddoAPI = {
     ipcRenderer.invoke('gitfreddo:github-get-repo-context', repoPath),
   githubListPullRequests: (repoPath) =>
     ipcRenderer.invoke('gitfreddo:github-list-pull-requests', repoPath),
+  githubGetPullRequest: (repoPath, number) =>
+    ipcRenderer.invoke('gitfreddo:github-get-pull-request', repoPath, number),
+  githubListPullRequestFiles: (repoPath, number) =>
+    ipcRenderer.invoke('gitfreddo:github-list-pull-request-files', repoPath, number),
   githubCreatePullRequest: (repoPath, params) =>
     ipcRenderer.invoke('gitfreddo:github-create-pull-request', repoPath, params),
   githubMergePullRequest: (repoPath, number, method) =>
     ipcRenderer.invoke('gitfreddo:github-merge-pull-request', repoPath, number, method),
+  githubReopenPullRequest: (repoPath, number) =>
+    ipcRenderer.invoke('gitfreddo:github-reopen-pull-request', repoPath, number),
+  githubPostPullRequestComment: (repoPath, number, body) =>
+    ipcRenderer.invoke('gitfreddo:github-post-pull-request-comment', repoPath, number, body),
   githubListIssues: (repoPath, assigneeLogin) =>
     ipcRenderer.invoke('gitfreddo:github-list-issues', repoPath, assigneeLogin),
   githubCreateIssue: (repoPath, params) =>

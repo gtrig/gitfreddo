@@ -11,7 +11,7 @@ import { saveSettings } from '../settings'
 import { isForgeAuthFailure } from '../../shared/forge-auth'
 import { getAuthenticatedUser } from './client'
 import { listIssues, createIssue, updateIssue } from './api/issues'
-import { createPullRequest, listPullRequests, mergePullRequest } from './api/pulls'
+import { createPullRequest, getPullRequest, listPullRequestFiles, listPullRequests, mergePullRequest, postPullRequestConversationComment, reopenPullRequest } from './api/pulls'
 import { clearRepoCache, createRepo, forkRepo, listUserRepos } from './api/repos'
 import { runGitHubDeviceFlow, type DeviceFlowProgress } from './oauth'
 import { resolveGitHubRepoContext } from './repo-context'
@@ -195,7 +195,44 @@ export async function mergeGitHubPullRequest(
   method: GitHubMergeMethod
 ) {
   const ctx = await resolveGitHubRepoContext(repoPath, settings)
-  await mergePullRequest(ctx.owner, ctx.repo, number, method)
+  await mergePullRequest(ctx.owner, ctx.repo, number, { mergeMethod: method })
+}
+
+export async function getGitHubPullRequest(
+  repoPath: string,
+  settings: AppSettings,
+  number: number
+) {
+  const ctx = await resolveGitHubRepoContext(repoPath, settings)
+  return getPullRequest(ctx.owner, ctx.repo, number)
+}
+
+export async function listGitHubPullRequestFiles(
+  repoPath: string,
+  settings: AppSettings,
+  number: number
+) {
+  const ctx = await resolveGitHubRepoContext(repoPath, settings)
+  return listPullRequestFiles(ctx.owner, ctx.repo, number)
+}
+
+export async function reopenGitHubPullRequest(
+  repoPath: string,
+  settings: AppSettings,
+  number: number
+) {
+  const ctx = await resolveGitHubRepoContext(repoPath, settings)
+  return reopenPullRequest(ctx.owner, ctx.repo, number)
+}
+
+export async function postGitHubPullRequestComment(
+  repoPath: string,
+  settings: AppSettings,
+  number: number,
+  body: string
+) {
+  const ctx = await resolveGitHubRepoContext(repoPath, settings)
+  await postPullRequestConversationComment(ctx.owner, ctx.repo, number, body)
 }
 
 export async function listGitHubIssues(

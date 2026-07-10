@@ -37,11 +37,15 @@ import {
   createGitHubRepo,
   disconnectGitHub,
   forkGitHubRepo,
+  getGitHubPullRequest,
   getGitHubStatus,
   listGitHubIssues,
+  listGitHubPullRequestFiles,
   listGitHubPullRequests,
   listGitHubRepos,
   mergeGitHubPullRequest,
+  postGitHubPullRequestComment,
+  reopenGitHubPullRequest,
   tryGetGitHubRepoContext,
   updateGitHubIssue,
   uploadGitHubSshKey
@@ -411,6 +415,18 @@ function registerIpc(): void {
     listGitHubPullRequests(repoPath, settings)
   )
 
+  ipcMain.handle('gitfreddo:github-get-pull-request', async (
+    _event,
+    repoPath: string,
+    number: number
+  ) => getGitHubPullRequest(repoPath, settings, number))
+
+  ipcMain.handle('gitfreddo:github-list-pull-request-files', async (
+    _event,
+    repoPath: string,
+    number: number
+  ) => listGitHubPullRequestFiles(repoPath, settings, number))
+
   ipcMain.handle('gitfreddo:github-create-pull-request', async (_event, repoPath: string, params) =>
     createGitHubPullRequest(repoPath, settings, params)
   )
@@ -421,6 +437,19 @@ function registerIpc(): void {
     number: number,
     method
   ) => mergeGitHubPullRequest(repoPath, settings, number, method))
+
+  ipcMain.handle('gitfreddo:github-reopen-pull-request', async (
+    _event,
+    repoPath: string,
+    number: number
+  ) => reopenGitHubPullRequest(repoPath, settings, number))
+
+  ipcMain.handle('gitfreddo:github-post-pull-request-comment', async (
+    _event,
+    repoPath: string,
+    number: number,
+    body: string
+  ) => postGitHubPullRequestComment(repoPath, settings, number, body))
 
   ipcMain.handle(
     'gitfreddo:github-list-issues',

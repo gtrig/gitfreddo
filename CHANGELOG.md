@@ -7,6 +7,16 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-10 — In-app GitHub pull request detail
+
+- **Why:** Users should review and act on pull requests from the sidebar without leaving GitFreddo.
+- **What:** Clicking a GitHub PR opens a full-screen detail view with split-pane layout (file list + overview/diff), merge/reopen/comment actions, and typed IPC/hooks; Bitbucket PRs still open in the browser.
+
+### 2026-07-10 — Pull request detail UX redesign
+
+- **Why:** The first PR detail screen was cramped and unlike other inspection flows in the app.
+- **What:** Redesigned to match commit detail: overview panel, sortable file list with per-file stats, local diff via `base..head` when available, and a clearer header/action bar (`PullRequestDetail`, `PullRequestFileList`, `src/lib/github/prFiles`).
+
 ### 2026-07-09 — Selective AI commit creation
 
 - **Why:** Users may want only some of the AI-proposed commits, leaving the rest unstaged for re-analysis or manual commits.

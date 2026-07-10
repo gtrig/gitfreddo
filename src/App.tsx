@@ -4,6 +4,7 @@ import { TimelinePanel } from '@/components/TimelineGraph/TimelinePanel'
 import { DiffOverlay } from '@/components/DiffViewer/DiffOverlay'
 import { MergeConflictScreen } from '@/components/MergeConflicts/MergeConflictScreen'
 import { CommitDetailScreen } from '@/components/DetailPanel/CommitDetailScreen'
+import { PullRequestDetailScreen } from '@/components/DetailPanel/PullRequestDetailScreen'
 import { FileHistoryScreen } from '@/components/History/FileHistoryScreen'
 import { DetailPanel } from '@/components/DetailPanel/DetailPanel'
 import { ActionBar } from '@/components/Layout/ActionBar'
@@ -194,6 +195,7 @@ export default function App() {
       <GlobalOperationOverlay />
       <MergeConflictScreen />
       <CommitDetailScreen />
+      <PullRequestDetailScreen />
       <FileHistoryScreen />
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <DocsModal open={docsOpen} onClose={() => setDocsOpen(false)} />

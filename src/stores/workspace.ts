@@ -46,6 +46,9 @@ interface WorkspaceState {
   setWorkspacePath: (path: string | null) => void
   /** @deprecated */
   setConnected: (connected: boolean) => void
+  prDetailNumber: number | null
+  openPrDetail: (number: number) => void
+  closePrDetail: () => void
 }
 
 function tabLabel(path: string): string {
@@ -409,5 +412,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }
     const nextTabs = updateTab(tabs, activePath, { connected })
     set({ tabs: nextTabs, ...syncLegacyFields(nextTabs, activePath) })
-  }
+  },
+
+  prDetailNumber: null,
+  openPrDetail: (number) => set({ prDetailNumber: number }),
+  closePrDetail: () => set({ prDetailNumber: null })
 }))

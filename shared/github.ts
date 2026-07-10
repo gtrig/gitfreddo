@@ -22,6 +22,23 @@ export interface GitHubPullRequest {
   mergeable: boolean | null
 }
 
+export type GitHubPullRequestFileStatus =
+  | 'added'
+  | 'removed'
+  | 'modified'
+  | 'renamed'
+  | 'copied'
+  | 'changed'
+  | 'unchanged'
+
+export interface GitHubPullRequestFile {
+  path: string
+  status: GitHubPullRequestFileStatus
+  additions: number
+  deletions: number
+  changes: number
+}
+
 export type GitHubMergeMethod = 'merge' | 'squash' | 'rebase'
 
 export interface GitHubCreatePullRequestParams {
