@@ -5,7 +5,7 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
-- Open GitHub pull requests from the sidebar to review files, merge, reopen, and comment — with a split-pane overview and diff view.
+- Open GitHub pull requests from the sidebar to review files, commits, merge, reopen, and comment — including existing discussion, reviews, and line comments.
 - AI change analysis lets you choose which proposed commits to create; unselected files stay unstaged.
 - Themes preview instantly in Settings before you save.
 - Themes now use coffee drink names (Iced prefix on light schemes).

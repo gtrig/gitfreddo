@@ -33,16 +33,119 @@ describe('GitHub Pull Request API', () => {
     })
   })
 
+  describe('listPullRequestConversationComments', () => {
+    it('should map issue conversation comments', async () => {
+      vi.mocked(http.githubJson).mockResolvedValue([
+        {
+          id: 10,
+          body: 'Please update docs',
+          user: { login: 'reviewer' },
+          created_at: '2026-01-01T00:00:00Z',
+          updated_at: '2026-01-01T00:00:00Z'
+        }
+      ])
+
+      const comments = await pullApis.listPullRequestConversationComments(owner, repo, number)
+
+      expect(comments).toEqual([
+        {
+          id: 10,
+          body: 'Please update docs',
+          user: 'reviewer',
+          createdAt: '2026-01-01T00:00:00Z',
+          updatedAt: '2026-01-01T00:00:00Z'
+        }
+      ])
+      expect(http.githubJson).toHaveBeenCalledWith(
+        `/repos/${owner}/${repo}/issues/${number}/comments?per_page=100`
+      )
+    })
+  })
+
+  describe('listPullRequestReviewComments', () => {
+    it('should return list of review comments', async () => {
+      const mockComments = [
+        {
+          id: 1,
+          body: 'Comment 1',
+          user: { login: 'dev' },
+          created_at: '2026-01-01T00:00:00Z',
+          updated_at: '2026-01-01T00:00:00Z',
+          path: 'src/a.ts',
+          line: 4,
+          original_line: 4,
+          side: 'RIGHT',
+          commit_id: 'abc'
+        }
+      ]
+      vi.mocked(http.githubJson).mockResolvedValue(mockComments)
+
+      const comments = await pullApis.listPullRequestReviewComments(owner, repo, number)
+
+      expect(comments).toEqual([
+        {
+          id: 1,
+          body: 'Comment 1',
+          user: 'dev',
+          createdAt: '2026-01-01T00:00:00Z',
+          updatedAt: '2026-01-01T00:00:00Z',
+          path: 'src/a.ts',
+          line: 4,
+          originalLine: 4,
+          side: 'RIGHT',
+          commitId: 'abc'
+        }
+      ])
+      expect(http.githubJson).toHaveBeenCalledWith(
+        `/repos/${owner}/${repo}/pulls/${number}/comments?per_page=100`
+      )
+    })
+
+    it('falls back to original_line when line is null', async () => {
+      vi.mocked(http.githubJson).mockResolvedValue([
+        {
+          id: 2,
+          body: 'Outdated thread',
+          user: { login: 'dev' },
+          created_at: '2026-01-01T00:00:00Z',
+          updated_at: '2026-01-01T00:00:00Z',
+          path: 'electron/github/api/pulls.test.ts',
+          line: null,
+          original_line: 9,
+          side: null,
+          commit_id: 'abc'
+        }
+      ])
+
+      const comments = await pullApis.listPullRequestReviewComments(owner, repo, number)
+
+      expect(comments[0]?.line).toBeNull()
+      expect(comments[0]?.originalLine).toBe(9)
+    })
+  })
+
   describe('listComments', () => {
     it('should return list of comments', async () => {
-      const mockComments = [{ id: 1, body: 'Comment 1' }]
-      vi.mocked(http.githubJson).mockResolvedValue(mockComments)
+      vi.mocked(http.githubJson).mockResolvedValue([
+        {
+          id: 1,
+          body: 'Comment 1',
+          user: { login: 'dev' },
+          created_at: '2026-01-01T00:00:00Z',
+          updated_at: '2026-01-01T00:00:00Z',
+          path: 'a.ts',
+          line: 1,
+          original_line: 1,
+          side: 'RIGHT',
+          commit_id: 'abc'
+        }
+      ])
 
       const comments = await pullApis.listComments(owner, repo, number)
 
-      expect(comments).toEqual(mockComments)
+      expect(comments[0]?.body).toBe('Comment 1')
       expect(http.githubJson).toHaveBeenCalledWith(
-        `/repos/${owner}/${repo}/pulls/${number}/comments`
+        `/repos/${owner}/${repo}/pulls/${number}/comments?per_page=100`
       )
     })
   })
@@ -75,6 +178,7 @@ describe('GitHub Pull Request API', () => {
         body: 'New Body',
         state: 'open',
         htmlUrl: 'https://github.com/owner/repo/pull/1',
+        repository: { owner: 'owner', repo: 'repo' },
         user: 'user1',
         head: { ref: 'feature', sha: 'abc123' },
         base: { ref: 'main', sha: 'def456' },
@@ -117,6 +221,7 @@ describe('GitHub Pull Request API', () => {
         body: 'Old Body',
         state: 'open',
         htmlUrl: 'https://github.com/owner/repo/pull/1',
+        repository: { owner: 'owner', repo: 'repo' },
         user: 'user1',
         head: { ref: 'feature', sha: 'abc123' },
         base: { ref: 'main', sha: 'def456' },
@@ -159,6 +264,7 @@ describe('GitHub Pull Request API', () => {
         body: 'New Body',
         state: 'open',
         htmlUrl: 'https://github.com/owner/repo/pull/1',
+        repository: { owner: 'owner', repo: 'repo' },
         user: 'user1',
         head: { ref: 'feature', sha: 'abc123' },
         base: { ref: 'main', sha: 'def456' },
@@ -270,6 +376,7 @@ describe('GitHub Pull Request API', () => {
         body: 'Body',
         state: 'closed',
         htmlUrl: 'https://github.com/owner/repo/pull/1',
+        repository: { owner: 'owner', repo: 'repo' },
         user: 'user1',
         head: { ref: 'feature', sha: 'abc123' },
         base: { ref: 'main', sha: 'def456' },
@@ -312,6 +419,7 @@ describe('GitHub Pull Request API', () => {
         body: 'Body',
         state: 'open',
         htmlUrl: 'https://github.com/owner/repo/pull/1',
+        repository: { owner: 'owner', repo: 'repo' },
         user: 'user1',
         head: { ref: 'feature', sha: 'abc123' },
         base: { ref: 'main', sha: 'def456' },
@@ -454,18 +562,154 @@ describe('GitHub Pull Request API', () => {
 
   describe('listReviews', () => {
     it('should return list of reviews', async () => {
-      const mockReviews = [
-        { id: 1, state: 'APPROVED', body: 'LGTM' },
-        { id: 2, state: 'COMMENTED', body: 'Question' }
-      ]
-      vi.mocked(http.githubJson).mockResolvedValue(mockReviews)
+      vi.mocked(http.githubJson).mockResolvedValue([
+        {
+          id: 1,
+          state: 'APPROVED',
+          body: 'LGTM',
+          user: { login: 'dev' },
+          submitted_at: '2026-01-01T00:00:00Z'
+        },
+        {
+          id: 2,
+          state: 'COMMENTED',
+          body: 'Question',
+          user: { login: 'qa' },
+          submitted_at: '2026-01-02T00:00:00Z'
+        }
+      ])
 
       const reviews = await pullApis.listReviews(owner, repo, number)
 
-      expect(reviews).toEqual(mockReviews)
+      expect(reviews).toEqual([
+        {
+          id: 1,
+          body: 'LGTM',
+          user: 'dev',
+          state: 'APPROVED',
+          submittedAt: '2026-01-01T00:00:00Z'
+        },
+        {
+          id: 2,
+          body: 'Question',
+          user: 'qa',
+          state: 'COMMENTED',
+          submittedAt: '2026-01-02T00:00:00Z'
+        }
+      ])
       expect(http.githubJson).toHaveBeenCalledWith(
-        `/repos/${owner}/${repo}/pulls/${number}/reviews`
+        `/repos/${owner}/${repo}/pulls/${number}/reviews?per_page=100`
       )
+    })
+  })
+
+  describe('listPullRequestCommits', () => {
+    it('should map pull request commits', async () => {
+      vi.mocked(http.githubJson).mockResolvedValue([
+        {
+          sha: 'abc123def456',
+          commit: {
+            message: 'Fix bug\n\nDetails here',
+            author: { name: 'Ada', email: 'ada@test.com', date: '2026-01-02T10:00:00Z' }
+          },
+          author: { login: 'ada' }
+        }
+      ])
+
+      const commits = await pullApis.listPullRequestCommits(owner, repo, number)
+
+      expect(commits).toEqual([
+        {
+          sha: 'abc123def456',
+          subject: 'Fix bug',
+          message: 'Fix bug\n\nDetails here',
+          authorName: 'Ada',
+          authorLogin: 'ada',
+          committedAt: '2026-01-02T10:00:00Z'
+        }
+      ])
+      expect(http.githubJson).toHaveBeenCalledWith(
+        `/repos/${owner}/${repo}/pulls/${number}/commits`
+      )
+    })
+  })
+
+  describe('postPullRequestReviewComment', () => {
+    it('should post a review comment on a specific line', async () => {
+      vi.mocked(http.githubJson).mockResolvedValue({ id: 1 })
+
+      await pullApis.postPullRequestReviewComment(owner, repo, number, {
+        body: 'Nit: rename this',
+        commitId: 'headsha',
+        path: 'src/a.ts',
+        line: 12,
+        side: 'RIGHT'
+      })
+
+      expect(http.githubJson).toHaveBeenCalledWith(
+        `/repos/${owner}/${repo}/pulls/${number}/comments`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            body: 'Nit: rename this',
+            commit_id: 'headsha',
+            path: 'src/a.ts',
+            line: 12,
+            side: 'RIGHT'
+          })
+        }
+      )
+    })
+
+    it('attaches the comment to an existing pending review', async () => {
+      vi.mocked(http.githubJson).mockResolvedValue({ id: 1 })
+
+      await pullApis.postPullRequestReviewComment(
+        owner,
+        repo,
+        number,
+        {
+          body: 'Nit: rename this',
+          commitId: 'headsha',
+          path: 'src/a.ts',
+          line: 12,
+          side: 'RIGHT'
+        },
+        99
+      )
+
+      expect(http.githubJson).toHaveBeenCalledWith(
+        `/repos/${owner}/${repo}/pulls/${number}/comments`,
+        expect.objectContaining({
+          body: JSON.stringify({
+            body: 'Nit: rename this',
+            commit_id: 'headsha',
+            path: 'src/a.ts',
+            line: 12,
+            side: 'RIGHT',
+            pull_request_review_id: 99
+          })
+        })
+      )
+    })
+  })
+
+  describe('findPendingPullRequestReviewId', () => {
+    it('returns the pending review id for the current user', async () => {
+      vi.mocked(http.githubJson).mockResolvedValue([
+        {
+          id: 99,
+          body: '',
+          user: { login: 'dev' },
+          state: 'PENDING',
+          submitted_at: '2026-01-01T00:00:00Z'
+        }
+      ])
+
+      const reviewId = await pullApis.findPendingPullRequestReviewId(owner, repo, number, 'dev')
+
+      expect(reviewId).toBe(99)
     })
   })
 
@@ -492,6 +736,7 @@ describe('GitHub Pull Request API', () => {
         title: 'Feature',
         state: 'open',
         htmlUrl: 'https://github.com/owner/repo/pull/42',
+        repository: { owner: 'owner', repo: 'repo' },
         user: 'user1',
         head: { ref: 'feature', sha: 'abc123' },
         base: { ref: 'main', sha: 'def456' },

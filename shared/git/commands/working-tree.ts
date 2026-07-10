@@ -89,10 +89,11 @@ export interface DiffCommitsParams {
   from: string
   to: string
   path?: string
+  mergeBase?: boolean
 }
 
-export function buildDiffCommitsArgs({ from, to, path }: DiffCommitsParams): string[] {
-  const args = ['diff', from, to, '--']
+export function buildDiffCommitsArgs({ from, to, path, mergeBase }: DiffCommitsParams): string[] {
+  const args = mergeBase ? ['diff', `${from}...${to}`, '--'] : ['diff', from, to, '--']
   if (path) args.push(path)
   return args
 }

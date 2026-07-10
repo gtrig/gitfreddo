@@ -1,7 +1,13 @@
 import type { DiffRow } from '@/lib/diff/unifiedDiff'
 import { useTranslation } from 'react-i18next'
-import { groupRowsByHunk } from '@/lib/diff/unifiedDiff'
+import { ChatBubbleLeftEllipsisIcon } from '@heroicons/react/24/outline'
+import { diffRowCommentTarget, groupRowsByHunk, type DiffLineCommentTarget } from '@/lib/diff/unifiedDiff'
+import { lineCommentTargetKey } from '@/lib/github/prTimeline'
+import { DiffLineCommentBlocks } from '@/components/DiffViewer/DiffLineCommentBlocks'
 import type { GitBlameLine } from '@/lib/types'
+import type { GitHubPullRequestTimelineItem } from '@shared/github'
+
+export type { DiffLineCommentTarget }
 
 function formatLineNo(value: number | null): string {
   return value == null ? '' : String(value)
@@ -59,6 +65,8 @@ interface UnifiedDiffViewProps {
   hunkStageMode?: 'stage' | 'unstage' | null
   onHunkAction?: (groupIndex: number) => void
   hunkBusy?: boolean
+  onRequestLineComment?: (target: DiffLineCommentTarget) => void
+  commentsByTarget?: Map<string, GitHubPullRequestTimelineItem[]>
 }
 
 export function UnifiedDiffView({
@@ -69,7 +77,9 @@ export function UnifiedDiffView({
   blameByNewLine,
   hunkStageMode = null,
   onHunkAction,
-  hunkBusy = false
+  hunkBusy = false,
+  onRequestLineComment,
+  commentsByTarget
 }: UnifiedDiffViewProps) {
   const { t } = useTranslation()
 
@@ -86,9 +96,14 @@ export function UnifiedDiffView({
   }
 
   const groups = groupRowsByHunk(rows)
-  const gridCols = showBlame
-    ? 'grid-cols-[72px_44px_44px_20px_minmax(0,1fr)]'
-    : 'grid-cols-[44px_44px_20px_minmax(0,1fr)]'
+  let gridCols = 'grid-cols-[44px_44px_20px_minmax(0,1fr)]'
+  if (onRequestLineComment && showBlame) {
+    gridCols = 'grid-cols-[28px_72px_44px_44px_20px_minmax(0,1fr)]'
+  } else if (onRequestLineComment) {
+    gridCols = 'grid-cols-[28px_44px_44px_20px_minmax(0,1fr)]'
+  } else if (showBlame) {
+    gridCols = 'grid-cols-[72px_44px_44px_20px_minmax(0,1fr)]'
+  }
 
   return (
     <div className="font-mono text-[12px] leading-5">
@@ -118,12 +133,34 @@ export function UnifiedDiffView({
                 showBlame && row.newLine != null
                   ? blameByNewLine?.get(row.newLine)
                   : undefined
+              const commentTarget = onRequestLineComment ? diffRowCommentTarget(row) : null
+              const lineComments =
+                commentTarget && commentsByTarget
+                  ? (commentsByTarget.get(
+                      lineCommentTargetKey(commentTarget.side, commentTarget.line)
+                    ) ?? [])
+                  : []
               return (
-                <div
-                  key={`${groupIndex}-${index}`}
-                  className={`grid ${gridCols} ${unifiedRowClass(row.kind)}`}
-                  title={blame ? `${blame.shortHash} ${blame.summary}` : undefined}
-                >
+                <div key={`${groupIndex}-${index}`}>
+                  <div
+                    className={`group/diff-row grid ${gridCols} ${unifiedRowClass(row.kind)}`}
+                    title={blame ? `${blame.shortHash} ${blame.summary}` : undefined}
+                  >
+                  {onRequestLineComment ? (
+                    <span className="flex items-center justify-center border-r border-gf-border/60 bg-gf-diff-gutter/80">
+                      {commentTarget ? (
+                        <button
+                          type="button"
+                          onClick={() => onRequestLineComment(commentTarget)}
+                          className="rounded p-0.5 text-gf-fg-subtle opacity-0 transition-opacity hover:bg-gf-surface hover:text-gf-accent-fg group-hover/diff-row:opacity-100"
+                          aria-label={t('detail.pullRequest.commentOnLine')}
+                          title={t('detail.pullRequest.commentOnLine')}
+                        >
+                          <ChatBubbleLeftEllipsisIcon className="h-3.5 w-3.5" />
+                        </button>
+                      ) : null}
+                    </span>
+                  ) : null}
                   {showBlame && (
                     <span className="select-none truncate border-r border-gf-border/60 bg-gf-diff-gutter px-2 text-[10px] text-gf-fg-subtle">
                       {blame ? `${blame.shortHash} ${blame.author.split(' ')[0] ?? ''}` : ''}
@@ -149,6 +186,8 @@ export function UnifiedDiffView({
                   <code className={`min-w-0 whitespace-pre-wrap break-words px-3 ${unifiedTextClass(row.kind)}`}>
                     {row.content || ' '}
                   </code>
+                  </div>
+                  <DiffLineCommentBlocks comments={lineComments} />
                 </div>
               )
             })}

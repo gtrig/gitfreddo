@@ -47,7 +47,11 @@ interface WorkspaceState {
   /** @deprecated */
   setConnected: (connected: boolean) => void
   prDetailNumber: number | null
-  openPrDetail: (number: number) => void
+  prDetailRepository: import('@shared/github').GitHubPullRequestRepository | null
+  openPrDetail: (target: {
+    number: number
+    repository?: import('@shared/github').GitHubPullRequestRepository
+  }) => void
   closePrDetail: () => void
 }
 
@@ -415,6 +419,11 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
 
   prDetailNumber: null,
-  openPrDetail: (number) => set({ prDetailNumber: number }),
-  closePrDetail: () => set({ prDetailNumber: null })
+  prDetailRepository: null,
+  openPrDetail: (target) =>
+    set({
+      prDetailNumber: target.number,
+      prDetailRepository: target.repository ?? null
+    }),
+  closePrDetail: () => set({ prDetailNumber: null, prDetailRepository: null })
 }))

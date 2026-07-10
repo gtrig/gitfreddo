@@ -469,6 +469,16 @@
       "emptyMessage": "Enter a comment.",
       "saved": "Comment posted."
     },
+    "addPrLineComment": {
+      "title": "Review comment on pull request #{{number}}",
+      "description": "This comment will be attached to the selected line in the diff.",
+      "message": "Comment",
+      "placeholder": "Suggest a change or ask a question…",
+      "emptyMessage": "Enter a comment.",
+      "saved": "Review comment posted.",
+      "before": "before",
+      "after": "after"
+    },
     "createTag": {
       "title": "Create tag",
       "pointAt": "Tag will point at",
@@ -994,7 +1004,32 @@
       "baseBranch": "Base branch",
       "changedFiles": "Changed files",
       "selectFileHint": "Select a file on the left to review its diff.",
-      "diffUnavailable": "This diff is not available locally. Fetch the latest changes or open the pull request on GitHub."
+      "diffUnavailable": "This diff is not available locally. Fetch the latest changes or open the pull request on GitHub.",
+      "commits": "Commits",
+      "commitCount": "{{count}} commits",
+      "loadingCommits": "Loading commits…",
+      "commitsFailed": "Could not load pull request commits.",
+      "noCommits": "No commits in this pull request.",
+      "commitsSidebarHint": "Commit list appears in the main panel.",
+      "commitsOverviewHint": "This pull request includes {{count}} commits. Open the Commits tab to review them.",
+      "overviewSidebarHint": "PR description and conversation appear in the main panel.",
+      "conversation": "Conversation",
+      "openedThisPullRequest": "opened this pull request",
+      "loadingConversation": "Loading conversation…",
+      "conversationFailed": "Could not load pull request conversation.",
+      "noConversation": "No comments or reviews yet.",
+      "commentKindConversation": "Comment",
+      "commentKindLine": "Line comment",
+      "reviewApproved": "Approved",
+      "reviewChangesRequested": "Changes requested",
+      "reviewCommented": "Reviewed",
+      "reviewDismissed": "Dismissed",
+      "reviewPending": "Pending review",
+      "reviewWithoutComment": "Submitted a review without a comment.",
+      "fileComments": "{{count}} line comments on this file",
+      "lineNumber": "Line {{line}}",
+      "commentOnLine": "Comment on this line",
+      "commentOnLineHint": "Hover a line and click the comment icon"
     }
   },
   "github": {

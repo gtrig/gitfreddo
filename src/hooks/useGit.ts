@@ -186,16 +186,18 @@ export function useDiffCommits(
   fromRef: string | null,
   toRef: string | null,
   path?: string,
-  enabled = true
+  enabled = true,
+  mergeBase = false
 ) {
   const { repoPath, connected } = useRepoScope()
   return useQuery<GitDiffResult>({
-    queryKey: ['repo', repoPath, 'diff.commits', fromRef, toRef, path],
+    queryKey: ['repo', repoPath, 'diff.commits', fromRef, toRef, path, mergeBase],
     queryFn: () =>
       window.gitfreddo.invoke('diff.commits', {
         fromRef: fromRef!,
         toRef: toRef!,
-        path
+        path,
+        mergeBase
       }),
     enabled: enabled && connected && Boolean(repoPath) && Boolean(fromRef && toRef)
   })

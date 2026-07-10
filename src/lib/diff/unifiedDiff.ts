@@ -21,6 +21,29 @@ export interface SplitDiffRow {
   rightKind: 'add' | 'context' | null
 }
 
+export interface DiffLineCommentTarget {
+  side: 'LEFT' | 'RIGHT'
+  line: number
+}
+
+export function diffRowCommentTarget(row: DiffRow): DiffLineCommentTarget | null {
+  if (row.kind === 'remove' && row.oldLine != null) {
+    return { side: 'LEFT', line: row.oldLine }
+  }
+  if ((row.kind === 'add' || row.kind === 'context') && row.newLine != null) {
+    return { side: 'RIGHT', line: row.newLine }
+  }
+  return null
+}
+
+export function splitCellCommentTarget(
+  side: 'left' | 'right',
+  lineNo: number | null
+): DiffLineCommentTarget | null {
+  if (lineNo == null) return null
+  return side === 'left' ? { side: 'LEFT', line: lineNo } : { side: 'RIGHT', line: lineNo }
+}
+
 export interface DiffStats {
   additions: number
   deletions: number

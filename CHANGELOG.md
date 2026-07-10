@@ -7,10 +7,35 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-10 — PR API repo targeting and pending review comments
+
+- **Why:** Comments were fetched/posted against the wrong GitHub repo (fork vs upstream), and line comments failed when a pending review already existed (422).
+- **What:** PR APIs use the PR's canonical `repository`; multi-remote PR lookup; pending review attachment for new line comments; pending reviews shown in conversation.
+
+### 2026-07-10 — PR line comment anchoring fix
+
+- **Why:** GitHub line comments on PR diffs did not appear in GitFreddo (wrong diff range, missing `original_line` fallback).
+- **What:** PR file diffs now use merge-base three-dot range (`base...head`); review comments normalize `original_line` and default `side` for timeline and inline display.
+
+### 2026-07-10 — Pull request conversation in Overview
+
+- **Why:** PR activity should match GitHub’s Conversation tab, not a separate Discussion sidebar tab.
+- **What:** Merged timeline into Overview (opening post + comments/reviews); inline line comments on file diffs (`PullRequestOverviewPanel`, `DiffLineCommentBlocks`).
+
+### 2026-07-10 — Pull request discussion timeline
+
+- **Why:** Existing PR comments and reviews from other users were invisible in the in-app detail view.
+- **What:** Fetches conversation comments, line review comments, and reviews from GitHub; merges into a chronological timeline (`listPullRequestConversationComments`, `useGitHubPullRequestTimeline`).
+
 ### 2026-07-10 — In-app GitHub pull request detail
 
 - **Why:** Users should review and act on pull requests from the sidebar without leaving GitFreddo.
 - **What:** Clicking a GitHub PR opens a full-screen detail view with split-pane layout (file list + overview/diff), merge/reopen/comment actions, and typed IPC/hooks; Bitbucket PRs still open in the browser.
+
+### 2026-07-10 — Pull request commits and line comments
+
+- **Why:** PR review requires seeing the commit stack and leaving feedback on specific diff lines.
+- **What:** Commits tab lists PR commits from GitHub; diff rows expose review-comment actions that post via `githubPostPullRequestReviewComment` IPC (`listPullRequestCommits`, `AddPrLineCommentModal`, sidebar tabs).
 
 ### 2026-07-10 — Pull request detail UX redesign
 

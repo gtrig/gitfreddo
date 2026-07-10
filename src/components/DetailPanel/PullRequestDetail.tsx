@@ -7,7 +7,10 @@ import {
 } from '@heroicons/react/24/outline'
 import { SidebarIconPullRequest } from '@/components/Layout/sidebar/SidebarIcons'
 import { AddPrCommentModal } from '@/components/DetailPanel/AddPrCommentModal'
-import { PullRequestFileList } from '@/components/DetailPanel/PullRequestFileList'
+import { AddPrLineCommentModal } from '@/components/DetailPanel/AddPrLineCommentModal'
+import { PullRequestCommitsPanel } from '@/components/DetailPanel/PullRequestCommitsPanel'
+import { PullRequestOverviewPanel } from '@/components/DetailPanel/PullRequestOverviewPanel'
+import { PullRequestSidebar } from '@/components/DetailPanel/PullRequestSidebar'
 import { UnifiedDiffView } from '@/components/DiffViewer/UnifiedDiffView'
 import { SplitDiffView } from '@/components/DiffViewer/SplitDiffView'
 import { FileViewModeToggle } from '@/components/DiffViewer/FileViewModeToggle'
@@ -16,17 +19,23 @@ import { LoadingRow } from '@/components/Ui/Spinner'
 import { useDiffCommits } from '@/hooks/useGit'
 import { useAppSettings } from '@/hooks/useAppSettings'
 import {
+  useGitHubPullRequestCommits,
   useGitHubPullRequestFiles,
+  useGitHubPullRequestTimeline,
   useInvalidateGitHubPullRequestDetail
 } from '@/hooks/useGitHubPullRequest'
 import { useInvalidateGitHubPullRequests } from '@/hooks/useGitHubPullRequests'
 import { defaultFileContentViewMode, type FileContentViewMode } from '@/lib/diff/fileViewMode'
+import type { DiffLineCommentTarget } from '@/lib/diff/unifiedDiff'
 import { parseUnifiedDiffRows, splitRowsForDisplay } from '@/lib/diff/unifiedDiff'
+import type { PullRequestDetailPane } from '@/lib/github/prDetailSelection'
+import { isPullRequestFilePane } from '@/lib/github/prDetailSelection'
 import {
   pullRequestStatusClassName,
   pullRequestStatusMeta,
   sumPullRequestFileStats
 } from '@/lib/github/prFiles'
+import { groupLineCommentsByTarget, lineCommentsForPath } from '@/lib/github/prTimeline'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
 import type { GitHubPullRequest } from '@shared/github'
@@ -45,22 +54,39 @@ export function PullRequestDetail({ pr, onClose }: PullRequestDetailProps) {
   const invalidateDetail = useInvalidateGitHubPullRequestDetail()
   const invalidateList = useInvalidateGitHubPullRequests()
   const [commentOpen, setCommentOpen] = useState(false)
+  const [lineCommentTarget, setLineCommentTarget] = useState<
+    (DiffLineCommentTarget & { path: string }) | null
+  >(null)
   const [busy, setBusy] = useState(false)
-  const [selectedPath, setSelectedPath] = useState<string | null>(null)
+  const [pane, setPane] = useState<PullRequestDetailPane>({ kind: 'overview' })
   const [viewMode, setViewMode] = useState<FileContentViewMode>(() =>
     defaultFileContentViewMode(settings?.diffViewMode)
   )
 
-  const filesQuery = useGitHubPullRequestFiles(repoPath, pr.number, Boolean(repoPath))
+  const filesQuery = useGitHubPullRequestFiles(repoPath, pr.number, pr.repository, Boolean(repoPath))
+  const commitsQuery = useGitHubPullRequestCommits(repoPath, pr.number, pr.repository, Boolean(repoPath))
+  const timelineQuery = useGitHubPullRequestTimeline(repoPath, pr.number, pr.repository, Boolean(repoPath))
   const files = filesQuery.data ?? []
+  const commits = commitsQuery.data ?? []
+  const timeline = timelineQuery.data
   const totals = useMemo(() => sumPullRequestFileStats(files), [files])
   const status = pullRequestStatusMeta(pr)
+  const selectedPath = isPullRequestFilePane(pane) ? pane.path : null
+  const fileLineComments = useMemo(
+    () => (selectedPath ? lineCommentsForPath(timeline, selectedPath) : []),
+    [timeline, selectedPath]
+  )
+  const fileCommentsByTarget = useMemo(
+    () => groupLineCommentsByTarget(fileLineComments),
+    [fileLineComments]
+  )
 
   const diffQuery = useDiffCommits(
     pr.base.sha,
     pr.head.sha,
     selectedPath ?? undefined,
-    connected && Boolean(selectedPath)
+    connected && Boolean(selectedPath),
+    true
   )
 
   const rows = useMemo(
@@ -100,6 +126,11 @@ export function PullRequestDetail({ pr, onClose }: PullRequestDetailProps) {
     } finally {
       setBusy(false)
     }
+  }
+
+  function handleLineCommentRequest(target: DiffLineCommentTarget) {
+    if (!selectedPath) return
+    setLineCommentTarget({ ...target, path: selectedPath })
   }
 
   return (
@@ -154,6 +185,9 @@ export function PullRequestDetail({ pr, onClose }: PullRequestDetailProps) {
                   })}
                 </span>
               ) : null}
+              {!commitsQuery.isLoading && commits.length > 0 ? (
+                <span>{t('detail.pullRequest.commitCount', { count: commits.length })}</span>
+              ) : null}
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <ActionButton onClick={() => setCommentOpen(true)}>
@@ -186,21 +220,31 @@ export function PullRequestDetail({ pr, onClose }: PullRequestDetailProps) {
 
         <div className="flex min-h-0 flex-1">
           <aside className="flex w-80 shrink-0 flex-col border-r border-gf-border bg-gf-bg">
-            <PullRequestFileList
+            <PullRequestSidebar
+              pane={pane}
+              onSelectPane={setPane}
               files={files}
-              selectedPath={selectedPath}
-              onSelectFile={setSelectedPath}
+              commitCount={commits.length}
               loading={filesQuery.isLoading}
               error={filesQuery.error as Error | null}
             />
           </aside>
 
           <main className="flex min-h-0 min-w-0 flex-1 flex-col">
-            {selectedPath ? (
+            {pane.kind === 'commits' ? (
+              <PullRequestCommitsPanel
+                commits={commits}
+                loading={commitsQuery.isLoading}
+                error={commitsQuery.error as Error | null}
+              />
+            ) : pane.kind === 'file' ? (
               <>
                 <div className="flex shrink-0 items-center justify-between gap-2 border-b border-gf-border px-4 py-2">
                   <p className="min-w-0 truncate font-mono text-xs text-gf-fg-muted">{selectedPath}</p>
-                  <FileViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+                  <div className="flex items-center gap-3">
+                    <p className="text-[11px] text-gf-fg-subtle">{t('detail.pullRequest.commentOnLineHint')}</p>
+                    <FileViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+                  </div>
                 </div>
                 <div className="min-h-0 flex-1 overflow-auto p-4">
                   {diffQuery.isLoading ? (
@@ -219,55 +263,34 @@ export function PullRequestDetail({ pr, onClose }: PullRequestDetailProps) {
                   ) : rows.length === 0 ? (
                     <p className="text-sm text-gf-fg-subtle">{t('diff.noChangesInRange')}</p>
                   ) : viewMode === 'split' ? (
-                    <SplitDiffView rows={splitRows} loading={diffQuery.isLoading} />
+                    <SplitDiffView
+                      rows={splitRows}
+                      loading={diffQuery.isLoading}
+                      onRequestLineComment={handleLineCommentRequest}
+                      commentsByTarget={fileCommentsByTarget}
+                    />
                   ) : (
-                    <UnifiedDiffView rows={rows} loading={diffQuery.isLoading} />
+                    <UnifiedDiffView
+                      rows={rows}
+                      loading={diffQuery.isLoading}
+                      onRequestLineComment={handleLineCommentRequest}
+                      commentsByTarget={fileCommentsByTarget}
+                    />
                   )}
                 </div>
               </>
-            ) : (
-              <div className="min-h-0 flex-1 overflow-auto p-6">
-                <div className="mx-auto max-w-3xl space-y-6">
-                  <section>
-                    <h2 className="text-sm font-medium text-gf-fg">{t('detail.pullRequest.overview')}</h2>
-                    {pr.body.trim() ? (
-                      <div className="mt-3 rounded-lg border border-gf-border bg-gf-surface/40 p-4 text-sm leading-relaxed text-gf-fg-muted whitespace-pre-wrap">
-                        {pr.body}
-                      </div>
-                    ) : (
-                      <p className="mt-3 text-sm text-gf-fg-subtle">
-                        {t('detail.pullRequest.noDescription')}
-                      </p>
-                    )}
-                  </section>
-
-                  <section className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-lg border border-gf-border bg-gf-surface/30 p-4">
-                      <p className="text-[11px] font-medium uppercase tracking-wide text-gf-fg-subtle">
-                        {t('detail.pullRequest.headBranch')}
-                      </p>
-                      <p className="mt-1 font-mono text-sm text-gf-fg">{pr.head.ref}</p>
-                      <p className="mt-1 font-mono text-xs text-gf-fg-subtle">{pr.head.sha.slice(0, 7)}</p>
-                    </div>
-                    <div className="rounded-lg border border-gf-border bg-gf-surface/30 p-4">
-                      <p className="text-[11px] font-medium uppercase tracking-wide text-gf-fg-subtle">
-                        {t('detail.pullRequest.baseBranch')}
-                      </p>
-                      <p className="mt-1 font-mono text-sm text-gf-fg">{pr.base.ref}</p>
-                      <p className="mt-1 font-mono text-xs text-gf-fg-subtle">{pr.base.sha.slice(0, 7)}</p>
-                    </div>
-                  </section>
-
-                  {files.length > 0 ? (
-                    <section>
-                      <h3 className="text-sm font-medium text-gf-fg">{t('detail.pullRequest.changedFiles')}</h3>
-                      <p className="mt-2 text-sm text-gf-fg-subtle">
-                        {t('detail.pullRequest.selectFileHint')}
-                      </p>
-                    </section>
-                  ) : null}
-                </div>
+            ) : pane.kind === 'files' ? (
+              <div className="flex h-full items-center justify-center p-6">
+                <p className="text-sm text-gf-fg-subtle">{t('detail.pullRequest.selectFileHint')}</p>
               </div>
+            ) : (
+              <PullRequestOverviewPanel
+                pr={pr}
+                items={timeline}
+                loading={timelineQuery.isLoading}
+                error={timelineQuery.error}
+                onOpenFile={(path) => setPane({ kind: 'file', path })}
+              />
             )}
           </main>
         </div>
@@ -275,9 +298,29 @@ export function PullRequestDetail({ pr, onClose }: PullRequestDetailProps) {
 
       <AddPrCommentModal
         prNumber={pr.number}
+        repository={pr.repository}
         open={commentOpen}
         onClose={() => setCommentOpen(false)}
+        onSaved={() => {
+          if (repoPath) invalidateDetail(repoPath, pr.number)
+        }}
       />
+
+      {lineCommentTarget ? (
+        <AddPrLineCommentModal
+          prNumber={pr.number}
+          repository={pr.repository}
+          commitId={pr.head.sha}
+          path={lineCommentTarget.path}
+          line={lineCommentTarget.line}
+          side={lineCommentTarget.side}
+          open
+          onClose={() => setLineCommentTarget(null)}
+          onSaved={() => {
+            if (repoPath) invalidateDetail(repoPath, pr.number)
+          }}
+        />
+      ) : null}
     </>
   )
 }

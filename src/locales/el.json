@@ -469,6 +469,16 @@
       "emptyMessage": "Εισαγάγετε σχόλιο.",
       "saved": "Το σχόλιο δημοσιεύτηκε."
     },
+    "addPrLineComment": {
+      "title": "Σχόλιο αναθεώρησης στο αίτημα έλξης #{{number}}",
+      "description": "Αυτό το σχόλιο θα συνδεθεί με την επιλεγμένη γραμμή στο diff.",
+      "message": "Σχόλιο",
+      "placeholder": "Προτείνετε αλλαγή ή κάντε μια ερώτηση…",
+      "emptyMessage": "Εισαγάγετε σχόλιο.",
+      "saved": "Το σχόλιο αναθεώρησης δημοσιεύτηκε.",
+      "before": "πριν",
+      "after": "μετά"
+    },
     "createTag": {
       "title": "Δημιουργία ετικέτας",
       "pointAt": "Η ετικέτα θα δείχνει στο",
@@ -994,7 +1004,32 @@
       "baseBranch": "Κλάδος base",
       "changedFiles": "Αλλαγμένα αρχεία",
       "selectFileHint": "Επιλέξτε αρχείο αριστερά για να δείτε το diff του.",
-      "diffUnavailable": "Αυτό το diff δεν είναι διαθέσιμο τοπικά. Κάντε fetch τις τελευταίες αλλαγές ή ανοίξτε το αίτημα έλξης στο GitHub."
+      "diffUnavailable": "Αυτό το diff δεν είναι διαθέσιμο τοπικά. Κάντε fetch τις τελευταίες αλλαγές ή ανοίξτε το αίτημα έλξης στο GitHub.",
+      "commits": "Υποβολές",
+      "commitCount": "{{count}} υποβολές",
+      "loadingCommits": "Φόρτωση υποβολών…",
+      "commitsFailed": "Αποτυχία φόρτωσης υποβολών αιτήματος έλξης.",
+      "noCommits": "Δεν υπάρχουν υποβολές σε αυτό το αίτημα έλξης.",
+      "commitsSidebarHint": "Η λίστα υποβολών εμφανίζεται στο κύριο πάνελ.",
+      "commitsOverviewHint": "Αυτό το αίτημα έλξης περιλαμβάνει {{count}} υποβολές. Ανοίξτε την καρτέλα Υποβολές για να τις δείτε.",
+      "overviewSidebarHint": "Η περιγραφή και η συζήτηση του αιτήματος έλξης εμφανίζονται στο κύριο πάνελ.",
+      "conversation": "Συζήτηση",
+      "openedThisPullRequest": "άνοιξε αυτό το αίτημα έλξης",
+      "loadingConversation": "Φόρτωση συζήτησης…",
+      "conversationFailed": "Δεν ήταν δυνατή η φόρτωση της συζήτησης του αιτήματος έλξης.",
+      "noConversation": "Δεν υπάρχουν ακόμα σχόλια ή κριτικές.",
+      "commentKindConversation": "Σχόλιο",
+      "commentKindLine": "Σχόλιο γραμμής",
+      "reviewApproved": "Εγκρίθηκε",
+      "reviewChangesRequested": "Ζητήθηκαν αλλαγές",
+      "reviewCommented": "Κρίθηκε",
+      "reviewDismissed": "Απορρίφθηκε",
+      "reviewPending": "Εκκρεμής κριτική",
+      "reviewWithoutComment": "Υποβλήθηκε κριτική χωρίς σχόλιο.",
+      "fileComments": "{{count}} σχόλια γραμμής σε αυτό το αρχείο",
+      "lineNumber": "Γραμμή {{line}}",
+      "commentOnLine": "Σχόλιο σε αυτή τη γραμμή",
+      "commentOnLineHint": "Κάντε hover σε μια γραμμή και κάντε κλικ στο εικονίδιο σχολίου"
     }
   },
   "contextMenu": {

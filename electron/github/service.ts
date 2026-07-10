@@ -4,6 +4,7 @@ import type {
   GitHubCreateRepoParams,
   GitHubListReposParams,
   GitHubMergeMethod,
+  GitHubPullRequestRepository,
   GitHubRepo
 } from '../../shared/github'
 import type { AppSettings, GitHubStatus } from '../../shared/ipc'
@@ -11,10 +12,11 @@ import { saveSettings } from '../settings'
 import { isForgeAuthFailure } from '../../shared/forge-auth'
 import { getAuthenticatedUser } from './client'
 import { listIssues, createIssue, updateIssue } from './api/issues'
-import { createPullRequest, getPullRequest, listPullRequestFiles, listPullRequests, mergePullRequest, postPullRequestConversationComment, reopenPullRequest } from './api/pulls'
+import { createPullRequest, findPendingPullRequestReviewId, getPullRequest, listPullRequestCommits, listPullRequestConversationComments, listPullRequestFiles, listPullRequestReviewComments, listPullRequestReviews, listPullRequests, mergePullRequest, postPullRequestConversationComment, postPullRequestReviewComment, reopenPullRequest } from './api/pulls'
+import { getGitHubTokenOrThrow } from './api/http'
 import { clearRepoCache, createRepo, forkRepo, listUserRepos } from './api/repos'
 import { runGitHubDeviceFlow, type DeviceFlowProgress } from './oauth'
-import { resolveGitHubRepoContext } from './repo-context'
+import { listGitHubRepoContexts, resolveGitHubRepoContext } from './repo-context'
 import { generateAndUploadSshKey, findGitFreddoSshKeyTitle } from './ssh-keys'
 import { clearGitHubToken, hasGitHubToken, loadGitHubToken, saveGitHubToken } from './token-store'
 
@@ -34,6 +36,48 @@ function toStatus(login: string, avatarUrl: string, sshKeyTitle: string): GitHub
 
 function disconnectedStatus(): GitHubStatus {
   return { connected: false, login: null, avatarUrl: null, sshKeyTitle: null }
+}
+
+async function resolvePullApiOwnerRepo(
+  repoPath: string,
+  settings: AppSettings,
+  repository?: GitHubPullRequestRepository | null
+): Promise<{ owner: string; repo: string }> {
+  if (repository?.owner && repository.repo) {
+    return { owner: repository.owner, repo: repository.repo }
+  }
+  const ctx = await resolveGitHubRepoContext(repoPath, settings)
+  return { owner: ctx.owner, repo: ctx.repo }
+}
+
+function isGithubNotFoundError(error: unknown): boolean {
+  return error instanceof Error && error.message.includes('GitHub API error (404)')
+}
+
+async function fetchGitHubPullRequest(
+  repoPath: string,
+  settings: AppSettings,
+  number: number,
+  repository?: GitHubPullRequestRepository | null
+) {
+  if (repository?.owner && repository.repo) {
+    return getPullRequest(repository.owner, repository.repo, number)
+  }
+
+  const contexts = await listGitHubRepoContexts(repoPath, settings)
+  let lastError: Error | null = null
+  for (const ctx of contexts) {
+    try {
+      return await getPullRequest(ctx.owner, ctx.repo, number)
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error))
+      if (!isGithubNotFoundError(error)) {
+        throw error
+      }
+    }
+  }
+
+  throw lastError ?? new Error(`Pull request #${number} not found`)
 }
 
 async function clearGitHubConnection(_settings: AppSettings): Promise<AppSettings> {
@@ -201,27 +245,29 @@ export async function mergeGitHubPullRequest(
 export async function getGitHubPullRequest(
   repoPath: string,
   settings: AppSettings,
-  number: number
+  number: number,
+  repository?: GitHubPullRequestRepository | null
 ) {
-  const ctx = await resolveGitHubRepoContext(repoPath, settings)
-  return getPullRequest(ctx.owner, ctx.repo, number)
+  return fetchGitHubPullRequest(repoPath, settings, number, repository)
 }
 
 export async function listGitHubPullRequestFiles(
   repoPath: string,
   settings: AppSettings,
-  number: number
+  number: number,
+  repository?: GitHubPullRequestRepository | null
 ) {
-  const ctx = await resolveGitHubRepoContext(repoPath, settings)
+  const ctx = await resolvePullApiOwnerRepo(repoPath, settings, repository)
   return listPullRequestFiles(ctx.owner, ctx.repo, number)
 }
 
 export async function reopenGitHubPullRequest(
   repoPath: string,
   settings: AppSettings,
-  number: number
+  number: number,
+  repository?: GitHubPullRequestRepository | null
 ) {
-  const ctx = await resolveGitHubRepoContext(repoPath, settings)
+  const ctx = await resolvePullApiOwnerRepo(repoPath, settings, repository)
   return reopenPullRequest(ctx.owner, ctx.repo, number)
 }
 
@@ -229,10 +275,70 @@ export async function postGitHubPullRequestComment(
   repoPath: string,
   settings: AppSettings,
   number: number,
-  body: string
+  body: string,
+  repository?: GitHubPullRequestRepository | null
 ) {
-  const ctx = await resolveGitHubRepoContext(repoPath, settings)
+  const ctx = await resolvePullApiOwnerRepo(repoPath, settings, repository)
   await postPullRequestConversationComment(ctx.owner, ctx.repo, number, body)
+}
+
+export async function listGitHubPullRequestCommits(
+  repoPath: string,
+  settings: AppSettings,
+  number: number,
+  repository?: GitHubPullRequestRepository | null
+) {
+  const ctx = await resolvePullApiOwnerRepo(repoPath, settings, repository)
+  return listPullRequestCommits(ctx.owner, ctx.repo, number)
+}
+
+export async function postGitHubPullRequestReviewComment(
+  repoPath: string,
+  settings: AppSettings,
+  number: number,
+  params: import('../../shared/github').GitHubPullRequestReviewCommentParams,
+  repository?: GitHubPullRequestRepository | null
+) {
+  const ctx = await resolvePullApiOwnerRepo(repoPath, settings, repository)
+  const token = await getGitHubTokenOrThrow()
+  const user = await getAuthenticatedUser(token)
+  const pendingReviewId = await findPendingPullRequestReviewId(
+    ctx.owner,
+    ctx.repo,
+    number,
+    user.login
+  )
+  await postPullRequestReviewComment(ctx.owner, ctx.repo, number, params, pendingReviewId)
+}
+
+export async function listGitHubPullRequestConversationComments(
+  repoPath: string,
+  settings: AppSettings,
+  number: number,
+  repository?: GitHubPullRequestRepository | null
+) {
+  const ctx = await resolvePullApiOwnerRepo(repoPath, settings, repository)
+  return listPullRequestConversationComments(ctx.owner, ctx.repo, number)
+}
+
+export async function listGitHubPullRequestReviewComments(
+  repoPath: string,
+  settings: AppSettings,
+  number: number,
+  repository?: GitHubPullRequestRepository | null
+) {
+  const ctx = await resolvePullApiOwnerRepo(repoPath, settings, repository)
+  return listPullRequestReviewComments(ctx.owner, ctx.repo, number)
+}
+
+export async function listGitHubPullRequestReviews(
+  repoPath: string,
+  settings: AppSettings,
+  number: number,
+  repository?: GitHubPullRequestRepository | null
+) {
+  const ctx = await resolvePullApiOwnerRepo(repoPath, settings, repository)
+  return listPullRequestReviews(ctx.owner, ctx.repo, number)
 }
 
 export async function listGitHubIssues(

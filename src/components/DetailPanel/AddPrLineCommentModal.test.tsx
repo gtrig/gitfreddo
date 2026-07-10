@@ -1,13 +1,13 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { cleanup, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { AddPrCommentModal } from './AddPrCommentModal'
+import { AddPrLineCommentModal } from './AddPrLineCommentModal'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { renderWithProviders } from '@/test/render'
 
 const testRepository = { owner: 'o', repo: 'r' }
 
-describe('AddPrCommentModal', () => {
+describe('AddPrLineCommentModal', () => {
   afterEach(() => {
     cleanup()
   })
@@ -21,23 +21,38 @@ describe('AddPrCommentModal', () => {
       workspacePickerOpen: false,
       prDetailNumber: null
     })
-    vi.mocked(window.gitfreddo.githubPostPullRequestComment).mockResolvedValue(undefined)
+    vi.mocked(window.gitfreddo.githubPostPullRequestReviewComment).mockResolvedValue(undefined)
   })
 
-  it('posts a pull request conversation comment', async () => {
+  it('posts a review comment on a specific line', async () => {
     const user = userEvent.setup()
     const onClose = vi.fn()
     renderWithProviders(
-      <AddPrCommentModal prNumber={42} repository={testRepository} open onClose={onClose} />
+      <AddPrLineCommentModal
+        prNumber={42}
+        repository={testRepository}
+        commitId="headsha"
+        path="src/a.ts"
+        line={12}
+        side="RIGHT"
+        open
+        onClose={onClose}
+      />
     )
 
-    await user.type(screen.getByRole('textbox'), 'Looks good')
+    await user.type(screen.getByRole('textbox'), 'Please rename')
     await user.click(screen.getByRole('button', { name: /save/i }))
 
-    expect(window.gitfreddo.githubPostPullRequestComment).toHaveBeenCalledWith(
+    expect(window.gitfreddo.githubPostPullRequestReviewComment).toHaveBeenCalledWith(
       '/tmp/repo',
       42,
-      'Looks good',
+      {
+        body: 'Please rename',
+        commitId: 'headsha',
+        path: 'src/a.ts',
+        line: 12,
+        side: 'RIGHT'
+      },
       testRepository
     )
     expect(onClose).toHaveBeenCalled()

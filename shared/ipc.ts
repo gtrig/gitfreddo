@@ -148,12 +148,34 @@ export interface GitFreddoAPI {
   githubListPullRequests: (repoPath: string) => Promise<import('./github').GitHubPullRequest[]>
   githubGetPullRequest: (
     repoPath: string,
-    number: number
+    number: number,
+    repository?: import('./github').GitHubPullRequestRepository
   ) => Promise<import('./github').GitHubPullRequest>
   githubListPullRequestFiles: (
     repoPath: string,
-    number: number
+    number: number,
+    repository?: import('./github').GitHubPullRequestRepository
   ) => Promise<import('./github').GitHubPullRequestFile[]>
+  githubListPullRequestCommits: (
+    repoPath: string,
+    number: number,
+    repository?: import('./github').GitHubPullRequestRepository
+  ) => Promise<import('./github').GitHubPullRequestCommit[]>
+  githubListPullRequestConversationComments: (
+    repoPath: string,
+    number: number,
+    repository?: import('./github').GitHubPullRequestRepository
+  ) => Promise<import('./github').GitHubPullRequestConversationComment[]>
+  githubListPullRequestReviewComments: (
+    repoPath: string,
+    number: number,
+    repository?: import('./github').GitHubPullRequestRepository
+  ) => Promise<import('./github').GitHubPullRequestReviewComment[]>
+  githubListPullRequestReviews: (
+    repoPath: string,
+    number: number,
+    repository?: import('./github').GitHubPullRequestRepository
+  ) => Promise<import('./github').GitHubPullRequestReview[]>
   githubCreatePullRequest: (
     repoPath: string,
     params: import('./github').GitHubCreatePullRequestParams
@@ -170,7 +192,14 @@ export interface GitFreddoAPI {
   githubPostPullRequestComment: (
     repoPath: string,
     number: number,
-    body: string
+    body: string,
+    repository?: import('./github').GitHubPullRequestRepository
+  ) => Promise<void>
+  githubPostPullRequestReviewComment: (
+    repoPath: string,
+    number: number,
+    params: import('./github').GitHubPullRequestReviewCommentParams,
+    repository?: import('./github').GitHubPullRequestRepository
   ) => Promise<void>
   githubListIssues: (repoPath: string, assigneeLogin?: string) => Promise<import('./github').GitHubIssue[]>
   githubCreateIssue: (

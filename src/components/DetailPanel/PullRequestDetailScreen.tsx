@@ -9,9 +9,15 @@ export function PullRequestDetailScreen() {
   const connected = useWorkspaceStore((s) => s.connected)
   const repoPath = useWorkspaceStore((s) => s.activePath)
   const prNumber = useWorkspaceStore((s) => s.prDetailNumber)
+  const prRepository = useWorkspaceStore((s) => s.prDetailRepository)
   const closePrDetail = useWorkspaceStore((s) => s.closePrDetail)
 
-  const prQuery = useGitHubPullRequest(repoPath, prNumber, connected && prNumber !== null)
+  const prQuery = useGitHubPullRequest(
+    repoPath,
+    prNumber,
+    prRepository,
+    connected && prNumber !== null
+  )
 
   if (!connected || prNumber === null) return null
 
