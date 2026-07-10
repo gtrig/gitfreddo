@@ -7,9 +7,12 @@ import {
   isNonChatModelId,
   normalizeBaseUrl,
   parseAnalyzeChangesResponse,
+  parseAnalyzePullRequestResponse,
   parseComposeCommitsResponse,
   parseConflictResolveResponse,
   parseExplainCommitResponse,
+  parseRefineCommitPlanResponse,
+  parseRefinePullRequestAnalysisResponse,
   parsePullRequestResponse,
   pickChatModelId,
   proposalsToResolutionMap
@@ -184,6 +187,106 @@ describe('buildAiMessages', () => {
     expect(user).toContain('+++ b/src/auth.ts')
     expect(user).toContain('"rationale"')
   })
+
+  it('asks for refined commit plan with selected commits and chat history', () => {
+    const { system, user } = buildAiMessages('refine_commit_plan', {
+      branch: 'main',
+      filePaths: ['src/a.ts', 'src/b.ts', 'src/c.ts'],
+      commitPlan: [
+        {
+          summary: 'Add feature A',
+          description: 'Implements A.',
+          files: ['src/a.ts'],
+          rationale: 'Self-contained.'
+        },
+        {
+          summary: 'Add feature B',
+          description: 'Implements B.',
+          files: ['src/b.ts'],
+          rationale: 'Related to A.'
+        },
+        {
+          summary: 'Add feature C',
+          description: 'Implements C.',
+          files: ['src/c.ts'],
+          rationale: 'Independent.'
+        }
+      ],
+      selectedCommitIndices: [0, 1],
+      chatHistory: [
+        { role: 'user', content: 'Can you merge the first two?' },
+        { role: 'assistant', content: 'Sure — I can combine commits 1 and 2.' }
+      ],
+      userMessage: 'Yes, merge them into one commit.'
+    })
+
+    expect(system).toContain('valid JSON')
+    expect(user).toContain('main')
+    expect(user).toContain('Add feature A')
+    expect(user).toContain('Add feature B')
+    expect(user).toContain('Commit 1')
+    expect(user).toContain('Commit 2')
+    expect(user).toContain('Selected commits (1-based indices the user is referring to): 1, 2')
+    expect(user).toContain('Can you merge the first two?')
+    expect(user).toContain('Yes, merge them into one commit.')
+    expect(user).toContain('"message"')
+    expect(user).toContain('"commits"')
+  })
+})
+
+describe('parseRefineCommitPlanResponse', () => {
+  const changedPaths = ['src/a.ts', 'src/b.ts', 'src/c.ts']
+
+  it('parses assistant message and updated commit proposals', () => {
+    const result = parseRefineCommitPlanResponse(
+      JSON.stringify({
+        message: 'Merged commits 1 and 2 into a single commit covering A and B.',
+        commits: [
+          {
+            summary: 'Add features A and B',
+            description: 'Combined implementation.',
+            files: ['src/a.ts', 'src/b.ts'],
+            rationale: 'Single cohesive feature.'
+          },
+          {
+            summary: 'Add feature C',
+            description: 'Implements C.',
+            files: ['src/c.ts'],
+            rationale: 'Independent.'
+          }
+        ]
+      }),
+      changedPaths
+    )
+
+    expect(result.message).toBe('Merged commits 1 and 2 into a single commit covering A and B.')
+    expect(result.commits).toHaveLength(2)
+    expect(result.commits[0]?.files).toEqual(['src/a.ts', 'src/b.ts'])
+    expect(result.commits[1]?.files).toEqual(['src/c.ts'])
+  })
+
+  it('parses feature groups in refined commit plans', () => {
+    const result = parseRefineCommitPlanResponse(
+      JSON.stringify({
+        message: 'Regrouped commits.',
+        features: [{ title: 'Combined', commits: [1] }],
+        commits: [{ summary: 'Add A and B', files: ['src/a.ts', 'src/b.ts'] }]
+      }),
+      ['src/a.ts', 'src/b.ts']
+    )
+
+    expect(result.features).toEqual([{ title: 'Combined', commitIndices: [0] }])
+  })
+
+  it('rejects invalid JSON', () => {
+    expect(() => parseRefineCommitPlanResponse('not json', changedPaths)).toThrow(/valid JSON/)
+  })
+
+  it('rejects empty commit list', () => {
+    expect(() =>
+      parseRefineCommitPlanResponse(JSON.stringify({ message: 'Done.', commits: [] }), changedPaths)
+    ).toThrow(/no usable commit proposals/)
+  })
 })
 
 describe('parseExplainCommitResponse', () => {
@@ -292,6 +395,52 @@ describe('parseAnalyzeChangesResponse', () => {
     expect(result.commits[1]?.files).toEqual(['src/login.tsx'])
   })
 
+  it('parses feature groups linked to commit indices', () => {
+    const result = parseAnalyzeChangesResponse(
+      JSON.stringify({
+        summary: 'Auth flow and docs updated.',
+        features: [
+          { title: 'Auth', commits: [1, 2] },
+          { title: 'Docs', commits: [3] }
+        ],
+        commits: [
+          { message: 'feat: add auth core', files: ['src/auth.ts'] },
+          { message: 'feat: add login form', files: ['src/login.tsx'] },
+          { message: 'docs: update readme', files: ['README.md'] }
+        ]
+      }),
+      changed
+    )
+
+    expect(result.features).toEqual([
+      { title: 'Auth', commitIndices: [0, 1] },
+      { title: 'Docs', commitIndices: [2] }
+    ])
+  })
+
+  it('ignores invalid feature entries and duplicate commit assignments', () => {
+    const result = parseAnalyzeChangesResponse(
+      JSON.stringify({
+        summary: 'Partial grouping',
+        features: [
+          { title: 'Auth', commits: [1, 1, 99] },
+          { title: '', commits: [2] },
+          { title: 'Docs', commits: [2] }
+        ],
+        commits: [
+          { message: 'feat: auth', files: ['src/auth.ts'] },
+          { message: 'docs: readme', files: ['README.md'] }
+        ]
+      }),
+      ['src/auth.ts', 'README.md']
+    )
+
+    expect(result.features).toEqual([
+      { title: 'Auth', commitIndices: [0] },
+      { title: 'Docs', commitIndices: [1] }
+    ])
+  })
+
   it('parses explicit summary and description fields on commit proposals', () => {
     const result = parseAnalyzeChangesResponse(
       JSON.stringify({
@@ -338,6 +487,7 @@ describe('parseAnalyzeChangesResponse', () => {
     })
     expect(user).toContain('"description"')
     expect(user).not.toContain('optional body')
+    expect(user).toContain('"features"')
   })
 
   it('adds unassigned changed files to a fallback commit', () => {
@@ -567,5 +717,66 @@ describe('parseConflictResolveResponse', () => {
         2
       )
     ).toThrow(/missing resolution/)
+  })
+})
+
+describe('parseAnalyzePullRequestResponse', () => {
+  it('parses structured pull request analysis', () => {
+    const result = parseAnalyzePullRequestResponse(
+      JSON.stringify({
+        summary: 'Refactors auth flow',
+        keyChanges: '- Token refresh\n- Session store',
+        risks: 'Missing logout coverage',
+        reviewFocus: 'Session edge cases',
+        testingNotes: 'Run auth e2e'
+      })
+    )
+
+    expect(result.summary).toBe('Refactors auth flow')
+    expect(result.keyChanges).toContain('Token refresh')
+    expect(result.risks).toContain('logout')
+    expect(result.reviewFocus).toBe('Session edge cases')
+    expect(result.testingNotes).toBe('Run auth e2e')
+  })
+})
+
+describe('parseRefinePullRequestAnalysisResponse', () => {
+  it('parses assistant reply and updated analysis', () => {
+    const result = parseRefinePullRequestAnalysisResponse(
+      JSON.stringify({
+        message: 'I focused the risks on auth edge cases.',
+        analysis: {
+          summary: 'Auth refactor',
+          keyChanges: '- Refresh tokens',
+          risks: 'Expired session handling',
+          reviewFocus: 'Token refresh path',
+          testingNotes: 'Add logout test'
+        }
+      })
+    )
+
+    expect(result.message).toContain('focused the risks')
+    expect(result.analysis.summary).toBe('Auth refactor')
+    expect(result.analysis.risks).toContain('Expired session')
+  })
+})
+
+describe('buildAiMessages analyze_pull_request', () => {
+  it('includes pull request metadata and scope', () => {
+    const { user } = buildAiMessages('analyze_pull_request', {
+      prNumber: 7,
+      prTitle: 'Add auth',
+      headBranch: 'feature',
+      baseBranch: 'main',
+      analysisScope: 'partial',
+      filePaths: ['src/auth.ts'],
+      commitSubjects: ['Add refresh helper']
+    })
+
+    expect(user).toContain('Pull request #7')
+    expect(user).toContain('Add auth')
+    expect(user).toContain('Selected files')
+    expect(user).toContain('src/auth.ts')
+    expect(user).toContain('Add refresh helper')
   })
 })

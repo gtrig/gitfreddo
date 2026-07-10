@@ -9,17 +9,120 @@ export interface GitHubRepo {
   defaultBranch: string
 }
 
+export interface GitHubPullRequestRepository {
+  owner: string
+  repo: string
+}
+
 export interface GitHubPullRequest {
   number: number
   title: string
   state: string
   htmlUrl: string
+  repository: GitHubPullRequestRepository
   user: string
   head: { ref: string; sha: string }
   base: { ref: string; sha: string }
   body: string
   draft: boolean
   mergeable: boolean | null
+}
+
+export type GitHubPullRequestFileStatus =
+  | 'added'
+  | 'removed'
+  | 'modified'
+  | 'renamed'
+  | 'copied'
+  | 'changed'
+  | 'unchanged'
+
+export interface GitHubPullRequestFile {
+  path: string
+  status: GitHubPullRequestFileStatus
+  additions: number
+  deletions: number
+  changes: number
+}
+
+export interface GitHubPullRequestCommit {
+  sha: string
+  subject: string
+  message: string
+  authorName: string
+  authorLogin: string | null
+  committedAt: string
+}
+
+export type GitHubPullRequestReviewCommentSide = 'LEFT' | 'RIGHT'
+
+export interface GitHubPullRequestReviewCommentParams {
+  body: string
+  commitId: string
+  path: string
+  line: number
+  side: GitHubPullRequestReviewCommentSide
+}
+
+export interface GitHubPullRequestConversationComment {
+  id: number
+  body: string
+  user: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface GitHubPullRequestReviewComment {
+  id: number
+  body: string
+  user: string
+  createdAt: string
+  updatedAt: string
+  path: string
+  line: number | null
+  originalLine: number | null
+  side: GitHubPullRequestReviewCommentSide | null
+  commitId: string
+}
+
+export interface GitHubPullRequestReview {
+  id: number
+  body: string
+  user: string
+  state: string
+  submittedAt: string
+}
+
+export interface GitHubPullRequestReviewThreadComment {
+  id: number
+  body: string
+  user: string
+  createdAt: string
+  path: string | null
+  line: number | null
+}
+
+export interface GitHubPullRequestReviewThread {
+  id: string
+  isResolved: boolean
+  isOutdated: boolean
+  path: string
+  line: number | null
+  comments: GitHubPullRequestReviewThreadComment[]
+}
+
+export type GitHubPullRequestTimelineKind = 'conversation' | 'line' | 'review'
+
+export interface GitHubPullRequestTimelineItem {
+  id: string
+  kind: GitHubPullRequestTimelineKind
+  body: string
+  user: string
+  createdAt: string
+  path?: string
+  line?: number | null
+  side?: GitHubPullRequestReviewCommentSide | null
+  reviewState?: string
 }
 
 export type GitHubMergeMethod = 'merge' | 'squash' | 'rebase'
@@ -103,6 +206,12 @@ export function parseGitHubRemote(url: string): GitHubRepoContext | null {
   } catch {
     return null
   }
+}
+
+export function parseGitHubPullHtmlUrl(htmlUrl: string): GitHubPullRequestRepository | null {
+  const match = htmlUrl.trim().match(/github\.com\/([^/]+)\/([^/]+)\/pull\/\d+/i)
+  if (!match) return null
+  return { owner: match[1], repo: match[2] }
 }
 
 export function slugifyIssueBranch(title: string): string {

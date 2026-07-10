@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseGitHubRemote, slugifyIssueBranch } from './github'
+import { parseGitHubRemote, parseGitHubPullHtmlUrl, slugifyIssueBranch } from './github'
 
 describe('parseGitHubRemote', () => {
   it('parses https github urls', () => {
@@ -27,6 +27,15 @@ describe('parseGitHubRemote', () => {
       host: 'github.mycompany.com',
       owner: 'team',
       repo: 'repo'
+    })
+  })
+})
+
+describe('parseGitHubPullHtmlUrl', () => {
+  it('parses owner and repo from a pull request url', () => {
+    expect(parseGitHubPullHtmlUrl('https://github.com/ArctosWebLabs/GitFreddo/pull/42')).toEqual({
+      owner: 'ArctosWebLabs',
+      repo: 'GitFreddo'
     })
   })
 })

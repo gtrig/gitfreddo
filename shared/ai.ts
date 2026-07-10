@@ -5,8 +5,11 @@ export type AiFillPurpose =
   | 'compose_commits'
   | 'resolve_conflict'
   | 'analyze_changes'
+  | 'refine_commit_plan'
   | 'explain_commit'
   | 'pull_request'
+  | 'analyze_pull_request'
+  | 'refine_pull_request_analysis'
 
 export interface AiComposeCommitProposal {
   summary: string
@@ -18,10 +21,27 @@ export interface AiAnalyzeCommitProposal extends AiComposeCommitProposal {
   rationale: string
 }
 
+export interface AiAnalyzeFeatureGroup {
+  title: string
+  commitIndices: number[]
+}
+
 export interface AiAnalyzeChangesResult {
   summary: string
   keyChanges: string
   risks: string
+  features: AiAnalyzeFeatureGroup[]
+  commits: AiAnalyzeCommitProposal[]
+}
+
+export interface AiChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+export interface AiRefineCommitPlanResult {
+  message: string
+  features: AiAnalyzeFeatureGroup[]
   commits: AiAnalyzeCommitProposal[]
 }
 
@@ -53,6 +73,27 @@ export interface AiPullRequestProposal {
   body: string
 }
 
+export type AiPullRequestAnalysisScope = 'full' | 'partial'
+
+export interface AiAnalyzePullRequestResult {
+  summary: string
+  keyChanges: string
+  risks: string
+  reviewFocus: string
+  testingNotes: string
+}
+
+export interface AiRefinePullRequestAnalysisResult {
+  message: string
+  analysis: AiAnalyzePullRequestResult
+}
+
+export interface AiPullRequestChangedFileStat {
+  path: string
+  additions: number
+  deletions: number
+}
+
 export interface AiConflictResolutionProposal {
   hunkId: number
   text: string
@@ -79,6 +120,19 @@ export interface AiFillContext {
   conflictContent?: string
   operationKind?: 'merge' | 'rebase' | 'cherry-pick'
   incomingLabel?: string
+  commitPlan?: AiAnalyzeCommitProposal[]
+  selectedCommitIndices?: number[]
+  chatHistory?: AiChatMessage[]
+  userMessage?: string
+  prNumber?: number
+  prTitle?: string
+  prBody?: string
+  headSha?: string
+  baseSha?: string
+  analysisScope?: AiPullRequestAnalysisScope
+  pullRequestAnalysis?: AiAnalyzePullRequestResult
+  commitSubjects?: string[]
+  changedFileStats?: AiPullRequestChangedFileStat[]
 }
 
 export interface AiFillParams {
@@ -152,9 +206,12 @@ export function buildAiMessages(
   const system = appendCustomInstructions(
   purpose === 'compose_commits' ||
   purpose === 'analyze_changes' ||
+  purpose === 'refine_commit_plan' ||
   purpose === 'explain_commit' ||
   purpose === 'resolve_conflict' ||
-  purpose === 'pull_request'
+  purpose === 'pull_request' ||
+  purpose === 'analyze_pull_request' ||
+  purpose === 'refine_pull_request_analysis'
     ? 'You write concise, technical text for git workflows. ' +
         'Respond with only valid JSON — no quotes around the whole payload, markdown fences, or preamble.'
     : 'You write concise, technical text for git workflows. ' +
@@ -245,6 +302,12 @@ export function buildAiMessages(
           '  "summary": "One short paragraph of what changed overall",\n' +
           '  "keyChanges": "Bullet-style notes grouped by area or concern",\n' +
           '  "risks": "Review notes or risks; say briefly if none",\n' +
+          '  "features": [\n' +
+          '    {\n' +
+          '      "title": "Short feature or concern label (2-4 words)",\n' +
+          '      "commits": [1, 2]\n' +
+          '    }\n' +
+          '  ],\n' +
           '  "commits": [\n' +
           '    {\n' +
           '      "summary": "imperative subject line (≤72 chars)",\n' +
@@ -256,6 +319,9 @@ export function buildAiMessages(
           '}\n' +
           'Rules:\n' +
           '- Propose one or more commits split by feature, fix, or concern when that improves history\n' +
+          '- Include a features array that groups proposed commits by feature or concern; use 1-based commit indices from the commits array\n' +
+          '- Each commit should appear in exactly one feature group when multiple commits exist; use one feature when there is only one commit\n' +
+          '- Feature titles should be short labels (2-4 words) such as "Auth", "API layer", or "Docs"\n' +
           '- Each commit must be self-contained: after each commit in order, the repo should still build and behave correctly\n' +
           '- Order commits with dependencies first (shared types/utilities before consumers, refactors before features that rely on them)\n' +
           '- Every changed file must appear in exactly one commit files array\n' +
@@ -268,6 +334,76 @@ export function buildAiMessages(
         instructions.commitMessage
       )
       break
+    case 'refine_commit_plan': {
+      const plan = context.commitPlan ?? []
+      const planBlock =
+        plan.length > 0
+          ? plan
+              .map((commit, index) => {
+                const lines = [
+                  `Commit ${index + 1}:`,
+                  `  summary: ${commit.summary}`,
+                  commit.description ? `  description: ${commit.description}` : null,
+                  commit.rationale ? `  rationale: ${commit.rationale}` : null,
+                  `  files: ${JSON.stringify(commit.files)}`
+                ].filter(Boolean)
+                return lines.join('\n')
+              })
+              .join('\n\n')
+          : null
+      const selected =
+        context.selectedCommitIndices && context.selectedCommitIndices.length > 0
+          ? context.selectedCommitIndices.map((index) => index + 1).join(', ')
+          : null
+      const history =
+        context.chatHistory && context.chatHistory.length > 0
+          ? context.chatHistory
+              .map((entry) => `${entry.role === 'user' ? 'User' : 'Assistant'}: ${entry.content}`)
+              .join('\n')
+          : null
+      const request = context.userMessage?.trim()
+      user = appendCommitMessageInstructions(
+        'Refine the proposed commit plan based on the user request.\n' +
+          (branch ? `Branch: ${branch}\n` : '') +
+          (files ? `All changed files:\n${files}\n` : '') +
+          (planBlock ? `Current commit plan:\n${planBlock}\n` : '') +
+          (selected ? `Selected commits (1-based indices the user is referring to): ${selected}\n` : '') +
+          (history ? `Previous conversation:\n${history}\n` : '') +
+          (request ? `Latest user request:\n${request}\n` : '') +
+          'Return ONLY JSON with this shape:\n' +
+          '{\n' +
+          '  "message": "Brief reply explaining what you changed",\n' +
+          '  "features": [\n' +
+          '    {\n' +
+          '      "title": "Short feature or concern label (2-4 words)",\n' +
+          '      "commits": [1, 2]\n' +
+          '    }\n' +
+          '  ],\n' +
+          '  "commits": [\n' +
+          '    {\n' +
+          '      "summary": "imperative subject line (≤72 chars)",\n' +
+          '      "description": "1-3 sentences explaining what changed and why",\n' +
+          '      "files": ["exact/path/from/changed/list"],\n' +
+          '      "rationale": "Why this commit is self-contained and its place in the sequence"\n' +
+          '    }\n' +
+          '  ]\n' +
+          '}\n' +
+          'Rules:\n' +
+          '- Apply the user request to the current plan; common requests include merging selected commits, splitting one commit, reordering, or regrouping by concern\n' +
+          '- Include an updated features array grouping commits by feature or concern using 1-based commit indices\n' +
+          '- When merging commits, combine their files into one commit with a unified summary and description\n' +
+          '- When the user selected specific commits, focus changes on those unless the request affects the whole plan\n' +
+          '- Every changed file must appear in exactly one commit files array\n' +
+          '- Use exact file paths from the changed files list\n' +
+          '- Order commits with dependencies first\n' +
+          '- Keep commits self-contained and logically ordered\n' +
+          '- "message" should briefly describe what you did in plain language\n' +
+          '- Follow the commit message instructions below for every proposed commit subject and body\n' +
+          '- You may use a single "message" field per commit instead of summary/description if it contains subject, blank line, then body',
+        instructions.commitMessage
+      )
+      break
+    }
     case 'explain_commit': {
       const explainCommits = context.commits ?? []
       const commitsBlock =
@@ -333,6 +469,104 @@ export function buildAiMessages(
         instructions.commitMessage
       )
       break
+    case 'analyze_pull_request': {
+      const scope =
+        context.analysisScope === 'partial' ? 'Selected files in this pull request' : 'Entire pull request'
+      const prTitle = context.prTitle?.trim()
+      const prBody = context.prBody?.trim()
+      const commitList =
+        context.commitSubjects && context.commitSubjects.length > 0
+          ? context.commitSubjects.map((subject) => `- ${subject}`).join('\n')
+          : null
+      const fileStats =
+        context.changedFileStats && context.changedFileStats.length > 0
+          ? context.changedFileStats
+              .map(
+                (file) =>
+                  `- ${file.path} (+${file.additions} −${file.deletions})`
+              )
+              .join('\n')
+          : null
+      user = appendCustomInstructions(
+        'Analyze this pull request to help a reviewer understand the change.\n' +
+          (context.prNumber != null ? `Pull request #${context.prNumber}\n` : '') +
+          (prTitle ? `Title: ${prTitle}\n` : '') +
+          (context.headBranch ? `Head branch: ${context.headBranch}\n` : '') +
+          (context.baseBranch ? `Base branch: ${context.baseBranch}\n` : '') +
+          `Analysis scope: ${scope}\n` +
+          (files ? `Files in scope:\n${files}\n` : '') +
+          (fileStats ? `File stats:\n${fileStats}\n` : '') +
+          (commitList ? `Commits:\n${commitList}\n` : '') +
+          (prBody ? `Description:\n${prBody}\n` : '') +
+          diffBlock +
+          'Return ONLY JSON with this shape:\n' +
+          '{\n' +
+          '  "summary": "One short paragraph overview",\n' +
+          '  "keyChanges": "Bullet-style notes grouped by area or concern",\n' +
+          '  "risks": "Review risks, regressions, or missing tests; say briefly if none",\n' +
+          '  "reviewFocus": "What to scrutinize first",\n' +
+          '  "testingNotes": "How to validate the change"\n' +
+          '}\n' +
+          'Rules:\n' +
+          '- Base the analysis on the diff when provided\n' +
+          '- Focus only on files in scope when scope is partial\n' +
+          '- Be concrete and reviewer-oriented\n' +
+          '- Use plain text; markdown lists are fine inside string fields',
+        instructions.system
+      )
+      break
+    }
+    case 'refine_pull_request_analysis': {
+      const scope =
+        context.analysisScope === 'partial' ? 'Selected files in this pull request' : 'Entire pull request'
+      const analysis = context.pullRequestAnalysis
+      const analysisBlock = analysis
+        ? [
+            'Current analysis:',
+            `  summary: ${analysis.summary}`,
+            `  keyChanges: ${analysis.keyChanges}`,
+            `  risks: ${analysis.risks}`,
+            `  reviewFocus: ${analysis.reviewFocus}`,
+            `  testingNotes: ${analysis.testingNotes}`
+          ].join('\n')
+        : null
+      const history =
+        context.chatHistory && context.chatHistory.length > 0
+          ? context.chatHistory
+              .map((entry) => `${entry.role === 'user' ? 'User' : 'Assistant'}: ${entry.content}`)
+              .join('\n')
+          : null
+      const request = context.userMessage?.trim()
+      user = appendCustomInstructions(
+        'Refine the pull request review analysis based on the user request.\n' +
+          (context.prNumber != null ? `Pull request #${context.prNumber}\n` : '') +
+          (context.prTitle ? `Title: ${context.prTitle}\n` : '') +
+          `Analysis scope: ${scope}\n` +
+          (files ? `Files in scope:\n${files}\n` : '') +
+          (analysisBlock ? `${analysisBlock}\n` : '') +
+          diffBlock +
+          (history ? `Previous conversation:\n${history}\n` : '') +
+          (request ? `Latest user request:\n${request}\n` : '') +
+          'Return ONLY JSON with this shape:\n' +
+          '{\n' +
+          '  "message": "Brief reply in plain language about what you changed or answered",\n' +
+          '  "analysis": {\n' +
+          '    "summary": "One short paragraph overview",\n' +
+          '    "keyChanges": "Bullet-style notes grouped by area or concern",\n' +
+          '    "risks": "Review risks, regressions, or missing tests; say briefly if none",\n' +
+          '    "reviewFocus": "What to scrutinize first",\n' +
+          '    "testingNotes": "How to validate the change"\n' +
+          '  }\n' +
+          '}\n' +
+          'Rules:\n' +
+          '- Apply the user request to the current analysis\n' +
+          '- Keep analysis aligned with the files in scope unless the user expands scope\n' +
+          '- "message" should answer the user directly and briefly\n' +
+          '- Update only the analysis fields that the request affects when possible',
+        instructions.system
+      )
+      break
+    }
     case 'resolve_conflict': {
       const filePath = context.filePath?.trim()
       const op = context.operationKind ?? 'merge'
@@ -498,6 +732,54 @@ function parseCommitProposalEntries(
   return proposals
 }
 
+function parseAnalyzeFeatureEntries(entries: unknown, commitCount: number): AiAnalyzeFeatureGroup[] {
+  if (!Array.isArray(entries) || commitCount === 0) {
+    return []
+  }
+
+  const assigned = new Set<number>()
+  const features: AiAnalyzeFeatureGroup[] = []
+
+  for (const entry of entries) {
+    if (!entry || typeof entry !== 'object') continue
+
+    const raw = entry as { title?: unknown; commits?: unknown; commitIndices?: unknown }
+    const title = typeof raw.title === 'string' ? raw.title.trim() : ''
+    if (!title) continue
+
+    const indicesInput = Array.isArray(raw.commits)
+      ? raw.commits
+      : Array.isArray(raw.commitIndices)
+        ? raw.commitIndices
+        : []
+    const commitIndices: number[] = []
+
+    for (const index of indicesInput) {
+      if (typeof index !== 'number' || !Number.isInteger(index)) continue
+
+      const zeroBased =
+        index >= 1 && index <= commitCount
+          ? index - 1
+          : index >= 0 && index < commitCount
+            ? index
+            : -1
+      if (zeroBased < 0 || assigned.has(zeroBased)) continue
+
+      commitIndices.push(zeroBased)
+      assigned.add(zeroBased)
+    }
+
+    if (commitIndices.length === 0) continue
+
+    features.push({
+      title,
+      commitIndices: commitIndices.sort((a, b) => a - b)
+    })
+  }
+
+  return features
+}
+
 function normalizeAnalysisText(value: unknown): string {
   if (typeof value === 'string') {
     return value.trim()
@@ -536,6 +818,73 @@ export function parsePullRequestResponse(text: string): AiPullRequestProposal {
   return { title, body }
 }
 
+function parseAnalyzePullRequestFields(raw: Record<string, unknown>): AiAnalyzePullRequestResult {
+  return {
+    summary: normalizeAnalysisText(raw.summary),
+    keyChanges: normalizeAnalysisText(raw.keyChanges),
+    risks: normalizeAnalysisText(raw.risks),
+    reviewFocus: normalizeAnalysisText(raw.reviewFocus),
+    testingNotes: normalizeAnalysisText(raw.testingNotes)
+  }
+}
+
+export function parseAnalyzePullRequestResponse(text: string): AiAnalyzePullRequestResult {
+  const cleaned = stripJsonFences(text)
+  let parsed: unknown
+
+  try {
+    parsed = JSON.parse(cleaned)
+  } catch {
+    throw new Error('AI response was not valid JSON. Try again or adjust your AI settings.')
+  }
+
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('AI response was not a JSON object.')
+  }
+
+  const analysis = parseAnalyzePullRequestFields(parsed as Record<string, unknown>)
+  if (!analysis.summary && !analysis.keyChanges) {
+    throw new Error('AI returned an empty pull request analysis.')
+  }
+
+  return analysis
+}
+
+export function parseRefinePullRequestAnalysisResponse(
+  text: string
+): AiRefinePullRequestAnalysisResult {
+  const cleaned = stripJsonFences(text)
+  let parsed: unknown
+
+  try {
+    parsed = JSON.parse(cleaned)
+  } catch {
+    throw new Error('AI response was not valid JSON. Try again or adjust your AI settings.')
+  }
+
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('AI response was not a JSON object.')
+  }
+
+  const raw = parsed as { message?: unknown; analysis?: unknown }
+  if (!raw.analysis || typeof raw.analysis !== 'object') {
+    throw new Error('AI returned no updated pull request analysis.')
+  }
+
+  const message = typeof raw.message === 'string' ? raw.message.trim() : ''
+  const analysis = parseAnalyzePullRequestFields(raw.analysis as Record<string, unknown>)
+
+  if (!message) {
+    throw new Error('AI returned no reply message.')
+  }
+
+  if (!analysis.summary && !analysis.keyChanges) {
+    throw new Error('AI returned an empty pull request analysis.')
+  }
+
+  return { message, analysis }
+}
+
 export function parseAnalyzeChangesResponse(
   text: string,
   changedPaths: string[]
@@ -557,6 +906,7 @@ export function parseAnalyzeChangesResponse(
     summary?: unknown
     keyChanges?: unknown
     risks?: unknown
+    features?: unknown
     commits?: unknown
   }
 
@@ -568,12 +918,53 @@ export function parseAnalyzeChangesResponse(
     throw new Error('AI returned no usable commit proposals for the changed files.')
   }
 
+  const features = parseAnalyzeFeatureEntries(raw.features, commits.length)
+
   return {
     summary: normalizeAnalysisText(raw.summary),
     keyChanges: normalizeAnalysisText(raw.keyChanges),
     risks: normalizeAnalysisText(raw.risks),
+    features,
     commits
   }
+}
+
+export function parseRefineCommitPlanResponse(
+  text: string,
+  changedPaths: string[]
+): AiRefineCommitPlanResult {
+  const cleaned = stripJsonFences(text)
+  let parsed: unknown
+
+  try {
+    parsed = JSON.parse(cleaned)
+  } catch {
+    throw new Error('AI response was not valid JSON. Try again or adjust your AI settings.')
+  }
+
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('AI response was not a JSON object.')
+  }
+
+  const raw = parsed as { message?: unknown; features?: unknown; commits?: unknown }
+  if (!Array.isArray(raw.commits) || raw.commits.length === 0) {
+    throw new Error('AI returned no usable commit proposals for the changed files.')
+  }
+
+  const commits = parseCommitProposalEntries(raw.commits, changedPaths, { includeRationale: true })
+
+  if (commits.length === 0) {
+    throw new Error('AI returned no usable commit proposals for the changed files.')
+  }
+
+  const features = parseAnalyzeFeatureEntries(raw.features, commits.length)
+
+  const message =
+    typeof raw.message === 'string' && raw.message.trim()
+      ? raw.message.trim()
+      : 'Updated the commit plan.'
+
+  return { message, features, commits }
 }
 
 function resolveExplainCommitHash(

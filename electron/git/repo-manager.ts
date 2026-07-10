@@ -236,7 +236,9 @@ export class RepoManager {
           git,
           p.fromRef as string,
           p.toRef as string,
-          p.path as string | undefined
+          p.path as string | undefined,
+          Boolean(p.mergeBase),
+          Array.isArray(p.paths) ? (p.paths as string[]) : undefined
         )
       case 'diff.commitRange':
         return diffOps.diffCommitRange(

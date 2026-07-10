@@ -7,6 +7,66 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-10 — AI pull request review with scoped analysis and chat
+
+- **Why:** Reviewers need AI help on full PRs or selected files, with follow-up prompts to refine the analysis.
+- **What:** `analyze_pull_request` / `refine_pull_request_analysis` purposes, merge-base diff enrichment by SHA, file checkboxes in PR sidebar, `AnalyzePullRequestWithAi` modal with `AiPromptChat`.
+
+### 2026-07-10 — Interactive chat to refine AI commit plan
+
+- **Why:** After AI analysis proposes multiple commits, users should be able to select proposals and ask to merge, split, or reorganize them without re-running full analysis.
+- **What:** Chat panel in the Analyze with AI modal; new `refine_commit_plan` AI purpose with `parseRefineCommitPlanResponse`; selected commit checkboxes passed as context for follow-up requests; model returns selectable **feature** groups (short titles linked to commits) for grouping and bulk selection.
+
+### 2026-07-10 — GitHub markdown editor for PR comments
+
+- **Why:** PR comment boxes should match GitHub’s markdown write/preview experience, and posted messages should render as formatted markdown.
+- **What:** `GitHubMarkdownEditor` (toolbar + Write/Preview tabs) in PR comment/reply modals; `GitHubMarkdownBody` renders conversation, threads, and PR description as GFM.
+
+### 2026-07-10 — PR review thread reply and resolve
+
+- **Why:** Users need to respond to line review comments and mark threads resolved without leaving GitFreddo.
+- **What:** GraphQL review threads (`listPullRequestReviewThreads`, resolve/unresolve); REST replies with pending-review handling; `PullRequestReviewThreadCard` in Overview and inline on diffs; IPC/hooks/i18n.
+
+### 2026-07-10 — Scrollable commit sidebar and collapsible descriptions
+
+- **Why:** Long commit bodies and file lists could overflow the right detail panel with no way to scroll or skim the message.
+- **What:** Commit detail sidebar scrolls as one pane; commit descriptions truncate to ~200 characters with Show more / Show less (`CommitDescriptionPreview`, `CommitPreview`, `textPreview`).
+
+### 2026-07-10 — PR API repo targeting and pending review comments
+
+- **Why:** Comments were fetched/posted against the wrong GitHub repo (fork vs upstream), and line comments failed when a pending review already existed (422).
+- **What:** PR APIs use the PR's canonical `repository`; multi-remote PR lookup; pending review attachment for new line comments; pending reviews shown in conversation.
+
+### 2026-07-10 — PR line comment anchoring fix
+
+- **Why:** GitHub line comments on PR diffs did not appear in GitFreddo (wrong diff range, missing `original_line` fallback).
+- **What:** PR file diffs now use merge-base three-dot range (`base...head`); review comments normalize `original_line` and default `side` for timeline and inline display.
+
+### 2026-07-10 — Pull request conversation in Overview
+
+- **Why:** PR activity should match GitHub’s Conversation tab, not a separate Discussion sidebar tab.
+- **What:** Merged timeline into Overview (opening post + comments/reviews); inline line comments on file diffs (`PullRequestOverviewPanel`, `DiffLineCommentBlocks`).
+
+### 2026-07-10 — Pull request discussion timeline
+
+- **Why:** Existing PR comments and reviews from other users were invisible in the in-app detail view.
+- **What:** Fetches conversation comments, line review comments, and reviews from GitHub; merges into a chronological timeline (`listPullRequestConversationComments`, `useGitHubPullRequestTimeline`).
+
+### 2026-07-10 — In-app GitHub pull request detail
+
+- **Why:** Users should review and act on pull requests from the sidebar without leaving GitFreddo.
+- **What:** Clicking a GitHub PR opens a full-screen detail view with split-pane layout (file list + overview/diff), merge/reopen/comment actions, and typed IPC/hooks; Bitbucket PRs still open in the browser.
+
+### 2026-07-10 — Pull request commits and line comments
+
+- **Why:** PR review requires seeing the commit stack and leaving feedback on specific diff lines.
+- **What:** Commits tab lists PR commits from GitHub; diff rows expose review-comment actions that post via `githubPostPullRequestReviewComment` IPC (`listPullRequestCommits`, `AddPrLineCommentModal`, sidebar tabs).
+
+### 2026-07-10 — Pull request detail UX redesign
+
+- **Why:** The first PR detail screen was cramped and unlike other inspection flows in the app.
+- **What:** Redesigned to match commit detail: overview panel, sortable file list with per-file stats, local diff via `base..head` when available, and a clearer header/action bar (`PullRequestDetail`, `PullRequestFileList`, `src/lib/github/prFiles`).
+
 ### 2026-07-09 — Selective AI commit creation
 
 - **Why:** Users may want only some of the AI-proposed commits, leaving the rest unstaged for re-analysis or manual commits.

@@ -139,6 +139,9 @@ export interface DiffCommitsParams {
   fromRef: string
   toRef: string
   path?: string
+  paths?: string[]
+  /** When true, use git's three-dot range (merge-base..to) like GitHub PR diffs. */
+  mergeBase?: boolean
 }
 
 export interface DiffCommitRangeParams {

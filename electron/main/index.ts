@@ -37,12 +37,25 @@ import {
   createGitHubRepo,
   disconnectGitHub,
   forkGitHubRepo,
+  getGitHubPullRequest,
   getGitHubStatus,
   listGitHubIssues,
+  listGitHubPullRequestFiles,
+  listGitHubPullRequestCommits,
+  listGitHubPullRequestConversationComments,
+  listGitHubPullRequestReviewComments,
+  listGitHubPullRequestReviews,
+  listGitHubPullRequestReviewThreads,
   listGitHubPullRequests,
   listGitHubRepos,
   mergeGitHubPullRequest,
+  postGitHubPullRequestComment,
+  postGitHubPullRequestReviewComment,
+  replyGitHubPullRequestReviewComment,
+  reopenGitHubPullRequest,
+  resolveGitHubPullRequestReviewThread,
   tryGetGitHubRepoContext,
+  unresolveGitHubPullRequestReviewThread,
   updateGitHubIssue,
   uploadGitHubSshKey
 } from '../github/service'
@@ -411,6 +424,55 @@ function registerIpc(): void {
     listGitHubPullRequests(repoPath, settings)
   )
 
+  ipcMain.handle('gitfreddo:github-get-pull-request', async (
+    _event,
+    repoPath: string,
+    number: number,
+    repository
+  ) => getGitHubPullRequest(repoPath, settings, number, repository))
+
+  ipcMain.handle('gitfreddo:github-list-pull-request-files', async (
+    _event,
+    repoPath: string,
+    number: number,
+    repository
+  ) => listGitHubPullRequestFiles(repoPath, settings, number, repository))
+
+  ipcMain.handle('gitfreddo:github-list-pull-request-commits', async (
+    _event,
+    repoPath: string,
+    number: number,
+    repository
+  ) => listGitHubPullRequestCommits(repoPath, settings, number, repository))
+
+  ipcMain.handle('gitfreddo:github-list-pull-request-conversation-comments', async (
+    _event,
+    repoPath: string,
+    number: number,
+    repository
+  ) => listGitHubPullRequestConversationComments(repoPath, settings, number, repository))
+
+  ipcMain.handle('gitfreddo:github-list-pull-request-review-comments', async (
+    _event,
+    repoPath: string,
+    number: number,
+    repository
+  ) => listGitHubPullRequestReviewComments(repoPath, settings, number, repository))
+
+  ipcMain.handle('gitfreddo:github-list-pull-request-reviews', async (
+    _event,
+    repoPath: string,
+    number: number,
+    repository
+  ) => listGitHubPullRequestReviews(repoPath, settings, number, repository))
+
+  ipcMain.handle('gitfreddo:github-list-pull-request-review-threads', async (
+    _event,
+    repoPath: string,
+    number: number,
+    repository
+  ) => listGitHubPullRequestReviewThreads(repoPath, settings, number, repository))
+
   ipcMain.handle('gitfreddo:github-create-pull-request', async (_event, repoPath: string, params) =>
     createGitHubPullRequest(repoPath, settings, params)
   )
@@ -421,6 +483,49 @@ function registerIpc(): void {
     number: number,
     method
   ) => mergeGitHubPullRequest(repoPath, settings, number, method))
+
+  ipcMain.handle('gitfreddo:github-reopen-pull-request', async (
+    _event,
+    repoPath: string,
+    number: number
+  ) => reopenGitHubPullRequest(repoPath, settings, number))
+
+  ipcMain.handle('gitfreddo:github-post-pull-request-comment', async (
+    _event,
+    repoPath: string,
+    number: number,
+    body: string,
+    repository
+  ) => postGitHubPullRequestComment(repoPath, settings, number, body, repository))
+
+  ipcMain.handle('gitfreddo:github-post-pull-request-review-comment', async (
+    _event,
+    repoPath: string,
+    number: number,
+    params,
+    repository
+  ) => postGitHubPullRequestReviewComment(repoPath, settings, number, params, repository))
+
+  ipcMain.handle('gitfreddo:github-reply-pull-request-review-comment', async (
+    _event,
+    repoPath: string,
+    number: number,
+    commentId: number,
+    body: string,
+    repository
+  ) => replyGitHubPullRequestReviewComment(repoPath, settings, number, commentId, body, repository))
+
+  ipcMain.handle('gitfreddo:github-resolve-pull-request-review-thread', async (
+    _event,
+    repoPath: string,
+    threadId: string
+  ) => resolveGitHubPullRequestReviewThread(repoPath, settings, threadId))
+
+  ipcMain.handle('gitfreddo:github-unresolve-pull-request-review-thread', async (
+    _event,
+    repoPath: string,
+    threadId: string
+  ) => unresolveGitHubPullRequestReviewThread(repoPath, settings, threadId))
 
   ipcMain.handle(
     'gitfreddo:github-list-issues',

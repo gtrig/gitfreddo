@@ -263,6 +263,7 @@ export function CommitFileList({
   onShowAllFilesChange,
   loadingAllFiles = false,
   showBadges = true,
+  embedded = false,
   className = ''
 }: {
   files: CommitFileItem[]
@@ -275,6 +276,7 @@ export function CommitFileList({
   onShowAllFilesChange: (value: boolean) => void
   loadingAllFiles?: boolean
   showBadges?: boolean
+  embedded?: boolean
   className?: string
 }) {
   const { t } = useTranslation()
@@ -307,7 +309,9 @@ export function CommitFileList({
   }
 
   return (
-    <div className={`flex min-h-0 flex-1 flex-col ${className}`}>
+    <div
+      className={`flex flex-col ${embedded ? '' : 'min-h-0 flex-1'} ${className}`}
+    >
       {showBadges && (
         <div className="border-b border-gf-border px-4 py-2.5">
           <FileChangeBadges counts={counts} t={t} />
@@ -344,15 +348,32 @@ export function CommitFileList({
               {t('detail.tree')}
             </button>
           </div>
-          <label className="flex cursor-pointer items-center gap-1.5 text-xs text-gf-fg-muted">
-            <input
-              type="checkbox"
-              checked={showAllFiles}
-              onChange={(event) => onShowAllFilesChange(event.target.checked)}
-              className="rounded border-gf-border-strong"
-            />
+          <button
+            type="button"
+            role="switch"
+            aria-checked={showAllFiles}
+            aria-label={t('detail.showAllFiles')}
+            onClick={() => onShowAllFilesChange(!showAllFiles)}
+            className={`inline-flex items-center gap-2 rounded-md border px-2 py-0.5 text-xs transition-colors ${
+              showAllFiles
+                ? 'border-gf-accent/40 bg-gf-accent/10 text-gf-fg'
+                : 'border-gf-border-strong text-gf-fg-subtle hover:bg-gf-surface-hover hover:text-gf-fg-muted'
+            }`}
+          >
+            <span
+              aria-hidden
+              className={`relative inline-flex h-3.5 w-6 shrink-0 rounded-full transition-colors ${
+                showAllFiles ? 'bg-gf-accent' : 'bg-gf-border-strong'
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 h-2.5 w-2.5 rounded-full bg-white shadow-sm transition-transform ${
+                  showAllFiles ? 'translate-x-2.5' : 'translate-x-0'
+                }`}
+              />
+            </span>
             {t('detail.showAllFiles')}
-          </label>
+          </button>
         </div>
         {viewMode === 'tree' && (
           <button
@@ -365,7 +386,7 @@ export function CommitFileList({
         )}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className={embedded ? '' : 'min-h-0 flex-1 overflow-y-auto'}>
         {(loading || (showAllFiles && loadingAllFiles)) && (
           <p className="px-4 py-3 text-sm text-gf-fg-subtle">{t('detail.loadingFiles')}</p>
         )}

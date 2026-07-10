@@ -28,11 +28,13 @@ describe('StartupModal', () => {
     )
 
     expect(
-      screen.getByText('Themes preview instantly in Settings before you save.')
+      screen.getByText(
+        'Analyze GitHub pull requests with AI — entire PR or selected files — and refine the review through follow-up prompts.'
+      )
     ).toBeInTheDocument()
     expect(
       screen.getByText(
-        'Click and drag anywhere on the commit timeline to select a range of commits.'
+        'PR comments and replies use a GitHub-style markdown editor with Write/Preview tabs and a formatting toolbar.'
       )
     ).toBeInTheDocument()
   })

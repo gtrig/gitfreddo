@@ -310,6 +310,15 @@ describe('command argv builders', () => {
     expect(buildDiffWorkingArgs({ path: 'a.ts', wordDiff: true })).toContain('--word-diff=plain')
     expect(buildDiffStagedArgs({ path: 'a.ts' })).toContain('--cached')
     expect(buildDiffCommitsArgs({ from: 'a', to: 'b', path: 'f' })).toContain('a')
+    expect(buildDiffCommitsArgs({ from: 'a', to: 'b', path: 'f', mergeBase: true })).toEqual([
+      'diff',
+      'a...b',
+      '--',
+      'f'
+    ])
+    expect(
+      buildDiffCommitsArgs({ from: 'a', to: 'b', paths: ['f.ts', 'g.ts'], mergeBase: true })
+    ).toEqual(['diff', 'a...b', '--', 'f.ts', 'g.ts'])
     expect(buildDiffCommitRangeArgs({ oldest: 'a', newest: 'b', hasParent: true })).toContain('a^')
     expect(buildDiffNoIndexArgs({ path: 'new.ts' })).toContain('--no-index')
   })

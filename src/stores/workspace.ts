@@ -46,6 +46,13 @@ interface WorkspaceState {
   setWorkspacePath: (path: string | null) => void
   /** @deprecated */
   setConnected: (connected: boolean) => void
+  prDetailNumber: number | null
+  prDetailRepository: import('@shared/github').GitHubPullRequestRepository | null
+  openPrDetail: (target: {
+    number: number
+    repository?: import('@shared/github').GitHubPullRequestRepository
+  }) => void
+  closePrDetail: () => void
 }
 
 function tabLabel(path: string): string {
@@ -409,5 +416,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }
     const nextTabs = updateTab(tabs, activePath, { connected })
     set({ tabs: nextTabs, ...syncLegacyFields(nextTabs, activePath) })
-  }
+  },
+
+  prDetailNumber: null,
+  prDetailRepository: null,
+  openPrDetail: (target) =>
+    set({
+      prDetailNumber: target.number,
+      prDetailRepository: target.repository ?? null
+    }),
+  closePrDetail: () => set({ prDetailNumber: null, prDetailRepository: null })
 }))

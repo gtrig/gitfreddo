@@ -40,10 +40,64 @@ const api: GitFreddoAPI = {
     ipcRenderer.invoke('gitfreddo:github-get-repo-context', repoPath),
   githubListPullRequests: (repoPath) =>
     ipcRenderer.invoke('gitfreddo:github-list-pull-requests', repoPath),
+  githubGetPullRequest: (repoPath, number, repository) =>
+    ipcRenderer.invoke('gitfreddo:github-get-pull-request', repoPath, number, repository),
+  githubListPullRequestFiles: (repoPath, number, repository) =>
+    ipcRenderer.invoke('gitfreddo:github-list-pull-request-files', repoPath, number, repository),
+  githubListPullRequestCommits: (repoPath, number, repository) =>
+    ipcRenderer.invoke('gitfreddo:github-list-pull-request-commits', repoPath, number, repository),
+  githubListPullRequestConversationComments: (repoPath, number, repository) =>
+    ipcRenderer.invoke(
+      'gitfreddo:github-list-pull-request-conversation-comments',
+      repoPath,
+      number,
+      repository
+    ),
+  githubListPullRequestReviewComments: (repoPath, number, repository) =>
+    ipcRenderer.invoke(
+      'gitfreddo:github-list-pull-request-review-comments',
+      repoPath,
+      number,
+      repository
+    ),
+  githubListPullRequestReviews: (repoPath, number, repository) =>
+    ipcRenderer.invoke('gitfreddo:github-list-pull-request-reviews', repoPath, number, repository),
+  githubListPullRequestReviewThreads: (repoPath, number, repository) =>
+    ipcRenderer.invoke(
+      'gitfreddo:github-list-pull-request-review-threads',
+      repoPath,
+      number,
+      repository
+    ),
   githubCreatePullRequest: (repoPath, params) =>
     ipcRenderer.invoke('gitfreddo:github-create-pull-request', repoPath, params),
   githubMergePullRequest: (repoPath, number, method) =>
     ipcRenderer.invoke('gitfreddo:github-merge-pull-request', repoPath, number, method),
+  githubReopenPullRequest: (repoPath, number) =>
+    ipcRenderer.invoke('gitfreddo:github-reopen-pull-request', repoPath, number),
+  githubPostPullRequestComment: (repoPath, number, body, repository) =>
+    ipcRenderer.invoke('gitfreddo:github-post-pull-request-comment', repoPath, number, body, repository),
+  githubPostPullRequestReviewComment: (repoPath, number, params, repository) =>
+    ipcRenderer.invoke(
+      'gitfreddo:github-post-pull-request-review-comment',
+      repoPath,
+      number,
+      params,
+      repository
+    ),
+  githubReplyPullRequestReviewComment: (repoPath, number, commentId, body, repository) =>
+    ipcRenderer.invoke(
+      'gitfreddo:github-reply-pull-request-review-comment',
+      repoPath,
+      number,
+      commentId,
+      body,
+      repository
+    ),
+  githubResolvePullRequestReviewThread: (repoPath, threadId) =>
+    ipcRenderer.invoke('gitfreddo:github-resolve-pull-request-review-thread', repoPath, threadId),
+  githubUnresolvePullRequestReviewThread: (repoPath, threadId) =>
+    ipcRenderer.invoke('gitfreddo:github-unresolve-pull-request-review-thread', repoPath, threadId),
   githubListIssues: (repoPath, assigneeLogin) =>
     ipcRenderer.invoke('gitfreddo:github-list-issues', repoPath, assigneeLogin),
   githubCreateIssue: (repoPath, params) =>

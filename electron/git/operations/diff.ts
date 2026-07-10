@@ -95,13 +95,15 @@ export async function diffCommits(
   gitBinaryPath: string,
   fromRef: string,
   toRef: string,
-  path?: string
+  path?: string,
+  mergeBase = false,
+  paths?: string[]
 ): Promise<GitDiffResult> {
   const from = await resolveGitRef(cwd, gitBinaryPath, fromRef)
   const to = await resolveGitRef(cwd, gitBinaryPath, toRef)
-  const args = buildDiffCommitsArgs({ from, to, path })
+  const args = buildDiffCommitsArgs({ from, to, path, paths, mergeBase })
   const unified = await runGitOrThrow(args, { cwd, gitBinaryPath })
-  return { unified, path: path ?? '' }
+  return { unified, path: path ?? paths?.join(', ') ?? '' }
 }
 
 export async function diffCommitRange(

@@ -146,6 +146,56 @@ export interface GitFreddoAPI {
   githubUploadSshKey: (title: string) => Promise<{ title: string; publicKey: string }>
   githubGetRepoContext: (repoPath: string) => Promise<import('./github').GitHubRepoContext | null>
   githubListPullRequests: (repoPath: string) => Promise<import('./github').GitHubPullRequest[]>
+  githubGetPullRequest: (
+    repoPath: string,
+    number: number,
+    repository?: import('./github').GitHubPullRequestRepository
+  ) => Promise<import('./github').GitHubPullRequest>
+  githubListPullRequestFiles: (
+    repoPath: string,
+    number: number,
+    repository?: import('./github').GitHubPullRequestRepository
+  ) => Promise<import('./github').GitHubPullRequestFile[]>
+  githubListPullRequestCommits: (
+    repoPath: string,
+    number: number,
+    repository?: import('./github').GitHubPullRequestRepository
+  ) => Promise<import('./github').GitHubPullRequestCommit[]>
+  githubListPullRequestConversationComments: (
+    repoPath: string,
+    number: number,
+    repository?: import('./github').GitHubPullRequestRepository
+  ) => Promise<import('./github').GitHubPullRequestConversationComment[]>
+  githubListPullRequestReviewComments: (
+    repoPath: string,
+    number: number,
+    repository?: import('./github').GitHubPullRequestRepository
+  ) => Promise<import('./github').GitHubPullRequestReviewComment[]>
+  githubListPullRequestReviews: (
+    repoPath: string,
+    number: number,
+    repository?: import('./github').GitHubPullRequestRepository
+  ) => Promise<import('./github').GitHubPullRequestReview[]>
+  githubListPullRequestReviewThreads: (
+    repoPath: string,
+    number: number,
+    repository?: import('./github').GitHubPullRequestRepository
+  ) => Promise<import('./github').GitHubPullRequestReviewThread[]>
+  githubReplyPullRequestReviewComment: (
+    repoPath: string,
+    number: number,
+    commentId: number,
+    body: string,
+    repository?: import('./github').GitHubPullRequestRepository
+  ) => Promise<void>
+  githubResolvePullRequestReviewThread: (
+    repoPath: string,
+    threadId: string
+  ) => Promise<void>
+  githubUnresolvePullRequestReviewThread: (
+    repoPath: string,
+    threadId: string
+  ) => Promise<void>
   githubCreatePullRequest: (
     repoPath: string,
     params: import('./github').GitHubCreatePullRequestParams
@@ -154,6 +204,22 @@ export interface GitFreddoAPI {
     repoPath: string,
     number: number,
     method: import('./github').GitHubMergeMethod
+  ) => Promise<void>
+  githubReopenPullRequest: (
+    repoPath: string,
+    number: number
+  ) => Promise<import('./github').GitHubPullRequest>
+  githubPostPullRequestComment: (
+    repoPath: string,
+    number: number,
+    body: string,
+    repository?: import('./github').GitHubPullRequestRepository
+  ) => Promise<void>
+  githubPostPullRequestReviewComment: (
+    repoPath: string,
+    number: number,
+    params: import('./github').GitHubPullRequestReviewCommentParams,
+    repository?: import('./github').GitHubPullRequestRepository
   ) => Promise<void>
   githubListIssues: (repoPath: string, assigneeLogin?: string) => Promise<import('./github').GitHubIssue[]>
   githubCreateIssue: (

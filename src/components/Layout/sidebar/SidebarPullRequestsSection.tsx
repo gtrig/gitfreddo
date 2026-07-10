@@ -19,7 +19,14 @@ import type { GitHubPullRequest } from '@shared/github'
 
 type ForgePullRequest = GitHubPullRequest | BitbucketPullRequest
 
-export function SidebarPullRequestsSection() {
+interface SidebarPullRequestsSectionProps {
+  onOpenPrDetail?: (target: {
+    number: number
+    repository: GitHubPullRequest['repository']
+  }) => void
+}
+
+export function SidebarPullRequestsSection({ onOpenPrDetail }: SidebarPullRequestsSectionProps) {
   const { t } = useTranslation()
   const connected = useWorkspaceStore((s) => s.connected)
   const repoPath = useWorkspaceStore((s) => s.activePath)
@@ -132,7 +139,16 @@ export function SidebarPullRequestsSection() {
                     }
                     menuItems={prMenuItems}
                     openMenu={openMenu}
-                    onClick={() => window.open(pr.htmlUrl, '_blank', 'noopener,noreferrer')}
+                    onClick={() => {
+                      if (forge.provider === 'github') {
+                        onOpenPrDetail?.({
+                          number: pr.number,
+                          repository: (pr as GitHubPullRequest).repository
+                        })
+                      } else {
+                        window.open(pr.htmlUrl, '_blank', 'noopener,noreferrer')
+                      }
+                    }}
                   />
                 )
               })}

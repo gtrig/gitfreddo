@@ -187,3 +187,32 @@ describe('enrichAiContext pull_request', () => {
     expect(enriched.context?.diffText).toBe('already loaded')
   })
 })
+
+describe('enrichAiContext analyze_pull_request', () => {
+  it('loads merge-base diff for scoped pull request SHAs', async () => {
+    const invoke = vi.fn(async (_repoPath: string, method: string, params?: unknown) => {
+      if (method === 'diff.commits') {
+        expect(params).toEqual({
+          fromRef: 'basesha',
+          toRef: 'headsha',
+          mergeBase: true,
+          paths: ['src/a.ts']
+        })
+        return { unified: '+++ b/src/a.ts\n+change' }
+      }
+      throw new Error(`unexpected ${method}`)
+    })
+
+    const enriched = await enrichAiContext(createManager(invoke), {
+      purpose: 'analyze_pull_request',
+      context: {
+        baseSha: 'basesha',
+        headSha: 'headsha',
+        analysisScope: 'partial',
+        filePaths: ['src/a.ts']
+      }
+    })
+
+    expect(enriched.context?.diffText).toContain('src/a.ts')
+  })
+})

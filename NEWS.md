@@ -5,6 +5,13 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+- Analyze GitHub pull requests with AI — entire PR or selected files — and refine the review through follow-up prompts.
+- Refine AI commit plans through chat — select proposals and ask to merge, split, or reorganize before creating commits.
+- AI analysis groups proposed commits by selectable feature labels (e.g. Auth, Docs) for quick bulk selection.
+- PR comments and replies use a GitHub-style markdown editor with Write/Preview tabs and a formatting toolbar.
+- Reply to and resolve GitHub pull request line comment threads from the PR overview and file diffs.
+- Commit detail sidebar scrolls when content is long; descriptions show ~200 characters with Show more / Show less.
+- Open GitHub pull requests from the sidebar to review files, commits, merge, reopen, and comment — including existing discussion, reviews, and line comments.
 - AI change analysis lets you choose which proposed commits to create; unselected files stay unstaged.
 - Themes preview instantly in Settings before you save.
 - Themes now use coffee drink names (Iced prefix on light schemes).

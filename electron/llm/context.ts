@@ -6,7 +6,9 @@ const DIFF_PURPOSES = new Set<AiFillParams['purpose']>([
   'stash_message',
   'compose_commits',
   'analyze_changes',
-  'explain_commit'
+  'explain_commit',
+  'analyze_pull_request',
+  'refine_pull_request_analysis'
 ])
 const MAX_DIFF_CHARS = 8000
 const MAX_STAGE_CHARS = 12000
@@ -148,6 +150,45 @@ export async function enrichAiContext(
           operationKind,
           incomingLabel,
           ...stages
+        }
+      }
+    } catch {
+      return params
+    }
+  }
+
+  if (
+    params.purpose === 'analyze_pull_request' ||
+    params.purpose === 'refine_pull_request_analysis'
+  ) {
+    const baseSha = params.context?.baseSha?.trim()
+    const headSha = params.context?.headSha?.trim()
+    if (!baseSha || !headSha || params.context?.diffText) {
+      return params
+    }
+
+    const scopedPaths =
+      params.context?.analysisScope === 'partial' && params.context.filePaths?.length
+        ? params.context.filePaths
+        : undefined
+
+    try {
+      const diff = await manager.invoke(repoPath, 'diff.commits', {
+        fromRef: baseSha,
+        toRef: headSha,
+        mergeBase: true,
+        paths: scopedPaths
+      })
+      const diffText = diff.unified?.trim()
+      if (!diffText) {
+        return params
+      }
+
+      return {
+        ...params,
+        context: {
+          ...params.context,
+          diffText: truncateDiff(diffText)
         }
       }
     } catch {
