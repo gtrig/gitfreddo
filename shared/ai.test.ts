@@ -7,10 +7,12 @@ import {
   isNonChatModelId,
   normalizeBaseUrl,
   parseAnalyzeChangesResponse,
+  parseAnalyzePullRequestResponse,
   parseComposeCommitsResponse,
   parseConflictResolveResponse,
   parseExplainCommitResponse,
   parseRefineCommitPlanResponse,
+  parseRefinePullRequestAnalysisResponse,
   parsePullRequestResponse,
   pickChatModelId,
   proposalsToResolutionMap
@@ -715,5 +717,66 @@ describe('parseConflictResolveResponse', () => {
         2
       )
     ).toThrow(/missing resolution/)
+  })
+})
+
+describe('parseAnalyzePullRequestResponse', () => {
+  it('parses structured pull request analysis', () => {
+    const result = parseAnalyzePullRequestResponse(
+      JSON.stringify({
+        summary: 'Refactors auth flow',
+        keyChanges: '- Token refresh\n- Session store',
+        risks: 'Missing logout coverage',
+        reviewFocus: 'Session edge cases',
+        testingNotes: 'Run auth e2e'
+      })
+    )
+
+    expect(result.summary).toBe('Refactors auth flow')
+    expect(result.keyChanges).toContain('Token refresh')
+    expect(result.risks).toContain('logout')
+    expect(result.reviewFocus).toBe('Session edge cases')
+    expect(result.testingNotes).toBe('Run auth e2e')
+  })
+})
+
+describe('parseRefinePullRequestAnalysisResponse', () => {
+  it('parses assistant reply and updated analysis', () => {
+    const result = parseRefinePullRequestAnalysisResponse(
+      JSON.stringify({
+        message: 'I focused the risks on auth edge cases.',
+        analysis: {
+          summary: 'Auth refactor',
+          keyChanges: '- Refresh tokens',
+          risks: 'Expired session handling',
+          reviewFocus: 'Token refresh path',
+          testingNotes: 'Add logout test'
+        }
+      })
+    )
+
+    expect(result.message).toContain('focused the risks')
+    expect(result.analysis.summary).toBe('Auth refactor')
+    expect(result.analysis.risks).toContain('Expired session')
+  })
+})
+
+describe('buildAiMessages analyze_pull_request', () => {
+  it('includes pull request metadata and scope', () => {
+    const { user } = buildAiMessages('analyze_pull_request', {
+      prNumber: 7,
+      prTitle: 'Add auth',
+      headBranch: 'feature',
+      baseBranch: 'main',
+      analysisScope: 'partial',
+      filePaths: ['src/auth.ts'],
+      commitSubjects: ['Add refresh helper']
+    })
+
+    expect(user).toContain('Pull request #7')
+    expect(user).toContain('Add auth')
+    expect(user).toContain('Selected files')
+    expect(user).toContain('src/auth.ts')
+    expect(user).toContain('Add refresh helper')
   })
 })

@@ -94,7 +94,7 @@ export async function aiFill(config: AiClientConfig, params: AiFillParams): Prom
         { role: 'user', content: user }
       ],
       // temperature: 0.4,
-      max_tokens: 100000,
+      max_tokens: 50000,
       stream: false
     })
   })

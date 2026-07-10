@@ -7,6 +7,16 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-10 — AI pull request review with scoped analysis and chat
+
+- **Why:** Reviewers need AI help on full PRs or selected files, with follow-up prompts to refine the analysis.
+- **What:** `analyze_pull_request` / `refine_pull_request_analysis` purposes, merge-base diff enrichment by SHA, file checkboxes in PR sidebar, `AnalyzePullRequestWithAi` modal with `AiPromptChat`.
+
+### 2026-07-10 — Interactive chat to refine AI commit plan
+
+- **Why:** After AI analysis proposes multiple commits, users should be able to select proposals and ask to merge, split, or reorganize them without re-running full analysis.
+- **What:** Chat panel in the Analyze with AI modal; new `refine_commit_plan` AI purpose with `parseRefineCommitPlanResponse`; selected commit checkboxes passed as context for follow-up requests; model returns selectable **feature** groups (short titles linked to commits) for grouping and bulk selection.
+
 ### 2026-07-10 — GitHub markdown editor for PR comments
 
 - **Why:** PR comment boxes should match GitHub’s markdown write/preview experience, and posted messages should render as formatted markdown.

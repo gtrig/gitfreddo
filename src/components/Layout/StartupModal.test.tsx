@@ -29,12 +29,12 @@ describe('StartupModal', () => {
 
     expect(
       screen.getByText(
-        'PR comments and replies use a GitHub-style markdown editor with Write/Preview tabs and a formatting toolbar.'
+        'Analyze GitHub pull requests with AI — entire PR or selected files — and refine the review through follow-up prompts.'
       )
     ).toBeInTheDocument()
     expect(
       screen.getByText(
-        'Commit detail sidebar scrolls when content is long; descriptions show ~200 characters with Show more / Show less.'
+        'PR comments and replies use a GitHub-style markdown editor with Write/Preview tabs and a formatting toolbar.'
       )
     ).toBeInTheDocument()
   })

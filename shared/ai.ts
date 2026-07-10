@@ -8,6 +8,8 @@ export type AiFillPurpose =
   | 'refine_commit_plan'
   | 'explain_commit'
   | 'pull_request'
+  | 'analyze_pull_request'
+  | 'refine_pull_request_analysis'
 
 export interface AiComposeCommitProposal {
   summary: string
@@ -71,6 +73,27 @@ export interface AiPullRequestProposal {
   body: string
 }
 
+export type AiPullRequestAnalysisScope = 'full' | 'partial'
+
+export interface AiAnalyzePullRequestResult {
+  summary: string
+  keyChanges: string
+  risks: string
+  reviewFocus: string
+  testingNotes: string
+}
+
+export interface AiRefinePullRequestAnalysisResult {
+  message: string
+  analysis: AiAnalyzePullRequestResult
+}
+
+export interface AiPullRequestChangedFileStat {
+  path: string
+  additions: number
+  deletions: number
+}
+
 export interface AiConflictResolutionProposal {
   hunkId: number
   text: string
@@ -101,6 +124,15 @@ export interface AiFillContext {
   selectedCommitIndices?: number[]
   chatHistory?: AiChatMessage[]
   userMessage?: string
+  prNumber?: number
+  prTitle?: string
+  prBody?: string
+  headSha?: string
+  baseSha?: string
+  analysisScope?: AiPullRequestAnalysisScope
+  pullRequestAnalysis?: AiAnalyzePullRequestResult
+  commitSubjects?: string[]
+  changedFileStats?: AiPullRequestChangedFileStat[]
 }
 
 export interface AiFillParams {
@@ -177,7 +209,9 @@ export function buildAiMessages(
   purpose === 'refine_commit_plan' ||
   purpose === 'explain_commit' ||
   purpose === 'resolve_conflict' ||
-  purpose === 'pull_request'
+  purpose === 'pull_request' ||
+  purpose === 'analyze_pull_request' ||
+  purpose === 'refine_pull_request_analysis'
     ? 'You write concise, technical text for git workflows. ' +
         'Respond with only valid JSON — no quotes around the whole payload, markdown fences, or preamble.'
     : 'You write concise, technical text for git workflows. ' +
@@ -435,6 +469,104 @@ export function buildAiMessages(
         instructions.commitMessage
       )
       break
+    case 'analyze_pull_request': {
+      const scope =
+        context.analysisScope === 'partial' ? 'Selected files in this pull request' : 'Entire pull request'
+      const prTitle = context.prTitle?.trim()
+      const prBody = context.prBody?.trim()
+      const commitList =
+        context.commitSubjects && context.commitSubjects.length > 0
+          ? context.commitSubjects.map((subject) => `- ${subject}`).join('\n')
+          : null
+      const fileStats =
+        context.changedFileStats && context.changedFileStats.length > 0
+          ? context.changedFileStats
+              .map(
+                (file) =>
+                  `- ${file.path} (+${file.additions} −${file.deletions})`
+              )
+              .join('\n')
+          : null
+      user = appendCustomInstructions(
+        'Analyze this pull request to help a reviewer understand the change.\n' +
+          (context.prNumber != null ? `Pull request #${context.prNumber}\n` : '') +
+          (prTitle ? `Title: ${prTitle}\n` : '') +
+          (context.headBranch ? `Head branch: ${context.headBranch}\n` : '') +
+          (context.baseBranch ? `Base branch: ${context.baseBranch}\n` : '') +
+          `Analysis scope: ${scope}\n` +
+          (files ? `Files in scope:\n${files}\n` : '') +
+          (fileStats ? `File stats:\n${fileStats}\n` : '') +
+          (commitList ? `Commits:\n${commitList}\n` : '') +
+          (prBody ? `Description:\n${prBody}\n` : '') +
+          diffBlock +
+          'Return ONLY JSON with this shape:\n' +
+          '{\n' +
+          '  "summary": "One short paragraph overview",\n' +
+          '  "keyChanges": "Bullet-style notes grouped by area or concern",\n' +
+          '  "risks": "Review risks, regressions, or missing tests; say briefly if none",\n' +
+          '  "reviewFocus": "What to scrutinize first",\n' +
+          '  "testingNotes": "How to validate the change"\n' +
+          '}\n' +
+          'Rules:\n' +
+          '- Base the analysis on the diff when provided\n' +
+          '- Focus only on files in scope when scope is partial\n' +
+          '- Be concrete and reviewer-oriented\n' +
+          '- Use plain text; markdown lists are fine inside string fields',
+        instructions.system
+      )
+      break
+    }
+    case 'refine_pull_request_analysis': {
+      const scope =
+        context.analysisScope === 'partial' ? 'Selected files in this pull request' : 'Entire pull request'
+      const analysis = context.pullRequestAnalysis
+      const analysisBlock = analysis
+        ? [
+            'Current analysis:',
+            `  summary: ${analysis.summary}`,
+            `  keyChanges: ${analysis.keyChanges}`,
+            `  risks: ${analysis.risks}`,
+            `  reviewFocus: ${analysis.reviewFocus}`,
+            `  testingNotes: ${analysis.testingNotes}`
+          ].join('\n')
+        : null
+      const history =
+        context.chatHistory && context.chatHistory.length > 0
+          ? context.chatHistory
+              .map((entry) => `${entry.role === 'user' ? 'User' : 'Assistant'}: ${entry.content}`)
+              .join('\n')
+          : null
+      const request = context.userMessage?.trim()
+      user = appendCustomInstructions(
+        'Refine the pull request review analysis based on the user request.\n' +
+          (context.prNumber != null ? `Pull request #${context.prNumber}\n` : '') +
+          (context.prTitle ? `Title: ${context.prTitle}\n` : '') +
+          `Analysis scope: ${scope}\n` +
+          (files ? `Files in scope:\n${files}\n` : '') +
+          (analysisBlock ? `${analysisBlock}\n` : '') +
+          diffBlock +
+          (history ? `Previous conversation:\n${history}\n` : '') +
+          (request ? `Latest user request:\n${request}\n` : '') +
+          'Return ONLY JSON with this shape:\n' +
+          '{\n' +
+          '  "message": "Brief reply in plain language about what you changed or answered",\n' +
+          '  "analysis": {\n' +
+          '    "summary": "One short paragraph overview",\n' +
+          '    "keyChanges": "Bullet-style notes grouped by area or concern",\n' +
+          '    "risks": "Review risks, regressions, or missing tests; say briefly if none",\n' +
+          '    "reviewFocus": "What to scrutinize first",\n' +
+          '    "testingNotes": "How to validate the change"\n' +
+          '  }\n' +
+          '}\n' +
+          'Rules:\n' +
+          '- Apply the user request to the current analysis\n' +
+          '- Keep analysis aligned with the files in scope unless the user expands scope\n' +
+          '- "message" should answer the user directly and briefly\n' +
+          '- Update only the analysis fields that the request affects when possible',
+        instructions.system
+      )
+      break
+    }
     case 'resolve_conflict': {
       const filePath = context.filePath?.trim()
       const op = context.operationKind ?? 'merge'
@@ -684,6 +816,73 @@ export function parsePullRequestResponse(text: string): AiPullRequestProposal {
   }
 
   return { title, body }
+}
+
+function parseAnalyzePullRequestFields(raw: Record<string, unknown>): AiAnalyzePullRequestResult {
+  return {
+    summary: normalizeAnalysisText(raw.summary),
+    keyChanges: normalizeAnalysisText(raw.keyChanges),
+    risks: normalizeAnalysisText(raw.risks),
+    reviewFocus: normalizeAnalysisText(raw.reviewFocus),
+    testingNotes: normalizeAnalysisText(raw.testingNotes)
+  }
+}
+
+export function parseAnalyzePullRequestResponse(text: string): AiAnalyzePullRequestResult {
+  const cleaned = stripJsonFences(text)
+  let parsed: unknown
+
+  try {
+    parsed = JSON.parse(cleaned)
+  } catch {
+    throw new Error('AI response was not valid JSON. Try again or adjust your AI settings.')
+  }
+
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('AI response was not a JSON object.')
+  }
+
+  const analysis = parseAnalyzePullRequestFields(parsed as Record<string, unknown>)
+  if (!analysis.summary && !analysis.keyChanges) {
+    throw new Error('AI returned an empty pull request analysis.')
+  }
+
+  return analysis
+}
+
+export function parseRefinePullRequestAnalysisResponse(
+  text: string
+): AiRefinePullRequestAnalysisResult {
+  const cleaned = stripJsonFences(text)
+  let parsed: unknown
+
+  try {
+    parsed = JSON.parse(cleaned)
+  } catch {
+    throw new Error('AI response was not valid JSON. Try again or adjust your AI settings.')
+  }
+
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('AI response was not a JSON object.')
+  }
+
+  const raw = parsed as { message?: unknown; analysis?: unknown }
+  if (!raw.analysis || typeof raw.analysis !== 'object') {
+    throw new Error('AI returned no updated pull request analysis.')
+  }
+
+  const message = typeof raw.message === 'string' ? raw.message.trim() : ''
+  const analysis = parseAnalyzePullRequestFields(raw.analysis as Record<string, unknown>)
+
+  if (!message) {
+    throw new Error('AI returned no reply message.')
+  }
+
+  if (!analysis.summary && !analysis.keyChanges) {
+    throw new Error('AI returned an empty pull request analysis.')
+  }
+
+  return { message, analysis }
 }
 
 export function parseAnalyzeChangesResponse(

@@ -8,6 +8,7 @@ import {
 import { SidebarIconPullRequest } from '@/components/Layout/sidebar/SidebarIcons'
 import { AddPrCommentModal } from '@/components/DetailPanel/AddPrCommentModal'
 import { AddPrLineCommentModal } from '@/components/DetailPanel/AddPrLineCommentModal'
+import { AnalyzePullRequestWithAi } from '@/components/DetailPanel/AnalyzePullRequestWithAi'
 import { PullRequestCommitsPanel } from '@/components/DetailPanel/PullRequestCommitsPanel'
 import { PullRequestOverviewPanel } from '@/components/DetailPanel/PullRequestOverviewPanel'
 import { PullRequestSidebar } from '@/components/DetailPanel/PullRequestSidebar'
@@ -63,6 +64,7 @@ export function PullRequestDetail({ pr, onClose }: PullRequestDetailProps) {
   const [viewMode, setViewMode] = useState<FileContentViewMode>(() =>
     defaultFileContentViewMode(settings?.diffViewMode)
   )
+  const [analysisSelectedPaths, setAnalysisSelectedPaths] = useState<string[]>([])
 
   const filesQuery = useGitHubPullRequestFiles(repoPath, pr.number, pr.repository, Boolean(repoPath))
   const commitsQuery = useGitHubPullRequestCommits(repoPath, pr.number, pr.repository, Boolean(repoPath))
@@ -206,6 +208,13 @@ export function PullRequestDetail({ pr, onClose }: PullRequestDetailProps) {
               ) : null}
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <AnalyzePullRequestWithAi
+                pr={pr}
+                files={files}
+                commits={commits}
+                selectedFilePaths={analysisSelectedPaths}
+                disabled={busy || filesQuery.isLoading}
+              />
               <ActionButton onClick={() => setCommentOpen(true)}>
                 <span className="inline-flex items-center gap-1.5">
                   <ChatBubbleLeftEllipsisIcon className="h-4 w-4" />
@@ -243,6 +252,19 @@ export function PullRequestDetail({ pr, onClose }: PullRequestDetailProps) {
               commitCount={commits.length}
               loading={filesQuery.isLoading}
               error={filesQuery.error as Error | null}
+              analysisSelectedPaths={analysisSelectedPaths}
+              onToggleAnalysisFile={(path, selected) => {
+                setAnalysisSelectedPaths((current) => {
+                  if (selected) {
+                    return current.includes(path) ? current : [...current, path]
+                  }
+                  return current.filter((item) => item !== path)
+                })
+              }}
+              onSelectAllAnalysisFiles={() => {
+                setAnalysisSelectedPaths(files.map((file) => file.path))
+              }}
+              onClearAnalysisFiles={() => setAnalysisSelectedPaths([])}
             />
           </aside>
 
