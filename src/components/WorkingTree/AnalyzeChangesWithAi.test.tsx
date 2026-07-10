@@ -13,6 +13,10 @@ const analysisResponse = JSON.stringify({
   summary: 'Two related changes.',
   keyChanges: '- Feature A\n- Feature B',
   risks: 'None noted.',
+  features: [
+    { title: 'Feature A', commits: [1] },
+    { title: 'Feature B', commits: [2] }
+  ],
   commits: [
     {
       summary: 'Add feature A',
@@ -25,6 +29,18 @@ const analysisResponse = JSON.stringify({
       description: 'Implements B.',
       files: ['src/b.ts'],
       rationale: 'Depends on A.'
+    }
+  ]
+})
+
+const refineResponse = JSON.stringify({
+  message: 'Merged commits 1 and 2 into one commit.',
+  commits: [
+    {
+      summary: 'Add features A and B',
+      description: 'Combined implementation.',
+      files: ['src/a.ts', 'src/b.ts'],
+      rationale: 'Single cohesive change.'
     }
   ]
 })
@@ -48,7 +64,12 @@ describe('AnalyzeChangesWithAi', () => {
         aiEnabled: true,
         aiBaseUrl: 'http://localhost:1234'
       })),
-      aiFill: vi.fn(async () => analysisResponse),
+      aiFill: vi.fn(async (params: { purpose?: string }) => {
+        if (params?.purpose === 'refine_commit_plan') {
+          return refineResponse
+        }
+        return analysisResponse
+      }),
       invoke: vi.fn(async (method: string) => {
         if (method === 'stage.reset' || method === 'stage.add' || method === 'commit.create') {
           return undefined
@@ -113,5 +134,45 @@ describe('AnalyzeChangesWithAi', () => {
     await user.click(checkboxes[1]!)
 
     expect(screen.getByRole('button', { name: /create 0 commit/i })).toBeDisabled()
+  })
+
+  it('shows feature group chips that toggle related commits', async () => {
+    const user = await openAnalysisModal()
+
+    expect(screen.getByRole('button', { name: /toggle feature a \(1 commit\)/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /toggle feature b \(1 commit\)/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /^feature a$/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /^feature b$/i })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /toggle feature b \(1 commit\)/i }))
+
+    const checkboxes = screen.getAllByRole('checkbox', { name: /include this commit/i })
+    expect(checkboxes[0]).toBeChecked()
+    expect(checkboxes[1]).not.toBeChecked()
+  })
+
+  it('refines the commit plan through chat when merging selected commits', async () => {
+    const user = await openAnalysisModal()
+
+    const chatInput = screen.getByRole('textbox', { name: /merge the selected commits into one/i })
+    await user.type(chatInput, 'Merge the selected commits into one')
+    await user.click(screen.getByRole('button', { name: /^send$/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText('Merged commits 1 and 2 into one commit.')).toBeInTheDocument()
+    })
+
+    expect(window.gitfreddo.aiFill).toHaveBeenCalledWith(
+      expect.objectContaining({
+        purpose: 'refine_commit_plan',
+        context: expect.objectContaining({
+          selectedCommitIndices: [0, 1],
+          userMessage: 'Merge the selected commits into one'
+        })
+      })
+    )
+
+    expect(screen.getByDisplayValue('Add features A and B')).toBeInTheDocument()
+    expect(screen.queryByDisplayValue('Add feature B')).not.toBeInTheDocument()
   })
 })
