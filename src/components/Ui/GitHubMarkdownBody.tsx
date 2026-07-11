@@ -92,7 +92,7 @@ export function GitHubMarkdownBody({ content, className = '' }: GitHubMarkdownBo
                   type="checkbox"
                   checked={checked}
                   readOnly
-                  className="mr-2 align-middle accent-gf-accent"
+                  className="mr-2 align-middle gf-checkbox"
                 />
               )
             }

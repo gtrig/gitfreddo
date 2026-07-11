@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-11 — Theme-aware checkbox styling
+
+- **Why:** Native checkboxes used OS-default colors and inconsistent borders instead of the active theme palette.
+- **What:** Shared `Checkbox` component and `.gf-checkbox` CSS tokens (`gf-accent`, `gf-border-strong`, `gf-bg`); applied across settings, modals, AI selection, and conflict merge UI.
+
 ### 2026-07-11 — Pre-push hook in default .git/hooks
 
 - **Why:** Use Git's standard hooks directory instead of a custom `.githooks/` folder and `core.hooksPath` override.

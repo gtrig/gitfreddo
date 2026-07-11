@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
 import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { Modal } from './Modal'
+import { Modal, Checkbox } from './Modal'
 import { renderWithProviders } from '@/test/render'
 
 describe('Modal', () => {
@@ -40,5 +40,12 @@ describe('Modal', () => {
     const dialog = screen.getByRole('dialog')
     await user.click(within(dialog).getByLabelText(/close/i))
     expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('renders Checkbox with theme palette classes', () => {
+    render(<Checkbox aria-label="Enable feature" />)
+    const checkbox = screen.getByRole('checkbox', { name: 'Enable feature' })
+    expect(checkbox).toHaveClass('gf-checkbox')
+    expect(checkbox).toHaveAttribute('type', 'checkbox')
   })
 })

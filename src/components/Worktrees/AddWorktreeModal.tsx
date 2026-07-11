@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Modal, ActionButton } from '@/components/Ui/Modal'
+import { Modal, ActionButton, Checkbox } from '@/components/Ui/Modal'
 import { useBranches, useRepoStatus } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useWorkspaceStore } from '@/stores/workspace'
@@ -170,11 +170,7 @@ export function AddWorktreeModal({
         </button>
         {showAdvanced && (
           <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={detach}
-              onChange={(e) => setDetach(e.target.checked)}
-            />
+            <Checkbox checked={detach} onChange={(e) => setDetach(e.target.checked)} />
             <span className="text-gf-fg-muted">{t('modals.addWorktree.detachedHead')}</span>
           </label>
         )}

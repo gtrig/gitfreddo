@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Modal, ActionButton } from '@/components/Ui/Modal'
+import { Modal, ActionButton, Checkbox } from '@/components/Ui/Modal'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useBranches } from '@/hooks/useGit'
 import { useWorkspaceStore } from '@/stores/workspace'
@@ -35,15 +35,11 @@ export function MergeBranchDialog({ sourceBranch, onClose }: MergeBranchDialogPr
           })}
         </p>
         <label className="flex items-center gap-2 text-sm text-gf-fg-muted">
-          <input type="checkbox" checked={noFf} onChange={(e) => setNoFf(e.target.checked)} />
+          <Checkbox checked={noFf} onChange={(e) => setNoFf(e.target.checked)} />
           {t('modals.mergeBranch.noFf')}
         </label>
         <label className="flex items-center gap-2 text-sm text-gf-fg-muted">
-          <input
-            type="checkbox"
-            checked={squash}
-            onChange={(e) => setSquash(e.target.checked)}
-          />
+          <Checkbox checked={squash} onChange={(e) => setSquash(e.target.checked)} />
           {t('modals.mergeBranch.squash')}
         </label>
         {error && <p className="text-sm text-red-400">{error}</p>}

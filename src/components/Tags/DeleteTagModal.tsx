@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { GitTag } from '@/lib/types'
-import { Modal, ActionButton } from '@/components/Ui/Modal'
+import { Modal, ActionButton, Checkbox } from '@/components/Ui/Modal'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { localTagName } from '@/lib/format/tagNames'
 
@@ -46,8 +46,7 @@ export function DeleteTagModal({
         </p>
         {showRemoteOption && (
           <label className="flex items-center gap-2 text-sm text-gf-fg-muted">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={alsoDeleteRemote}
               onChange={(event) => setAlsoDeleteRemote(event.target.checked)}
             />

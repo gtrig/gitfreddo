@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Modal, ActionButton, FieldLabel, TextInput } from '@/components/Ui/Modal'
+import { Modal, ActionButton, Checkbox, FieldLabel, TextInput } from '@/components/Ui/Modal'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useToastStore } from '@/stores/toast'
 
@@ -67,8 +67,7 @@ export function StashPushModal({ open, initialMessage = '', onClose }: StashPush
           />
         </div>
         <label className="flex items-center gap-2 text-sm text-gf-fg-muted">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={includeUntracked}
             onChange={(e) => setIncludeUntracked(e.target.checked)}
             disabled={stashPush.isPending}
@@ -76,8 +75,7 @@ export function StashPushModal({ open, initialMessage = '', onClose }: StashPush
           {t('workingTree.includeUntracked')}
         </label>
         <label className="flex items-center gap-2 text-sm text-gf-fg-muted">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={includeIgnored}
             onChange={(e) => setIncludeIgnored(e.target.checked)}
             disabled={stashPush.isPending}

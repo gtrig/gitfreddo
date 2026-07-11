@@ -110,3 +110,36 @@ code {
   animation-timing-function: linear;
   animation-fill-mode: forwards;
 }
+
+@layer components {
+  .gf-checkbox {
+    height: 1rem;
+    width: 1rem;
+    flex-shrink: 0;
+    border-radius: 0.25rem;
+    border: 1px solid var(--gf-border-strong);
+    background-color: var(--gf-bg);
+    accent-color: var(--gf-accent);
+    vertical-align: middle;
+  }
+
+  .gf-checkbox:focus-visible {
+    outline: 2px solid var(--gf-accent);
+    outline-offset: 1px;
+  }
+
+  .gf-checkbox:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .gf-checkbox-sm {
+    height: 0.875rem;
+    width: 0.875rem;
+  }
+
+  .gf-checkbox-xs {
+    height: 0.75rem;
+    width: 0.75rem;
+  }
+}

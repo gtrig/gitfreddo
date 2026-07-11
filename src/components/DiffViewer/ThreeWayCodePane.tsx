@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Checkbox } from '@/components/Ui/Modal'
 import type { LineRange } from '@/lib/conflicts/threeWayMerge'
 
 const ROW_GRID = 'grid-cols-[28px_44px_minmax(0,1fr)]'
@@ -51,11 +52,10 @@ export function ThreeWayCodePane({
       <div className={`grid shrink-0 ${ROW_GRID} border-b border-gf-border ${headerClass}`}>
         <span className="flex items-center justify-center px-1 py-1.5">
           {onSelectAll && highlightRange && (
-            <input
-              type="checkbox"
+            <Checkbox
+              size="sm"
               checked={allSelected ?? false}
-              onChange={onSelectAll}
-              className="h-3.5 w-3.5 shrink-0 rounded border-gf-border-strong"
+              onChange={() => onSelectAll()}
               aria-label={t('diff.selectAllLines', { label })}
               title={t('diff.selectAllLinesTitle', { label })}
             />
@@ -85,11 +85,10 @@ export function ThreeWayCodePane({
             >
               <span className="flex items-center justify-center">
                 {inConflict && onLineToggle && (
-                  <input
-                    type="checkbox"
+                  <Checkbox
+                    size="xs"
                     checked={checked}
                     onChange={() => onLineToggle(lineNo)}
-                    className="h-3 w-3 rounded border-gf-border-strong"
                     aria-label={`Include line ${lineNo} in output`}
                   />
                 )}

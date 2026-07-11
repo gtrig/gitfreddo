@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AiActionButton } from '@/components/Ui/AiActionButton'
-import { ActionButton, FieldLabel, Modal, TextArea, TextInput } from '@/components/Ui/Modal'
+import { ActionButton, Checkbox, FieldLabel, Modal, TextArea, TextInput } from '@/components/Ui/Modal'
 import { Spinner } from '@/components/Ui/Spinner'
 import { useAiEnabled } from '@/hooks/useAppSettings'
 import { useAiFill } from '@/hooks/useAiFill'
@@ -123,13 +123,11 @@ function CommitProposalCard({
     >
       <div className="mb-2 flex items-center justify-between gap-2">
         <label className="flex min-w-0 items-center gap-2 text-xs font-medium text-gf-fg-muted">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={selected}
             disabled={busy}
             aria-label={t('workingTree.includeCommit')}
             onChange={(event) => onToggleSelected(event.target.checked)}
-            className="rounded border-gf-border-strong bg-gf-bg"
           />
           <span className="truncate">
             {t('workingTree.commitNumber', {

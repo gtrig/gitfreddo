@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
-import { ActionButton, ConfirmDialog, FieldLabel } from '@/components/Ui/Modal'
+import { ActionButton, ConfirmDialog, FieldLabel, Checkbox } from '@/components/Ui/Modal'
 import { RemoveStaleBranchesModal } from '@/components/DetailPanel/RemoveStaleBranchesModal'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
@@ -146,16 +146,14 @@ export function MaintenanceSettingsPanel({ form, onChange }: PanelProps) {
           </select>
         </div>
         <label className="flex items-center gap-2 text-sm text-gf-fg-muted">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={form.checkForUpdatesOnStartup}
             onChange={(e) => onChange({ checkForUpdatesOnStartup: e.target.checked })}
           />
           {t('settings.maintenance.checkOnStartup')}
         </label>
         <label className="flex items-center gap-2 text-sm text-gf-fg-muted">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={form.autoDownloadUpdates}
             onChange={(e) => onChange({ autoDownloadUpdates: e.target.checked })}
           />

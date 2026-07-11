@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Modal, ActionButton } from '@/components/Ui/Modal'
+import { Modal, ActionButton, Checkbox } from '@/components/Ui/Modal'
 import { useCleanPreview } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { LoadingRow } from '@/components/Ui/Spinner'
@@ -23,11 +23,7 @@ export function CleanUntrackedModal({ open, onClose }: CleanUntrackedModalProps)
       <div className="space-y-3 p-4">
         <p className="text-sm text-gf-fg-muted">{t('workingTree.cleanUntrackedDescription')}</p>
         <label className="flex items-center gap-2 text-sm text-gf-fg-muted">
-          <input
-            type="checkbox"
-            checked={includeIgnored}
-            onChange={(e) => setIncludeIgnored(e.target.checked)}
-          />
+          <Checkbox checked={includeIgnored} onChange={(e) => setIncludeIgnored(e.target.checked)} />
           {t('workingTree.includeIgnored')}
           <span className="font-mono text-xs">git clean -x</span>)
         </label>

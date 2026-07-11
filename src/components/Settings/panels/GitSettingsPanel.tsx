@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ActionButton, FieldLabel, TextInput } from '@/components/Ui/Modal'
+import { ActionButton, FieldLabel, TextInput, Checkbox } from '@/components/Ui/Modal'
 import type { AppSettings } from '@/hooks/useAppSettings'
 
 interface PanelProps {
@@ -32,11 +32,9 @@ export function GitSettingsPanel({ form, onChange, onPickGit }: PanelProps) {
           />
         </div>
         <label className="flex items-center gap-2 text-sm text-gf-fg-muted">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={form.pullRebase}
             onChange={(e) => onChange({ pullRebase: e.target.checked })}
-            className="rounded border-gf-border-strong"
           />
           {t('settings.git.pullRebase')}
         </label>

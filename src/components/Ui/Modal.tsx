@@ -188,6 +188,24 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   )
 }
 
+export function Checkbox({
+  size: checkboxSize = 'md',
+  className,
+  ...props
+}: Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> & {
+  size?: 'xs' | 'sm' | 'md'
+}) {
+  const sizeClass =
+    checkboxSize === 'xs' ? 'gf-checkbox-xs' : checkboxSize === 'sm' ? 'gf-checkbox-sm' : ''
+  return (
+    <input
+      type="checkbox"
+      {...props}
+      className={`gf-checkbox ${sizeClass} ${className ?? ''}`.trim()}
+    />
+  )
+}
+
 export function ActionButton({
   children,
   variant = 'secondary',

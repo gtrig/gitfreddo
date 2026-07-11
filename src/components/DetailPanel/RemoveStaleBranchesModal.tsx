@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ActionButton, FieldLabel, Modal, TextArea } from '@/components/Ui/Modal'
+import { ActionButton, Checkbox, FieldLabel, Modal, TextArea } from '@/components/Ui/Modal'
 import { LoadingRow } from '@/components/Ui/Spinner'
 import { useInvalidateGit } from '@/hooks/useInvalidateGit'
 import { useWorkspaceStore } from '@/stores/workspace'
@@ -175,8 +175,7 @@ export function RemoveStaleBranchesModal({
               {summary.refs.map((entry) => (
                 <li key={entry.ref}>
                   <label className="flex cursor-pointer gap-3 rounded px-2 py-1.5 hover:bg-gf-surface-hover">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={selected.has(entry.ref)}
                       onChange={() => toggleRef(entry.ref)}
                       disabled={removing}

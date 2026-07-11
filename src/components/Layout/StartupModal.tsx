@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Modal, ActionButton } from '@/components/Ui/Modal'
+import { Modal, ActionButton, Checkbox } from '@/components/Ui/Modal'
 import { getStartupNewsItems } from '@/lib/news/content'
 
 interface StartupModalProps {
@@ -64,8 +64,7 @@ export function StartupModal({ open, onClose, onContinue, onCheckForUpdates }: S
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <label className="flex items-center gap-2 text-sm text-gf-fg-muted">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={hideFor30Days}
               onChange={(event) => setHideFor30Days(event.target.checked)}
             />

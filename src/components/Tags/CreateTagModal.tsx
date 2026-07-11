@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { Modal, ActionButton } from '@/components/Ui/Modal'
+import { Modal, ActionButton, Checkbox } from '@/components/Ui/Modal'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useWorkspaceStore } from '@/stores/workspace'
 
@@ -71,8 +71,7 @@ export function CreateTagModal({ open, onClose, target }: CreateTagModalProps) {
           <p className="mt-1 text-xs text-gf-fg-subtle">{t('modals.createTag.lightweightHint')}</p>
         </label>
         <label className="flex items-center gap-2 text-sm text-gf-fg-muted">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={sign || defaultSign}
             onChange={(e) => setSign(e.target.checked)}
           />

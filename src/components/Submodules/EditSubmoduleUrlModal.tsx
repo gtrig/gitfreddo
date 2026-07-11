@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Modal, ActionButton } from '@/components/Ui/Modal'
+import { Modal, ActionButton, Checkbox } from '@/components/Ui/Modal'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useToastStore } from '@/stores/toast'
 
@@ -52,11 +52,7 @@ export function EditSubmoduleUrlModal({
           />
         </label>
         <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={syncAfter}
-            onChange={(e) => setSyncAfter(e.target.checked)}
-          />
+          <Checkbox checked={syncAfter} onChange={(e) => setSyncAfter(e.target.checked)} />
           <span className="text-gf-fg-muted">{t('modals.editSubmoduleUrl.syncAfter')}</span>
         </label>
         <div className="flex justify-end gap-2">

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { ArchiveBoxIcon } from '@heroicons/react/24/outline'
+import { Checkbox } from '@/components/Ui/Modal'
 import { AiActionButton } from '@/components/Ui/AiActionButton'
 import { ChevronDoubleRightIcon } from '@heroicons/react/24/solid'
 import { useAiEnabled, useResolvedRemote } from '@/hooks/useAppSettings'
@@ -241,12 +242,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
       {expanded && (
         <div className="flex min-h-0 flex-1 flex-col gap-2 px-3 pb-2">
           <label className="flex shrink-0 items-center gap-2 text-xs text-gf-fg-muted">
-            <input
-              type="checkbox"
-              checked={amend}
-              onChange={(e) => setAmend(e.target.checked)}
-              className="rounded border-gf-border-strong bg-gf-bg"
-            />
+            <Checkbox checked={amend} onChange={(e) => setAmend(e.target.checked)} />
             {t('workingTree.amendPrevious')}
           </label>
 
@@ -295,20 +291,13 @@ export function CommitPanel({ working }: CommitPanelProps) {
           {optionsOpen && (
             <div className="shrink-0 space-y-1.5 pl-4">
               <label className="flex items-center gap-2 text-[11px] text-gf-fg-muted">
-                <input
-                  type="checkbox"
-                  checked={sign}
-                  onChange={(event) => setSign(event.target.checked)}
-                  className="rounded border-gf-border-strong bg-gf-bg"
-                />
+                <Checkbox checked={sign} onChange={(event) => setSign(event.target.checked)} />
                 {t('workingTree.signCommit')}
               </label>
               <label className="flex items-center gap-2 text-[11px] text-gf-fg-muted">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={pushAfterCommit}
                   onChange={(event) => setPushAfterCommit(event.target.checked)}
-                  className="rounded border-gf-border-strong bg-gf-bg"
                 />
                 {t('workingTree.pushAfterCommit')}
               </label>

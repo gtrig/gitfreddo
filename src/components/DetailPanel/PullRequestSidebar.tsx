@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ArrowsUpDownIcon } from '@heroicons/react/24/solid'
+import { Checkbox } from '@/components/Ui/Modal'
 import { commitFileKindColor } from '@/lib/git/commitFiles'
 import { prFileStatusToKind } from '@/lib/github/prFiles'
 import type { PullRequestDetailPane } from '@/lib/github/prDetailSelection'
@@ -130,13 +131,12 @@ export function PullRequestSidebar({
                   }`}
                 >
                   {onToggleAnalysisFile ? (
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={checked}
                       aria-label={t('detail.pullRequest.aiIncludeFile', { path: file.path })}
                       onChange={(event) => onToggleAnalysisFile(file.path, event.target.checked)}
                       onClick={(event) => event.stopPropagation()}
-                      className="mt-0.5 rounded border-gf-border-strong bg-gf-bg"
+                      className="mt-0.5"
                     />
                   ) : null}
                   <button
