@@ -18,6 +18,11 @@ if command -v nvm &>/dev/null && [[ -f "$ROOT/.nvmrc" ]]; then
   nvm use --silent 2>/dev/null || true
 fi
 
+# Fail fast with a clear message if the above didn't actually get us onto
+# the right Node version (or a dependency bump broke jsdom), instead of
+# discovering it 40s into a test run via a wall of duplicated stack traces.
+bash "$ROOT/scripts/check-test-env.sh"
+
 echo "Running pre-commit checks (typecheck, test)..." >&2
 npm run typecheck
 npm run test

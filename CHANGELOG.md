@@ -7,6 +7,16 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-11 — Make pre-commit and release test runs robust against Node/jsdom drift
+
+- **Why:** The pre-commit hook and release CI kept failing intermittently with a wall of 40+ duplicated "Unhandled Error" stack traces from deep inside jsdom's dependency tree, plus unrelated macOS/Windows path-comparison test failures. A first pass pinned `html-encoding-sniffer` via `overrides`, but that only fixed one symptom — jsdom v29's *own* direct dependencies (`whatwg-url@16` → `webidl-conversions@8.0.1`) carry a separate, intermittent bug that only surfaces under heavy parallel load. Patching one transitive dependency at a time was whack-a-mole; the real root cause is that jsdom v28+ migrated its entire encoding/URL stack onto a bleeding-edge, still-unstable `@exodus/bytes` ecosystem.
+- **What:**
+  - `package.json` — pinned `jsdom` to an exact `26.1.0` (last major release before the `@exodus/bytes` migration; verified its full transitive tree — `html-encoding-sniffer`, `whatwg-url`, `webidl-conversions`, `data-urls` — has zero `@exodus/bytes` exposure). Removed the now-unnecessary `html-encoding-sniffer` override. Confirmed clean with `npm ls @exodus/bytes` and 6 repeated full-suite runs across Node 20 and Node 24 with zero flakes.
+  - `scripts/check-test-env.sh` (new) — fast (<1s) pre-flight guard that (1) fails with a clear, actionable message if the active Node major version doesn't match `.nvmrc`, and (2) canary-requires and instantiates `jsdom` to catch any future dependency bump that reintroduces this class of bug, before burning a 40s test run to find out. Wired in as `pretest` / `pretest:coverage` in `package.json`, so it runs automatically before every `npm run test` and `npm run test:coverage` call — which covers the pre-commit hook, CI, *and* the release build matrix (Linux/macOS/Windows) without touching any workflow YAML, since all of them funnel through those two scripts.
+  - `scripts/hooks/pre-commit` — now also calls `check-test-env.sh` explicitly right after the NVM bootstrap, so a broken environment fails in under a second with a clear diagnosis instead of a 40-second run ending in cryptic stack traces.
+  - `electron/git/operations/repo.test.ts` — `root equals tmpDir` test now normalises both sides with `realpathSync` + forward-slash conversion before comparing, correct on macOS (`/var` → `/private/var` symlink) and Windows (8.3 short paths vs long paths with forward slashes).
+  - `electron/git/operations/log.test.ts` and `log-search.test.ts` — git commits in test setup now pass `GIT_AUTHOR_NAME` / `GIT_COMMITTER_NAME` env vars explicitly, preventing the system's global `user.name` from leaking into assertions.
+
 ### 2026-07-11 — Full-project review: bug fixes, refactors, and coverage boost
 
 - **Why:** Full code review pass to fix correctness and security bugs, reduce tech debt in large files, consolidate duplicated types, and harden the test suite.

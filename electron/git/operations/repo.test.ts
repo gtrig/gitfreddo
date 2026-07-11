@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -42,6 +42,11 @@ describe('repoStatus', () => {
 
   it('root equals tmpDir for a simple repo', async () => {
     const status = await repoStatus(tmpDir, 'git')
-    expect(status.root).toBe(tmpDir)
+    // git rev-parse --show-toplevel always returns the canonical real path:
+    // on macOS it resolves symlinks (/var → /private/var); on Windows it
+    // resolves 8.3 short names to long paths and uses forward slashes.
+    // Normalise tmpDir the same way before comparing.
+    const realTmpDir = realpathSync(tmpDir).split('\\').join('/')
+    expect(status.root).toBe(realTmpDir)
   })
 })
