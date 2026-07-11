@@ -3,7 +3,7 @@ import { runGlobalOperation, useOperationStore } from '@/stores/operation'
 
 describe('useOperationStore', () => {
   beforeEach(() => {
-    useOperationStore.setState({ count: 0, message: null })
+    useOperationStore.setState({ count: 0, message: null, output: '', hookResult: null })
   })
 
   it('tracks nested operations', () => {
@@ -21,11 +21,20 @@ describe('useOperationStore', () => {
     expect(useOperationStore.getState().count).toBe(0)
     expect(useOperationStore.getState().message).toBeNull()
   })
+
+  it('resets hook output when a new operation session starts', () => {
+    const { begin, appendOutput, end } = useOperationStore.getState()
+    begin('First')
+    appendOutput('hook output')
+    end()
+    begin('Second')
+    expect(useOperationStore.getState().output).toBe('')
+  })
 })
 
 describe('runGlobalOperation', () => {
   beforeEach(() => {
-    useOperationStore.setState({ count: 0, message: null })
+    useOperationStore.setState({ count: 0, message: null, output: '', hookResult: null })
   })
 
   it('always ends the operation even when the task throws', async () => {

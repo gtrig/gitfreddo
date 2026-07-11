@@ -117,5 +117,11 @@
       ],
       "icon": "assets/logo.ico"
     }
+  },
+  "allowScripts": {
+    "electron@41.7.1": true,
+    "electron-winstaller@5.4.0": true,
+    "esbuild@0.25.12": true,
+    "esbuild@0.28.1": true
   }
 }

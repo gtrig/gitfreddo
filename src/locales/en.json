@@ -1413,6 +1413,10 @@
       "success": "Tag pushed",
       "error": "Tag push failed"
     },
+    "hook": {
+      "passed": "{{name}} hook passed",
+      "failed": "{{name}} hook failed"
+    },
     "undo": {
       "success": "Undid: {{subject}}",
       "error": "Undo failed"

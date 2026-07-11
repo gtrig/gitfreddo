@@ -1,6 +1,7 @@
 import { spawn } from 'child_process'
 import { emitLog } from './log-bus'
 import { buildGitEnv } from './credentials'
+import { detectGitHookFailure, detectGitHookExecution, formatHookResultLogMessage, gitCommandMayRunHooks, stripGitTraceLines } from './hook-failure'
 import type { GitCommandDescriptor } from '../../shared/git/commands'
 
 export interface GitResult {
@@ -38,6 +39,11 @@ export async function runGit(
   emitLog('git', 'debug', `> ${cmd}`, cwd)
 
   const env = { ...(await buildGitEnv()), ...envOverride }
+  if (gitCommandMayRunHooks(args)) {
+    env.GIT_TRACE = '1'
+  }
+
+  const mayRunHooks = gitCommandMayRunHooks(args)
 
   return new Promise((resolve, reject) => {
     const child = spawn(gitBinaryPath, gitArgs, {
@@ -62,7 +68,14 @@ export async function runGit(
       stdout += chunk.toString('utf8')
     })
     child.stderr.on('data', (chunk: Buffer) => {
-      stderr += chunk.toString('utf8')
+      const text = chunk.toString('utf8')
+      stderr += text
+      if (mayRunHooks) {
+        const output = stripGitTraceLines(text)
+        if (output) {
+          emitLog('operation', 'info', output)
+        }
+      }
     })
 
     child.on('error', (error) => {
@@ -77,9 +90,26 @@ export async function runGit(
       if (settled) return
       settled = true
       clearTimeout(timer)
-      const result: GitResult = { stdout, stderr, code: code ?? 1 }
-      if (code !== 0) {
-        emitLog('git', 'warn', `git exited ${code}`, stderr.trim() || stdout.trim())
+      const exitCode = code ?? 1
+      const result: GitResult = { stdout, stderr, code: exitCode }
+      if (exitCode !== 0) {
+        const displayOutput = stripGitTraceLines(stderr.trim() || stdout.trim())
+        emitLog('git', 'warn', `git exited ${exitCode}`, displayOutput)
+        const hookFailure = detectGitHookFailure(args, result, stderr)
+        if (hookFailure) {
+          emitLog('app', 'error', hookFailure.message, hookFailure.details)
+        }
+      }
+      if (mayRunHooks) {
+        const hookExecution = detectGitHookExecution(result, stderr)
+        if (hookExecution) {
+          emitLog(
+            'operation',
+            hookExecution.passed ? 'info' : 'error',
+            formatHookResultLogMessage(hookExecution),
+            hookExecution.output || undefined
+          )
+        }
       }
       resolve(result)
     })

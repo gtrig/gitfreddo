@@ -98,7 +98,7 @@ export type MenuAction =
   | 'quit'
 
 export type LogLevel = 'info' | 'warn' | 'error' | 'debug'
-export type LogStream = 'git' | 'app'
+export type LogStream = 'git' | 'app' | 'operation'
 
 export interface LogEntry {
   id: string

@@ -7,10 +7,30 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-11 — Strip stale forge askpass env without tokens
+
+- **Why:** Pre-commit hook failed when `GIT_ASKPASS` lingered in the shell after running GitFreddo with forge auth configured.
+- **What:** `buildGitEnv()` removes GitFreddo askpass env vars when no GitHub/Bitbucket token is stored; preserves unrelated custom `GIT_ASKPASS` paths.
+
+### 2026-07-11 — Pre-commit typecheck and test hook
+
+- **Why:** Catch type errors and failing tests before commits land locally.
+- **What:** `scripts/hooks/pre-commit` runs `npm run typecheck` and `npm run test`; `setup-git-hooks.sh` now installs every hook under `scripts/hooks/`.
+
 ### 2026-07-11 — Theme-aware checkbox styling
 
 - **Why:** Native checkboxes used OS-default colors and inconsistent borders instead of the active theme palette.
 - **What:** Shared `Checkbox` component and `.gf-checkbox` CSS tokens (`gf-accent`, `gf-border-strong`, `gf-bg`); applied across settings, modals, AI selection, and conflict merge UI.
+
+### 2026-07-11 — Hook execution output in operation overlay
+
+- **Why:** Users could not see hook script output during commit/push and only got a blocking spinner.
+- **What:** Stream hook output into the global operation overlay; toast when a hook passes or fails (replacing duplicate generic push errors when a hook blocks the operation).
+
+### 2026-07-11 — Git hook failures in application log
+
+- **Why:** When a hook blocks commit or push, users need a clear record in the App log without enabling Git log listening.
+- **What:** Detect failed hooks from git trace/output in `git-runner` and emit an `app` log entry with hook name and script output.
 
 ### 2026-07-11 — Pre-push hook in default .git/hooks
 

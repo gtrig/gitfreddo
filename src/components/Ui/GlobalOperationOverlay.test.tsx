@@ -11,7 +11,7 @@ describe('GlobalOperationOverlay', () => {
   })
 
   beforeEach(() => {
-    useOperationStore.setState({ count: 0, message: null })
+    useOperationStore.setState({ count: 0, message: null, output: '', hookResult: null })
     useWorkspaceStore.setState({
       tabs: [],
       activePath: null,
@@ -31,6 +31,17 @@ describe('GlobalOperationOverlay', () => {
     const { container } = renderWithProviders(<GlobalOperationOverlay />)
     expect(container.querySelector('[aria-busy="true"]')).not.toBeNull()
     expect(screen.getByText('Pushing…')).toBeInTheDocument()
+  })
+
+  it('shows hook output during global operations', () => {
+    useOperationStore.setState({
+      count: 1,
+      message: 'Pushing…',
+      output: 'Running tests…\nOK'
+    })
+    renderWithProviders(<GlobalOperationOverlay />)
+    expect(screen.getByText(/Running tests…/)).toBeInTheDocument()
+    expect(screen.getByText(/OK/)).toBeInTheDocument()
   })
 
   it('shows opening message while a tab is connecting', () => {

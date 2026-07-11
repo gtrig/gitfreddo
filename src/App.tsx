@@ -23,6 +23,7 @@ import { DocsModal } from '@/components/Help/DocsModal'
 import { GlobalOperationOverlay } from '@/components/Ui/GlobalOperationOverlay'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useAutoRefresh, useManualRefresh } from '@/hooks/useAutoRefresh'
+import { useOperationLogSubscription } from '@/hooks/useOperationLog'
 import { useRepoChangeListener } from '@/hooks/useRepoChangeListener'
 import { useAppLogger } from '@/hooks/useAppLogger'
 import { useWorkspaceSessionPersistence } from '@/hooks/useWorkspaceSessionPersistence'
@@ -68,6 +69,7 @@ export default function App() {
   useAutoRefresh()
   useRepoChangeListener()
   useLogSubscription()
+  useOperationLogSubscription()
   useAppLogger()
   useLocale()
   useWorkspaceSessionPersistence()

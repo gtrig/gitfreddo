@@ -65,7 +65,10 @@ You can:
 
 Hooks run automatically when GitFreddo performs the corresponding git operations (commit, push, etc.).
 
-GitFreddo’s own repository installs a **pre-push** hook on `npm install` (`scripts/setup-git-hooks.sh` copies `scripts/hooks/pre-push` into `.git/hooks/`). It blocks pushing a `v*` tag when `package.json` version does not match.
+GitFreddo’s own repository installs git hooks on `npm install` (`scripts/setup-git-hooks.sh` copies `scripts/hooks/*` into `.git/hooks/`):
+
+- **pre-commit** — runs `npm run typecheck` and `npm run test`
+- **pre-push** — blocks pushing a `v*` tag when `package.json` version does not match
 
 ## Next
 

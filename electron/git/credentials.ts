@@ -52,6 +52,25 @@ async function ensureAskpassScript(): Promise<string> {
   return INSTALLED_ASKPASS_PATH
 }
 
+function stripForgeCredentialEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const next = { ...env }
+  const usingForgeAskpass = next.GIT_ASKPASS?.includes('forge-askpass.cjs')
+
+  if (usingForgeAskpass) {
+    delete next.GIT_ASKPASS
+    if (next.GIT_TERMINAL_PROMPT === '0') {
+      delete next.GIT_TERMINAL_PROMPT
+    }
+  }
+
+  delete next.gitfreddo_GITHUB_TOKEN
+  delete next.gitfreddo_BITBUCKET_TOKEN
+  delete next.gitfreddo_BITBUCKET_LOGIN
+  delete next.gitfreddo_BITBUCKET_AUTH_TYPE
+
+  return next
+}
+
 export async function buildGitEnv(): Promise<NodeJS.ProcessEnv> {
   const [githubToken, bitbucketToken, settings] = await Promise.all([
     loadGitHubToken(),
@@ -60,7 +79,7 @@ export async function buildGitEnv(): Promise<NodeJS.ProcessEnv> {
   ])
 
   if (!githubToken?.trim() && !bitbucketToken?.trim()) {
-    return { ...process.env }
+    return stripForgeCredentialEnv(process.env)
   }
 
   const askpassPath = await ensureAskpassScript()

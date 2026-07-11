@@ -36,13 +36,29 @@ describe('buildGitEnv', () => {
     vi.mocked(loadSettings).mockReset()
   })
 
-  it('returns process env unchanged when no token is stored', async () => {
+  it('does not inject askpass env when no token is stored', async () => {
+    process.env.GIT_ASKPASS = '/home/gtrig/.config/gitfreddo/forge-askpass.cjs'
+    process.env.GIT_TERMINAL_PROMPT = '0'
+    process.env.gitfreddo_GITHUB_TOKEN = 'stale-token'
+
     vi.mocked(loadGitHubToken).mockResolvedValue(null)
     vi.mocked(loadBitbucketToken).mockResolvedValue(null)
     const env = await buildGitEnv()
+
     expect(env.GIT_ASKPASS).toBeUndefined()
+    expect(env.GIT_TERMINAL_PROMPT).toBeUndefined()
     expect(env.gitfreddo_GITHUB_TOKEN).toBeUndefined()
     expect(env.gitfreddo_BITBUCKET_TOKEN).toBeUndefined()
+  })
+
+  it('preserves a custom GIT_ASKPASS when no token is stored', async () => {
+    process.env.GIT_ASKPASS = '/usr/local/bin/my-askpass'
+
+    vi.mocked(loadGitHubToken).mockResolvedValue(null)
+    vi.mocked(loadBitbucketToken).mockResolvedValue(null)
+    const env = await buildGitEnv()
+
+    expect(env.GIT_ASKPASS).toBe('/usr/local/bin/my-askpass')
   })
 
   it('injects askpass env when a github token is present', async () => {

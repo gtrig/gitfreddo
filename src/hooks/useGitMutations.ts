@@ -5,7 +5,7 @@ import { gitIpcInvalidates } from '@shared/git/ipc'
 import { useInvalidateGit } from '@/hooks/useInvalidateGit'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
-import { useOperationStore } from '@/stores/operation'
+import { useOperationStore, showHookExecutionToast } from '@/stores/operation'
 
 const REMOTE_ACTION_KEYS: Record<string, { success: string; error: string }> = {
   fetch: { success: 'toast.fetch.success', error: 'toast.fetch.error' },
@@ -32,8 +32,17 @@ export function useGitMutations() {
       onMutate: () => {
         useOperationStore.getState().begin()
       },
-      onSettled: () => {
-        useOperationStore.getState().end()
+      onSettled: (_data, error) => {
+        window.setTimeout(() => {
+          const { hookResult, end } = useOperationStore.getState()
+          if (hookResult) {
+            showHookExecutionToast(showToast, t, hookResult)
+          } else if (error && remoteAction) {
+            const message = error instanceof Error ? error.message : String(error)
+            showToast(message || t(remoteAction.error), 'error')
+          }
+          end()
+        }, 0)
       },
       onSuccess: () => {
         invalidate(...keys)
@@ -41,11 +50,8 @@ export function useGitMutations() {
           showToast(t(remoteAction.success), 'success')
         }
       },
-      onError: (error) => {
-        if (remoteAction) {
-          const message = error instanceof Error ? error.message : String(error)
-          showToast(message || t(remoteAction.error), 'error')
-        }
+      onError: () => {
+        // Hook-aware errors are toasted from onSettled after operation logs arrive.
       }
     })
   }
