@@ -1,8 +1,21 @@
-import { existsSync, readFileSync, statSync } from 'fs'
+import { existsSync, readFileSync, realpathSync, statSync } from 'fs'
 import { resolve } from 'path'
 
 export function normalizeRepoPath(repoPath: string): string {
   return resolve(repoPath)
+}
+
+/** Resolve symlinks and platform-specific path aliases (e.g. /var vs /private/var on macOS). */
+export function canonicalizePath(path: string): string {
+  const resolved = resolve(path)
+  try {
+    if (existsSync(resolved)) {
+      return realpathSync.native(resolved)
+    }
+  } catch {
+    // Path may have been removed between existsSync and realpathSync.
+  }
+  return resolved
 }
 
 export function hasGitDir(repoPath: string): boolean {

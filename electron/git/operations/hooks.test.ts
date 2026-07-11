@@ -1,8 +1,9 @@
 import { execSync } from 'node:child_process'
-import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, statSync, writeFileSync } from 'node:fs'
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { canonicalizePath } from '../repo-path'
 import {
   hooksDelete,
   hooksDisable,
@@ -107,7 +108,7 @@ describe('hooks', () => {
 
     const result = await hooksList(dir, 'git')
 
-    expect(result.hooksDir).toBe(customDir)
+    expect(result.hooksDir).toBe(canonicalizePath(customDir))
     const preCommit = result.hooks.find((hook) => hook.name === 'pre-commit')
     expect(preCommit?.enabled).toBe(true)
     const content = await hooksRead(dir, 'git', 'pre-commit')
@@ -125,11 +126,28 @@ describe('hooks', () => {
     const result = await hooksList(dir, 'git')
 
     expect(result.hooksDir).toContain(join('.git', 'hooks'))
-    expect(result.alternateHooksDir).toBe(githooksDir)
+    expect(result.alternateHooksDir).toBe(canonicalizePath(githooksDir))
     expect(result.alternateHooksPath).toBe('.githooks')
     const prePush = result.hooks.find((hook) => hook.name === 'pre-push')
     expect(prePush?.enabled).toBe(false)
     expect(prePush?.filename).toBe('pre-push.sample')
+  })
+
+  it('matches alternate .githooks paths when the repo is accessed via a symlink alias', async () => {
+    const base = mkdtempSync(join(tmpdir(), 'gf-hooks-'))
+    const realDir = join(base, 'real')
+    const aliasDir = join(base, 'alias')
+    mkdirSync(realDir)
+    symlinkSync(realDir, aliasDir, 'dir')
+    initRepo(realDir)
+    const githooksDir = join(realDir, '.githooks')
+    mkdirSync(githooksDir, { recursive: true })
+    writeFileSync(join(githooksDir, 'pre-push'), '#!/bin/sh\necho hook\n')
+    chmodSync(join(githooksDir, 'pre-push'), 0o755)
+
+    const result = await hooksList(aliasDir, 'git')
+
+    expect(result.alternateHooksDir).toBe(canonicalizePath(githooksDir))
   })
 
   it('lists hooks from .githooks when core.hooksPath is configured', async () => {
@@ -143,7 +161,7 @@ describe('hooks', () => {
 
     const result = await hooksList(dir, 'git')
 
-    expect(result.hooksDir).toBe(githooksDir)
+    expect(result.hooksDir).toBe(canonicalizePath(githooksDir))
     expect(result.alternateHooksDir).toBeUndefined()
     const prePush = result.hooks.find((hook) => hook.name === 'pre-push')
     expect(prePush?.enabled).toBe(true)

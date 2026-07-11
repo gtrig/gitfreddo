@@ -13,6 +13,7 @@ import {
   buildRevParseGitPathHooksArgs,
   buildRevParseShowToplevelArgs
 } from '../../../shared/git/commands'
+import { canonicalizePath } from '../repo-path'
 import { runGitOrThrow } from '../git-runner'
 
 export interface GitHook {
@@ -81,9 +82,10 @@ function findAlternateHooksDir(
   root: string,
   activeHooksDir: string
 ): { dir: string; configPath: string } | null {
+  const activeCanonical = canonicalizePath(activeHooksDir)
   for (const rel of ALTERNATE_HOOKS_DIRS) {
-    const candidate = resolve(root, rel)
-    if (candidate === activeHooksDir) continue
+    const candidate = canonicalizePath(resolve(root, rel))
+    if (candidate === activeCanonical) continue
     if (listHookFilenames(candidate).length > 0) {
       return { dir: candidate, configPath: rel }
     }
@@ -97,13 +99,13 @@ export async function resolveHooksDir(cwd: string, gitBinaryPath: string): Promi
   ).trim()
 
   if (hooksPath.startsWith('/') || /^[A-Za-z]:/.test(hooksPath)) {
-    return resolve(hooksPath)
+    return canonicalizePath(hooksPath)
   }
 
   const root = (
     await runGitOrThrow(buildRevParseShowToplevelArgs(), { cwd, gitBinaryPath })
   ).trim()
-  return resolve(root, hooksPath)
+  return canonicalizePath(resolve(root, hooksPath))
 }
 
 export async function hooksList(

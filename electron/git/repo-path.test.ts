@@ -1,8 +1,8 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs'
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join, resolve } from 'path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { resolveGitDirSync } from './repo-path'
+import { canonicalizePath, resolveGitDirSync } from './repo-path'
 
 describe('resolveGitDirSync', () => {
   let tempDir = ''
@@ -30,5 +30,25 @@ describe('resolveGitDirSync', () => {
     mkdirSync(worktree)
     writeFileSync(join(worktree, '.git'), `gitdir: ${actualGitDir}\n`)
     expect(resolveGitDirSync(worktree)).toBe(resolve(actualGitDir))
+  })
+})
+
+describe('canonicalizePath', () => {
+  let tempDir = ''
+
+  afterEach(() => {
+    if (tempDir) {
+      rmSync(tempDir, { recursive: true, force: true })
+      tempDir = ''
+    }
+  })
+
+  it('resolves symlinks to the same canonical path', () => {
+    tempDir = mkdtempSync(join(tmpdir(), 'gitfreddo-canonical-'))
+    const target = join(tempDir, 'target')
+    const link = join(tempDir, 'link')
+    mkdirSync(target)
+    symlinkSync(target, link, 'dir')
+    expect(canonicalizePath(link)).toBe(canonicalizePath(target))
   })
 })

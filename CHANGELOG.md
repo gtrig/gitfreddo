@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-11 — Canonical hooks directory paths on macOS and Windows
+
+- **Why:** Release CI failed on macOS (`/var` vs `/private/var`) and Windows (8.3 vs long temp paths) when comparing Git-resolved hook directories to Node paths.
+- **What:** Added `canonicalizePath()` in `repo-path.ts`; `hooksList`/`resolveHooksDir` normalize paths via `realpathSync.native`; hooks tests compare canonical paths and cover symlink aliases.
+
 ### 2026-07-11 — Strip stale forge askpass env without tokens
 
 - **Why:** Pre-commit hook failed when `GIT_ASKPASS` lingered in the shell after running GitFreddo with forge auth configured.
