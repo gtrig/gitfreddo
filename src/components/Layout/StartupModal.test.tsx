@@ -37,12 +37,13 @@ describe('StartupModal', () => {
       />
     )
 
+    // getStartupNewsItems caps at 5; assert two bullets that are within the current top-5.
     expect(
       screen.getByText(
-        'Analyze GitHub pull requests with AI — entire PR or selected files — and refine the review through follow-up prompts.'
+        'Settings → Workspace tab for the active repository: local git config, repository files, and git hooks.'
       )
     ).toBeInTheDocument()
-    expect(screen.getByText('App version and UI zoom controls live in the bottom footer.')).toBeInTheDocument()
+    expect(screen.getByText('Fixed the header logo not appearing in packaged app releases.')).toBeInTheDocument()
   })
 
   it('calls onClose when user dismisses the modal', async () => {

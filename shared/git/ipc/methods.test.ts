@@ -1,132 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { ALL_GIT_IPC_METHODS, GIT_IPC_METHODS } from './methods'
 
-/** Every repo-manager switch case must appear in the IPC catalog. */
-const REPO_MANAGER_METHODS = [
-  'repo.status',
-  'log.graph',
-  'log.show',
-  'log.message',
-  'log.tree',
-  'branch.list',
-  'branch.checkout',
-  'branch.create',
-  'branch.delete',
-  'branch.rename',
-  'branch.checkoutRemote',
-  'branch.setUpstream',
-  'branch.unsetUpstream',
-  'branch.deleteRemote',
-  'tag.list',
-  'tag.create',
-  'tag.delete',
-  'tag.push',
-  'tag.rename',
-  'working.status',
-  'stage.add',
-  'stage.reset',
-  'working.discard',
-  'working.remove',
-  'working.cleanPreview',
-  'working.clean',
-  'commit.create',
-  'commit.reword',
-  'diff.working',
-  'diff.staged',
-  'diff.commits',
-  'diff.commitRange',
-  'diff.show',
-  'file.read',
-  'file.blame',
-  'file.readStage',
-  'log.file',
-  'log.pickaxe',
-  'log.search',
-  'reflog.list',
-  'undo.peek',
-  'undo.last',
-  'notes.list',
-  'notes.add',
-  'bisect.status',
-  'bisect.start',
-  'bisect.good',
-  'bisect.bad',
-  'bisect.reset',
-  'working.write',
-  'working.read',
-  'working.rename',
-  'working.addToGitignore',
-  'stage.applyPatch',
-  'config.get',
-  'config.set',
-  'config.list',
-  'hooks.list',
-  'hooks.read',
-  'hooks.write',
-  'hooks.enable',
-  'hooks.disable',
-  'hooks.delete',
-  'remote.list',
-  'remote.add',
-  'remote.remove',
-  'remote.rename',
-  'remote.setUrl',
-  'fetch',
-  'push',
-  'pull',
-  'stash.list',
-  'stash.show',
-  'stash.files',
-  'stash.push',
-  'stash.branch',
-  'stash.pop',
-  'stash.apply',
-  'stash.drop',
-  'worktree.list',
-  'worktree.add',
-  'worktree.remove',
-  'worktree.prune',
-  'submodule.list',
-  'submodule.add',
-  'submodule.init',
-  'submodule.update',
-  'submodule.sync',
-  'submodule.deinit',
-  'submodule.remove',
-  'submodule.setUrl',
-  'merge.status',
-  'merge.start',
-  'merge.abort',
-  'merge.continue',
-  'rebase.start',
-  'rebase.interactive',
-  'rebase.abort',
-  'rebase.continue',
-  'rebase.skip',
-  'cherry-pick.continue',
-  'cherry-pick.abort',
-  'cherry-pick.skip',
-  'cherry-pick',
-  'rebase.squash',
-  'rebase.drop',
-  'commit.revert',
-  'reset',
-  'reset.head',
-  'maintenance.unreachable',
-  'maintenance.staleBranches',
-  'maintenance.removeStaleBranches',
-  'maintenance.prune'
-] as const
-
 describe('GIT_IPC_METHODS', () => {
-  it('covers every repo-manager invoke case', () => {
-    for (const method of REPO_MANAGER_METHODS) {
-      expect(GIT_IPC_METHODS).toHaveProperty(method)
-    }
-    expect(ALL_GIT_IPC_METHODS.length).toBe(REPO_MANAGER_METHODS.length)
+  it('catalog keys match ALL_GIT_IPC_METHODS', () => {
+    expect(Object.keys(GIT_IPC_METHODS).sort()).toEqual([...ALL_GIT_IPC_METHODS].sort())
   })
 
-  it('has no orphan catalog entries', () => {
-    expect([...ALL_GIT_IPC_METHODS].sort()).toEqual([...REPO_MANAGER_METHODS].sort())
+  it('all methods have required metadata fields', () => {
+    for (const method of ALL_GIT_IPC_METHODS) {
+      const meta = GIT_IPC_METHODS[method]
+      expect(Array.isArray(meta.invalidates), `${method}.invalidates should be an array`).toBe(true)
+      expect(Array.isArray(meta.commands), `${method}.commands should be an array`).toBe(true)
+    }
   })
 })

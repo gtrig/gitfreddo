@@ -1,3 +1,5 @@
+import { brandLogoUrl } from '@/lib/brand/brandLogoUrl'
+
 export function AppBrandRail() {
   return (
     <aside
@@ -5,7 +7,7 @@ export function AppBrandRail() {
       aria-label="GitFreddo"
     >
       <img
-        src="/logo.png"
+        src={brandLogoUrl(import.meta.env.BASE_URL)}
         alt="GitFreddo"
         className="h-18 w-auto object-contain"
       />

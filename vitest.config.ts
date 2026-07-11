@@ -41,10 +41,10 @@ export default defineConfig({
           statements: 80
         },
         'electron/**': {
-          lines: 8,
-          branches: 55,
-          functions: 20,
-          statements: 8
+          lines: 40,
+          branches: 60,
+          functions: 38,
+          statements: 40
         }
       }
     }

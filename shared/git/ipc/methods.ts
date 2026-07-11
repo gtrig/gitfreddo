@@ -47,6 +47,10 @@ export const GIT_IPC_METHODS = {
     commands: ['log.pickaxe'],
     stateSource: 'git'
   },
+  // NOTE: log.search is implemented in the backend but not yet called from the renderer.
+  // The renderer currently performs commit search client-side on the loaded graph
+  // (src/lib/git/commitSearch.ts). Wire this to the UI when server-side search is needed
+  // (e.g. for repositories too large to load the full graph).
   'log.search': {
     invalidates: [],
     commands: ['log.search'],
@@ -245,6 +249,9 @@ export const GIT_IPC_METHODS = {
     commands: ['reflog'],
     stateSource: 'git'
   },
+  // NOTE: undo.peek is implemented but not yet called from the renderer.
+  // The renderer currently goes directly to undo.last without a preview step.
+  // Wire this to show a confirmation preview before undoing the last commit.
   'undo.peek': {
     invalidates: [],
     commands: ['reflog'],
@@ -255,6 +262,9 @@ export const GIT_IPC_METHODS = {
     commands: ['reset.mode'],
     stateSource: 'git'
   },
+  // NOTE: notes.list is implemented but not yet called from the renderer.
+  // Git notes are currently displayed inline via the %N log format in log.graph.
+  // Wire this to a dedicated notes view when per-commit notes management is added.
   'notes.list': {
     invalidates: [],
     commands: ['notes'],

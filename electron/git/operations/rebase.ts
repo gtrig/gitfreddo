@@ -20,7 +20,7 @@ import {
   revParseHeadParent,
   revParseParent
 } from '../../../shared/git/commands'
-import { runCommand, runGitOrThrow } from '../git-runner'
+import { resolveGitRef, runCommand, runGitOrThrow } from '../git-runner'
 import { workingStatus } from './status'
 import { continueGitOperation } from './commit-message'
 
@@ -440,7 +440,8 @@ export async function resetRepo(
   mode: 'soft' | 'mixed' | 'hard',
   ref?: string
 ): Promise<void> {
-  await runGitOrThrow(buildResetModeArgs({ mode, ref }), { cwd, gitBinaryPath })
+  const resolvedRef = ref ? await resolveGitRef(cwd, gitBinaryPath, ref) : undefined
+  await runGitOrThrow(buildResetModeArgs({ mode, ref: resolvedRef }), { cwd, gitBinaryPath })
 }
 
 export async function resetToParent(

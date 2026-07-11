@@ -176,10 +176,10 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
     [closeMenu]
   )
 
+  const selectedCommitHashes = useSelectionStore((s) => s.selectedCommitHashes)
+
   const items = useMemo(() => {
     if (!menu) return []
-
-    const { selectedCommitHashes } = useSelectionStore.getState()
 
     return buildCommitContextMenuItems({
       commit: menu.commit,
@@ -314,6 +314,7 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
     options.isDetached,
     options.commits,
     working,
+    selectedCommitHashes,
     selectTimelineNode,
     showCompareCommitRange,
     showToast,

@@ -133,8 +133,8 @@ export interface GitFreddoAPI {
   pickFile: () => Promise<string | null>
   pickFiles: () => Promise<string[] | null>
   pickGitBinary: () => Promise<string | null>
-  deleteWorkspaceFile: (relativePath: string) => Promise<void>
-  openInEditor: (relativePath: string) => Promise<void>
+  deleteWorkspaceFile: (relativePath: string, repoPath?: string) => Promise<void>
+  openInEditor: (relativePath: string, repoPath?: string) => Promise<void>
   getSettings: () => Promise<AppSettings>
   setSettings: (patch: Partial<AppSettings>) => Promise<AppSettings>
   exportSettingsBackup: () => Promise<string | null>
@@ -234,7 +234,7 @@ export interface GitFreddoAPI {
     number: number,
     params: { title?: string; body?: string; state?: 'open' | 'closed' }
   ) => Promise<import('./github').GitHubIssue>
-  aiFill: (params: import('./ai').AiFillParams) => Promise<string>
+  aiFill: (params: import('./ai').AiFillParams, repoPath?: string) => Promise<string>
   onGitHubConnectProgress: (
     callback: (progress: import('./github').GitHubConnectProgress) => void
   ) => () => void

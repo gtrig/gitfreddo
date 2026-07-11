@@ -8,6 +8,16 @@ if ! git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then
 fi
 
 cd "$ROOT"
+
+# Load NVM so the hook uses the Node.js version declared in .nvmrc.
+# Git hooks run outside the interactive shell, so NVM is not available by default.
+export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+# shellcheck source=/dev/null
+[[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh" --no-use
+if command -v nvm &>/dev/null && [[ -f "$ROOT/.nvmrc" ]]; then
+  nvm use --silent 2>/dev/null || true
+fi
+
 echo "Running pre-commit checks (typecheck, test)..." >&2
 npm run typecheck
 npm run test

@@ -21,9 +21,10 @@ const api: GitFreddoAPI = {
   pickFile: () => ipcRenderer.invoke('gitfreddo:pick-file'),
   pickFiles: () => ipcRenderer.invoke('gitfreddo:pick-files'),
   pickGitBinary: () => ipcRenderer.invoke('gitfreddo:pick-git-binary'),
-  deleteWorkspaceFile: (relativePath) =>
-    ipcRenderer.invoke('gitfreddo:delete-workspace-file', relativePath),
-  openInEditor: (relativePath) => ipcRenderer.invoke('gitfreddo:open-in-editor', relativePath),
+  deleteWorkspaceFile: (relativePath, repoPath) =>
+    ipcRenderer.invoke('gitfreddo:delete-workspace-file', relativePath, repoPath),
+  openInEditor: (relativePath, repoPath) =>
+    ipcRenderer.invoke('gitfreddo:open-in-editor', relativePath, repoPath),
   getSettings: () => ipcRenderer.invoke('gitfreddo:get-settings'),
   setSettings: (patch) => ipcRenderer.invoke('gitfreddo:set-settings', patch),
   exportSettingsBackup: () => ipcRenderer.invoke('gitfreddo:export-settings-backup'),
@@ -104,7 +105,7 @@ const api: GitFreddoAPI = {
     ipcRenderer.invoke('gitfreddo:github-create-issue', repoPath, params),
   githubUpdateIssue: (repoPath, number, params) =>
     ipcRenderer.invoke('gitfreddo:github-update-issue', repoPath, number, params),
-  aiFill: (params: AiFillParams) => ipcRenderer.invoke('gitfreddo:ai-fill', params),
+  aiFill: (params: AiFillParams, repoPath?: string) => ipcRenderer.invoke('gitfreddo:ai-fill', params, repoPath),
   onMenuAction: (callback) => {
     const listener = (_event: Electron.IpcRendererEvent, action: MenuAction) => callback(action)
     ipcRenderer.on('app:menu', listener)

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { useSelectionStore } from '@/stores/selection'
@@ -40,6 +40,22 @@ export function DiffOverlay({ onClose }: DiffOverlayProps) {
   const showToast = useToastStore((s) => s.show)
   const { stageApplyPatch } = useGitMutations()
   const [viewMode, setViewMode] = useState<DiffViewMode>(settings?.diffViewMode ?? 'unified')
+  // Sync the default view mode when the settings value changes (e.g. user updates preference).
+  // Skip the first render (already initialised from settings above) and skip if the user
+  // has already interacted with the overlay's own toggle.
+  const hasUserToggledRef = useRef(false)
+  const prevSettingsModeRef = useRef(settings?.diffViewMode)
+  useEffect(() => {
+    if (!settings) return
+    if (hasUserToggledRef.current) return
+    if (prevSettingsModeRef.current === settings.diffViewMode) return
+    prevSettingsModeRef.current = settings.diffViewMode
+    setViewMode(settings.diffViewMode)
+  }, [settings])
+  const handleSetViewMode = (mode: DiffViewMode) => {
+    hasUserToggledRef.current = true
+    setViewMode(mode)
+  }
 
   const selectedWorkingFile = useSelectionStore((s) => s.selectedWorkingFile)
   const setSelectedWorkingFile = useSelectionStore((s) => s.setSelectedWorkingFile)
@@ -175,6 +191,17 @@ export function DiffOverlay({ onClose }: DiffOverlayProps) {
     stashDiff.isLoading
   ])
 
+  const activeError = useMemo(() => {
+    switch (diffMode) {
+      case 'working': return workingDiff.error
+      case 'staged': return stagedDiff.error
+      case 'commit': return commitDiff.error
+      case 'commit-range': return rangeDiff.error
+      case 'stash': return stashDiff.error
+      default: return null
+    }
+  }, [diffMode, workingDiff.error, stagedDiff.error, commitDiff.error, rangeDiff.error, stashDiff.error])
+
   const canBlame =
     Boolean(filePath) && diffMode !== 'commit-range' && diffMode !== 'stash'
   const editorPath = diffMode === 'commit-range' ? null : filePath ?? selectedStashFile
@@ -220,7 +247,7 @@ export function DiffOverlay({ onClose }: DiffOverlayProps) {
               <button
                 key={mode}
                 type="button"
-                onClick={() => setViewMode(mode)}
+                onClick={() => handleSetViewMode(mode)}
                 className={`px-2 py-0.5 capitalize ${
                   viewMode === mode
                     ? 'bg-gf-surface text-gf-fg'
@@ -244,6 +271,8 @@ export function DiffOverlay({ onClose }: DiffOverlayProps) {
       <div className="min-h-0 flex-1 overflow-auto p-4">
         {loading || (showBlame && blameQuery.isLoading) ? (
           <p className="text-sm text-gf-fg-subtle">{t('diff.loadingDiff')}</p>
+        ) : activeError ? (
+          <p className="text-sm text-red-400">{(activeError as Error).message ?? t('diff.loadError')}</p>
         ) : rows.length === 0 ? (
           <p className="text-sm text-gf-fg-subtle">{t('diff.noChangesInRange')}</p>
         ) : effectiveMode === 'split' ? (

@@ -37,11 +37,31 @@ Near-term direction for GitFreddo. Not a commitment — priorities may shift.
 - [ ] Keyboard navigation and accessibility audit
 - [ ] Optional screenshots in user documentation
 
+## Security and correctness
+
+- [x] SSH private key cleanup after forge upload (GitHub, Bitbucket)
+- [x] Ref hardening: `rev-parse --verify` before git operations that accept user-supplied refs (`fileRead`, `resetRepo`)
+- [x] Multi-workspace correctness: `repoPath` threaded through AI enrichment, `openInEditor`, and `deleteWorkspaceFile` IPC
+- [x] File-watcher lifecycle fixed: `switch-workspace` now starts watchers for the new path
+- [ ] IPC input validation layer — schema-per-method guard on `gitfreddo:invoke` (currently trusts renderer casts)
+- [ ] Validate git binary and editor command on save (reject paths that don't resolve to `git` or a real editor)
+- [ ] Secret redaction in `get-settings` IPC response (never send API keys to renderer unnecessarily)
+- [ ] Electron sandbox audit — move preload to sandboxed mode when feasible
+
+## Type architecture
+
+- [x] Git result types consolidated: renderer imports from `@shared/git/ipc` instead of re-defining in `src/lib/types.ts`
+- [x] `shared/ai.ts` split into focused modules (`types`, `prompts`, `parsers`, `http`)
+- [ ] IPC param types: replace `as unknown` casts in `dispatchInvoke` with a typed per-method params schema
+
 ## Testing and CI
 
-- [ ] Expand component test coverage
+- [x] Electron coverage floor raised from 8% → 40% lines / 38% functions
+- [x] Tests added for 6 previously uncovered operation modules (`repo`, `config`, `log`, `log-search`, `notes`, `diff`) and `repo-manager` dispatch
+- [ ] Tests for `bisect`, `main/index.ts` IPC registration, `main/ipc/github.ts`, `main/ipc/bitbucket.ts`
 - [ ] Additional E2E paths (conflict resolution, push flow)
 - [ ] Visual regression tests (optional)
+- [ ] Expand component test coverage
 
 ## Longer term
 

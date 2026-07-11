@@ -78,11 +78,15 @@ export async function exchangeAuthorizationCode(
   return data.access_token
 }
 
+const OAUTH_TIMEOUT_MS = 5 * 60 * 1000 // 5 minutes
+
 function waitForAuthorizationCode(
   port: number,
   expectedState: string
 ): Promise<{ code: string; redirectUri: string }> {
   return new Promise((resolve, reject) => {
+    let settled = false
+
     const server = createServer((req: IncomingMessage, res: ServerResponse) => {
       if (!req.url?.startsWith('/callback')) {
         sendHtml(res, '<h1>Not found</h1>', 404)
@@ -97,8 +101,12 @@ function waitForAuthorizationCode(
           `<h1>Authorization failed</h1><p>${error}</p><p>You can close this window.</p>`,
           400
         )
-        server.close()
-        reject(new Error(`Bitbucket authorization failed: ${error}`))
+        if (!settled) {
+          settled = true
+          clearTimeout(timer)
+          server.close()
+          reject(new Error(`Bitbucket authorization failed: ${error}`))
+        }
         return
       }
 
@@ -106,8 +114,12 @@ function waitForAuthorizationCode(
       const code = query.get('code')
       if (!code || state !== expectedState) {
         sendHtml(res, '<h1>Invalid callback</h1><p>You can close this window.</p>', 400)
-        server.close()
-        reject(new Error('Bitbucket authorization callback was invalid'))
+        if (!settled) {
+          settled = true
+          clearTimeout(timer)
+          server.close()
+          reject(new Error('Bitbucket authorization callback was invalid'))
+        }
         return
       }
 
@@ -115,13 +127,29 @@ function waitForAuthorizationCode(
         res,
         '<h1>Authorization successful</h1><p>You can return to GitFreddo and close this window.</p>'
       )
-      server.close()
-      resolve({ code, redirectUri: getRedirectUri(port) })
+      if (!settled) {
+        settled = true
+        clearTimeout(timer)
+        server.close()
+        resolve({ code, redirectUri: getRedirectUri(port) })
+      }
     })
 
     server.on('error', (error) => {
-      reject(error)
+      if (!settled) {
+        settled = true
+        clearTimeout(timer)
+        reject(error)
+      }
     })
+
+    const timer = setTimeout(() => {
+      if (!settled) {
+        settled = true
+        server.close()
+        reject(new Error('Bitbucket OAuth timed out waiting for authorization callback.'))
+      }
+    }, OAUTH_TIMEOUT_MS)
 
     server.listen(port, '127.0.0.1')
   })

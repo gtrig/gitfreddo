@@ -139,5 +139,6 @@ export async function fileRead(
   ref: string,
   path: string
 ): Promise<string> {
-  return runGitOrThrow(buildShowBlobArgs({ ref, path }), { cwd, gitBinaryPath })
+  const resolvedRef = await resolveGitRef(cwd, gitBinaryPath, ref)
+  return runGitOrThrow(buildShowBlobArgs({ ref: resolvedRef, path }), { cwd, gitBinaryPath })
 }

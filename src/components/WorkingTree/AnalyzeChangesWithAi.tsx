@@ -313,7 +313,7 @@ export function AnalyzeChangesWithAi({
   const { t } = useTranslation()
   const aiEnabled = useAiEnabled()
   const aiFill = useAiFill()
-  const { commit, stageAdd, stageReset } = useGitMutations()
+  const { commit, stageAdd, stageReset, undoLast } = useGitMutations()
   const showToast = useToastStore((s) => s.show)
   const [open, setOpen] = useState(false)
   const [result, setResult] = useState<AiAnalyzeChangesResult | null>(null)
@@ -439,12 +439,14 @@ export function AnalyzeChangesWithAi({
       return
     }
 
+    let createdCount = 0
     try {
       await stageReset.mutateAsync({ paths: [] })
 
       for (const proposal of selectedProposals) {
         await stageAdd.mutateAsync({ paths: proposal.files })
         await commit.mutateAsync({ message: buildCommitMessage(proposal.summary, proposal.description) })
+        createdCount++
       }
 
       showToast(
@@ -455,7 +457,23 @@ export function AnalyzeChangesWithAi({
       )
       setOpen(false)
     } catch (error) {
-      showToast(error instanceof Error ? error.message : String(error), 'error')
+      const msg = error instanceof Error ? error.message : String(error)
+      // Roll back any commits already created so the repo is not left half-committed.
+      if (createdCount > 0) {
+        try {
+          for (let i = 0; i < createdCount; i++) {
+            await undoLast.mutateAsync({})
+          }
+        } catch {
+          // If rollback fails, inform the user so they can manually reset.
+          showToast(
+            `${msg} — ${createdCount} commit(s) were created before the failure. Run "git reset --soft HEAD~${createdCount}" to undo them.`,
+            'error'
+          )
+          return
+        }
+      }
+      showToast(msg, 'error')
     }
   }
 

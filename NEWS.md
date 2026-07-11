@@ -5,6 +5,8 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+- Diff viewer now shows an error message when the diff query fails, instead of silently showing "no changes".
+- Fixed the header logo not appearing in packaged app releases.
 - Settings → Workspace tab for the active repository: local git config, repository files, and git hooks.
 - Search in-app documentation by title or page content from the Documentation sidebar.
 - Help → About GitFreddo reopens the welcome dialog; snoozing hides it for 30 days or until you update to a new version.

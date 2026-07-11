@@ -1,9 +1,8 @@
-import { execSync } from 'child_process'
-import { mkdtempSync, readFileSync } from 'fs'
-import { tmpdir } from 'os'
+import { rmSync } from 'fs'
 import { join } from 'path'
 import { githubJson } from './api/http'
 import { findGitFreddoSshKeyLabel } from '../../shared/forge-ssh'
+import { generateSshKeyPair } from '../forge/ssh-key-pair'
 
 export interface SshKeyResult {
   title: string
@@ -24,13 +23,7 @@ export async function findGitFreddoSshKeyTitle(token?: string): Promise<string |
   return findGitFreddoSshKeyLabel(titles)
 }
 
-export function generateSshKeyPair(): { publicKey: string; privateKeyPath: string } {
-  const dir = mkdtempSync(join(tmpdir(), 'gitfreddo-ssh-'))
-  const keyPath = join(dir, 'id_rsa')
-  execSync(`ssh-keygen -t rsa -b 4096 -f "${keyPath}" -N "" -q`, { stdio: 'ignore' })
-  const publicKey = readFileSync(`${keyPath}.pub`, 'utf8').trim()
-  return { publicKey, privateKeyPath: keyPath }
-}
+export { generateSshKeyPair } from '../forge/ssh-key-pair'
 
 export async function uploadSshKey(publicKey: string, title: string): Promise<SshKeyResult> {
   await githubJson('/user/keys', {
@@ -42,6 +35,15 @@ export async function uploadSshKey(publicKey: string, title: string): Promise<Ss
 }
 
 export async function generateAndUploadSshKey(title: string): Promise<SshKeyResult> {
-  const { publicKey } = generateSshKeyPair()
-  return uploadSshKey(publicKey, title)
+  const { publicKey, privateKeyPath } = generateSshKeyPair()
+  const keyDir = join(privateKeyPath, '..')
+  try {
+    return await uploadSshKey(publicKey, title)
+  } finally {
+    try {
+      rmSync(keyDir, { recursive: true, force: true })
+    } catch {
+      // Best-effort cleanup — don't shadow the upload error.
+    }
+  }
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { ArchiveBoxIcon } from '@heroicons/react/24/outline'
@@ -86,10 +86,9 @@ export function CommitPanel({ working }: CommitPanelProps) {
   })
 
   useEffect(() => {
+    if (gpgSignQuery.data === undefined) return
     const value = gpgSignQuery.data?.trim().toLowerCase()
-    if (value === 'true' || value === '1' || value === 'yes' || value === 'on') {
-      setSign(true)
-    }
+    setSign(value === 'true' || value === '1' || value === 'yes' || value === 'on')
   }, [gpgSignQuery.data])
 
   const unstagedFiles = useMemo(
@@ -107,8 +106,17 @@ export function CommitPanel({ working }: CommitPanelProps) {
     [unstagedFiles, working.staged]
   )
 
+  // Track which commit hash we've already seeded so that graph refetches
+  // (which produce a new headCommit object but the same hash) do not
+  // overwrite the user's in-progress amend text.
+  const seededAmendHashRef = useRef<string | null>(null)
   useEffect(() => {
-    if (!amend || !headCommit) return
+    if (!amend || !headCommit) {
+      seededAmendHashRef.current = null
+      return
+    }
+    if (seededAmendHashRef.current === headCommit.hash) return
+    seededAmendHashRef.current = headCommit.hash
     setSummary(headCommit.subject)
     setDescription(commitMessageBody(headCommit.message, headCommit.subject))
   }, [amend, headCommit])

@@ -102,9 +102,10 @@ async function loadExplainCommitContext(
 
 export async function enrichAiContext(
   manager: RepoManager,
-  params: AiFillParams
+  params: AiFillParams,
+  explicitRepoPath?: string
 ): Promise<AiFillParams> {
-  const repoPath = manager.getRepoPath()
+  const repoPath = explicitRepoPath ?? manager.getRepoPath()
   if (!repoPath) {
     return params
   }

@@ -7,6 +7,26 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-11 — Full-project review: bug fixes, refactors, and coverage boost
+
+- **Why:** Full code review pass to fix correctness and security bugs, reduce tech debt in large files, consolidate duplicated types, and harden the test suite.
+- **What:**
+  - P0 CI: fixed stale `StartupModal` news-bullet assertion that was failing the test suite.
+  - P1 correctness: `switch-workspace` now starts file watchers; `repoPath` threaded through AI enrichment and file/editor IPC for multi-tab correctness; amend-message overwrite fixed in `CommitPanel`; AI multi-commit flow gets rollback on partial failure.
+  - P1 security: SSH private-key temp dirs cleaned up after forge upload; `resolveGitRef` applied before `fileRead` and `resetRepo` to harden ref inputs against flag injection.
+  - P2 UX: `DiffOverlay` shows query errors instead of "no changes"; stale multi-select context menu fixed; GPG sign and diff-view-mode settings now resync from live settings.
+  - P3 gaps: `log.search`, `undo.peek`, `notes.list` documented; Bitbucket OAuth server closes on timeout; IPC input validated via `ALL_GIT_IPC_METHODS` set.
+  - Refactor — backend: `repo-manager.ts` god-switch replaced with a per-domain handler registry keyed off `GIT_IPC_METHODS`; `main/index.ts` GitHub and Bitbucket IPC extracted to `electron/main/ipc/`; `shared/ai.ts` split into `types`, `prompts`, `parsers`, `http` sub-modules.
+  - Refactor — types: `src/lib/types.ts` now re-exports all git result shapes from `@shared/git/ipc` — single source of truth, no more drift.
+  - Refactor — UI: `WorkingTreeFileRow.tsx` extracted from `GitWorkingTree.tsx`; `TimelineBranchTagRow.tsx` extracted from `CommitTimeline.tsx`; `generateSshKeyPair` deduplicated into `electron/forge/ssh-key-pair.ts` shared by GitHub and Bitbucket.
+  - Test CI: electron coverage threshold raised from 8% → 40% lines; tests added for `repo-manager` dispatch, and `repo`, `config`, `log`, `log-search`, `notes`, `diff` operation modules (46 new tests, 864 total).
+  - Roadmap updated with new work items: IPC validation layer, security hardening items, type architecture goals, and CI targets.
+
+### 2026-07-11 — Header logo in packaged builds
+
+- **Why:** The brand rail used `/logo.png`, which resolves to the filesystem root under Electron `file://` loads and showed a broken image in release builds.
+- **What:** `brandLogoUrl()` builds the logo path from `import.meta.env.BASE_URL`; `AppBrandRail` uses it so packaged apps load `./logo.png` next to `index.html`.
+
 ### 2026-07-11 — Canonical hooks directory paths on macOS and Windows
 
 - **Why:** Release CI failed on macOS (`/var` vs `/private/var`) and Windows (8.3 vs long temp paths) when comparing Git-resolved hook directories to Node paths.
