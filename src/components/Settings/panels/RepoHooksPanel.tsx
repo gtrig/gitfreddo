@@ -18,6 +18,7 @@ export function RepoHooksPanel() {
   const [saving, setSaving] = useState(false)
   const [toggling, setToggling] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [configuringHooksPath, setConfiguringHooksPath] = useState(false)
 
   const listQuery = useQuery({
     queryKey: ['repo', repoPath, 'hooks.list'],
@@ -107,6 +108,25 @@ export function RepoHooksPanel() {
     }
   }
 
+  async function handleUseAlternateHooksPath() {
+    const hooksPath = listQuery.data?.alternateHooksPath
+    if (!hooksPath) return
+    setConfiguringHooksPath(true)
+    try {
+      await window.gitfreddo.invoke('config.set', {
+        key: 'core.hooksPath',
+        value: hooksPath,
+        scope: 'local'
+      })
+      showToast(t('settings.repoHooks.alternateHooksPathEnabled', { path: hooksPath }), 'success')
+      await invalidateHooks()
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : String(error), 'error')
+    } finally {
+      setConfiguringHooksPath(false)
+    }
+  }
+
   async function handleDelete() {
     if (!selected) return
     if (!window.confirm(t('settings.repoHooks.deleteConfirm', { name: selected }))) return
@@ -138,6 +158,26 @@ export function RepoHooksPanel() {
         <p className="text-xs text-gf-fg-subtle">
           {t('settings.repoHooks.hooksPath', { path: listQuery.data.hooksDir })}
         </p>
+      )}
+      {listQuery.data?.alternateHooksDir && listQuery.data.alternateHooksPath && (
+        <div className="rounded border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-gf-fg-muted">
+          <p>
+            {t('settings.repoHooks.alternateHooksPath', {
+              path: listQuery.data.alternateHooksDir,
+              activePath: listQuery.data.hooksDir
+            })}
+          </p>
+          <div className="mt-2">
+            <ActionButton
+              loading={configuringHooksPath}
+              onClick={() => void handleUseAlternateHooksPath()}
+            >
+              {t('settings.repoHooks.useAlternateHooksPath', {
+                path: listQuery.data.alternateHooksPath
+              })}
+            </ActionButton>
+          </div>
+        </div>
       )}
       {listQuery.isLoading && <LoadingRow label={t('settings.repoHooks.loading')} />}
       {listQuery.error && (

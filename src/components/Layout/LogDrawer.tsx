@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DocumentTextIcon } from '@heroicons/react/24/outline'
-import { ZoomControls } from '@/components/Layout/ZoomControls'
 import { useLogStore, type LogTab } from '@/stores/logs'
 import type { LogEntry, LogLevel } from '@shared/ipc'
 
@@ -228,7 +227,6 @@ export function LogDrawer() {
             />
             {activeTab === 'git' && <GitListenSwitch />}
             <div className="flex-1" />
-            <ZoomControls />
             <button
               type="button"
               onClick={() => clear(activeTab)}
@@ -246,12 +244,7 @@ export function LogDrawer() {
           </>
         )}
 
-        {!open && (
-          <>
-            <div className="flex-1" />
-            <ZoomControls />
-          </>
-        )}
+        {!open && <div className="flex-1" />}
       </div>
 
       {open && (

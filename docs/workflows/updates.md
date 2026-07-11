@@ -34,6 +34,14 @@ Auto-update is **disabled** when running unpackaged (`npm run dev`). Manual chec
 
 Tagged releases (`v*`) bump `package.json` to the tag version before building, then upload installer artifacts **and** `*.yml` update metadata. See `.github/workflows/release.yml`.
 
+### Preparing a release locally
+
+1. Run `npm run release:prepare -- vX.Y.Z` to sync `package.json` / `package-lock.json` with the tag.
+2. Move `[Unreleased]` notes in `CHANGELOG.md` and `NEWS.md` into `## [X.Y.Z]`.
+3. Commit, create the tag, and push branch + tag.
+
+The repo installs a **pre-push** hook (via `npm install` → `prepare`) that blocks pushing a `v*` tag unless `package.json` already matches that semver. Use `--no-verify` only when you know what you are doing.
+
 Forge OAuth for installed apps is baked at build time from Actions secrets:
 
 | Secret | Maps to build env |

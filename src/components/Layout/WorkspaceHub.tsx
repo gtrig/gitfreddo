@@ -548,7 +548,7 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
   if (variant === 'page') {
     return (
       <>
-        <div className="flex h-screen flex-col bg-gf-bg text-gf-fg">
+        <div className="flex h-full flex-col bg-gf-bg text-gf-fg">
           <div className="mx-auto flex h-full w-full max-w-5xl flex-col py-8">
             <div className="mb-6 px-6 text-center">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gf-accent-fg">

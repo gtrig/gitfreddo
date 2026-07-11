@@ -44,7 +44,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   uiZoomFactor: 1,
   updateChannel: 'stable',
   autoDownloadUpdates: false,
-  checkForUpdatesOnStartup: true
+  checkForUpdatesOnStartup: true,
+  startupModalHiddenUntil: null,
+  startupModalHiddenForVersion: null
 }
 
 let writeChain: Promise<void> = Promise.resolve()
@@ -106,7 +108,17 @@ function normalizeSettings(parsed: AppSettings): AppSettings {
     checkForUpdatesOnStartup:
       parsed.checkForUpdatesOnStartup === undefined
         ? DEFAULT_SETTINGS.checkForUpdatesOnStartup
-        : Boolean(parsed.checkForUpdatesOnStartup)
+        : Boolean(parsed.checkForUpdatesOnStartup),
+    startupModalHiddenUntil:
+      typeof parsed.startupModalHiddenUntil === 'number' &&
+      Number.isFinite(parsed.startupModalHiddenUntil)
+        ? parsed.startupModalHiddenUntil
+        : null,
+    startupModalHiddenForVersion:
+      typeof parsed.startupModalHiddenForVersion === 'string' &&
+      parsed.startupModalHiddenForVersion.trim()
+        ? parsed.startupModalHiddenForVersion.trim()
+        : null
   }
 }
 

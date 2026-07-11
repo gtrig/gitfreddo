@@ -1,4 +1,7 @@
 {
+  "app": {
+    "version": "v{{version}}"
+  },
   "common": {
     "dismiss": "Απόρριψη",
     "close": "Κλείσιμο",
@@ -106,11 +109,14 @@
     "updatesTitle": "Ενημερώσεις",
     "updatesBody": "Χρησιμοποιήστε το banner ενημερώσεων της εφαρμογής για λήψη και εγκατάσταση της τελευταίας έκδοσης του GitFreddo όταν είναι διαθέσιμη.",
     "checkForUpdates": "Έλεγχος για ενημερώσεις",
-    "continue": "Συνέχεια στην εφαρμογή"
+    "continue": "Συνέχεια στην εφαρμογή",
+    "hideFor30Days": "Να μην εμφανιστεί ξανά για 30 ημέρες"
   },
   "docs": {
     "title": "Τεκμηρίωση",
     "shortcut": "Τεκμηρίωση (F1)",
+    "searchPlaceholder": "Αναζήτηση τεκμηρίωσης…",
+    "searchEmpty": "Δεν βρέθηκαν σελίδες",
     "navAria": "Σελίδες τεκμηρίωσης",
     "pageNotFound": "Η σελίδα δεν βρέθηκε: {{path}}",
     "sections": {
@@ -127,6 +133,7 @@
     "sectionsAria": "Ενότητες ρυθμίσεων",
     "sections": {
       "git": "Git",
+      "workspace": "Workspace",
       "maintenance": "Συντήρηση",
       "interface": "Διεπαφή",
       "ai": "Βοηθός AI",
@@ -162,7 +169,11 @@
       "pushSubmoduleRecursion": "Αναδρομή push",
       "pushSubmoduleRecursionNo": "Όχι",
       "pushSubmoduleRecursionCheck": "Έλεγχος (αποκλεισμός αν δεν έχει push)",
-      "pushSubmoduleRecursionOnDemand": "Κατά παραγγελία",
+      "pushSubmoduleRecursionOnDemand": "Κατά παραγγελία"
+    },
+    "workspace": {
+      "connectRequired": "Ανοίξτε αποθετήριο για διαχείριση ρυθμίσεων workspace.",
+      "description": "Ρυθμίσεις για το ενεργό αποθετήριο: τοπικές ρυθμίσεις git, αρχεία αποθετηρίου και hooks.",
       "repoConfig": "Ρυθμίσεις αποθετηρίου (τοπικές)",
       "loadingConfig": "Φόρτωση ρυθμίσεων…",
       "configLoadFailed": "Αποτυχία φόρτωσης ρυθμίσεων.",
@@ -339,7 +350,10 @@
       "saved": "Αποθηκεύτηκε {{name}}.",
       "enabledToast": "Ενεργοποιήθηκε {{name}}.",
       "disabledToast": "Απενεργοποιήθηκε {{name}}.",
-      "deleted": "Διαγράφηκε {{name}}."
+      "deleted": "Διαγράφηκε {{name}}.",
+      "alternateHooksPath": "Υπάρχουν hooks στο {{path}} αλλά το Git χρησιμοποιεί {{activePath}}. Ρυθμίστε το core.hooksPath για να φορτωθούν.",
+      "useAlternateHooksPath": "Χρήση {{path}}",
+      "alternateHooksPathEnabled": "Ο φάκελος git hooks ορίστηκε σε {{path}}."
     },
     "integrations": {
       "intro": "Συνδέστε εξωτερικές υπηρεσίες στο GitFreddo για πιστοποιημένες git λειτουργίες και μελλοντικές δυνατότητες."

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { RepoSidebar } from '@/components/Layout/RepoSidebar'
 import { TimelinePanel } from '@/components/TimelineGraph/TimelinePanel'
 import { DiffOverlay } from '@/components/DiffViewer/DiffOverlay'
@@ -15,6 +15,7 @@ import { StartupModal } from '@/components/Layout/StartupModal'
 import { UpdateBanner } from '@/components/Layout/UpdateBanner'
 import { LogDrawer, useLogSubscription } from '@/components/Layout/LogDrawer'
 import { HeaderToolsMenu } from '@/components/Layout/HeaderToolsMenu'
+import { AppFooter } from '@/components/Layout/AppFooter'
 import { AppBrandRail } from '@/components/Layout/AppBrandRail'
 import { ResizableMainLayout } from '@/components/Layout/ResizableMainLayout'
 import { SettingsModal } from '@/components/Settings/SettingsModal'
@@ -29,7 +30,9 @@ import { useSelectionStore } from '@/stores/selection'
 import { appLog, useLogStore } from '@/stores/logs'
 import { useLocale } from '@/hooks/useLocale'
 import { useAppUpdate } from '@/hooks/useAppUpdate'
+import { useAppSettings } from '@/hooks/useAppSettings'
 import { useUndoLast } from '@/hooks/useUndoLast'
+import { hideStartupModalUntil, shouldAutoShowStartupModal } from '@/lib/startup/startupModal'
 import type { MenuAction } from '@shared/ipc'
 
 export default function App() {
@@ -43,7 +46,8 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [docsOpen, setDocsOpen] = useState(false)
-  const [startupModalOpen, setStartupModalOpen] = useState(true)
+  const [startupModalOpen, setStartupModalOpen] = useState(false)
+  const startupAutoOpenChecked = useRef(false)
   const refresh = useManualRefresh()
   const selectedWorkingFile = useSelectionStore((s) => s.selectedWorkingFile)
   const selectedCommitFile = useSelectionStore((s) => s.selectedCommitFile)
@@ -67,6 +71,7 @@ export default function App() {
   useAppLogger()
   useLocale()
   useWorkspaceSessionPersistence()
+  const { data: settings } = useAppSettings()
   const appUpdate = useAppUpdate()
   const { performUndo, handleUndoKeyDown } = useUndoLast()
 
@@ -82,11 +87,42 @@ export default function App() {
     [openWorkspace]
   )
 
+  const handleStartupContinue = useCallback(async ({ hideFor30Days }: { hideFor30Days: boolean }) => {
+    setStartupModalOpen(false)
+    if (hideFor30Days) {
+      const version =
+        appUpdate.state.currentVersion || (await window.gitfreddo.getAppVersion())
+      await window.gitfreddo.setSettings({
+        startupModalHiddenUntil: hideStartupModalUntil(),
+        startupModalHiddenForVersion: version
+      })
+    }
+  }, [appUpdate.state.currentVersion])
+
+  useEffect(() => {
+    if (!settings || !appUpdate.state.currentVersion || startupAutoOpenChecked.current) {
+      return
+    }
+    startupAutoOpenChecked.current = true
+    if (
+      shouldAutoShowStartupModal(
+        {
+          hiddenUntil: settings.startupModalHiddenUntil,
+          hiddenForVersion: settings.startupModalHiddenForVersion
+        },
+        appUpdate.state.currentVersion
+      )
+    ) {
+      setStartupModalOpen(true)
+    }
+  }, [appUpdate.state.currentVersion, settings])
+
   useEffect(() => {
     const unsubscribe = window.gitfreddo.onMenuAction((action: MenuAction) => {
       if (action === 'open-workspace') void openWorkspaceDialog()
       if (action === 'open-settings') setSettingsOpen(true)
       if (action === 'open-docs') setDocsOpen(true)
+      if (action === 'open-about') setStartupModalOpen(true)
       if (action === 'refresh') {
         appLog('info', 'Manual refresh')
         refresh()
@@ -134,11 +170,14 @@ export default function App() {
 
   if (tabs.length === 0) {
     return (
-      <>
-        <WorkspaceHub variant="page" onOpen={connectWorkspace} />
+      <div className="flex h-screen flex-col bg-gf-bg text-gf-fg">
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <WorkspaceHub variant="page" onOpen={connectWorkspace} />
+        </div>
         <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
         <DocsModal open={docsOpen} onClose={() => setDocsOpen(false)} />
         <LogDrawer />
+        <AppFooter version={appUpdate.state.currentVersion} />
         <UpdateBanner
           state={appUpdate.state}
           visible={appUpdate.bannerVisible}
@@ -149,9 +188,10 @@ export default function App() {
         <StartupModal
           open={startupModalOpen}
           onClose={() => setStartupModalOpen(false)}
+          onContinue={(options) => void handleStartupContinue(options)}
           onCheckForUpdates={() => void appUpdate.checkForUpdates(true)}
         />
-      </>
+      </div>
     )
   }
 
@@ -215,6 +255,7 @@ export default function App() {
         }}
       />
       <LogDrawer />
+      <AppFooter version={appUpdate.state.currentVersion} />
       <ToastBanner />
       <UpdateBanner
         state={appUpdate.state}
@@ -226,6 +267,7 @@ export default function App() {
       <StartupModal
         open={startupModalOpen}
         onClose={() => setStartupModalOpen(false)}
+        onContinue={(options) => void handleStartupContinue(options)}
         onCheckForUpdates={() => void appUpdate.checkForUpdates(true)}
       />
     </div>

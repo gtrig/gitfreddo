@@ -1,4 +1,7 @@
 {
+  "app": {
+    "version": "v{{version}}"
+  },
   "common": {
     "dismiss": "Dismiss",
     "close": "Close",
@@ -106,11 +109,14 @@
     "updatesTitle": "Updates",
     "updatesBody": "Use the app update banner to download and install the latest GitFreddo release when it becomes available.",
     "checkForUpdates": "Check for Updates",
-    "continue": "Continue to App"
+    "continue": "Continue to App",
+    "hideFor30Days": "Don't show again for 30 days"
   },
   "docs": {
     "title": "Documentation",
     "shortcut": "Documentation (F1)",
+    "searchPlaceholder": "Search documentation…",
+    "searchEmpty": "No matching pages",
     "navAria": "Documentation pages",
     "pageNotFound": "Page not found: {{path}}",
     "sections": {
@@ -127,6 +133,7 @@
     "sectionsAria": "Settings sections",
     "sections": {
       "git": "Git",
+      "workspace": "Workspace",
       "maintenance": "Maintenance",
       "interface": "Interface",
       "ai": "AI assist",
@@ -162,7 +169,11 @@
       "pushSubmoduleRecursion": "Push recursion",
       "pushSubmoduleRecursionNo": "No",
       "pushSubmoduleRecursionCheck": "Check (block if not pushed)",
-      "pushSubmoduleRecursionOnDemand": "On demand",
+      "pushSubmoduleRecursionOnDemand": "On demand"
+    },
+    "workspace": {
+      "connectRequired": "Open a repository to manage workspace settings.",
+      "description": "Settings for the active repository: local git config, repository files, and hooks.",
       "repoConfig": "Repository config (local)",
       "loadingConfig": "Loading repo config…",
       "configLoadFailed": "Failed to load config.",
@@ -339,7 +350,10 @@
       "saved": "Saved {{name}}.",
       "enabledToast": "Enabled {{name}}.",
       "disabledToast": "Disabled {{name}}.",
-      "deleted": "Deleted {{name}}."
+      "deleted": "Deleted {{name}}.",
+      "alternateHooksPath": "Hooks exist in {{path}} but Git is using {{activePath}}. Configure core.hooksPath to load them.",
+      "useAlternateHooksPath": "Use {{path}}",
+      "alternateHooksPathEnabled": "Git hooks path set to {{path}}."
     },
     "integrations": {
       "intro": "Connect external services to GitFreddo for authenticated git operations and future features."

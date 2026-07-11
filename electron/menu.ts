@@ -91,6 +91,11 @@ export function buildAppMenu(): void {
       label: 'Help',
       submenu: [
         {
+          label: 'About GitFreddo',
+          click: () => sendMenuAction('open-about')
+        },
+        { type: 'separator' },
+        {
           label: 'Documentation',
           accelerator: 'F1',
           click: () => sendMenuAction('open-docs')

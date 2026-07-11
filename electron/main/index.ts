@@ -154,7 +154,9 @@ let settings: AppSettings = {
   uiZoomFactor: 1,
   updateChannel: 'stable',
   autoDownloadUpdates: false,
-  checkForUpdatesOnStartup: true
+  checkForUpdatesOnStartup: true,
+  startupModalHiddenUntil: null,
+  startupModalHiddenForVersion: null
 }
 
 function applyGitConfig(): void {

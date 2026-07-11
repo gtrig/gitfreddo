@@ -5,6 +5,10 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+- Settings → Workspace tab for the active repository: local git config, repository files, and git hooks.
+- Search in-app documentation by title or page content from the Documentation sidebar.
+- Help → About GitFreddo reopens the welcome dialog; snoozing hides it for 30 days or until you update to a new version.
+- App version and UI zoom controls live in the bottom footer.
 - Analyze GitHub pull requests with AI — entire PR or selected files — and refine the review through follow-up prompts.
 - Refine AI commit plans through chat — select proposals and ask to merge, split, or reorganize before creating commits.
 - AI analysis groups proposed commits by selectable feature labels (e.g. Auth, Docs) for quick bulk selection.

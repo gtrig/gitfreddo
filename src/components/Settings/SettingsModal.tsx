@@ -10,6 +10,7 @@ import { setDocumentTheme } from '@/lib/themes'
 import { useToastStore } from '@/stores/toast'
 import { SettingsSidebar } from '@/components/Settings/SettingsSidebar'
 import { GitSettingsPanel } from '@/components/Settings/panels/GitSettingsPanel'
+import { WorkspaceSettingsPanel } from '@/components/Settings/panels/WorkspaceSettingsPanel'
 import { InterfaceSettingsPanel } from '@/components/Settings/panels/InterfaceSettingsPanel'
 import { AiSettingsPanel } from '@/components/Settings/panels/AiSettingsPanel'
 import { IntegrationsSettingsPanel } from '@/components/Settings/panels/IntegrationsSettingsPanel'
@@ -105,6 +106,7 @@ export function SettingsModal({ open, onClose }: SettingsModalProps) {
               {section === 'git' && (
                 <GitSettingsPanel form={form} onChange={updateForm} onPickGit={() => void handlePickGit()} />
               )}
+              {section === 'workspace' && <WorkspaceSettingsPanel />}
               {section === 'interface' && (
                 <InterfaceSettingsPanel form={form} onChange={updateForm} />
               )}

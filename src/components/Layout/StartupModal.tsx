@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Modal, ActionButton } from '@/components/Ui/Modal'
 import { getStartupNewsItems } from '@/lib/news/content'
@@ -5,12 +6,20 @@ import { getStartupNewsItems } from '@/lib/news/content'
 interface StartupModalProps {
   open: boolean
   onClose: () => void
+  onContinue: (options: { hideFor30Days: boolean }) => void
   onCheckForUpdates: () => void
 }
 
-export function StartupModal({ open, onClose, onCheckForUpdates }: StartupModalProps) {
+export function StartupModal({ open, onClose, onContinue, onCheckForUpdates }: StartupModalProps) {
   const { t } = useTranslation()
   const newsItems = getStartupNewsItems()
+  const [hideFor30Days, setHideFor30Days] = useState(false)
+
+  useEffect(() => {
+    if (open) {
+      setHideFor30Days(false)
+    }
+  }, [open])
 
   return (
     <Modal title={t('startup.title')} open={open} onClose={onClose} size="lg">
@@ -53,11 +62,21 @@ export function StartupModal({ open, onClose, onCheckForUpdates }: StartupModalP
           <p className="mt-1 text-sm text-gf-fg-subtle">{t('startup.updatesBody')}</p>
         </section>
 
-        <div className="flex justify-end gap-2">
-          <ActionButton onClick={onCheckForUpdates}>{t('startup.checkForUpdates')}</ActionButton>
-          <ActionButton variant="primary" onClick={onClose}>
-            {t('startup.continue')}
-          </ActionButton>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <label className="flex items-center gap-2 text-sm text-gf-fg-muted">
+            <input
+              type="checkbox"
+              checked={hideFor30Days}
+              onChange={(event) => setHideFor30Days(event.target.checked)}
+            />
+            {t('startup.hideFor30Days')}
+          </label>
+          <div className="flex justify-end gap-2">
+            <ActionButton onClick={onCheckForUpdates}>{t('startup.checkForUpdates')}</ActionButton>
+            <ActionButton variant="primary" onClick={() => onContinue({ hideFor30Days })}>
+              {t('startup.continue')}
+            </ActionButton>
+          </div>
         </div>
       </div>
     </Modal>

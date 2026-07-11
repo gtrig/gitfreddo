@@ -42,7 +42,9 @@ const sampleSettings: AppSettings = {
   uiZoomFactor: 1,
   updateChannel: 'stable',
   autoDownloadUpdates: false,
-  checkForUpdatesOnStartup: true
+  checkForUpdatesOnStartup: true,
+  startupModalHiddenUntil: null,
+  startupModalHiddenForVersion: null
 }
 
 describe('settings backup format', () => {

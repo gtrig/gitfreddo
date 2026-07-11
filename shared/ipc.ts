@@ -63,6 +63,8 @@ export interface AppSettings {
   updateChannel: UpdateChannel
   autoDownloadUpdates: boolean
   checkForUpdatesOnStartup: boolean
+  startupModalHiddenUntil: number | null
+  startupModalHiddenForVersion: string | null
 }
 
 export interface GitHubStatus {
@@ -89,6 +91,7 @@ export type MenuAction =
   | 'open-workspace'
   | 'open-settings'
   | 'open-docs'
+  | 'open-about'
   | 'refresh'
   | 'undo'
   | 'check-for-updates'

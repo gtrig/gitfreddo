@@ -9,10 +9,11 @@ import {
   writeFileSync
 } from 'fs'
 import { join, resolve } from 'path'
-import { resolveGitCommonDir } from '../git-dir'
-import { buildRevParseShowToplevelArgs } from '../../../shared/git/commands'
+import {
+  buildRevParseGitPathHooksArgs,
+  buildRevParseShowToplevelArgs
+} from '../../../shared/git/commands'
 import { runGitOrThrow } from '../git-runner'
-import { configGet } from './config'
 
 export interface GitHook {
   name: string
@@ -24,6 +25,8 @@ export interface GitHook {
 export interface GitHooksListResult {
   hooks: GitHook[]
   hooksDir: string
+  alternateHooksDir?: string
+  alternateHooksPath?: string
 }
 
 const HOOK_NAME_RE = /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/
@@ -67,23 +70,40 @@ function parseHookFilename(
   return null
 }
 
-export async function resolveHooksDir(cwd: string, gitBinaryPath: string): Promise<string> {
-  const hooksPath =
-    (await configGet(cwd, gitBinaryPath, 'core.hooksPath', 'local')) ??
-    (await configGet(cwd, gitBinaryPath, 'core.hooksPath', 'global'))
+const ALTERNATE_HOOKS_DIRS = ['.githooks'] as const
 
-  if (hooksPath) {
-    if (hooksPath.startsWith('/') || /^[A-Za-z]:/.test(hooksPath)) {
-      return resolve(hooksPath)
+function listHookFilenames(hooksDir: string): string[] {
+  if (!existsSync(hooksDir)) return []
+  return readdirSync(hooksDir).filter((filename) => parseHookFilename(filename))
+}
+
+function findAlternateHooksDir(
+  root: string,
+  activeHooksDir: string
+): { dir: string; configPath: string } | null {
+  for (const rel of ALTERNATE_HOOKS_DIRS) {
+    const candidate = resolve(root, rel)
+    if (candidate === activeHooksDir) continue
+    if (listHookFilenames(candidate).length > 0) {
+      return { dir: candidate, configPath: rel }
     }
-    const root = (
-      await runGitOrThrow(buildRevParseShowToplevelArgs(), { cwd, gitBinaryPath })
-    ).trim()
-    return resolve(root, hooksPath)
+  }
+  return null
+}
+
+export async function resolveHooksDir(cwd: string, gitBinaryPath: string): Promise<string> {
+  const hooksPath = (
+    await runGitOrThrow(buildRevParseGitPathHooksArgs(), { cwd, gitBinaryPath })
+  ).trim()
+
+  if (hooksPath.startsWith('/') || /^[A-Za-z]:/.test(hooksPath)) {
+    return resolve(hooksPath)
   }
 
-  const commonDir = await resolveGitCommonDir(cwd, gitBinaryPath)
-  return join(commonDir, 'hooks')
+  const root = (
+    await runGitOrThrow(buildRevParseShowToplevelArgs(), { cwd, gitBinaryPath })
+  ).trim()
+  return resolve(root, hooksPath)
 }
 
 export async function hooksList(
@@ -91,8 +111,17 @@ export async function hooksList(
   gitBinaryPath: string
 ): Promise<GitHooksListResult> {
   const hooksDir = await resolveHooksDir(cwd, gitBinaryPath)
+  const root = (
+    await runGitOrThrow(buildRevParseShowToplevelArgs(), { cwd, gitBinaryPath })
+  ).trim()
+  const alternate = findAlternateHooksDir(root, hooksDir)
   if (!existsSync(hooksDir)) {
-    return { hooks: [], hooksDir }
+    return {
+      hooks: [],
+      hooksDir,
+      alternateHooksDir: alternate?.dir,
+      alternateHooksPath: alternate?.configPath
+    }
   }
 
   const grouped = new Map<string, { active?: string; sample?: string; disabled?: string }>()
@@ -129,7 +158,12 @@ export async function hooksList(
   }
 
   hooks.sort((a, b) => a.name.localeCompare(b.name))
-  return { hooks, hooksDir }
+  return {
+    hooks,
+    hooksDir,
+    alternateHooksDir: alternate?.dir,
+    alternateHooksPath: alternate?.configPath
+  }
 }
 
 function findHookFile(hooksDir: string, name: string): string | null {

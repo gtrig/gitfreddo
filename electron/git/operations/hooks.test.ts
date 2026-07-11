@@ -114,6 +114,42 @@ describe('hooks', () => {
     expect(content).toContain('#!/bin/sh')
   })
 
+  it('reports an alternate .githooks directory when core.hooksPath is unset', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'gf-hooks-'))
+    initRepo(dir)
+    const githooksDir = join(dir, '.githooks')
+    mkdirSync(githooksDir, { recursive: true })
+    writeFileSync(join(githooksDir, 'pre-push'), '#!/bin/sh\necho hook\n')
+    chmodSync(join(githooksDir, 'pre-push'), 0o755)
+
+    const result = await hooksList(dir, 'git')
+
+    expect(result.hooksDir).toContain(join('.git', 'hooks'))
+    expect(result.alternateHooksDir).toBe(githooksDir)
+    expect(result.alternateHooksPath).toBe('.githooks')
+    const prePush = result.hooks.find((hook) => hook.name === 'pre-push')
+    expect(prePush?.enabled).toBe(false)
+    expect(prePush?.filename).toBe('pre-push.sample')
+  })
+
+  it('lists hooks from .githooks when core.hooksPath is configured', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'gf-hooks-'))
+    initRepo(dir)
+    const githooksDir = join(dir, '.githooks')
+    mkdirSync(githooksDir, { recursive: true })
+    execSync('git config core.hooksPath .githooks', { cwd: dir, stdio: 'ignore' })
+    writeFileSync(join(githooksDir, 'pre-push'), '#!/bin/sh\necho hook\n')
+    chmodSync(join(githooksDir, 'pre-push'), 0o755)
+
+    const result = await hooksList(dir, 'git')
+
+    expect(result.hooksDir).toBe(githooksDir)
+    expect(result.alternateHooksDir).toBeUndefined()
+    const prePush = result.hooks.find((hook) => hook.name === 'pre-push')
+    expect(prePush?.enabled).toBe(true)
+    expect(prePush?.filename).toBe('pre-push')
+  })
+
   it('rejects invalid hook names', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'gf-hooks-'))
     initRepo(dir)

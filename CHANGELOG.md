@@ -7,6 +7,41 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-11 — Pre-push hook in default .git/hooks
+
+- **Why:** Use Git's standard hooks directory instead of a custom `.githooks/` folder and `core.hooksPath` override.
+- **What:** Hook source lives in `scripts/hooks/pre-push`; `scripts/setup-git-hooks.sh` installs it to `.git/hooks/pre-push` and clears `core.hooksPath`; removed `.githooks/`.
+
+### 2026-07-11 — Git hooks path detection
+
+- **Why:** Hooks in `.githooks/` were invisible when `core.hooksPath` was not configured (GitFreddo reads the same directory Git uses).
+- **What:** Resolve hooks directory via `git rev-parse --git-path hooks`; detect unused `.githooks/` and offer a one-click `core.hooksPath` setup in Settings → Workspace.
+
+### 2026-07-11 — Settings Workspace tab
+
+- **Why:** Repository-specific settings (local config, repo files, hooks) belong separately from global Git preferences.
+- **What:** New Settings → Workspace tab with local git config, `.gitignore` / `.gitattributes` / `.gitmodules` editor, and git hooks; Git tab keeps app-wide git options only.
+
+### 2026-07-11 — Release prepare script and tag pre-push hook
+
+- **Why:** `package.json` drifted from git release tags; tag pushes should require a matching version bump first.
+- **What:** `npm run release:prepare -- vX.Y.Z` syncs version files and prints release steps; `scripts/hooks/pre-push` validates `v*` tags against `package.json` (installed to `.git/hooks/` via `npm install`).
+
+### 2026-07-11 — Documentation sidebar search
+
+- **Why:** Users need to find in-app help topics quickly without scanning every section.
+- **What:** Search field atop the Documentation modal sidebar filters pages by title and markdown content; roadmap updated to reflect recent 0.3.x polish, GitHub/AI, and UX shipments.
+
+### 2026-07-11 — About menu and startup modal snooze
+
+- **Why:** Users need a way to reopen the welcome/about dialog and optionally defer it for a month or until the next release.
+- **What:** Native Help → About GitFreddo opens the startup modal; “Don’t show again for 30 days” stores snooze timestamp plus app version and skips auto-open until the version changes or 30 days pass.
+
+### 2026-07-11 — App version in footer
+
+- **Why:** Users should see the running GitFreddo version at a glance without opening Settings.
+- **What:** Bottom footer shows `vX.Y.Z` from `getAppVersion()` and UI zoom controls (moved from the log drawer bar) on the workspace hub and main repo layout.
+
 ### 2026-07-10 — AI pull request review with scoped analysis and chat
 
 - **Why:** Reviewers need AI help on full PRs or selected files, with follow-up prompts to refine the analysis.

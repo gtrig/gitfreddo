@@ -142,6 +142,8 @@ export interface GitHook {
 export interface GitHooksListResult {
   hooks: GitHook[]
   hooksDir: string
+  alternateHooksDir?: string
+  alternateHooksPath?: string
 }
 
 export interface GitDiffResult {

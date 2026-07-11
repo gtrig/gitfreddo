@@ -41,7 +41,9 @@ const baseSettings = {
   uiZoomFactor: 1,
   updateChannel: 'stable',
   autoDownloadUpdates: false,
-  checkForUpdatesOnStartup: true
+  checkForUpdatesOnStartup: true,
+  startupModalHiddenForVersion: null,
+  startupModalHiddenUntil: null
 } as AppSettings
 
 describe('pickUserSettings', () => {

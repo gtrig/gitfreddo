@@ -36,7 +36,9 @@ export const defaultMockSettings: AppSettings = {
   uiZoomFactor: 1,
   updateChannel: 'stable',
   autoDownloadUpdates: false,
-  checkForUpdatesOnStartup: true
+  checkForUpdatesOnStartup: true,
+  startupModalHiddenUntil: null,
+  startupModalHiddenForVersion: null
 }
 
 export function createGitFreddoMock(overrides: Partial<GitFreddoAPI> = {}): GitFreddoAPI {

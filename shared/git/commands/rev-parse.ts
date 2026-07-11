@@ -33,6 +33,10 @@ export function buildRevParseGitCommonDirArgs(): string[] {
   return ['rev-parse', '--git-common-dir']
 }
 
+export function buildRevParseGitPathHooksArgs(): string[] {
+  return ['rev-parse', '--git-path', 'hooks']
+}
+
 export function buildRevParseShortArgs(ref: string): string[] {
   return ['rev-parse', '--short', ref]
 }
