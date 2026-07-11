@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process'
-import { mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -42,11 +42,16 @@ describe('repoStatus', () => {
 
   it('root equals tmpDir for a simple repo', async () => {
     const status = await repoStatus(tmpDir, 'git')
-    // git rev-parse --show-toplevel always returns the canonical real path:
-    // on macOS it resolves symlinks (/var → /private/var); on Windows it
-    // resolves 8.3 short names to long paths and uses forward slashes.
-    // Normalise tmpDir the same way before comparing.
-    const realTmpDir = realpathSync(tmpDir).split('\\').join('/')
-    expect(status.root).toBe(realTmpDir)
+    // git rev-parse --show-toplevel returns its own canonical form of the
+    // path, which can differ from tmpDir as a *string* in OS-specific ways:
+    // macOS resolves the /var -> /private/var symlink; Windows expands 8.3
+    // short names (TEMP itself is often set to a short-name path like
+    // RUNNER~1 in CI, which git resolves to the real long name). Comparing
+    // by filesystem identity (device + inode) rather than string equality
+    // sidesteps every one of these platform-specific path representations.
+    const rootStat = statSync(status.root)
+    const tmpDirStat = statSync(tmpDir)
+    expect(rootStat.dev).toBe(tmpDirStat.dev)
+    expect(rootStat.ino).toBe(tmpDirStat.ino)
   })
 })
