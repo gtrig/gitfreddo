@@ -50,7 +50,7 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 ### 2026-07-11 — Release prepare script and tag pre-push hook
 
 - **Why:** `package.json` drifted from git release tags; tag pushes should require a matching version bump first.
-- **What:** `npm run release:prepare -- vX.Y.Z` syncs version files and prints release steps; `scripts/hooks/pre-push` validates `v*` tags against `package.json` (installed to `.git/hooks/` via `npm install`).
+- **What:** `npm run release:prepare -- vX.Y.Z` syncs version files and prints release steps; `scripts/hooks/pre-push` validates `v*` tags against `package.json` (installed to `.git/hooks/` via `npm install`); `scripts/run-ts.sh` resolves Node 24 from `.nvmrc` so release scripts work when system `node` is older.
 
 ### 2026-07-11 — Documentation sidebar search
 

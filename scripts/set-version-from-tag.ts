@@ -4,7 +4,7 @@ import { versionFromReleaseTag } from '../shared/release.ts'
 
 const tag = process.argv[2]
 if (!tag) {
-  console.error('usage: node --experimental-strip-types scripts/set-version-from-tag.ts <tag>')
+  console.error('usage: npm run release:set-version -- vX.Y.Z')
   process.exit(1)
 }
 

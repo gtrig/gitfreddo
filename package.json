@@ -1,6 +1,6 @@
 {
   "name": "gitfreddo",
-  "version": "0.3.0",
+  "version": "0.3.8",
   "private": true,
   "description": "Desktop git client with commit graph",
   "author": "George Trigonakis <gtrig84@gmail.com>",
@@ -24,8 +24,8 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "check-i18n": "bash scripts/check-i18n.sh",
-    "release:set-version": "node --experimental-strip-types scripts/set-version-from-tag.ts",
-    "release:prepare": "node --experimental-strip-types scripts/release-prepare.ts",
+    "release:set-version": "bash scripts/run-ts.sh scripts/set-version-from-tag.ts",
+    "release:prepare": "bash scripts/run-ts.sh scripts/release-prepare.ts",
     "prepare": "bash scripts/setup-git-hooks.sh",
     "dist": "npm run build && electron-builder",
     "dist:linux": "npm run build && electron-builder --linux",
