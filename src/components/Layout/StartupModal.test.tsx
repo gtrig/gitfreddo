@@ -40,7 +40,7 @@ describe('StartupModal', () => {
     // getStartupNewsItems caps at 5; assert two bullets that are within the current top-5.
     expect(
       screen.getByText(
-        'Settings → Workspace tab for the active repository: local git config, repository files, and git hooks.'
+        'The right detail panel stays hidden until you select a commit, uncommitted changes, or merge conflicts — giving the timeline more room by default.'
       )
     ).toBeInTheDocument()
     expect(screen.getByText('Fixed the header logo not appearing in packaged app releases.')).toBeInTheDocument()

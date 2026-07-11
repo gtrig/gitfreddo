@@ -52,12 +52,8 @@ export function DetailPanel() {
     }
   }
 
-  if (!connected) {
-    return (
-      <aside className="flex h-full items-center justify-center p-4 text-sm text-gf-fg-subtle">
-        {t('detail.selectRepoTab')}
-      </aside>
-    )
+  if (!connected || !selection) {
+    return null
   }
 
   if (selection?.kind === 'merge') {
@@ -127,9 +123,5 @@ export function DetailPanel() {
     )
   }
 
-  return (
-    <aside className="flex h-full items-center justify-center border-l border-gf-border p-4 text-sm text-gf-fg-subtle">
-      {t('detail.selectCommitOrChanges')}
-    </aside>
-  )
+  return null
 }

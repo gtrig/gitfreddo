@@ -6,15 +6,24 @@ interface ResizableMainLayoutProps {
   left: ReactNode
   center: ReactNode
   right: ReactNode
+  rightVisible?: boolean
   overlay?: ReactNode
 }
 
-export function ResizableMainLayout({ left, center, right, overlay }: ResizableMainLayoutProps) {
+export function ResizableMainLayout({
+  left,
+  center,
+  right,
+  rightVisible = true,
+  overlay
+}: ResizableMainLayoutProps) {
   const leftWidth = useLayoutStore((s) => s.leftWidth)
   const rightWidth = useLayoutStore((s) => s.rightWidth)
   const adjustLeftWidth = useLayoutStore((s) => s.adjustLeftWidth)
   const adjustRightWidth = useLayoutStore((s) => s.adjustRightWidth)
   const [resizing, setResizing] = useState(false)
+
+  const effectiveRightWidth = rightVisible ? rightWidth : 0
 
   const onLeftDrag = useCallback(
     (delta: number) => {
@@ -23,11 +32,11 @@ export function ResizableMainLayout({ left, center, right, overlay }: ResizableM
         adjustLeftWidth(delta)
         return
       }
-      const maxLeft = container.clientWidth - rightWidth - CENTER_MIN - 2
+      const maxLeft = container.clientWidth - effectiveRightWidth - CENTER_MIN - 2
       const next = Math.min(maxLeft, leftWidth + delta)
       adjustLeftWidth(next - leftWidth)
     },
-    [adjustLeftWidth, leftWidth, rightWidth]
+    [adjustLeftWidth, effectiveRightWidth, leftWidth]
   )
 
   const onRightDrag = useCallback(
@@ -51,13 +60,13 @@ export function ResizableMainLayout({ left, center, right, overlay }: ResizableM
         return
       }
       const maxSide = container.clientWidth - CENTER_MIN - 2
-      const maxLeft = maxSide - rightWidth
+      const maxLeft = maxSide - effectiveRightWidth
       const maxRight = maxSide - leftWidth
       const state = useLayoutStore.getState()
       if (state.leftWidth > maxLeft) {
         state.setLeftWidth(maxLeft)
       }
-      if (state.rightWidth > maxRight) {
+      if (rightVisible && state.rightWidth > maxRight) {
         state.setRightWidth(maxRight)
       }
     }
@@ -65,7 +74,7 @@ export function ResizableMainLayout({ left, center, right, overlay }: ResizableM
     window.addEventListener('resize', onResize)
     onResize()
     return () => window.removeEventListener('resize', onResize)
-  }, [leftWidth, rightWidth])
+  }, [effectiveRightWidth, leftWidth, rightVisible, rightWidth])
 
   return (
     <div
@@ -85,22 +94,28 @@ export function ResizableMainLayout({ left, center, right, overlay }: ResizableM
         onResizeEnd={() => setResizing(false)}
       />
 
-      <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden border-r border-gf-border">
+      <div
+        className={`relative min-h-0 min-w-0 flex-1 overflow-hidden ${rightVisible ? 'border-r border-gf-border' : ''}`}
+      >
         {center}
       </div>
 
-      <ColumnResizeHandle
-        onDrag={onRightDrag}
-        onResizeStart={() => setResizing(true)}
-        onResizeEnd={() => setResizing(false)}
-      />
+      {rightVisible && (
+        <>
+          <ColumnResizeHandle
+            onDrag={onRightDrag}
+            onResizeStart={() => setResizing(true)}
+            onResizeEnd={() => setResizing(false)}
+          />
 
-      <div
-        className="flex min-h-0 shrink-0 flex-col overflow-hidden"
-        style={{ width: rightWidth }}
-      >
-        {right}
-      </div>
+          <div
+            className="flex min-h-0 shrink-0 flex-col overflow-hidden"
+            style={{ width: rightWidth }}
+          >
+            {right}
+          </div>
+        </>
+      )}
 
       {overlay}
     </div>

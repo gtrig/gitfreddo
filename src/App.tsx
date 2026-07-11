@@ -28,6 +28,8 @@ import { useRepoChangeListener } from '@/hooks/useRepoChangeListener'
 import { useAppLogger } from '@/hooks/useAppLogger'
 import { useWorkspaceSessionPersistence } from '@/hooks/useWorkspaceSessionPersistence'
 import { useSelectionStore } from '@/stores/selection'
+import { useLogGraph } from '@/hooks/useGit'
+import { shouldShowDetailPanel } from '@/lib/layout/detailPanelVisibility'
 import { appLog, useLogStore } from '@/stores/logs'
 import { useLocale } from '@/hooks/useLocale'
 import { useAppUpdate } from '@/hooks/useAppUpdate'
@@ -39,6 +41,7 @@ import type { MenuAction } from '@shared/ipc'
 export default function App() {
   const tabs = useWorkspaceStore((s) => s.tabs)
   const activePath = useWorkspaceStore((s) => s.activePath)
+  const connected = useWorkspaceStore((s) => s.connected)
   const openWorkspace = useWorkspaceStore((s) => s.openWorkspace)
   const closeWorkspacePicker = useWorkspaceStore((s) => s.closeWorkspacePicker)
   const workspacePickerOpen = useWorkspaceStore((s) => s.workspacePickerOpen)
@@ -58,6 +61,13 @@ export default function App() {
   const commitDetailHash = useSelectionStore((s) => s.commitDetailHash)
 
   const selectedStashIndex = useSelectionStore((s) => s.selectedStashIndex)
+  const timelineSelection = useSelectionStore((s) => s.timelineSelection)
+  const { data: graph } = useLogGraph(connected)
+  const commitExists = Boolean(
+    timelineSelection?.kind === 'commit' &&
+      graph?.commits.some((commit) => commit.hash === timelineSelection.id)
+  )
+  const detailPanelVisible = shouldShowDetailPanel(connected, timelineSelection, { commitExists })
   const diffOverlayOpen = Boolean(
     !commitDetailHash &&
       (selectedWorkingFile ||
@@ -232,6 +242,7 @@ export default function App() {
           </>
         }
         right={<DetailPanel />}
+        rightVisible={detailPanelVisible}
       />
 
       <GlobalOperationOverlay />

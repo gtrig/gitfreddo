@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-11 — Hide detail panel when nothing is selected
+
+- **Why:** The right sidebar showed a placeholder (“Select a commit or uncommitted changes”) even when the timeline had no selection, wasting horizontal space on the commit graph.
+- **What:** `shouldShowDetailPanel()` in `src/lib/layout/detailPanelVisibility.ts`; `ResizableMainLayout` accepts `rightVisible` to omit the right column and resize handle; `App.tsx` hides the panel when disconnected or `timelineSelection` is empty; `DetailPanel` returns `null` instead of empty-state placeholders. Tests in `detailPanelVisibility.test.ts` and `ResizableMainLayout.test.tsx`.
+
 ### 2026-07-11 — Human-friendly error toasts and copyable log lines
 
 - **Why:** Error toasts frequently surfaced raw git/network stderr (multi-line, jargon-heavy) or forge API errors like `GitHub API error (403): Bad credentials`, which isn't actionable for most users. Separately, copying a single line out of the Logs drawer for a bug report required manual text selection.

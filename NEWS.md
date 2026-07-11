@@ -5,6 +5,7 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+- The right detail panel stays hidden until you select a commit, uncommitted changes, or merge conflicts — giving the timeline more room by default.
 - Error notifications now show a short, plain-language message instead of raw git/network output; the full technical details are still available in the Logs drawer.
 - Hover over a line in the Logs drawer to copy it to your clipboard.
 - Diff viewer now shows an error message when the diff query fails, instead of silently showing "no changes".
