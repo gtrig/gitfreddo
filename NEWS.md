@@ -5,6 +5,8 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+- Error notifications now show a short, plain-language message instead of raw git/network output; the full technical details are still available in the Logs drawer.
+- Hover over a line in the Logs drawer to copy it to your clipboard.
 - Diff viewer now shows an error message when the diff query fails, instead of silently showing "no changes".
 - Fixed the header logo not appearing in packaged app releases.
 - Settings → Workspace tab for the active repository: local git config, repository files, and git hooks.

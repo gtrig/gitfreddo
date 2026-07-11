@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { appLog } from '@/stores/logs'
+import { humanizeErrorMessage } from '@/lib/format/errorMessage'
 import type { LogLevel } from '@shared/ipc'
 
 interface ToastState {
@@ -29,9 +30,14 @@ export const useToastStore = create<ToastState>((set) => ({
   message: null,
   tone: 'info',
   show: (message, tone = 'info') => {
-    appLog(toastToneToLogLevel(tone), message)
+    // Error toasts are often raw git/network stderr, which reads as noise to
+    // most users. Show a short, actionable sentence instead, but keep the
+    // original text in the log's details so it's still there for debugging.
+    const displayMessage = tone === 'error' ? humanizeErrorMessage(message) : message
+    const details = displayMessage !== message ? message : undefined
+    appLog(toastToneToLogLevel(tone), displayMessage, details)
     cancelDismissTimer()
-    set({ message, tone })
+    set({ message: displayMessage, tone })
     dismissTimer = setTimeout(() => {
       dismissTimer = undefined
       set({ message: null })

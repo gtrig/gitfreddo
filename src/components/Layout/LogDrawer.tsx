@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { DocumentTextIcon } from '@heroicons/react/24/outline'
+import { ClipboardIcon, DocumentTextIcon } from '@heroicons/react/24/outline'
 import { useLogStore, type LogTab } from '@/stores/logs'
+import { copyToClipboard } from '@/lib/clipboard'
 import type { LogEntry, LogLevel } from '@shared/ipc'
 
 const LEVEL_STYLES: Record<LogLevel, string> = {
@@ -20,13 +21,29 @@ function formatTime(timestamp: number): string {
 }
 
 function LogLine({ entry }: { entry: LogEntry }) {
+  const { t } = useTranslation()
+
+  const handleCopy = useCallback(() => {
+    const text = entry.details ? `${entry.message}\n${entry.details}` : entry.message
+    void copyToClipboard(text)
+  }, [entry])
+
   return (
-    <div className="border-b border-gf-border/60 px-3 py-1 font-mono text-[11px] leading-relaxed">
+    <div className="group relative border-b border-gf-border/60 px-3 py-1 pr-7 font-mono text-[11px] leading-relaxed">
       <span className="text-gf-fg-subtle">{formatTime(entry.timestamp)}</span>{' '}
       <span className={LEVEL_STYLES[entry.level]}>{entry.message}</span>
       {entry.details && (
         <pre className="mt-0.5 whitespace-pre-wrap break-all text-gf-fg-subtle">{entry.details}</pre>
       )}
+      <button
+        type="button"
+        onClick={handleCopy}
+        title={t('tools.copyLogLine')}
+        aria-label={t('tools.copyLogLine')}
+        className="absolute right-1.5 top-1 rounded p-0.5 text-gf-fg-subtle opacity-0 transition hover:bg-gf-surface-hover hover:text-gf-fg group-hover:opacity-100"
+      >
+        <ClipboardIcon className="h-3.5 w-3.5" aria-hidden />
+      </button>
     </div>
   )
 }

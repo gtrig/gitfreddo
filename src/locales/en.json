@@ -470,6 +470,7 @@
     "listenGitAria": "Listen to git commands",
     "listenGitTitle": "Capture git command output in the Git log",
     "clear": "Clear",
+    "copyLogLine": "Copy log line",
     "noLogEntries": "No log entries yet.",
     "gitLoggingOff": "Git logging is off. Turn on Listen to capture git command output.",
     "zoomIn": "Zoom in",

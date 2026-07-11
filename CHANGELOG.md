@@ -7,6 +7,19 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-11 — Human-friendly error toasts and copyable log lines
+
+- **Why:** Error toasts frequently surfaced raw git/network stderr (multi-line, jargon-heavy) or forge API errors like `GitHub API error (403): Bad credentials`, which isn't actionable for most users. Separately, copying a single line out of the Logs drawer for a bug report required manual text selection.
+- **What:**
+  - `src/lib/format/errorMessage.ts` (new) — `humanizeErrorMessage()` maps common git/SSH/network/filesystem/forge-API error patterns (auth failures, rejected pushes, merge conflicts, dirty working tree, missing repo/branch/file, permission/not-found errors, GitHub/Bitbucket API status codes, AI API key rejection, etc.) to short, actionable sentences; unmapped errors fall back to a sentence-cased, truncated first `fatal:`/`error:` line instead of a raw multi-line dump.
+  - `src/stores/toast.ts` — `show()` now humanizes the message for `tone: 'error'` before displaying it, while logging the original raw text as the log entry's `details` so full technical output is still available in the Logs drawer for debugging.
+  - `src/components/Layout/LogDrawer.tsx` — each log line now shows a copy-to-clipboard button on hover (message + details), using the existing `copyToClipboard` helper; added `tools.copyLogLine` i18n key (en/el).
+
+### 2026-07-11 — Stop git hooks from going stale between edits
+
+- **Why:** A pre-commit hook fix from the previous session was committed to `scripts/hooks/pre-commit`, but the live `.git/hooks/pre-commit` was a stale *copy* made before that fix — so commits kept failing with the exact Node-version-mismatch bug the fix was supposed to solve, because the copy-based install step (`setup-git-hooks.sh`) was never re-run after the edit. That's a structural footgun: any future edit to a hook silently has no effect until someone remembers a separate install step.
+- **What:** `scripts/setup-git-hooks.sh` now sets `git config core.hooksPath` to point directly at the tracked `scripts/hooks/` directory instead of copying files into `.git/hooks/`. Git now always runs the tracked file directly, so hook edits take effect on the very next commit with no install step to forget. Also removes any stale copies left over from the old copy-based setup. Verified end-to-end: `git hook run pre-commit` and a from-clean-environment (`env -i`, system Node v18 on `PATH`) run of `scripts/hooks/pre-commit` both correctly self-heal to Node v24.18.0 via the NVM bootstrap and pass the full suite.
+
 ### 2026-07-11 — Make pre-commit and release test runs robust against Node/jsdom drift
 
 - **Why:** The pre-commit hook and release CI kept failing intermittently with a wall of 40+ duplicated "Unhandled Error" stack traces from deep inside jsdom's dependency tree, plus unrelated macOS/Windows path-comparison test failures. A first pass pinned `html-encoding-sniffer` via `overrides`, but that only fixed one symptom — jsdom v29's *own* direct dependencies (`whatwg-url@16` → `webidl-conversions@8.0.1`) carry a separate, intermittent bug that only surfaces under heavy parallel load. Patching one transitive dependency at a time was whack-a-mole; the real root cause is that jsdom v28+ migrated its entire encoding/URL stack onto a bleeding-edge, still-unstable `@exodus/bytes` ecosystem.
