@@ -141,5 +141,29 @@ describe('RepoManager', () => {
       const status = await manager.invoke(tmpDir, 'working.status', undefined)
       expect(status.isClean).toBe(true)
     })
+
+    it('dispatches tag.list', async () => {
+      await manager.connect(tmpDir)
+      const tags = await manager.invoke(tmpDir, 'tag.list', undefined)
+      expect(Array.isArray(tags)).toBe(true)
+    })
+
+    it('dispatches remote.list', async () => {
+      await manager.connect(tmpDir)
+      const remotes = await manager.invoke(tmpDir, 'remote.list', undefined)
+      expect(Array.isArray(remotes)).toBe(true)
+    })
+
+    it('dispatches stash.list', async () => {
+      await manager.connect(tmpDir)
+      const stashes = await manager.invoke(tmpDir, 'stash.list', undefined)
+      expect(Array.isArray(stashes)).toBe(true)
+    })
+
+    it('dispatches notes.list', async () => {
+      await manager.connect(tmpDir)
+      const notes = await manager.invoke(tmpDir, 'notes.list', undefined)
+      expect(Array.isArray(notes)).toBe(true)
+    })
   })
 })

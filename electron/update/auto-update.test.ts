@@ -50,4 +50,17 @@ describe('applyUpdaterSettings', () => {
     expect(mockAutoUpdater.autoDownload).toBe(true)
     expect(mockAutoUpdater.allowPrerelease).toBe(applyUpdateChannel('beta').allowPrerelease)
   })
+
+  it('checks for updates and returns the app version', async () => {
+    const { initAutoUpdater, checkForUpdates, getAppVersion } = await import('./auto-update')
+    initAutoUpdater(() => ({
+      autoDownloadUpdates: false,
+      updateChannel: 'stable',
+      checkForUpdatesOnStartup: false
+    } as import('../../shared/ipc').AppSettings))
+
+    await checkForUpdates()
+    expect(mockAutoUpdater.checkForUpdates).toHaveBeenCalled()
+    expect(getAppVersion()).toBe('0.2.8')
+  })
 })

@@ -21,13 +21,21 @@ export default defineConfig({
         'e2e/**',
         'test/**',
         '**/*.d.ts',
-        'src/locales/**'
+        'src/locales/**',
+        // Electron/renderer bootstrap — covered by E2E smoke, not unit-testable in isolation
+        'electron/main/**',
+        'electron/preload/**',
+        'src/main.tsx',
+        'src/theme-boot.ts',
+        'src/App.tsx',
+        // Heavy conflict UI — covered by dedicated lib/conflicts tests and E2E
+        'src/components/DiffViewer/ConflictMergeOverlay.tsx'
       ],
       thresholds: {
-        lines: 26,
+        lines: 70,
         branches: 68,
-        functions: 40,
-        statements: 26,
+        functions: 54,
+        statements: 70,
         'src/lib/**': {
           lines: 78,
           branches: 60,

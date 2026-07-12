@@ -2,8 +2,14 @@ import { mkdtempSync, rmSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { markCommitForReword, markCommitsForDrop, markCommitsForSquash } from './rebase'
-import { cherryPick, revertCommit } from './rebase'
+import {
+  markCommitForReword,
+  markCommitsForDrop,
+  markCommitsForSquash,
+  resetToParent,
+  cherryPick,
+  revertCommit
+} from './rebase'
 import { runGitOrThrow } from '../git-runner'
 
 async function createMergeCommitRepo(): Promise<{ cwd: string; mergeHash: string }> {
@@ -29,6 +35,36 @@ async function createMergeCommitRepo(): Promise<{ cwd: string; mergeHash: string
   const mergeHash = (await run(['rev-parse', 'HEAD'])).trim()
   return { cwd, mergeHash }
 }
+
+describe('resetToParent', () => {
+  let tempDir: string | null = null
+
+  afterEach(() => {
+    if (tempDir) {
+      rmSync(tempDir, { recursive: true, force: true })
+      tempDir = null
+    }
+  })
+
+  it('soft-resets HEAD back to its parent', async () => {
+    tempDir = mkdtempSync(join(tmpdir(), 'gitfreddo-reset-'))
+    const run = (args: string[]) =>
+      runGitOrThrow(args, { cwd: tempDir!, gitBinaryPath: 'git' })
+
+    await run(['init', '-b', 'main'])
+    await run(['config', 'user.email', 'test@example.com'])
+    await run(['config', 'user.name', 'Test'])
+    writeFileSync(join(tempDir, 'file.txt'), 'one\n')
+    await run(['add', 'file.txt'])
+    await run(['commit', '-m', 'first'])
+    writeFileSync(join(tempDir, 'file.txt'), 'two\n')
+    await run(['commit', '-am', 'second'])
+
+    await resetToParent(tempDir, 'git', 'soft')
+    const subject = (await run(['log', '-1', '--format=%s'])).trim()
+    expect(subject).toBe('first')
+  })
+})
 
 describe('cherryPick mainline', () => {
   let tempDir: string | null = null
@@ -166,5 +202,33 @@ describe('markCommitsForDrop', () => {
   it('leaves unrelated commits unchanged when selection is empty', () => {
     const todo = 'pick abcdef0 Only commit'
     expect(markCommitsForDrop(todo, [])).toBe(todo)
+  })
+})
+
+describe('markCommitsForSquash edge cases', () => {
+  it('returns the original todo when fewer than two commits are selected', () => {
+    const todo = 'pick 1111111 First\npick 2222222 Second'
+    expect(markCommitsForSquash(todo, ['1111111'])).toBe(todo)
+  })
+
+  it('converts reword and edit actions to squash for non-primary commits', () => {
+    const todo = [
+      'pick 1111111 First',
+      'reword 2222222 Second',
+      'edit 3333333 Third'
+    ].join('\n')
+
+    expect(markCommitsForSquash(todo, ['1111111', '2222222', '3333333'])).toBe(
+      ['pick 1111111 First', 'squash 2222222 Second', 'squash 3333333 Third'].join('\n')
+    )
+  })
+})
+
+describe('markCommitForReword hash matching', () => {
+  it('matches abbreviated hashes in the todo list', () => {
+    const fullHash = '125c15ed41cf1b761557e592b83bf2f856c1070e'
+    const todo = `pick 125c15e Old subject`
+
+    expect(markCommitForReword(todo, fullHash)).toBe(`reword 125c15e Old subject`)
   })
 })

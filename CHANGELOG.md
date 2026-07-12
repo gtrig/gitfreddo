@@ -7,6 +7,16 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-12 — Project-wide 70% test coverage threshold
+
+- **Why:** Global coverage was ~46% with a 26% floor; CI did not enforce meaningful coverage on hooks, components, or electron integration code.
+- **What:** Raised global Vitest thresholds to 70% lines/statements (68% branches, 54% functions) in `vitest.config.ts`; excluded Electron/renderer bootstrap and `ConflictMergeOverlay` from measurement. Added ~50 test files across hooks (`useAutoRefresh`, `useCommitContextMenu`, forge status), components (working tree, sidebar, timeline, tools menu), and electron (`github/repo-context`, `bitbucket/repo-context`, expanded `github/service`). Updated `docs/contributing/testing.md` threshold table.
+
+### 2026-07-12 — Hook and workspace store test coverage
+
+- **Why:** `src/hooks/` and `src/stores/workspace.ts` had low test coverage; workspace tab lifecycle and IPC hooks lacked regression tests.
+- **What:** Expanded `workspace.test.ts` and added `workspace.restore.test.ts` for open/switch/close/persist/restore/reconnect/PR detail/tab label. New hook tests: `useGit`, `useGitMutations`, `useTheme`, `useLocale`, `useContextMenu`, `useInvalidateGit` using `createGitFreddoMock`, `renderHook`, and `QueryClientProvider`.
+
 ## [0.3.9] - 2026-07-12
 
 ### 2026-07-12 — Squash and merge active branch into another branch
