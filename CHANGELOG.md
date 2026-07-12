@@ -7,6 +7,8 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+## [0.3.9] - 2026-07-12
+
 ### 2026-07-12 — Squash and merge active branch into another branch
 
 - **Why:** Merging a feature branch into `main` with squash required manually checking out the target first; users wanted a single action from the branch they're on.
