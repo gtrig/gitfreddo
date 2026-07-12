@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DocumentDuplicateIcon, FolderIcon, FolderPlusIcon } from '@heroicons/react/24/outline'
 import { XMarkIcon } from '@heroicons/react/24/solid'
@@ -13,6 +13,8 @@ import { RepoPicker as BitbucketRepoPicker } from '@/components/Bitbucket/RepoPi
 import { CreateBitbucketRepoModal } from '@/components/Bitbucket/CreateBitbucketRepoModal'
 import { ForkBitbucketRepoModal } from '@/components/Bitbucket/ForkBitbucketRepoModal'
 import { Spinner } from '@/components/Ui/Spinner'
+import { useVirtualizer } from '@tanstack/react-virtual'
+import { shouldVirtualize, VIRTUAL_OVERSCAN } from '@/lib/ui/virtualList'
 
 type HubView = 'hub' | 'clone'
 type CloneTab = 'url' | 'github' | 'bitbucket'
@@ -120,6 +122,16 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
         path.toLowerCase().includes(query) || workspaceTabLabel(path).toLowerCase().includes(query)
     )
   }, [recents, search])
+
+  const recentsScrollRef = useRef<HTMLDivElement>(null)
+  const useRecentsVirtualization = shouldVirtualize(filteredRecents.length)
+
+  const recentsVirtualizer = useVirtualizer({
+    count: useRecentsVirtualization ? filteredRecents.length : 0,
+    getScrollElement: () => recentsScrollRef.current,
+    estimateSize: () => 52,
+    overscan: VIRTUAL_OVERSCAN
+  })
 
   const predictedCloneName = (cloneTab !== 'url' && selectedRepo
     ? selectedRepo.split('/').pop()
@@ -470,11 +482,39 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
             />
           </div>
 
-          <div className="min-h-0 flex-1 overflow-auto">
+          <div ref={recentsScrollRef} className="min-h-0 flex-1 overflow-auto">
             {filteredRecents.length === 0 ? (
               <p className="py-8 text-center text-sm text-gf-fg-subtle">
                 {recents.length === 0 ? t('workspace.hub.noRecents') : t('workspace.hub.noMatches')}
               </p>
+            ) : useRecentsVirtualization ? (
+              <div style={{ height: recentsVirtualizer.getTotalSize(), position: 'relative' }}>
+                {recentsVirtualizer.getVirtualItems().map((virtualItem) => {
+                  const path = filteredRecents[virtualItem.index]!
+                  return (
+                    <div
+                      key={virtualItem.key}
+                      style={{
+                        position: 'absolute', top: 0, left: 0, width: '100%',
+                        height: `${virtualItem.size}px`,
+                        transform: `translateY(${virtualItem.start}px)`
+                      }}
+                    >
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void handleOpenRecent(path)}
+                        className="h-full w-full rounded-lg px-3 py-2.5 text-left hover:bg-gf-surface-hover/80 disabled:opacity-50"
+                      >
+                        <span className="block text-sm font-medium text-gf-fg">
+                          {workspaceTabLabel(path)}
+                        </span>
+                        <span className="mt-0.5 block truncate text-xs text-gf-fg-subtle">{path}</span>
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
             ) : (
               <ul className="space-y-1">
                 {filteredRecents.map((path) => (

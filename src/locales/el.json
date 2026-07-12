@@ -688,6 +688,17 @@
       "conflictsMany": "Η συγχώνευση ξεκίνησε με συγκρούσεις σε {{count}} αρχεία. Επιλύστε τις για να συνεχίσετε.",
       "completed": "Η συγχώνευση ολοκληρώθηκε."
     },
+    "squashMergeInto": {
+      "title": "Squash and merge {{branch}}",
+      "description": "Squash όλα τα commits από {{source}} σε ένα commit στο {{target}};",
+      "targetBranch": "Κλάδος-στόχος",
+      "targetPlaceholder": "κλάδος-στόχος",
+      "commitMessage": "Μήνυμα commit",
+      "confirm": "Squash and merge",
+      "conflictsOne": "Το squash merge σταμάτησε με συγκρούσεις στο {{file}}. Επιλύστε τις στον κλάδο-στόχο για να συνεχίσετε.",
+      "conflictsMany": "Το squash merge σταμάτησε με συγκρούσεις σε {{count}} αρχεία. Επιλύστε τις στον κλάδο-στόχο για να συνεχίσετε.",
+      "completed": "Squash and merge στο {{target}}."
+    },
     "createIssue": {
       "title": "Δημιουργία issue"
     }
@@ -1216,6 +1227,7 @@
       "showInGraph": "Εμφάνιση στο γράφημα",
       "copyBranchName": "Αντιγραφή ονόματος κλάδου",
       "mergeIntoCurrent": "Συγχώνευση στον τρέχοντα…",
+      "squashMergeInto": "Squash and merge σε…",
       "createPullRequest": "Δημιουργία pull request…",
       "rename": "Μετονομασία…",
       "deleteBranch": "Διαγραφή κλάδου…",

@@ -1,5 +1,8 @@
+import { useRef } from 'react'
 import type { GitCommit } from '@/lib/types'
 import { useTranslation } from 'react-i18next'
+import { useVirtualizer } from '@tanstack/react-virtual'
+import { shouldVirtualize, COMPACT_ROW_HEIGHT, VIRTUAL_OVERSCAN } from '@/lib/ui/virtualList'
 import { ExplainCommitButton } from '@/components/DetailPanel/ExplainCommitWithAi'
 import {
   allSelectedOnBranchHistory,
@@ -56,6 +59,16 @@ export function MultiCommitSelectionBar({
   const cherryPickDisabled = !isClean || gitBusy || anyOnHistory || hasMerge
   const squashDisabled = !isClean || gitBusy || isDetached || !onHistory || !contiguous || hasMerge
   const compareDisabled = gitBusy
+
+  const commitsScrollRef = useRef<HTMLUListElement>(null)
+  const useVirtualization = shouldVirtualize(commits.length)
+
+  const commitsVirtualizer = useVirtualizer({
+    count: useVirtualization ? commits.length : 0,
+    getScrollElement: () => commitsScrollRef.current,
+    estimateSize: () => COMPACT_ROW_HEIGHT,
+    overscan: VIRTUAL_OVERSCAN
+  })
 
   return (
     <div className="shrink-0 border-b border-gf-border bg-gf-surface/40 px-4 py-3">
@@ -122,24 +135,54 @@ export function MultiCommitSelectionBar({
           </button>
         </div>
       </div>
-      <ul className="mt-2 max-h-36 space-y-1 overflow-y-auto">
-        {commits.map((commit) => {
-          const isPrimary = commit.hash === primaryHash
-          return (
-            <li key={commit.hash}>
-              <button
-                type="button"
-                onClick={() => onSelectPrimary(commit.hash)}
-                className={`flex w-full items-center gap-2 rounded px-2 py-1 text-left text-xs hover:bg-gf-surface-hover ${
-                  isPrimary ? 'bg-gf-accent/15 text-gf-fg' : 'text-gf-fg-muted'
-                }`}
-              >
-                <span className="font-mono text-[11px] text-gf-fg-subtle">{commit.shortHash}</span>
-                <span className="min-w-0 truncate">{commit.subject}</span>
-              </button>
-            </li>
-          )
-        })}
+      <ul ref={commitsScrollRef} className="mt-2 max-h-36 overflow-y-auto">
+        {useVirtualization ? (
+          <div style={{ height: commitsVirtualizer.getTotalSize(), position: 'relative' }}>
+            {commitsVirtualizer.getVirtualItems().map((virtualItem) => {
+              const commit = commits[virtualItem.index]!
+              const isPrimary = commit.hash === primaryHash
+              return (
+                <div
+                  key={virtualItem.key}
+                  style={{
+                    position: 'absolute', top: 0, left: 0, width: '100%',
+                    height: `${virtualItem.size}px`,
+                    transform: `translateY(${virtualItem.start}px)`
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => onSelectPrimary(commit.hash)}
+                    className={`flex h-full w-full items-center gap-2 rounded px-2 py-1 text-left text-xs hover:bg-gf-surface-hover ${
+                      isPrimary ? 'bg-gf-accent/15 text-gf-fg' : 'text-gf-fg-muted'
+                    }`}
+                  >
+                    <span className="font-mono text-[11px] text-gf-fg-subtle">{commit.shortHash}</span>
+                    <span className="min-w-0 truncate">{commit.subject}</span>
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          commits.map((commit) => {
+            const isPrimary = commit.hash === primaryHash
+            return (
+              <li key={commit.hash}>
+                <button
+                  type="button"
+                  onClick={() => onSelectPrimary(commit.hash)}
+                  className={`flex w-full items-center gap-2 rounded px-2 py-1 text-left text-xs hover:bg-gf-surface-hover ${
+                    isPrimary ? 'bg-gf-accent/15 text-gf-fg' : 'text-gf-fg-muted'
+                  }`}
+                >
+                  <span className="font-mono text-[11px] text-gf-fg-subtle">{commit.shortHash}</span>
+                  <span className="min-w-0 truncate">{commit.subject}</span>
+                </button>
+              </li>
+            )
+          })
+        )}
       </ul>
     </div>
   )

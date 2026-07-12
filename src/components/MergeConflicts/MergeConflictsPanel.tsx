@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 import { AiActionButton } from '@/components/Ui/AiActionButton'
 import { useMergeStatus, useWorkingStatus } from '@/hooks/useGit'
@@ -11,6 +12,7 @@ import { useAiFill } from '@/hooks/useAiFill'
 import { useToastStore } from '@/stores/toast'
 import { useInvalidateGit } from '@/hooks/useInvalidateGit'
 import { buildFileTree, type FileTreeNode } from '@/lib/workspace/fileTree'
+import { FILE_ROW_HEIGHT, VIRTUAL_OVERSCAN, shouldVirtualize } from '@/lib/ui/virtualList'
 import { parseConflictMarkers } from '@/lib/conflicts/conflictMarkers'
 import { hasUnresolvedMarkers } from '@/lib/conflicts/threeWayMerge'
 import { averageConfidence, parseConflictResolveResponse } from '@shared/ai'
@@ -161,6 +163,8 @@ export function MergeConflictsPanel() {
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set())
   const [bulkBusy, setBulkBusy] = useState(false)
   const [aiBulkBusy, setAiBulkBusy] = useState(false)
+  const conflictedScrollRef = useRef<HTMLDivElement>(null)
+  const resolvedScrollRef = useRef<HTMLDivElement>(null)
 
   const conflictedPaths = mergeStatus?.conflictedPaths ?? []
   const conflictedSet = useMemo(() => new Set(conflictedPaths), [conflictedPaths])
@@ -190,6 +194,20 @@ export function MergeConflictsPanel() {
       ),
     [conflictedPaths]
   )
+
+  const conflictedVirtualizer = useVirtualizer({
+    count: viewMode === 'path' && shouldVirtualize(conflictedPaths.length) ? conflictedPaths.length : 0,
+    getScrollElement: () => conflictedScrollRef.current,
+    estimateSize: () => FILE_ROW_HEIGHT,
+    overscan: VIRTUAL_OVERSCAN
+  })
+
+  const resolvedVirtualizer = useVirtualizer({
+    count: viewMode === 'path' && shouldVirtualize(resolvedPaths.length) ? resolvedPaths.length : 0,
+    getScrollElement: () => resolvedScrollRef.current,
+    estimateSize: () => FILE_ROW_HEIGHT,
+    overscan: VIRTUAL_OVERSCAN
+  })
 
   const resolvedTree = useMemo(
     () =>
@@ -349,18 +367,50 @@ export function MergeConflictsPanel() {
           {conflictedPaths.length === 0 ? (
             <p className="text-xs text-gf-fg-subtle">—</p>
           ) : viewMode === 'path' ? (
-            <div className="space-y-0.5">
-              {conflictedPaths.map((path) => (
-                <ConflictFileRow
-                  key={path}
-                  path={path}
-                  selected={selectedFile === path}
-                  proposalSummary={proposalSummaries[path]}
-                  onSelect={() => setSelectedConflictFile(path)}
-                  aiProposalsTitle={(count) => t('conflicts.aiProposalsTitle', { count })}
-                />
-              ))}
-            </div>
+            conflictedVirtualizer.options.count > 0 ? (
+              <div
+                ref={conflictedScrollRef}
+                className="overflow-y-auto"
+                style={{ maxHeight: '40vh' }}
+              >
+                <div style={{ height: conflictedVirtualizer.getTotalSize(), position: 'relative' }}>
+                  {conflictedVirtualizer.getVirtualItems().map((virtualItem) => {
+                    const path = conflictedPaths[virtualItem.index]!
+                    return (
+                      <div
+                        key={virtualItem.key}
+                        style={{
+                          position: 'absolute', top: 0, left: 0, width: '100%',
+                          height: `${virtualItem.size}px`,
+                          transform: `translateY(${virtualItem.start}px)`
+                        }}
+                      >
+                        <ConflictFileRow
+                          path={path}
+                          selected={selectedFile === path}
+                          proposalSummary={proposalSummaries[path]}
+                          onSelect={() => setSelectedConflictFile(path)}
+                          aiProposalsTitle={(count) => t('conflicts.aiProposalsTitle', { count })}
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-0.5">
+                {conflictedPaths.map((path) => (
+                  <ConflictFileRow
+                    key={path}
+                    path={path}
+                    selected={selectedFile === path}
+                    proposalSummary={proposalSummaries[path]}
+                    onSelect={() => setSelectedConflictFile(path)}
+                    aiProposalsTitle={(count) => t('conflicts.aiProposalsTitle', { count })}
+                  />
+                ))}
+              </div>
+            )
           ) : (
             <div className="space-y-0.5">
               {conflictedTree.children.map((node) => (
@@ -395,19 +445,47 @@ export function MergeConflictsPanel() {
           {resolvedPaths.length === 0 ? (
             <p className="text-xs text-gf-fg-subtle">—</p>
           ) : viewMode === 'path' ? (
-            <div className="space-y-0.5">
-              {resolvedPaths.map((path) => (
-                <div
-                  key={path}
-                  className="flex items-center gap-2 rounded px-2 py-1 text-xs text-gf-fg-muted"
-                >
-                  <span className="inline-block w-3 text-center font-mono text-[11px] text-emerald-400">
-                    ✓
-                  </span>
-                  <span className="truncate font-mono">{path}</span>
+            resolvedVirtualizer.options.count > 0 ? (
+              <div
+                ref={resolvedScrollRef}
+                className="overflow-y-auto"
+                style={{ maxHeight: '40vh' }}
+              >
+                <div style={{ height: resolvedVirtualizer.getTotalSize(), position: 'relative' }}>
+                  {resolvedVirtualizer.getVirtualItems().map((virtualItem) => {
+                    const path = resolvedPaths[virtualItem.index]!
+                    return (
+                      <div
+                        key={virtualItem.key}
+                        style={{
+                          position: 'absolute', top: 0, left: 0, width: '100%',
+                          height: `${virtualItem.size}px`,
+                          transform: `translateY(${virtualItem.start}px)`
+                        }}
+                        className="flex items-center gap-2 rounded px-2 py-1 text-xs text-gf-fg-muted"
+                      >
+                        <span className="inline-block w-3 text-center font-mono text-[11px] text-emerald-400">✓</span>
+                        <span className="truncate font-mono">{path}</span>
+                      </div>
+                    )
+                  })}
                 </div>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <div className="space-y-0.5">
+                {resolvedPaths.map((path) => (
+                  <div
+                    key={path}
+                    className="flex items-center gap-2 rounded px-2 py-1 text-xs text-gf-fg-muted"
+                  >
+                    <span className="inline-block w-3 text-center font-mono text-[11px] text-emerald-400">
+                      ✓
+                    </span>
+                    <span className="truncate font-mono">{path}</span>
+                  </div>
+                ))}
+              </div>
+            )
           ) : (
             <div className="space-y-0.5">
               {resolvedTree.children.map((node) => (

@@ -284,11 +284,11 @@ export function PullRequestDetail({ pr, onClose }: PullRequestDetailProps) {
                     <FileViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
                   </div>
                 </div>
-                <div className="min-h-0 flex-1 overflow-auto p-4">
+                <div className="min-h-0 flex-1 flex flex-col">
                   {diffQuery.isLoading ? (
-                    <LoadingRow label={t('diff.loadingDiff')} />
+                    <div className="p-4"><LoadingRow label={t('diff.loadingDiff')} /></div>
                   ) : diffQuery.error ? (
-                    <div className="max-w-lg space-y-3">
+                    <div className="p-4 max-w-lg space-y-3">
                       <p className="text-sm text-gf-fg-muted">
                         {t('detail.pullRequest.diffUnavailable')}
                       </p>
@@ -299,13 +299,14 @@ export function PullRequestDetail({ pr, onClose }: PullRequestDetailProps) {
                       </ActionButton>
                     </div>
                   ) : rows.length === 0 ? (
-                    <p className="text-sm text-gf-fg-subtle">{t('diff.noChangesInRange')}</p>
+                    <p className="p-4 text-sm text-gf-fg-subtle">{t('diff.noChangesInRange')}</p>
                   ) : viewMode === 'split' ? (
                     <SplitDiffView
                       rows={splitRows}
                       loading={diffQuery.isLoading}
                       onRequestLineComment={handleLineCommentRequest}
                       reviewThreads={reviewThreadContext}
+                      className="min-h-0 flex-1"
                     />
                   ) : (
                     <UnifiedDiffView
@@ -313,6 +314,7 @@ export function PullRequestDetail({ pr, onClose }: PullRequestDetailProps) {
                       loading={diffQuery.isLoading}
                       onRequestLineComment={handleLineCommentRequest}
                       reviewThreads={reviewThreadContext}
+                      className="min-h-0 flex-1"
                     />
                   )}
                 </div>

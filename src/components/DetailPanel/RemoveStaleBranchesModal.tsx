@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActionButton, Checkbox, FieldLabel, Modal, TextArea } from '@/components/Ui/Modal'
 import { LoadingRow } from '@/components/Ui/Spinner'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { useInvalidateGit } from '@/hooks/useInvalidateGit'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
+import { shouldVirtualize, VIRTUAL_OVERSCAN } from '@/lib/ui/virtualList'
 import type { RemoveStaleBranchesResult, StaleBranchSummary } from '@/lib/types'
 
 interface RemoveStaleBranchesModalProps {
@@ -130,6 +132,17 @@ export function RemoveStaleBranchesModal({
         .reduce((total, entry) => total + entry.commitsNotOnHead, 0)
     : 0
 
+  const refs = summary?.refs ?? []
+  const refsScrollRef = useRef<HTMLUListElement>(null)
+  const useVirtualization = shouldVirtualize(refs.length)
+
+  const virtualizer = useVirtualizer({
+    count: useVirtualization ? refs.length : 0,
+    getScrollElement: () => refsScrollRef.current,
+    estimateSize: () => 64,
+    overscan: VIRTUAL_OVERSCAN
+  })
+
   const deleteButtonLabel =
     selectedCommitCount > 0
       ? `${t('detail.deleteReferences', { count: selected.size })}${t('detail.deleteReferencesWithCommits', { count: selectedCommitCount })}`
@@ -171,29 +184,69 @@ export function RemoveStaleBranchesModal({
               {t('detail.noStaleReferences')}
             </p>
           ) : (
-            <ul className="max-h-56 space-y-2 overflow-y-auto rounded border border-gf-border-strong bg-gf-bg-deep p-2">
-              {summary.refs.map((entry) => (
-                <li key={entry.ref}>
-                  <label className="flex cursor-pointer gap-3 rounded px-2 py-1.5 hover:bg-gf-surface-hover">
-                    <Checkbox
-                      checked={selected.has(entry.ref)}
-                      onChange={() => toggleRef(entry.ref)}
-                      disabled={removing}
-                      className="mt-0.5"
-                    />
-                    <span className="min-w-0 flex-1 text-xs">
-                      <span className="font-medium text-gf-fg">{entry.label}</span>
-                      <span className="mt-0.5 block truncate text-gf-fg-muted">
-                        {entry.shortHash} · {entry.subject}
+            <ul
+              ref={refsScrollRef}
+              className="max-h-56 overflow-y-auto rounded border border-gf-border-strong bg-gf-bg-deep p-2"
+              style={useVirtualization ? { position: 'relative' } : undefined}
+            >
+              {useVirtualization ? (
+                <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+                  {virtualizer.getVirtualItems().map((virtualItem) => {
+                    const entry = refs[virtualItem.index]!
+                    return (
+                      <div
+                        key={virtualItem.key}
+                        style={{
+                          position: 'absolute', top: 0, left: 0, width: '100%',
+                          transform: `translateY(${virtualItem.start}px)`
+                        }}
+                      >
+                        <label className="flex cursor-pointer gap-3 rounded px-2 py-1.5 hover:bg-gf-surface-hover">
+                          <Checkbox
+                            checked={selected.has(entry.ref)}
+                            onChange={() => toggleRef(entry.ref)}
+                            disabled={removing}
+                            className="mt-0.5"
+                          />
+                          <span className="min-w-0 flex-1 text-xs">
+                            <span className="font-medium text-gf-fg">{entry.label}</span>
+                            <span className="mt-0.5 block truncate text-gf-fg-muted">
+                              {entry.shortHash} · {entry.subject}
+                            </span>
+                            <span className="text-gf-fg-subtle">
+                              {kindHint(entry.kind)} ·{' '}
+                              {t('detail.commitsNotOnCurrentBranch', { count: entry.commitsNotOnHead })}
+                            </span>
+                          </span>
+                        </label>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                summary.refs.map((entry) => (
+                  <li key={entry.ref} className="space-y-2">
+                    <label className="flex cursor-pointer gap-3 rounded px-2 py-1.5 hover:bg-gf-surface-hover">
+                      <Checkbox
+                        checked={selected.has(entry.ref)}
+                        onChange={() => toggleRef(entry.ref)}
+                        disabled={removing}
+                        className="mt-0.5"
+                      />
+                      <span className="min-w-0 flex-1 text-xs">
+                        <span className="font-medium text-gf-fg">{entry.label}</span>
+                        <span className="mt-0.5 block truncate text-gf-fg-muted">
+                          {entry.shortHash} · {entry.subject}
+                        </span>
+                        <span className="text-gf-fg-subtle">
+                          {kindHint(entry.kind)} ·{' '}
+                          {t('detail.commitsNotOnCurrentBranch', { count: entry.commitsNotOnHead })}
+                        </span>
                       </span>
-                      <span className="text-gf-fg-subtle">
-                        {kindHint(entry.kind)} ·{' '}
-                        {t('detail.commitsNotOnCurrentBranch', { count: entry.commitsNotOnHead })}
-                      </span>
-                    </span>
-                  </label>
-                </li>
-              ))}
+                    </label>
+                  </li>
+                ))
+              )}
             </ul>
           )}
         </div>

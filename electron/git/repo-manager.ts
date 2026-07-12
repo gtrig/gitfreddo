@@ -272,6 +272,12 @@ function buildHandlerRegistry(): Record<GitIpcMethod, InvokeHandler> {
     'merge.status': (cwd, git) => mergeOps.mergeStatus(cwd, git),
     'merge.start': (cwd, git, p) =>
       mergeOps.mergeStart(cwd, git, p.branch as string, { noFf: Boolean(p.noFf), squash: Boolean(p.squash) }),
+    'merge.squashInto': (cwd, git, p) =>
+      mergeOps.mergeSquashInto(cwd, git, {
+        sourceBranch: p.sourceBranch as string,
+        targetBranch: p.targetBranch as string,
+        message: p.message as string | undefined
+      }),
     'merge.abort': (cwd, git) => mergeOps.mergeAbort(cwd, git),
     'merge.continue': (cwd, git, p) => mergeOps.mergeContinue(cwd, git, p.message as string | undefined),
     'rebase.start': (cwd, git, p) =>

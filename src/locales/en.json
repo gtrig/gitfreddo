@@ -688,6 +688,17 @@
       "conflictsMany": "Merge started with conflicts in {{count}} files. Resolve them to continue.",
       "completed": "Merge completed."
     },
+    "squashMergeInto": {
+      "title": "Squash and merge {{branch}}",
+      "description": "Squash all commits from {{source}} into one commit on {{target}}?",
+      "targetBranch": "Target branch",
+      "targetPlaceholder": "target branch",
+      "commitMessage": "Commit message",
+      "confirm": "Squash and merge",
+      "conflictsOne": "Squash merge stopped with conflicts in {{file}}. Resolve them on the target branch to continue.",
+      "conflictsMany": "Squash merge stopped with conflicts in {{count}} files. Resolve them on the target branch to continue.",
+      "completed": "Squashed and merged into {{target}}."
+    },
     "createIssue": {
       "title": "Create issue"
     }
@@ -1316,6 +1327,7 @@
       "showInGraph": "Show in graph",
       "copyBranchName": "Copy branch name",
       "mergeIntoCurrent": "Merge into current…",
+      "squashMergeInto": "Squash and merge into…",
       "createPullRequest": "Create pull request…",
       "rename": "Rename…",
       "deleteBranch": "Delete branch…",

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import type { BranchCheckoutParams } from '@shared/git'
 import { localBranchCheckoutParams } from '@/lib/git/branchCheckout'
 import { useTranslation } from 'react-i18next'
@@ -31,6 +31,7 @@ import { useForgePullRequestActions } from '@/hooks/useForgePullRequestActions'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
 import { MergeBranchDialog } from '@/components/Branches/MergeBranchDialog'
+import { SquashMergeIntoModal } from '@/components/Branches/SquashMergeIntoModal'
 import { RenameBranchModal } from '@/components/Branches/RenameBranchModal'
 import { SetUpstreamModal } from '@/components/Branches/SetUpstreamModal'
 import { CheckoutRemoteModal } from '@/components/Branches/CheckoutRemoteModal'
@@ -47,6 +48,9 @@ import {
 import { BranchVisibilityToggle } from '@/components/Layout/sidebar/BranchVisibilityToggle'
 import { branchVisibilityKey } from '@/lib/timeline/branchVisibility'
 import { useBranchVisibilityStore } from '@/stores/branchVisibility'
+import { useVirtualizer } from '@tanstack/react-virtual'
+import { flattenVisibleBranchTree } from '@/lib/ui/flattenVisibleBranchTree'
+import { shouldVirtualize, COMPACT_ROW_HEIGHT, VIRTUAL_OVERSCAN } from '@/lib/ui/virtualList'
 
 interface LocalBranchesSectionProps {
   branches: GitBranch[] | undefined
@@ -65,11 +69,13 @@ function BranchTree({
   nodes,
   depth,
   filter,
+  folderPrefix,
   openFolders,
   toggleFolder,
   onSelectCommit,
   onCheckout,
   onMerge,
+  onSquashMergeInto,
   onRename,
   onDelete,
   onCreatePr,
@@ -83,11 +89,13 @@ function BranchTree({
   nodes: BranchTreeNode[]
   depth: number
   filter: string
+  folderPrefix?: string
   openFolders: Set<string>
   toggleFolder: (path: string) => void
   onSelectCommit: (hash: string) => void
   onCheckout: (params: BranchCheckoutParams) => void
   onMerge: (name: string) => void
+  onSquashMergeInto?: (name: string) => void
   onRename: (name: string) => void
   onDelete: (name: string) => void
   onCreatePr?: (name: string) => void
@@ -103,7 +111,7 @@ function BranchTree({
     <>
       {nodes.map((node) => {
         if (node.type === 'folder') {
-          const path = `${depth}:${node.name}`
+          const path = folderPrefix ? `${folderPrefix}/${node.name}` : node.name
           const open = openFolders.has(path) || Boolean(filter.trim())
           return (
             <div key={path}>
@@ -120,11 +128,13 @@ function BranchTree({
                   nodes={node.children}
                   depth={depth + 1}
                   filter={filter}
+                  folderPrefix={path}
                   openFolders={openFolders}
                   toggleFolder={toggleFolder}
                   onSelectCommit={onSelectCommit}
                   onCheckout={onCheckout}
                   onMerge={onMerge}
+                  onSquashMergeInto={onSquashMergeInto}
                   onRename={onRename}
                   onDelete={onDelete}
                   onCreatePr={onCreatePr}
@@ -150,6 +160,7 @@ function BranchTree({
             onCheckout,
             onSelectCommit,
             onMerge,
+            onSquashMergeInto,
             onRename,
             onDelete,
             onCreatePr,
@@ -223,6 +234,7 @@ export function LocalBranchesSection({
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const [renameBranch, setRenameBranch] = useState<string | null>(null)
   const [mergeSource, setMergeSource] = useState<string | null>(null)
+  const [squashMergeSource, setSquashMergeSource] = useState<string | null>(null)
   const [prBranch, setPrBranch] = useState<string | null>(null)
   const [worktreeBranch, setWorktreeBranch] = useState<string | null>(null)
   const [upstreamBranch, setUpstreamBranch] = useState<string | null>(null)
@@ -248,6 +260,21 @@ export function LocalBranchesSection({
     })
   }
 
+  const flatBranchItems = useMemo(
+    () => flattenVisibleBranchTree(filteredTree, openFolders, filter),
+    [filteredTree, openFolders, filter]
+  )
+  const totalFlatCount = flatBranchItems.length + (showDetachedHead ? 1 : 0)
+  const useVirtualization = shouldVirtualize(totalFlatCount)
+
+  const localScrollRef = useRef<HTMLDivElement>(null)
+  const localVirtualizer = useVirtualizer({
+    count: useVirtualization ? totalFlatCount : 0,
+    getScrollElement: () => localScrollRef.current,
+    estimateSize: () => COMPACT_ROW_HEIGHT,
+    overscan: VIRTUAL_OVERSCAN
+  })
+
   return (
     <SidebarSection
       sectionId="sidebar.local"
@@ -263,36 +290,153 @@ export function LocalBranchesSection({
       {!isLoading && count === 0 && (
         <p className="px-2 py-1 text-xs text-gf-fg-subtle">{t('sidebar.noLocalBranches')}</p>
       )}
-      <div className="space-y-0.5">
-        {showDetachedHead && head ? (
-          <SidebarTreeRow
-            icon={<SidebarIconBranch className="h-3.5 w-3.5" />}
-            label={t('common.head')}
-            labelClassName="text-emerald-400"
-            title={t('sidebar.detachedHead')}
-            onClick={() => onSelectCommit(head)}
+      {useVirtualization ? (
+        <div ref={localScrollRef} className="overflow-y-auto" style={{ maxHeight: '50vh' }}>
+          <div style={{ height: localVirtualizer.getTotalSize(), position: 'relative' }}>
+            {localVirtualizer.getVirtualItems().map((virtualItem) => {
+              const adjustedIndex = virtualItem.index
+              if (showDetachedHead && head && adjustedIndex === 0) {
+                return (
+                  <div
+                    key={virtualItem.key}
+                    style={{
+                      position: 'absolute', top: 0, left: 0, width: '100%',
+                      height: `${virtualItem.size}px`,
+                      transform: `translateY(${virtualItem.start}px)`
+                    }}
+                  >
+                    <SidebarTreeRow
+                      icon={<SidebarIconBranch className="h-3.5 w-3.5" />}
+                      label={t('common.head')}
+                      labelClassName="text-emerald-400"
+                      title={t('sidebar.detachedHead')}
+                      onClick={() => onSelectCommit(head)}
+                    />
+                  </div>
+                )
+              }
+              const flatIndex = showDetachedHead ? adjustedIndex - 1 : adjustedIndex
+              const item = flatBranchItems[flatIndex]
+              if (!item) return null
+              return (
+                <div
+                  key={virtualItem.key}
+                  style={{
+                    position: 'absolute', top: 0, left: 0, width: '100%',
+                    height: `${virtualItem.size}px`,
+                    transform: `translateY(${virtualItem.start}px)`
+                  }}
+                >
+                  {item.kind === 'folder' ? (
+                    (() => {
+                      const folderPath = item.id.replace(/^folder:/, '')
+                      const open = openFolders.has(folderPath) || Boolean(filter.trim())
+                      return (
+                        <SidebarFolderRow
+                          name={item.node.name}
+                          depth={item.depth}
+                          open={open}
+                          onToggle={() => toggleFolder(folderPath)}
+                          menuItems={folderContextMenuItems(item.node.name, open, () => toggleFolder(folderPath), t)}
+                          openMenu={openMenu}
+                        />
+                      )
+                    })()
+                  ) : (
+                    (() => {
+                      const branch = item.node.branch!
+                      const displayName = branch.name.includes('/') ? item.node.name : branch.name
+                      const visibilityKey = branchVisibilityKey(branch)
+                      const hiddenInGraph = isBranchHidden(visibilityKey)
+                      const branchMenuItems = localBranchContextMenuItems(
+                        branch,
+                        {
+                          onCheckout,
+                          onSelectCommit,
+                          onMerge: setMergeSource,
+                          onSquashMergeInto: setSquashMergeSource,
+                          onRename: setRenameBranch,
+                          onDelete: setPendingDelete,
+                          onCreatePr: canCreatePr ? setPrBranch : undefined,
+                          onCheckoutInWorktree: setWorktreeBranch,
+                          onSetUpstream: setUpstreamBranch,
+                          onUnsetUpstream: (name) => void unsetUpstream.mutateAsync({ branch: name }),
+                          onToggleGraphVisibility: toggleBranchVisibility,
+                          isHiddenInGraph: hiddenInGraph
+                        },
+                        t
+                      )
+                      return (
+                        <SidebarTreeRow
+                          icon={<SidebarIconBranch className="h-3.5 w-3.5" />}
+                          label={displayName}
+                          depth={item.depth}
+                          isCurrent={branch.isCurrent}
+                          title={t('sidebar.branchClickHint')}
+                          labelClassName={hiddenInGraph ? 'opacity-60' : ''}
+                          suffix={
+                            branch.ahead > 0 || branch.behind > 0 ? (
+                              <span className="shrink-0 text-[10px] text-gf-fg-subtle">
+                                {branch.ahead > 0 && `↑${branch.ahead}`}
+                                {branch.behind > 0 && ` ↓${branch.behind}`}
+                              </span>
+                            ) : undefined
+                          }
+                          trailingAction={
+                            <BranchVisibilityToggle
+                              hidden={hiddenInGraph}
+                              disabled={branch.isCurrent}
+                              onToggle={() => toggleBranchVisibility(visibilityKey)}
+                            />
+                          }
+                          menuItems={branchMenuItems}
+                          openMenu={openMenu}
+                          onClick={() => onSelectCommit(branch.head)}
+                          onDoubleClick={() => {
+                            if (!branch.isCurrent) onCheckout(localBranchCheckoutParams(branch.name))
+                          }}
+                        />
+                      )
+                    })()
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-0.5">
+          {showDetachedHead && head ? (
+            <SidebarTreeRow
+              icon={<SidebarIconBranch className="h-3.5 w-3.5" />}
+              label={t('common.head')}
+              labelClassName="text-emerald-400"
+              title={t('sidebar.detachedHead')}
+              onClick={() => onSelectCommit(head)}
+            />
+          ) : null}
+          <BranchTree
+            nodes={filteredTree}
+            depth={0}
+            filter={filter}
+            openFolders={openFolders}
+            toggleFolder={toggleFolder}
+            onSelectCommit={onSelectCommit}
+            onCheckout={onCheckout}
+            onMerge={setMergeSource}
+            onSquashMergeInto={setSquashMergeSource}
+            onRename={setRenameBranch}
+            onDelete={setPendingDelete}
+            onCreatePr={canCreatePr ? setPrBranch : undefined}
+            onCheckoutInWorktree={setWorktreeBranch}
+            onSetUpstream={setUpstreamBranch}
+            onUnsetUpstream={(name) => void unsetUpstream.mutateAsync({ branch: name })}
+            isBranchHidden={isBranchHidden}
+            onToggleGraphVisibility={toggleBranchVisibility}
+            openMenu={openMenu}
           />
-        ) : null}
-        <BranchTree
-          nodes={filteredTree}
-          depth={0}
-          filter={filter}
-          openFolders={openFolders}
-          toggleFolder={toggleFolder}
-          onSelectCommit={onSelectCommit}
-          onCheckout={onCheckout}
-          onMerge={setMergeSource}
-          onRename={setRenameBranch}
-          onDelete={setPendingDelete}
-          onCreatePr={canCreatePr ? setPrBranch : undefined}
-          onCheckoutInWorktree={setWorktreeBranch}
-          onSetUpstream={setUpstreamBranch}
-          onUnsetUpstream={(name) => void unsetUpstream.mutateAsync({ branch: name })}
-          isBranchHidden={isBranchHidden}
-          onToggleGraphVisibility={toggleBranchVisibility}
-          openMenu={openMenu}
-        />
-      </div>
+        </div>
+      )}
 
       {menuState && (
         <ContextMenu
@@ -303,6 +447,12 @@ export function LocalBranchesSection({
         />
       )}
       {mergeSource && <MergeBranchDialog sourceBranch={mergeSource} onClose={() => setMergeSource(null)} />}
+      {squashMergeSource && (
+        <SquashMergeIntoModal
+          sourceBranch={squashMergeSource}
+          onClose={() => setSquashMergeSource(null)}
+        />
+      )}
       {renameBranch && (
         <RenameBranchModal
           open

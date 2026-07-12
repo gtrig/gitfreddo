@@ -7,6 +7,30 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-12 — Squash and merge active branch into another branch
+
+- **Why:** Merging a feature branch into `main` with squash required manually checking out the target first; users wanted a single action from the branch they're on.
+- **What:** New `merge.squashInto` IPC/operation checks out the target branch, runs `git merge --squash` from the active branch, and commits with an editable message. Right-click the current branch in the sidebar → **Squash and merge into…** opens `SquashMergeIntoModal` with target picker. Tests for `mergeSquashInto`, `buildSquashMergeIntoMessage`, and context menu wiring. Docs updated in `docs/workflows/02-branching-and-merging.md`.
+
+### 2026-07-12 — Move typecheck/test hook from pre-commit to pre-push
+
+- **Why:** Running the full typecheck + test suite on every commit made small, frequent commits slow; the guarantee that matters is that no untested code reaches the remote, which pre-push enforces just as well.
+- **What:** Deleted `scripts/hooks/pre-commit`; `scripts/hooks/pre-push` now runs the Node-version bootstrap, `check-test-env.sh`, `npm run typecheck`, and `npm run test` before the existing release-tag/`package.json` version check. The hook captures git's ref lines from stdin up front so npm/vitest can't consume them before the release check reads them. Docs updated (`docs/setup/git-and-credentials.md`, `docs/workflows/updates.md`). Verified by running the hook end-to-end (full suite green) and confirming a mismatched `v*` tag push is still blocked.
+
+### 2026-07-12 — React Virtual rollout across all list-heavy UI surfaces
+
+- **Why:** `@tanstack/react-virtual` was installed but never used; large repositories caused excessive DOM node counts in the diff viewer, file lists, sidebar, modals, and the commit timeline — degrading scroll and interaction performance.
+- **What:**
+  - **Phase 0 (foundation):** `src/lib/ui/virtualList.ts` — shared constants (`VIRTUALIZE_THRESHOLD = 50`, `CODE_LINE_HEIGHT`, `COMPACT_ROW_HEIGHT`, `FILE_ROW_HEIGHT`, `VIRTUAL_OVERSCAN`) and `shouldVirtualize` helper. `flattenVisibleFileTree` and `flattenVisibleBranchTree` flatten tree structures for virtualizers. `buildDiffVirtualItems` flattens unified diff rows. `FixedHeightVirtualList` and `DynamicVirtualList` generic components. `useFixedVirtualizer` and `useDynamicVirtualizer` hooks. All with co-located unit tests.
+  - **Phase 1 (diff views):** `FullFileView`, `SplitDiffView`, `ThreeWayCodePane`, and `UnifiedDiffView` all virtualize their line/row lists. Parent overlays (`DiffOverlay`, `CommitDetailOverlay`, `FileHistoryOverlay`, `PullRequestDetail`) moved scroll ownership into child views.
+  - **Phase 2 (file lists):** `CommitFileList`, `PullRequestSidebar`, `StashPreview`, `GitWorkingTree`, and `MergeConflictsPanel` virtualize path-mode lists; tree mode uses `flattenVisibleFileTree` before virtualizing.
+  - **Phase 3 (history + logs):** `FileHistoryOverlay` commit sidebar virtualizes with `scrollToIndex` on selection. `LogDrawer` uses dynamic-height virtualization with preserved pinned-to-bottom auto-scroll.
+  - **Phase 4 (sidebar sections):** `TagsSection`, `SidebarIssuesSection`, `SidebarPullRequestsSection` each virtualize with inner scroll containers (capped at 40 vh) when list exceeds threshold.
+  - **Phase 5 (modals + pickers):** `ReflogModal`, GitHub and Bitbucket `RepoPicker`, `WorkspaceHub` recents, `RemoveStaleBranchesModal` refs, `CleanUntrackedModal`, `StashPushModal` paths, `MaintenanceSettingsPanel` commits preview, `MultiCommitSelectionBar`, and `PullRequestCommitsPanel` all virtualize behind the threshold gate.
+  - **Phase 6 (timeline migration):** `CommitTimeline` migrated from custom `useTimelineVirtualWindow`/`timelineVirtualWindow.ts` to `useVirtualizer` with `paddingStart` for prefix rows. Drag-select and scroll-to-primary behaviors preserved. Old custom windowing files deleted.
+  - **Phase 7 (hard cases):** `LocalBranchesSection` uses `flattenVisibleBranchTree` with path-based folder keys and a virtualizer (max 50 vh); `BranchTree` sub-component updated to use consistent slash-joined folder paths. `PullRequestConversationTimeline` gains dynamic-height virtualization with `measureElement`.
+  - Global `ResizeObserver` stub in `src/test/setup.ts` provides a 500 × 800 px virtual viewport for jsdom tests so virtualizers render windowed items correctly.
+
 ### 2026-07-12 — Markdown in commit descriptions
 
 - **Why:** Commit message bodies often use Markdown (lists, bold, links) but the detail panel showed raw syntax as plain text.

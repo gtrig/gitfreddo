@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { ArrowsUpDownIcon, MinusIcon, PencilSquareIcon, PlusIcon } from '@heroicons/react/24/solid'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { ContextMenu } from '@/components/Ui/ContextMenu'
 import { SidebarIconChevron } from '@/components/Layout/sidebar/SidebarIcons'
 import { useContextMenu, type OpenContextMenu } from '@/hooks/useContextMenu'
@@ -17,6 +18,8 @@ import {
   type FileTreeNode
 } from '@/lib/workspace/fileTree'
 import type { CommitFileItem } from '@/lib/types'
+import { flattenVisibleFileTree, type FlatFileTreeItem } from '@/lib/ui/flattenVisibleFileTree'
+import { FILE_ROW_HEIGHT, VIRTUAL_OVERSCAN, shouldVirtualize } from '@/lib/ui/virtualList'
 
 function ModifiedIcon({ className }: { className?: string }) {
   return <PencilSquareIcon aria-hidden className={className} />
@@ -252,6 +255,77 @@ function FileTreeList({
   )
 }
 
+function FlatTreeItemRow({
+  item,
+  selectedPath,
+  onSelectFile,
+  onToggleFolder,
+  isExpanded,
+  openMenu,
+  onFileHistory,
+  t
+}: {
+  item: FlatFileTreeItem
+  selectedPath: string | null
+  onSelectFile: (path: string) => void
+  onToggleFolder: (path: string) => void
+  isExpanded: (path: string) => boolean
+  openMenu: OpenContextMenu
+  onFileHistory: (path: string) => void
+  t: TFunction
+}) {
+  const { node, depth } = item
+  if (node.type === 'folder') {
+    const open = isExpanded(node.path)
+    return (
+      <button
+        type="button"
+        onClick={() => onToggleFolder(node.path)}
+        onContextMenu={(event) =>
+          openMenu(
+            event,
+            commitFolderContextMenuItems(node.path, open, () => onToggleFolder(node.path), t)
+          )
+        }
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-gf-fg-muted hover:bg-gf-surface-hover"
+        style={{ paddingLeft: 12 + depth * 14 }}
+      >
+        <Chevron open={open} />
+        <span className="min-w-0 flex-1 truncate">{node.name}</span>
+        <FileChangeBadges counts={node.counts} compact t={t} />
+      </button>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelectFile(node.path)}
+      onContextMenu={(event) =>
+        openMenu(
+          event,
+          commitFileContextMenuItems(
+            node.path,
+            node.name,
+            () => onSelectFile(node.path),
+            () => onFileHistory(node.path),
+            t
+          )
+        )
+      }
+      className={`flex w-full items-center gap-2 py-1.5 text-left text-sm hover:bg-gf-surface-hover ${
+        selectedPath === node.path ? 'bg-gf-surface text-gf-fg' : 'text-gf-fg-muted'
+      }`}
+      style={{ paddingLeft: 28 + depth * 14 }}
+    >
+      <span className={`shrink-0 ${commitFileKindColor(node.kind)}`}>
+        <FileKindIcon kind={node.kind} />
+      </span>
+      <span className="min-w-0 truncate font-mono text-xs">{node.name}</span>
+    </button>
+  )
+}
+
 export function CommitFileList({
   files,
   loading,
@@ -295,6 +369,28 @@ export function CommitFileList({
     [files, sortAscending]
   )
 
+  const flatTreeItems = useMemo(
+    () => flattenVisibleFileTree(fileTree, expandedPaths),
+    [fileTree, expandedPaths]
+  )
+
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const useVirtualization = !embedded && shouldVirtualize(files.length)
+
+  const pathVirtualizer = useVirtualizer({
+    count: useVirtualization && viewMode === 'path' ? sortedFiles.length : 0,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => FILE_ROW_HEIGHT,
+    overscan: VIRTUAL_OVERSCAN
+  })
+
+  const treeVirtualizer = useVirtualizer({
+    count: useVirtualization && viewMode === 'tree' ? flatTreeItems.length : 0,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => FILE_ROW_HEIGHT,
+    overscan: VIRTUAL_OVERSCAN
+  })
+
   const toggleFolder = (path: string) => {
     setExpandedPaths((current) => {
       const next = new Set(current)
@@ -307,6 +403,8 @@ export function CommitFileList({
   const expandAll = () => {
     setExpandedPaths(new Set(collectFolderPaths(fileTree)))
   }
+
+  const isExpanded = (path: string) => expandedPaths.has(path)
 
   return (
     <div
@@ -386,7 +484,10 @@ export function CommitFileList({
         )}
       </div>
 
-      <div className={embedded ? '' : 'min-h-0 flex-1 overflow-y-auto'}>
+      <div
+        ref={embedded ? undefined : scrollRef}
+        className={embedded ? '' : 'min-h-0 flex-1 overflow-y-auto'}
+      >
         {(loading || (showAllFiles && loadingAllFiles)) && (
           <p className="px-4 py-3 text-sm text-gf-fg-subtle">{t('detail.loadingFiles')}</p>
         )}
@@ -399,31 +500,87 @@ export function CommitFileList({
           <p className="px-4 py-3 text-sm text-gf-fg-subtle">{t('detail.noFileChanges')}</p>
         )}
         {!loading && !error && viewMode === 'path' && (
-          <div className="py-1">
-            {sortedFiles.map((file) => (
-              <PathFileRow
-                key={file.path}
-                file={file}
-                selected={selectedPath === file.path}
-                onSelect={() => onSelectFile(file.path)}
-                openMenu={openMenu}
-                onFileHistory={onFileHistory}
-                t={t}
-              />
-            ))}
-          </div>
+          useVirtualization ? (
+            <div style={{ height: pathVirtualizer.getTotalSize(), position: 'relative' }}>
+              {pathVirtualizer.getVirtualItems().map((virtualItem) => {
+                const file = sortedFiles[virtualItem.index]!
+                return (
+                  <div
+                    key={virtualItem.key}
+                    style={{
+                      position: 'absolute', top: 0, left: 0, width: '100%',
+                      height: `${virtualItem.size}px`,
+                      transform: `translateY(${virtualItem.start}px)`
+                    }}
+                  >
+                    <PathFileRow
+                      file={file}
+                      selected={selectedPath === file.path}
+                      onSelect={() => onSelectFile(file.path)}
+                      openMenu={openMenu}
+                      onFileHistory={onFileHistory}
+                      t={t}
+                    />
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="py-1">
+              {sortedFiles.map((file) => (
+                <PathFileRow
+                  key={file.path}
+                  file={file}
+                  selected={selectedPath === file.path}
+                  onSelect={() => onSelectFile(file.path)}
+                  openMenu={openMenu}
+                  onFileHistory={onFileHistory}
+                  t={t}
+                />
+              ))}
+            </div>
+          )
         )}
         {!loading && !error && viewMode === 'tree' && (
-          <FileTreeList
-            root={fileTree}
-            selectedPath={selectedPath}
-            onSelectFile={onSelectFile}
-            expandedPaths={expandedPaths}
-            onToggleFolder={toggleFolder}
-            openMenu={openMenu}
-            onFileHistory={onFileHistory}
-            t={t}
-          />
+          useVirtualization ? (
+            <div className="py-1" style={{ height: treeVirtualizer.getTotalSize(), position: 'relative' }}>
+              {treeVirtualizer.getVirtualItems().map((virtualItem) => {
+                const item = flatTreeItems[virtualItem.index]!
+                return (
+                  <div
+                    key={virtualItem.key}
+                    style={{
+                      position: 'absolute', top: 0, left: 0, width: '100%',
+                      height: `${virtualItem.size}px`,
+                      transform: `translateY(${virtualItem.start}px)`
+                    }}
+                  >
+                    <FlatTreeItemRow
+                      item={item}
+                      selectedPath={selectedPath}
+                      onSelectFile={onSelectFile}
+                      onToggleFolder={toggleFolder}
+                      isExpanded={isExpanded}
+                      openMenu={openMenu}
+                      onFileHistory={onFileHistory}
+                      t={t}
+                    />
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <FileTreeList
+              root={fileTree}
+              selectedPath={selectedPath}
+              onSelectFile={onSelectFile}
+              expandedPaths={expandedPaths}
+              onToggleFolder={toggleFolder}
+              openMenu={openMenu}
+              onFileHistory={onFileHistory}
+              t={t}
+            />
+          )
         )}
       </div>
 

@@ -7,4 +7,106 @@ if ! git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then
   exit 0
 fi
 
-exec bash "$ROOT/scripts/run-ts.sh" "$ROOT/scripts/check-release-pre-push.ts" < /dev/stdin
+cd "$ROOT"
+
+# Git feeds the pushed refs to this hook on stdin. Capture them before
+# running anything else so npm/vitest can't accidentally consume them —
+# the release check at the bottom needs the ref lines.
+HOOK_STDIN="$(cat || true)"
+
+# --- Get the hook onto the Node.js version declared in .nvmrc --------------
+# Git always execs hook scripts directly via their shebang, bypassing the
+# user's login shell entirely — so ~/.bashrc, ~/.zshrc, and any nvm/fnm
+# "auto switch on cd" shell integration never fire here. Whatever "node"
+# happens to be first on PATH (a distro package, another tool's bundled
+# Node, ...) wins by default. `nvm use` alone isn't enough either: if the
+# version was never installed under the resolved NVM_DIR, it fails silently
+# and leaves PATH untouched. And NVM_DIR resolution itself can go wrong if
+# $HOME differs from what a normal login shell would see — which some
+# sandboxed or GUI-launched process environments do — so HOME is resolved
+# defensively here rather than trusted blindly.
+if [[ -f "$ROOT/.nvmrc" ]]; then
+  REQUIRED_NODE="$(cat "$ROOT/.nvmrc")"
+  REQUIRED_NODE="${REQUIRED_NODE//[$'\t\r\n ']/}"
+  REQUIRED_MAJOR="${REQUIRED_NODE%%.*}"
+
+  resolve_home() {
+    if [[ -n "${HOME:-}" && -d "${HOME:-}" ]]; then
+      printf '%s' "$HOME"
+      return
+    fi
+    if command -v getent &>/dev/null; then
+      local passwd_home
+      passwd_home="$(getent passwd "$(id -un)" 2>/dev/null | cut -d: -f6)" || true
+      if [[ -n "$passwd_home" ]]; then
+        printf '%s' "$passwd_home"
+        return
+      fi
+    fi
+    eval printf '%s' "~$(id -un)" 2>/dev/null || true
+  }
+
+  EFFECTIVE_HOME="$(resolve_home)" || true
+
+  NVM_DIR_CANDIDATES=()
+  [[ -n "${NVM_DIR:-}" ]] && NVM_DIR_CANDIDATES+=("$NVM_DIR")
+  [[ -n "${HOME:-}" ]] && NVM_DIR_CANDIDATES+=("$HOME/.nvm")
+  [[ -n "$EFFECTIVE_HOME" ]] && NVM_DIR_CANDIDATES+=("$EFFECTIVE_HOME/.nvm")
+
+  ACTIVATION_METHOD="none"
+
+  for candidate in "${NVM_DIR_CANDIDATES[@]:-}"; do
+    [[ -n "$candidate" && -s "$candidate/nvm.sh" ]] || continue
+    export NVM_DIR="$candidate"
+    # shellcheck source=/dev/null
+    source "$NVM_DIR/nvm.sh" --no-use || true
+    if command -v nvm &>/dev/null; then
+      if nvm use "$REQUIRED_NODE" --silent 2>/dev/null; then
+        ACTIVATION_METHOD="nvm ($NVM_DIR)"
+        break
+      fi
+      if nvm install "$REQUIRED_NODE" --silent 2>/dev/null && nvm use "$REQUIRED_NODE" --silent 2>/dev/null; then
+        ACTIVATION_METHOD="nvm-install ($NVM_DIR)"
+        break
+      fi
+    fi
+  done
+
+  if [[ "$ACTIVATION_METHOD" == "none" ]] && command -v fnm &>/dev/null; then
+    eval "$(fnm env --use-on-cd 2>/dev/null || true)"
+    if fnm use "$REQUIRED_NODE" --install-if-missing --silent-if-unchanged 2>/dev/null; then
+      ACTIVATION_METHOD="fnm"
+    fi
+  fi
+
+  # Last resort: skip nvm's/fnm's own function entirely and prepend an
+  # already-installed matching version directory straight onto PATH. Covers
+  # the case where NVM_DIR was found but `nvm use`/`install` still failed for
+  # some other reason (e.g. no network for a fresh install) while a usable
+  # version is already sitting on disk from a previous install.
+  if [[ "$ACTIVATION_METHOD" == "none" ]]; then
+    for candidate in "${NVM_DIR_CANDIDATES[@]:-}"; do
+      [[ -n "$candidate" && -d "$candidate/versions/node" ]] || continue
+      match="$(find "$candidate/versions/node" -maxdepth 1 -type d -name "v${REQUIRED_MAJOR}.*" 2>/dev/null | sort -V | tail -n1)" || true
+      if [[ -n "$match" && -x "$match/bin/node" ]]; then
+        export PATH="$match/bin:$PATH"
+        ACTIVATION_METHOD="direct-path ($match)"
+        break
+      fi
+    done
+  fi
+
+  ACTIVE_NODE="$(command -v node &>/dev/null && node --version || echo none)"
+  echo "Node activation: HOME=${HOME:-<unset>} resolved_home=${EFFECTIVE_HOME:-<unresolved>} method=$ACTIVATION_METHOD active_node=$ACTIVE_NODE" >&2
+fi
+
+# Fail fast with a clear message if the above didn't actually get us onto
+# the right Node version (or a dependency bump broke jsdom), instead of
+# discovering it 40s into a test run via a wall of duplicated stack traces.
+bash "$ROOT/scripts/check-test-env.sh"
+
+echo "Running pre-push checks (typecheck, test)..." >&2
+npm run typecheck < /dev/null
+npm run test < /dev/null
+
+printf '%s' "$HOOK_STDIN" | bash "$ROOT/scripts/run-ts.sh" "$ROOT/scripts/check-release-pre-push.ts"

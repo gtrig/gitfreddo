@@ -268,15 +268,15 @@ export function DiffOverlay({ onClose }: DiffOverlayProps) {
           </button>
         </div>
       </header>
-      <div className="min-h-0 flex-1 overflow-auto p-4">
+      <div className="min-h-0 flex-1 flex flex-col">
         {loading || (showBlame && blameQuery.isLoading) ? (
-          <p className="text-sm text-gf-fg-subtle">{t('diff.loadingDiff')}</p>
+          <p className="p-4 text-sm text-gf-fg-subtle">{t('diff.loadingDiff')}</p>
         ) : activeError ? (
-          <p className="text-sm text-red-400">{(activeError as Error).message ?? t('diff.loadError')}</p>
+          <p className="p-4 text-sm text-red-400">{(activeError as Error).message ?? t('diff.loadError')}</p>
         ) : rows.length === 0 ? (
-          <p className="text-sm text-gf-fg-subtle">{t('diff.noChangesInRange')}</p>
+          <p className="p-4 text-sm text-gf-fg-subtle">{t('diff.noChangesInRange')}</p>
         ) : effectiveMode === 'split' ? (
-          <SplitDiffView rows={splitRows} loading={loading} />
+          <SplitDiffView rows={splitRows} loading={loading} className="min-h-0 flex-1" />
         ) : (
           <UnifiedDiffView
             rows={rows}
@@ -286,6 +286,7 @@ export function DiffOverlay({ onClose }: DiffOverlayProps) {
             hunkStageMode={hunkStageMode}
             onHunkAction={(groupIndex) => void handleHunkAction(groupIndex)}
             hunkBusy={stageApplyPatch.isPending}
+            className="min-h-0 flex-1"
           />
         )}
       </div>

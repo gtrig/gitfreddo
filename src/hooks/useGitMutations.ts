@@ -86,6 +86,7 @@ export function useGitMutations() {
     push: wrap('push'),
     pull: wrap('pull'),
     merge: wrap('merge.start'),
+    squashMergeInto: wrap('merge.squashInto'),
     mergeAbort: wrap('merge.abort'),
     mergeContinue: wrap('merge.continue'),
     rebaseStart: wrap('rebase.start'),

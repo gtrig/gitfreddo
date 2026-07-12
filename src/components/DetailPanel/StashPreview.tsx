@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { useStashFiles } from '@/hooks/useGit'
 import { useSelectionStore } from '@/stores/selection'
 import { parseCommitNameStatus } from '@/lib/git/commitFiles'
@@ -9,6 +10,8 @@ import type { CommitFileItem, GitStashEntry } from '@/lib/types'
 import { ContextMenu } from '@/components/Ui/ContextMenu'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { commitFileContextMenuItems, commitFolderContextMenuItems } from '@/lib/context-menus/detailPanelContextMenus'
+import { flattenVisibleFileTree } from '@/lib/ui/flattenVisibleFileTree'
+import { FILE_ROW_HEIGHT, VIRTUAL_OVERSCAN, shouldVirtualize } from '@/lib/ui/virtualList'
 
 interface StashPreviewProps {
   stash: GitStashEntry
@@ -26,6 +29,7 @@ export function StashPreview({ stash }: StashPreviewProps) {
   const setSelectedStashFile = useSelectionStore((s) => s.setSelectedStashFile)
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set())
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   const changedFiles = useMemo(
     () => (filesOutput ? parseCommitNameStatus(filesOutput) : []),
@@ -38,6 +42,20 @@ export function StashPreview({ stash }: StashPreviewProps) {
   )
 
   const tree = useMemo(() => buildFileTree(treeItems), [treeItems])
+
+  const flatTreeItems = useMemo(
+    () => flattenVisibleFileTree(tree, expandedPaths),
+    [tree, expandedPaths]
+  )
+
+  const useVirtualization = shouldVirtualize(treeItems.length)
+
+  const virtualizer = useVirtualizer({
+    count: useVirtualization ? flatTreeItems.length : 0,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => FILE_ROW_HEIGHT,
+    overscan: VIRTUAL_OVERSCAN
+  })
 
   function toggleExpanded(path: string) {
     setExpandedPaths((current) => {
@@ -121,11 +139,31 @@ export function StashPreview({ stash }: StashPreviewProps) {
           {t('detail.expandAll')}
         </button>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
         {!isLoading && changedFiles.length === 0 && (
           <p className="px-2 text-xs text-gf-fg-subtle">{t('detail.noFileChangesInStash')}</p>
         )}
-        {tree.children.map((node) => renderNode(node, 0))}
+        {useVirtualization ? (
+          <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+            {virtualizer.getVirtualItems().map((virtualItem) => {
+              const item = flatTreeItems[virtualItem.index]!
+              return (
+                <div
+                  key={virtualItem.key}
+                  style={{
+                    position: 'absolute', top: 0, left: 0, width: '100%',
+                    height: `${virtualItem.size}px`,
+                    transform: `translateY(${virtualItem.start}px)`
+                  }}
+                >
+                  {renderNode(item.node, item.depth)}
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          tree.children.map((node) => renderNode(node, 0))
+        )}
       </div>
 
       {menuState && (

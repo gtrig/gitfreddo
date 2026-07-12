@@ -99,6 +99,13 @@ export interface GitMergeStartResult {
   conflictedPaths: string[]
 }
 
+export interface GitSquashMergeIntoResult {
+  status: 'completed' | 'conflicts'
+  conflictedPaths: string[]
+  commitHash?: string
+  targetBranch: string
+}
+
 export interface GitRepoStatus {
   path: string
   root: string

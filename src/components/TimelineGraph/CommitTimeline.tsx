@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
 import { useLogGraph, useBranches, useRepoStatus, useRemotes, useStashList, useTags, useWorkingStatus, useMergeStatus } from '@/hooks/useGit'
 import { useTimelineColumnSizes } from '@/hooks/useTimelineColumnSizes'
 import { useTimelineColumnVisibility } from '@/hooks/useTimelineColumnVisibility'
-import { useTimelineVirtualWindow } from '@/hooks/useTimelineVirtualWindow'
+import { useVirtualizer } from '@tanstack/react-virtual'
+import { VIRTUAL_OVERSCAN } from '@/lib/ui/virtualList'
 import { useTimelineDragSelect } from '@/hooks/useTimelineDragSelect'
 import { useCommitContextMenu } from '@/hooks/useCommitContextMenu'
 import { useTimelineRefContextMenu } from '@/hooks/useTimelineRefContextMenu'
@@ -329,12 +330,44 @@ export function CommitTimeline() {
   const selectedHash = primaryHash
   const relativeNow = useRelativeNow()
   const scrollRef = useRef<HTMLDivElement>(null)
-  const virtualWindow = useTimelineVirtualWindow(
-    scrollRef,
-    commits.length,
-    TIMELINE_ROW_HEIGHT,
-    timelinePrefixHeight
+
+  // Maintain scroll offset state so the virtualizer recalculates when the user scrolls.
+  // ResizeObserver handles viewport changes. We track scrollTop ourselves because
+  // the prefix rows (merge / working) sit above the virtualizer's item area.
+  const [scrollTop, setScrollTop] = useState(0)
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const onScroll = () => setScrollTop(el.scrollTop)
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [])
+
+  const timelineVirtualizer = useVirtualizer({
+    count: commits.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => TIMELINE_ROW_HEIGHT,
+    overscan: VIRTUAL_OVERSCAN,
+    paddingStart: timelinePrefixHeight
+  })
+
+  const timelineVirtualItems = timelineVirtualizer.getVirtualItems()
+  const vtStart = timelineVirtualItems[0]?.index ?? 0
+  const vtEnd =
+    timelineVirtualItems.length > 0
+      ? timelineVirtualItems[timelineVirtualItems.length - 1]!.index + 1
+      : 0
+  const virtualWindow = useMemo(
+    () => ({
+      start: vtStart,
+      end: vtEnd,
+      topSpacerHeight: vtStart * TIMELINE_ROW_HEIGHT,
+      bottomSpacerHeight: Math.max(0, commits.length - vtEnd) * TIMELINE_ROW_HEIGHT
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [vtStart, vtEnd, commits.length, scrollTop]
   )
+
   const dragSelect = useTimelineDragSelect({
     scrollRef,
     commits,
@@ -349,8 +382,8 @@ export function CommitTimeline() {
     }
   })
   const visibleCommits = useMemo(
-    () => commits.slice(virtualWindow.start, virtualWindow.end),
-    [commits, virtualWindow.end, virtualWindow.start]
+    () => commits.slice(vtStart, vtEnd),
+    [commits, vtStart, vtEnd]
   )
 
   useEffect(() => {

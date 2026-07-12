@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { ClockIcon, XMarkIcon } from '@heroicons/react/24/outline'
@@ -14,6 +14,8 @@ import { useWorkspaceStore } from '@/stores/workspace'
 import { defaultFileContentViewMode, type FileContentViewMode } from '@/lib/diff/fileViewMode'
 import { parseUnifiedDiffRows, splitRowsForDisplay } from '@/lib/diff/unifiedDiff'
 import type { GitCommit } from '@/lib/types'
+import { useVirtualizer } from '@tanstack/react-virtual'
+import { VIRTUAL_OVERSCAN, shouldVirtualize } from '@/lib/ui/virtualList'
 
 interface FileHistoryOverlayProps {
   path: string
@@ -59,6 +61,8 @@ export function FileHistoryOverlay({ path, onClose }: FileHistoryOverlayProps) {
     defaultFileContentViewMode(settings?.diffViewMode)
   )
 
+  const sidebarScrollRef = useRef<HTMLDivElement>(null)
+
   const { data: commits, isLoading, error } = useQuery({
     queryKey: ['repo', repoPath, 'log.file', path],
     queryFn: async () =>
@@ -87,6 +91,25 @@ export function FileHistoryOverlay({ path, onClose }: FileHistoryOverlayProps) {
     path,
     Boolean(selectedHash) && viewMode === 'full'
   )
+
+  const commitList = commits ?? []
+  const useVirtualization = shouldVirtualize(commitList.length)
+  // CommitRow: 2px border + ~20px hash + ~20px subject + ~16px author = ~58px
+  const COMMIT_ROW_HEIGHT = 58
+
+  const sidebarVirtualizer = useVirtualizer({
+    count: useVirtualization ? commitList.length : 0,
+    getScrollElement: () => sidebarScrollRef.current,
+    estimateSize: () => COMMIT_ROW_HEIGHT,
+    overscan: VIRTUAL_OVERSCAN
+  })
+
+  useEffect(() => {
+    if (!useVirtualization || !selectedHash) return
+    const idx = commitList.findIndex((c) => c.hash === selectedHash)
+    if (idx >= 0) sidebarVirtualizer.scrollToIndex(idx, { align: 'auto' })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedHash])
 
   const rows = useMemo(
     () => (diffQuery.data?.unified ? parseUnifiedDiffRows(diffQuery.data.unified) : []),
@@ -124,9 +147,31 @@ export function FileHistoryOverlay({ path, onClose }: FileHistoryOverlayProps) {
             </p>
           )}
           {commits && (
-            <div className="min-h-0 flex-1 overflow-y-auto">
+            <div ref={sidebarScrollRef} className="min-h-0 flex-1 overflow-y-auto">
               {commits.length === 0 ? (
                 <p className="px-3 py-2 text-sm text-gf-fg-subtle">{t('modals.fileHistory.noCommits')}</p>
+              ) : useVirtualization ? (
+                <div style={{ height: sidebarVirtualizer.getTotalSize(), position: 'relative' }}>
+                  {sidebarVirtualizer.getVirtualItems().map((virtualItem) => {
+                    const commit = commitList[virtualItem.index]!
+                    return (
+                      <div
+                        key={virtualItem.key}
+                        style={{
+                          position: 'absolute', top: 0, left: 0, width: '100%',
+                          height: `${virtualItem.size}px`,
+                          transform: `translateY(${virtualItem.start}px)`
+                        }}
+                      >
+                        <CommitRow
+                          commit={commit}
+                          selected={commit.hash === selectedHash}
+                          onSelect={() => setSelectedHash(commit.hash)}
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
               ) : (
                 commits.map((commit) => (
                   <CommitRow
@@ -146,35 +191,35 @@ export function FileHistoryOverlay({ path, onClose }: FileHistoryOverlayProps) {
             <OpenInEditorButton path={path} />
             <FileViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
           </div>
-          <div className="min-h-0 flex-1 overflow-auto p-4">
+          <div className="min-h-0 flex-1 flex flex-col">
             {!selectedHash ? (
-              <p className="text-sm text-gf-fg-subtle">{t('modals.fileHistory.selectCommit')}</p>
+              <p className="p-4 text-sm text-gf-fg-subtle">{t('modals.fileHistory.selectCommit')}</p>
             ) : viewMode === 'full' ? (
               fileReadQuery.isLoading ? (
                 <FullFileView content="" loading />
               ) : fileReadQuery.error ? (
-                <p className="text-sm text-red-400">
+                <p className="p-4 text-sm text-red-400">
                   {fileReadQuery.error instanceof Error
                     ? fileReadQuery.error.message
                     : t('diff.failedToLoadFile')}
                 </p>
               ) : (
-                <FullFileView content={fileReadQuery.data ?? ''} />
+                <FullFileView content={fileReadQuery.data ?? ''} className="min-h-0 flex-1" />
               )
             ) : diffQuery.isLoading ? (
-              <p className="text-sm text-gf-fg-subtle">{t('diff.loadingDiff')}</p>
+              <p className="p-4 text-sm text-gf-fg-subtle">{t('diff.loadingDiff')}</p>
             ) : diffQuery.error ? (
-              <p className="text-sm text-red-400">
+              <p className="p-4 text-sm text-red-400">
                 {diffQuery.error instanceof Error
                   ? diffQuery.error.message
                   : t('modals.fileHistory.diffFailed')}
               </p>
             ) : rows.length === 0 ? (
-              <p className="text-sm text-gf-fg-subtle">{t('diff.noChangesInRange')}</p>
+              <p className="p-4 text-sm text-gf-fg-subtle">{t('diff.noChangesInRange')}</p>
             ) : viewMode === 'split' ? (
-              <SplitDiffView rows={splitRows} loading={diffQuery.isLoading} />
+              <SplitDiffView rows={splitRows} loading={diffQuery.isLoading} className="min-h-0 flex-1" />
             ) : (
-              <UnifiedDiffView rows={rows} loading={diffQuery.isLoading} />
+              <UnifiedDiffView rows={rows} loading={diffQuery.isLoading} className="min-h-0 flex-1" />
             )}
           </div>
         </main>

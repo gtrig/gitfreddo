@@ -17,6 +17,7 @@ export type {
   GitStashEntry,
   GitMergeStatus,
   GitMergeStartResult,
+  GitSquashMergeIntoResult,
   GitRepoStatus,
   GitWorktreeEntry,
   GitHook,

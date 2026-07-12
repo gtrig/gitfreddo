@@ -44,6 +44,22 @@ describe('localBranchContextMenuItems', () => {
 
     expect(items.find((item) => item.id === 'checkout')?.disabled).toBe(true)
     expect(items.some((item) => item.id === 'delete')).toBe(false)
+    expect(items.some((item) => item.id === 'squash-merge-into')).toBe(false)
+  })
+
+  it('offers squash and merge into when handler is provided for the current branch', () => {
+    const items = localBranchContextMenuItems(branch({ isCurrent: true }), {
+      onCheckout: noop,
+      onSelectCommit: noop,
+      onMerge: noop,
+      onSquashMergeInto: noop,
+      onRename: noop,
+      onDelete: noop
+    })
+
+    expect(items.find((item) => item.id === 'squash-merge-into')?.label).toBe(
+      'Squash and merge into…'
+    )
   })
 
   it('offers create PR when ahead and handler is provided', () => {

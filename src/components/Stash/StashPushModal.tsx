@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { Modal, ActionButton, Checkbox, FieldLabel, TextInput } from '@/components/Ui/Modal'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useToastStore } from '@/stores/toast'
+import { shouldVirtualize, CODE_LINE_HEIGHT, VIRTUAL_OVERSCAN } from '@/lib/ui/virtualList'
 
 export interface StashPushOptions {
   message?: string
@@ -33,6 +35,16 @@ export function StashPushModal({ open, initialMessage = '', onClose }: StashPush
     setIncludeIgnored(false)
     setPaths([])
   }, [open, initialMessage])
+
+  const pathsScrollRef = useRef<HTMLUListElement>(null)
+  const usePathsVirtualization = shouldVirtualize(paths.length)
+
+  const pathsVirtualizer = useVirtualizer({
+    count: usePathsVirtualization ? paths.length : 0,
+    getScrollElement: () => pathsScrollRef.current,
+    estimateSize: () => CODE_LINE_HEIGHT,
+    overscan: VIRTUAL_OVERSCAN
+  })
 
   async function handlePickPaths() {
     const picked = await window.gitfreddo.pickFiles()
@@ -87,12 +99,33 @@ export function StashPushModal({ open, initialMessage = '', onClose }: StashPush
             {t('workingTree.stashPickPaths')}
           </ActionButton>
           {paths.length > 0 && (
-            <ul className="max-h-32 overflow-y-auto rounded border border-gf-border bg-gf-bg-deep p-2 text-xs font-mono text-gf-fg-muted">
-              {paths.map((path) => (
-                <li key={path} className="truncate">
-                  {path}
-                </li>
-              ))}
+            <ul
+              ref={pathsScrollRef}
+              className="max-h-32 overflow-y-auto rounded border border-gf-border bg-gf-bg-deep p-2 text-xs font-mono text-gf-fg-muted"
+            >
+              {usePathsVirtualization ? (
+                <div style={{ height: pathsVirtualizer.getTotalSize(), position: 'relative' }}>
+                  {pathsVirtualizer.getVirtualItems().map((virtualItem) => (
+                    <div
+                      key={virtualItem.key}
+                      style={{
+                        position: 'absolute', top: 0, left: 0, width: '100%',
+                        height: `${virtualItem.size}px`,
+                        transform: `translateY(${virtualItem.start}px)`
+                      }}
+                      className="truncate"
+                    >
+                      {paths[virtualItem.index]}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                paths.map((path) => (
+                  <li key={path} className="truncate">
+                    {path}
+                  </li>
+                ))
+              )}
             </ul>
           )}
         </div>

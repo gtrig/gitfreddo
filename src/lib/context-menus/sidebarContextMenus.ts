@@ -47,6 +47,7 @@ export function localBranchContextMenuItems(
     onCheckout: (params: BranchCheckoutParams) => void
     onSelectCommit: (hash: string) => void
     onMerge: (name: string) => void
+    onSquashMergeInto?: (name: string) => void
     onRename: (name: string) => void
     onDelete: (name: string) => void
     onSetUpstream?: (name: string) => void
@@ -130,6 +131,14 @@ export function localBranchContextMenuItems(
       onClick: () => handlers.onDelete(branch.name)
     })
   } else {
+    items.push(separator('sep-actions'))
+    if (handlers.onSquashMergeInto) {
+      items.push({
+        id: 'squash-merge-into',
+        label: t ? t('contextMenu.sidebar.squashMergeInto') : 'Squash and merge into…',
+        onClick: () => handlers.onSquashMergeInto!(branch.name)
+      })
+    }
     items.push(separator('sep-rename'))
     items.push({
       id: 'rename',

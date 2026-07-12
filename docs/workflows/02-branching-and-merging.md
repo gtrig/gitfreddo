@@ -32,6 +32,12 @@ Right-click a local branch:
    - **No-ff** — always creates a merge commit
    - **Squash** — squashes all commits into one
 
+Or, from the **current** branch:
+
+1. Right-click the checked-out branch → **Squash and merge into…**
+2. Pick the target branch and commit message
+3. GitFreddo checks out the target, squash-merges your branch, and creates the commit
+
 If conflicts occur, see [Conflicts](08-conflicts.md).
 
 ## Set upstream

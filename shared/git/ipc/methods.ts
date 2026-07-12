@@ -498,6 +498,11 @@ export const GIT_IPC_METHODS = {
     commands: ['merge.start'],
     stateSource: 'git'
   },
+  'merge.squashInto': {
+    invalidates: ['branch.list', 'working.status', 'log.graph', 'merge.status'],
+    commands: ['switch.checkout', 'merge.start', 'commit.create'],
+    stateSource: 'git'
+  },
   'merge.abort': {
     invalidates: ['working.status', 'merge.status'],
     commands: ['merge.abort'],
@@ -692,6 +697,7 @@ export interface GitIpcParamsMap {
   'submodule.setUrl': P.SubmoduleSetUrlParams
   'merge.status': void
   'merge.start': P.MergeStartParams
+  'merge.squashInto': P.MergeSquashIntoParams
   'merge.abort': void
   'merge.continue': P.MergeContinueParams | void
   'rebase.start': P.RebaseStartParams
@@ -808,6 +814,7 @@ export interface GitIpcResultMap {
   'submodule.setUrl': void
   'merge.status': R.GitMergeStatus
   'merge.start': R.GitMergeStartResult
+  'merge.squashInto': R.GitSquashMergeIntoResult
   'merge.abort': void
   'merge.continue': void
   'rebase.start': void

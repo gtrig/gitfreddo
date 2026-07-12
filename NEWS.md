@@ -5,6 +5,8 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+- Squash and merge your current branch into another (e.g. `main`) from the branch sidebar — no manual checkout first.
+- Large repositories scroll faster: diff views, file lists, the sidebar, modals, and the commit timeline all virtualize long lists so only visible rows hit the DOM.
 - Commit descriptions in the detail panel render Markdown (lists, bold, links, and more).
 - The right detail panel stays hidden until you select a commit, uncommitted changes, or merge conflicts — giving the timeline more room by default.
 - Error notifications now show a short, plain-language message instead of raw git/network output; the full technical details are still available in the Logs drawer.

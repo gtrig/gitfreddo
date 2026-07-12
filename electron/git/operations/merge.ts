@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
+import { buildSquashMergeIntoMessage } from '../../../src/lib/git/squashMergeInto'
 import {
   buildBranchShowCurrentArgs,
   buildDiffConflictNamesArgs,
@@ -10,9 +11,10 @@ import {
 } from '../../../shared/git/commands'
 import { runCommand, runGitOrThrow } from '../git-runner'
 import { gitMetadataPath, readGitMetadataFile, rebaseInProgress, resolveGitDir } from '../git-dir'
+import { branchCheckout } from './branch'
 import { continueGitOperation } from './commit-message'
-import { workingStatus } from './status'
-import type { GitMergeStartResult, GitMergeStatus } from '../types'
+import { commitCreate, workingStatus } from './status'
+import type { GitMergeStartResult, GitMergeStatus, GitSquashMergeIntoResult } from '../types'
 
 async function shortHash(cwd: string, gitBinaryPath: string, ref: string): Promise<string> {
   try {
@@ -160,6 +162,54 @@ export async function mergeStart(
 
   const detail = formatMergeFailureMessage(result.stderr, result.stdout, result.code)
   throw new Error(detail)
+}
+
+export async function mergeSquashInto(
+  cwd: string,
+  gitBinaryPath: string,
+  params: { sourceBranch: string; targetBranch: string; message?: string }
+): Promise<GitSquashMergeIntoResult> {
+  const sourceBranch = params.sourceBranch.trim()
+  const targetBranch = params.targetBranch.trim()
+  if (!sourceBranch || !targetBranch) {
+    throw new Error('Source and target branch are required.')
+  }
+  if (sourceBranch === targetBranch) {
+    throw new Error('Source and target branch must differ.')
+  }
+
+  const status = await workingStatus(cwd, gitBinaryPath)
+  if (
+    status.staged.length > 0 ||
+    status.unstaged.length > 0 ||
+    status.untracked.length > 0 ||
+    status.conflicted.length > 0
+  ) {
+    throw new Error('Working tree must be clean before squash merging into another branch.')
+  }
+  if (status.branch !== sourceBranch) {
+    throw new Error(`Checkout ${sourceBranch} before squash merging into another branch.`)
+  }
+
+  await branchCheckout(cwd, gitBinaryPath, targetBranch)
+
+  const result = await runCommand(
+    mergeStartCommand,
+    { branch: sourceBranch, squash: true },
+    { cwd, gitBinaryPath }
+  )
+  if (result.code !== 0) {
+    const workStatus = await workingStatus(cwd, gitBinaryPath)
+    const conflictedPaths = workStatus.conflicted.map((file) => file.path)
+    if (conflictedPaths.length > 0) {
+      return { status: 'conflicts', conflictedPaths, targetBranch }
+    }
+    throw new Error(formatMergeFailureMessage(result.stderr, result.stdout, result.code))
+  }
+
+  const commitMessage = params.message?.trim() || buildSquashMergeIntoMessage(sourceBranch)
+  const commitHash = await commitCreate(cwd, gitBinaryPath, commitMessage)
+  return { status: 'completed', conflictedPaths: [], commitHash, targetBranch }
 }
 
 export function parseConflictPathsFromMergeOutput(text: string): string[] {

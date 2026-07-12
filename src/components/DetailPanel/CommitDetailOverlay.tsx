@@ -143,35 +143,35 @@ export function CommitDetailOverlay({ commit, onClose }: CommitDetailOverlayProp
               <FileViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
             </div>
           </div>
-          <div className="min-h-0 flex-1 overflow-auto p-4">
+          <div className="min-h-0 flex-1 flex flex-col">
             {!selectedCommitFile ? (
-              <p className="text-sm text-gf-fg-subtle">{t('detail.selectFileForDiff')}</p>
+              <p className="p-4 text-sm text-gf-fg-subtle">{t('detail.selectFileForDiff')}</p>
             ) : viewMode === 'full' ? (
               fileReadQuery.isLoading ? (
                 <FullFileView content="" loading />
               ) : fileReadQuery.error ? (
-                <p className="text-sm text-red-400">
+                <p className="p-4 text-sm text-red-400">
                   {fileReadQuery.error instanceof Error
                     ? fileReadQuery.error.message
                     : t('diff.failedToLoadFile')}
                 </p>
               ) : (
-                <FullFileView content={fileReadQuery.data ?? ''} />
+                <FullFileView content={fileReadQuery.data ?? ''} className="min-h-0 flex-1" />
               )
             ) : diffQuery.isLoading ? (
-              <p className="text-sm text-gf-fg-subtle">{t('diff.loadingDiff')}</p>
+              <p className="p-4 text-sm text-gf-fg-subtle">{t('diff.loadingDiff')}</p>
             ) : diffQuery.error ? (
-              <p className="text-sm text-red-400">
+              <p className="p-4 text-sm text-red-400">
                 {diffQuery.error instanceof Error
                   ? diffQuery.error.message
                   : t('modals.fileHistory.diffFailed')}
               </p>
             ) : rows.length === 0 ? (
-              <p className="text-sm text-gf-fg-subtle">{t('diff.noChangesInRange')}</p>
+              <p className="p-4 text-sm text-gf-fg-subtle">{t('diff.noChangesInRange')}</p>
             ) : viewMode === 'split' ? (
-              <SplitDiffView rows={splitRows} loading={diffQuery.isLoading} />
+              <SplitDiffView rows={splitRows} loading={diffQuery.isLoading} className="min-h-0 flex-1" />
             ) : (
-              <UnifiedDiffView rows={rows} loading={diffQuery.isLoading} />
+              <UnifiedDiffView rows={rows} loading={diffQuery.isLoading} className="min-h-0 flex-1" />
             )}
           </div>
         </main>

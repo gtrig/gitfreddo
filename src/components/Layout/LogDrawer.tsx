@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ClipboardIcon, DocumentTextIcon } from '@heroicons/react/24/outline'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { useLogStore, type LogTab } from '@/stores/logs'
 import { copyToClipboard } from '@/lib/clipboard'
 import type { LogEntry, LogLevel } from '@shared/ipc'
+import { VIRTUAL_OVERSCAN, shouldVirtualize } from '@/lib/ui/virtualList'
 
 const LEVEL_STYLES: Record<LogLevel, string> = {
   info: 'text-gf-fg-muted',
@@ -59,23 +61,40 @@ function LogList({
   const message = emptyMessage ?? t('tools.noLogEntries')
   const containerRef = useRef<HTMLDivElement>(null)
   const pinnedRef = useRef(true)
+  const useVirtualization = shouldVirtualize(entries.length)
+
+  const virtualizer = useVirtualizer({
+    count: useVirtualization ? entries.length : 0,
+    getScrollElement: () => containerRef.current,
+    estimateSize: (index) => {
+      const entry = entries[index]
+      return entry?.details ? 48 : 24
+    },
+    overscan: VIRTUAL_OVERSCAN,
+    measureElement:
+      typeof window !== 'undefined'
+        ? (el) => el.getBoundingClientRect().height
+        : undefined
+  })
 
   const onScroll = useCallback(() => {
     const el = containerRef.current
-    if (!el) {
-      return
-    }
+    if (!el) return
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
     pinnedRef.current = distanceFromBottom < 48
   }, [])
 
   useEffect(() => {
-    const el = containerRef.current
-    if (!el || !pinnedRef.current) {
-      return
+    if (!pinnedRef.current) return
+    if (useVirtualization) {
+      virtualizer.scrollToIndex(entries.length - 1, { align: 'end' })
+    } else {
+      const el = containerRef.current
+      if (el) el.scrollTop = el.scrollHeight
     }
-    el.scrollTop = el.scrollHeight
-  }, [entries])
+  // virtualizer reference is stable
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entries, useVirtualization])
 
   if (entries.length === 0) {
     return <p className="px-3 py-6 text-center text-xs text-gf-fg-subtle">{message}</p>
@@ -83,9 +102,30 @@ function LogList({
 
   return (
     <div ref={containerRef} onScroll={onScroll} className="min-h-0 flex-1 overflow-auto">
-      {entries.map((entry) => (
-        <LogLine key={entry.id} entry={entry} />
-      ))}
+      {useVirtualization ? (
+        <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+          {virtualizer.getVirtualItems().map((virtualItem) => {
+            const entry = entries[virtualItem.index]!
+            return (
+              <div
+                key={virtualItem.key}
+                data-index={virtualItem.index}
+                ref={virtualizer.measureElement}
+                style={{
+                  position: 'absolute', top: 0, left: 0, width: '100%',
+                  transform: `translateY(${virtualItem.start}px)`
+                }}
+              >
+                <LogLine entry={entry} />
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        entries.map((entry) => (
+          <LogLine key={entry.id} entry={entry} />
+        ))
+      )}
     </div>
   )
 }

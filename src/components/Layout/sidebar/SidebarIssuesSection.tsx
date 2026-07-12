@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { EditIssueModal as BitbucketEditIssueModal } from '@/components/Bitbucket/EditIssueModal'
 import { EditIssueModal as GitHubEditIssueModal } from '@/components/GitHub/EditIssueModal'
@@ -16,6 +16,8 @@ import { useToastStore } from '@/stores/toast'
 import { slugifyIssueBranch } from '@/lib/git/github'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { issueContextMenuItems } from '@/lib/context-menus/sidebarContextMenus'
+import { useVirtualizer } from '@tanstack/react-virtual'
+import { COMPACT_ROW_HEIGHT, VIRTUAL_OVERSCAN, shouldVirtualize } from '@/lib/ui/virtualList'
 import type { BitbucketIssue } from '@shared/bitbucket'
 import type { GitHubIssue } from '@shared/github'
 
@@ -60,6 +62,15 @@ export function SidebarIssuesSection() {
   const isLoading = forge.provider === 'bitbucket' ? bbLoading : ghLoading
   const error = forge.provider === 'bitbucket' ? bbError : ghError
   const count = canUseForge ? issues.length : 0
+  const issuesScrollRef = useRef<HTMLDivElement>(null)
+  const useVirtualization = shouldVirtualize(issues.length)
+
+  const virtualizer = useVirtualizer({
+    count: useVirtualization ? issues.length : 0,
+    getScrollElement: () => issuesScrollRef.current,
+    estimateSize: () => COMPACT_ROW_HEIGHT,
+    overscan: VIRTUAL_OVERSCAN
+  })
 
   async function handleCreate() {
     if (!repoPath || !title.trim() || !forge.provider) return
@@ -139,35 +150,75 @@ export function SidebarIssuesSection() {
             </div>
             {isLoading && <p className="px-2 text-xs text-gf-fg-subtle">{t('common.loading')}</p>}
             {error && <p className="px-2 text-xs text-red-400">{(error as Error).message}</p>}
-            <div className="space-y-0.5">
-              {issues.map((issue) => {
-                const issueMenuItems = issueContextMenuItems(
-                  issue,
-                  {
-                    onBranchFromIssue: (issueNumber, issueTitle) =>
-                      void branchFromIssue(issueNumber, issueTitle),
-                    onEdit: setEditIssue,
-                    onClose: (entry) => void updateIssueState(entry, 'closed'),
-                    onReopen: (entry) => void updateIssueState(entry, 'open')
-                  },
-                  t,
-                  forge.provider ?? 'github'
-                )
-                return (
-                  <SidebarTreeRow
-                    key={issue.number}
-                    icon={<SidebarIconIssues className="h-3.5 w-3.5" />}
-                    label={`#${issue.number} ${issue.title}`}
-                    menuItems={issueMenuItems}
-                    openMenu={openMenu}
-                    onClick={() => window.open(issue.htmlUrl, '_blank', 'noopener,noreferrer')}
-                  />
-                )
-              })}
-              {issues.length === 0 && !isLoading && (
-                <p className="px-2 py-1 text-xs text-gf-fg-subtle">{t('sidebar.noOpenIssues')}</p>
-              )}
-            </div>
+            {useVirtualization ? (
+              <div ref={issuesScrollRef} className="overflow-y-auto" style={{ maxHeight: '40vh' }}>
+                <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+                  {virtualizer.getVirtualItems().map((virtualItem) => {
+                    const issue = issues[virtualItem.index]!
+                    const issueMenuItems = issueContextMenuItems(
+                      issue,
+                      {
+                        onBranchFromIssue: (issueNumber, issueTitle) =>
+                          void branchFromIssue(issueNumber, issueTitle),
+                        onEdit: setEditIssue,
+                        onClose: (entry) => void updateIssueState(entry, 'closed'),
+                        onReopen: (entry) => void updateIssueState(entry, 'open')
+                      },
+                      t,
+                      forge.provider ?? 'github'
+                    )
+                    return (
+                      <div
+                        key={virtualItem.key}
+                        style={{
+                          position: 'absolute', top: 0, left: 0, width: '100%',
+                          height: `${virtualItem.size}px`,
+                          transform: `translateY(${virtualItem.start}px)`
+                        }}
+                      >
+                        <SidebarTreeRow
+                          icon={<SidebarIconIssues className="h-3.5 w-3.5" />}
+                          label={`#${issue.number} ${issue.title}`}
+                          menuItems={issueMenuItems}
+                          openMenu={openMenu}
+                          onClick={() => window.open(issue.htmlUrl, '_blank', 'noopener,noreferrer')}
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-0.5">
+                {issues.map((issue) => {
+                  const issueMenuItems = issueContextMenuItems(
+                    issue,
+                    {
+                      onBranchFromIssue: (issueNumber, issueTitle) =>
+                        void branchFromIssue(issueNumber, issueTitle),
+                      onEdit: setEditIssue,
+                      onClose: (entry) => void updateIssueState(entry, 'closed'),
+                      onReopen: (entry) => void updateIssueState(entry, 'open')
+                    },
+                    t,
+                    forge.provider ?? 'github'
+                  )
+                  return (
+                    <SidebarTreeRow
+                      key={issue.number}
+                      icon={<SidebarIconIssues className="h-3.5 w-3.5" />}
+                      label={`#${issue.number} ${issue.title}`}
+                      menuItems={issueMenuItems}
+                      openMenu={openMenu}
+                      onClick={() => window.open(issue.htmlUrl, '_blank', 'noopener,noreferrer')}
+                    />
+                  )
+                })}
+                {issues.length === 0 && !isLoading && (
+                  <p className="px-2 py-1 text-xs text-gf-fg-subtle">{t('sidebar.noOpenIssues')}</p>
+                )}
+              </div>
+            )}
           </>
         )}
       </SidebarSection>

@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { Checkbox } from '@/components/Ui/Modal'
 import type { LineRange } from '@/lib/conflicts/threeWayMerge'
+import { CODE_LINE_HEIGHT, VIRTUAL_OVERSCAN } from '@/lib/ui/virtualList'
 
 const ROW_GRID = 'grid-cols-[28px_44px_minmax(0,1fr)]'
 
@@ -32,20 +34,27 @@ export function ThreeWayCodePane({
   onLineToggle,
   onSelectAll,
   allSelected,
-  scrollRef,
+  scrollRef: externalScrollRef,
   onScroll
 }: ThreeWayCodePaneProps) {
   const { t } = useTranslation()
-  const localRef = useRef<HTMLDivElement>(null)
-  const containerRef: React.RefObject<HTMLDivElement> = scrollRef ?? localRef
+  const internalRef = useRef<HTMLDivElement>(null)
+  const scrollRef = (externalScrollRef ?? internalRef) as React.RefObject<HTMLDivElement>
   const lines = content.split('\n')
 
+  const virtualizer = useVirtualizer({
+    count: lines.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => CODE_LINE_HEIGHT,
+    overscan: VIRTUAL_OVERSCAN
+  })
+
   useEffect(() => {
-    if (!highlightRange || !containerRef.current) return
-    const lineHeight = 20
-    const targetTop = (highlightRange.start - 1) * lineHeight
-    containerRef.current.scrollTop = Math.max(0, targetTop - 40)
-  }, [highlightRange, containerRef])
+    if (!highlightRange) return
+    virtualizer.scrollToIndex(highlightRange.start - 1, { align: 'start' })
+  // virtualizer is stable ref, no need to include
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlightRange])
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col border border-gf-border">
@@ -68,38 +77,49 @@ export function ThreeWayCodePane({
         </div>
       </div>
       <div
-        ref={containerRef}
+        ref={scrollRef}
         className="min-h-0 flex-1 overflow-auto font-mono text-[12px] leading-5"
-        onScroll={(event) => onScroll?.(event.currentTarget.scrollTop)}
+        onScroll={onScroll ? (event) => onScroll(event.currentTarget.scrollTop) : undefined}
       >
-        {lines.map((line, index) => {
-          const lineNo = index + 1
-          const inConflict =
-            highlightRange && lineNo >= highlightRange.start && lineNo <= highlightRange.end
-          const checked = checkedLines?.has(lineNo) ?? false
+        <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+          {virtualizer.getVirtualItems().map((virtualItem) => {
+            const lineNo = virtualItem.index + 1
+            const line = lines[virtualItem.index] ?? ''
+            const inConflict =
+              highlightRange && lineNo >= highlightRange.start && lineNo <= highlightRange.end
+            const checked = checkedLines?.has(lineNo) ?? false
 
-          return (
-            <div
-              key={lineNo}
-              className={`grid ${ROW_GRID} ${inConflict ? highlightClass : ''}`}
-            >
-              <span className="flex items-center justify-center">
-                {inConflict && onLineToggle && (
-                  <Checkbox
-                    size="xs"
-                    checked={checked}
-                    onChange={() => onLineToggle(lineNo)}
-                    aria-label={`Include line ${lineNo} in output`}
-                  />
-                )}
-              </span>
-              <span className="select-none border-r border-gf-border/50 px-2 text-right text-gf-fg-subtle">
-                {lineNo}
-              </span>
-              <span className="whitespace-pre px-2 text-gf-fg-muted">{line || ' '}</span>
-            </div>
-          )
-        })}
+            return (
+              <div
+                key={virtualItem.key}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: `${virtualItem.size}px`,
+                  transform: `translateY(${virtualItem.start}px)`
+                }}
+                className={`grid ${ROW_GRID} ${inConflict ? highlightClass : ''}`}
+              >
+                <span className="flex items-center justify-center">
+                  {inConflict && onLineToggle && (
+                    <Checkbox
+                      size="xs"
+                      checked={checked}
+                      onChange={() => onLineToggle(lineNo)}
+                      aria-label={`Include line ${lineNo} in output`}
+                    />
+                  )}
+                </span>
+                <span className="select-none border-r border-gf-border/50 px-2 text-right text-gf-fg-subtle">
+                  {lineNo}
+                </span>
+                <span className="whitespace-pre px-2 text-gf-fg-muted">{line || ' '}</span>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )

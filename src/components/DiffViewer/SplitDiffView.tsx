@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import type { SplitDiffRow } from '@/lib/diff/unifiedDiff'
 import { useTranslation } from 'react-i18next'
 import { ChatBubbleLeftEllipsisIcon } from '@heroicons/react/24/outline'
@@ -5,6 +6,8 @@ import { splitCellCommentTarget, type DiffLineCommentTarget } from '@/lib/diff/u
 import { lineCommentTargetKey } from '@/lib/github/prTimeline'
 import { DiffLineCommentBlocks } from '@/components/DiffViewer/DiffLineCommentBlocks'
 import type { GitHubPullRequestRepository, GitHubPullRequestReviewThread } from '@shared/github'
+import { useVirtualizer } from '@tanstack/react-virtual'
+import { CODE_LINE_HEIGHT, VIRTUAL_OVERSCAN } from '@/lib/ui/virtualList'
 
 export interface DiffReviewThreadContext {
   byTarget: Map<string, GitHubPullRequestReviewThread[]>
@@ -36,6 +39,7 @@ interface SplitDiffViewProps {
   emptyMessage?: string
   onRequestLineComment?: (target: DiffLineCommentTarget) => void
   reviewThreads?: DiffReviewThreadContext
+  className?: string
 }
 
 export function SplitDiffView({
@@ -43,9 +47,22 @@ export function SplitDiffView({
   loading,
   emptyMessage,
   onRequestLineComment,
-  reviewThreads
+  reviewThreads,
+  className
 }: SplitDiffViewProps) {
   const { t } = useTranslation()
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  const virtualizer = useVirtualizer({
+    count: loading || rows.length === 0 ? 0 : rows.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => CODE_LINE_HEIGHT,
+    overscan: VIRTUAL_OVERSCAN,
+    measureElement:
+      typeof window !== 'undefined'
+        ? (el) => el.getBoundingClientRect().height
+        : undefined
+  })
 
   if (loading) {
     return <p className="px-4 py-6 text-sm text-gf-fg-subtle">{t('diff.loadingDiff')}</p>
@@ -60,61 +77,77 @@ export function SplitDiffView({
   }
 
   return (
-    <div className="font-mono text-[12px] leading-5">
-      <div className="sticky top-0 z-10 grid grid-cols-2 border-b border-gf-border bg-gf-bg-deep/95 text-[10px] uppercase tracking-wide text-gf-fg-subtle">
+    <div className={`flex min-h-0 flex-col font-mono text-[12px] leading-5${className ? ` ${className}` : ''}`}>
+      <div className="sticky top-0 z-10 grid shrink-0 grid-cols-2 border-b border-gf-border bg-gf-bg-deep/95 text-[10px] uppercase tracking-wide text-gf-fg-subtle">
         <span className="border-r border-gf-border px-4 py-1">{t('diff.before')}</span>
         <span className="px-4 py-1">{t('diff.after')}</span>
       </div>
-      {rows.map((row, index) => {
-        const leftTarget = splitCellCommentTarget('left', row.leftLineNo)
-        const rightTarget = splitCellCommentTarget('right', row.rightLineNo)
-        const leftThreads =
-          leftTarget && reviewThreads
-            ? (reviewThreads.byTarget.get(
-                lineCommentTargetKey(leftTarget.side, leftTarget.line)
-              ) ?? [])
-            : []
-        const rightThreads =
-          rightTarget && reviewThreads
-            ? (reviewThreads.byTarget.get(
-                lineCommentTargetKey(rightTarget.side, rightTarget.line)
-              ) ?? [])
-            : []
-        const rowThreads = [...leftThreads, ...rightThreads]
-        const uniqueRowThreads = rowThreads.filter(
-          (thread, index) => rowThreads.findIndex((item) => item.id === thread.id) === index
-        )
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto">
+        <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+          {virtualizer.getVirtualItems().map((virtualItem) => {
+            const row = rows[virtualItem.index]!
+            const leftTarget = splitCellCommentTarget('left', row.leftLineNo)
+            const rightTarget = splitCellCommentTarget('right', row.rightLineNo)
+            const leftThreads =
+              leftTarget && reviewThreads
+                ? (reviewThreads.byTarget.get(
+                    lineCommentTargetKey(leftTarget.side, leftTarget.line)
+                  ) ?? [])
+                : []
+            const rightThreads =
+              rightTarget && reviewThreads
+                ? (reviewThreads.byTarget.get(
+                    lineCommentTargetKey(rightTarget.side, rightTarget.line)
+                  ) ?? [])
+                : []
+            const rowThreads = [...leftThreads, ...rightThreads]
+            const uniqueRowThreads = rowThreads.filter(
+              (thread, idx) => rowThreads.findIndex((item) => item.id === thread.id) === idx
+            )
 
-        return (
-          <div key={index}>
-            <div className="grid grid-cols-2 border-b border-gf-border/40">
-              <SplitDiffCell
-                side="left"
-                lineNo={row.leftLineNo}
-                text={row.leftText}
-                kind={row.leftKind}
-                onRequestLineComment={onRequestLineComment}
-              />
-              <SplitDiffCell
-                side="right"
-                lineNo={row.rightLineNo}
-                text={row.rightText}
-                kind={row.rightKind}
-                onRequestLineComment={onRequestLineComment}
-                borderLeft
-              />
-            </div>
-            {reviewThreads && uniqueRowThreads.length > 0 ? (
-              <DiffLineCommentBlocks
-                threads={uniqueRowThreads}
-                prNumber={reviewThreads.prNumber}
-                repository={reviewThreads.repository}
-                onUpdated={reviewThreads.onUpdated}
-              />
-            ) : null}
-          </div>
-        )
-      })}
+            return (
+              <div
+                key={virtualItem.key}
+                data-index={virtualItem.index}
+                ref={virtualizer.measureElement}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  transform: `translateY(${virtualItem.start}px)`
+                }}
+              >
+                <div className="grid grid-cols-2 border-b border-gf-border/40">
+                  <SplitDiffCell
+                    side="left"
+                    lineNo={row.leftLineNo}
+                    text={row.leftText}
+                    kind={row.leftKind}
+                    onRequestLineComment={onRequestLineComment}
+                  />
+                  <SplitDiffCell
+                    side="right"
+                    lineNo={row.rightLineNo}
+                    text={row.rightText}
+                    kind={row.rightKind}
+                    onRequestLineComment={onRequestLineComment}
+                    borderLeft
+                  />
+                </div>
+                {reviewThreads && uniqueRowThreads.length > 0 ? (
+                  <DiffLineCommentBlocks
+                    threads={uniqueRowThreads}
+                    prNumber={reviewThreads.prNumber}
+                    repository={reviewThreads.repository}
+                    onUpdated={reviewThreads.onUpdated}
+                  />
+                ) : null}
+              </div>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }

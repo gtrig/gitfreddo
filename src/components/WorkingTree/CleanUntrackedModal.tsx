@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { Modal, ActionButton, Checkbox } from '@/components/Ui/Modal'
 import { useCleanPreview } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { LoadingRow } from '@/components/Ui/Spinner'
+import { shouldVirtualize, CODE_LINE_HEIGHT, VIRTUAL_OVERSCAN } from '@/lib/ui/virtualList'
 
 interface CleanUntrackedModalProps {
   open: boolean
@@ -17,6 +19,16 @@ export function CleanUntrackedModal({ open, onClose }: CleanUntrackedModalProps)
   const { workingClean } = useGitMutations()
 
   const fileCount = preview?.length ?? 0
+  const paths = preview ?? []
+  const cleanScrollRef = useRef<HTMLDivElement>(null)
+  const useVirtualization = shouldVirtualize(paths.length)
+
+  const virtualizer = useVirtualizer({
+    count: useVirtualization ? paths.length : 0,
+    getScrollElement: () => cleanScrollRef.current,
+    estimateSize: () => CODE_LINE_HEIGHT,
+    overscan: VIRTUAL_OVERSCAN
+  })
 
   return (
     <Modal open={open} title={t('workingTree.cleanUntrackedTitle')} onClose={onClose}>
@@ -30,9 +42,25 @@ export function CleanUntrackedModal({ open, onClose }: CleanUntrackedModalProps)
         {isLoading && <LoadingRow label={t('workingTree.loadingPreview')} />}
         {error && <p className="text-sm text-red-400">{(error as Error).message}</p>}
         {!isLoading && !error && (
-          <div className="max-h-48 overflow-y-auto rounded border border-gf-border bg-gf-bg-deep p-2">
+          <div ref={cleanScrollRef} className="max-h-48 overflow-y-auto rounded border border-gf-border bg-gf-bg-deep p-2">
             {fileCount === 0 ? (
               <p className="text-xs text-gf-fg-subtle">{t('workingTree.noFilesToRemove')}</p>
+            ) : useVirtualization ? (
+              <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }} className="text-xs font-mono text-gf-fg-muted">
+                {virtualizer.getVirtualItems().map((virtualItem) => (
+                  <div
+                    key={virtualItem.key}
+                    style={{
+                      position: 'absolute', top: 0, left: 0, width: '100%',
+                      height: `${virtualItem.size}px`,
+                      transform: `translateY(${virtualItem.start}px)`
+                    }}
+                    className="truncate"
+                  >
+                    {paths[virtualItem.index]}
+                  </div>
+                ))}
+              </div>
             ) : (
               <ul className="space-y-0.5 text-xs font-mono text-gf-fg-muted">
                 {preview!.map((path) => (

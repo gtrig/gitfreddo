@@ -1,5 +1,8 @@
+import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { LoadingRow } from '@/components/Ui/Spinner'
+import { shouldVirtualize, VIRTUAL_OVERSCAN } from '@/lib/ui/virtualList'
 import type { GitHubPullRequestCommit } from '@shared/github'
 
 interface PullRequestCommitsPanelProps {
@@ -20,6 +23,15 @@ export function PullRequestCommitsPanel({
   error = null
 }: PullRequestCommitsPanelProps) {
   const { t } = useTranslation()
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const useVirtualization = shouldVirtualize(commits.length)
+
+  const virtualizer = useVirtualizer({
+    count: useVirtualization ? commits.length : 0,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 100,
+    overscan: VIRTUAL_OVERSCAN
+  })
 
   if (loading) {
     return (
@@ -48,41 +60,80 @@ export function PullRequestCommitsPanel({
   }
 
   return (
-    <div className="min-h-0 flex-1 overflow-auto p-6">
+    <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto p-6">
       <div className="mx-auto max-w-3xl">
         <h2 className="text-sm font-medium text-gf-fg">{t('detail.pullRequest.commits')}</h2>
         <p className="mt-1 text-sm text-gf-fg-subtle">
           {t('detail.pullRequest.commitCount', { count: commits.length })}
         </p>
-        <ol className="mt-4 space-y-3">
-          {commits.map((commit, index) => (
-            <li
-              key={commit.sha}
-              className="rounded-lg border border-gf-border bg-gf-surface/30 p-4"
-            >
-              <div className="flex items-start gap-3">
-                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-gf-border bg-gf-bg text-[11px] text-gf-fg-subtle">
-                  {index + 1}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-gf-fg">{commit.subject}</p>
-                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gf-fg-subtle">
-                    <span className="font-mono">{commit.sha.slice(0, 7)}</span>
-                    <span>
-                      {commit.authorLogin ?? commit.authorName}
-                    </span>
-                    <span>{formatCommittedAt(commit.committedAt)}</span>
+        {useVirtualization ? (
+          <div className="mt-4" style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+            {virtualizer.getVirtualItems().map((virtualItem) => {
+              const commit = commits[virtualItem.index]!
+              const index = virtualItem.index
+              return (
+                <div
+                  key={virtualItem.key}
+                  style={{
+                    position: 'absolute', top: 0, left: 0, width: '100%',
+                    transform: `translateY(${virtualItem.start}px)`
+                  }}
+                >
+                  <div className="mb-3 rounded-lg border border-gf-border bg-gf-surface/30 p-4">
+                    <div className="flex items-start gap-3">
+                      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-gf-border bg-gf-bg text-[11px] text-gf-fg-subtle">
+                        {index + 1}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gf-fg">{commit.subject}</p>
+                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gf-fg-subtle">
+                          <span className="font-mono">{commit.sha.slice(0, 7)}</span>
+                          <span>{commit.authorLogin ?? commit.authorName}</span>
+                          <span>{formatCommittedAt(commit.committedAt)}</span>
+                        </div>
+                        {commit.message.trim() !== commit.subject ? (
+                          <pre className="mt-3 whitespace-pre-wrap text-xs leading-relaxed text-gf-fg-muted">
+                            {commit.message}
+                          </pre>
+                        ) : null}
+                      </div>
+                    </div>
                   </div>
-                  {commit.message.trim() !== commit.subject ? (
-                    <pre className="mt-3 whitespace-pre-wrap text-xs leading-relaxed text-gf-fg-muted">
-                      {commit.message}
-                    </pre>
-                  ) : null}
                 </div>
-              </div>
-            </li>
-          ))}
-        </ol>
+              )
+            })}
+          </div>
+        ) : (
+          <ol className="mt-4 space-y-3">
+            {commits.map((commit, index) => (
+              <li
+                key={commit.sha}
+                className="rounded-lg border border-gf-border bg-gf-surface/30 p-4"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-gf-border bg-gf-bg text-[11px] text-gf-fg-subtle">
+                    {index + 1}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-gf-fg">{commit.subject}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gf-fg-subtle">
+                      <span className="font-mono">{commit.sha.slice(0, 7)}</span>
+                      <span>
+                        {commit.authorLogin ?? commit.authorName}
+                      </span>
+                      <span>{formatCommittedAt(commit.committedAt)}</span>
+                    </div>
+                    {commit.message.trim() !== commit.subject ? (
+                      <pre className="mt-3 whitespace-pre-wrap text-xs leading-relaxed text-gf-fg-muted">
+                        {commit.message}
+                      </pre>
+                    ) : null}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
       </div>
     </div>
   )

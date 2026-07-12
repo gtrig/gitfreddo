@@ -1,5 +1,6 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
 import { useWorkingStatus, useRepoStatus } from '@/hooks/useGit'
@@ -23,6 +24,7 @@ import {
   TreeNode,
   toTreeItems
 } from '@/components/WorkingTree/WorkingTreeFileRow'
+import { FILE_ROW_HEIGHT, VIRTUAL_OVERSCAN, shouldVirtualize } from '@/lib/ui/virtualList'
 
 
 export function GitWorkingTree() {
@@ -50,6 +52,8 @@ export function GitWorkingTree() {
   const openFileHistory = useSelectionStore((s) => s.openFileHistory)
   const [viewMode, setViewMode] = useState<'path' | 'tree'>('tree')
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set())
+  const unstagedScrollRef = useRef<HTMLDivElement>(null)
+  const stagedScrollRef = useRef<HTMLDivElement>(null)
   const [pendingDiscard, setPendingDiscard] = useState<{ paths: string[]; staged: boolean } | null>(
     null
   )
@@ -82,6 +86,20 @@ export function GitWorkingTree() {
     (data?.untracked.length ?? 0) +
     (!gitOpInProgress ? (data?.conflicted.length ?? 0) : 0) +
     (data?.staged.length ?? 0)
+
+  const unstagedVirtualizer = useVirtualizer({
+    count: viewMode === 'path' && shouldVirtualize(changesFiles.length) ? changesFiles.length : 0,
+    getScrollElement: () => unstagedScrollRef.current,
+    estimateSize: () => FILE_ROW_HEIGHT,
+    overscan: VIRTUAL_OVERSCAN
+  })
+
+  const stagedVirtualizer = useVirtualizer({
+    count: viewMode === 'path' && shouldVirtualize(stagedFiles.length) ? stagedFiles.length : 0,
+    getScrollElement: () => stagedScrollRef.current,
+    estimateSize: () => FILE_ROW_HEIGHT,
+    overscan: VIRTUAL_OVERSCAN
+  })
 
   function expandAllFolders() {
     const paths = new Set<string>()
@@ -185,7 +203,9 @@ export function GitWorkingTree() {
     files: GitFileChange[],
     mode: 'working' | 'staged',
     canStage: boolean,
-    headerActions?: ReactNode
+    headerActions?: ReactNode,
+    sectionScrollRef?: React.RefObject<HTMLDivElement | null>,
+    sectionVirtualizer?: ReturnType<typeof useVirtualizer<HTMLDivElement, Element>>
   ) => (
     <div className="mb-3">
       <div className="mb-1 flex items-center justify-between gap-2">
@@ -199,46 +219,106 @@ export function GitWorkingTree() {
       ) : (
         <>
           {viewMode === 'path' ? (
-            <div className="space-y-0.5">
-              {files.map((file) => (
-                <FileRow
-                  key={file.path}
-                  file={file}
-                  selected={selectedFile === file.path}
-                  mode={mode}
-                  onSelect={() => setSelectedWorkingFile(file.path, mode)}
-                  onStage={
-                    canStage
-                      ? () => void stageAdd.mutateAsync({ paths: [file.path] })
-                      : () => void stageReset.mutateAsync({ paths: [file.path] })
-                  }
-                  onDiscard={() => requestDiscard(file.path, mode === 'staged')}
-                  onRemove={
-                    file.status !== 'untracked' && file.status !== 'conflicted'
-                      ? () => requestRemove(file.path)
-                      : undefined
-                  }
-                  onDelete={
-                    file.status === 'untracked' ? () => requestDelete(file.path) : undefined
-                  }
-                  onRename={() => setRenamePath(file.path)}
-                  onFileHistory={() => openFileHistory(file.path)}
-                  onAddToGitignore={() => requestAddToGitignore(file.path)}
-                  onOpenSubmodule={
-                    file.isSubmodule ? () => void openSubmodule(file.path) : undefined
-                  }
-                  onUpdateSubmodule={
-                    file.isSubmodule ? () => updateSubmodule(file.path) : undefined
-                  }
-                  onSyncSubmodule={file.isSubmodule ? () => syncSubmodule(file.path) : undefined}
-                  openMenu={openMenu}
-                  repoPath={activePath}
-                  stageLabel={stageLabel}
-                  unstageLabel={unstageLabel}
-                  t={t}
-                />
-              ))}
-            </div>
+            sectionVirtualizer && sectionScrollRef && sectionVirtualizer.options.count > 0 ? (
+              <div
+                ref={sectionScrollRef as React.RefObject<HTMLDivElement>}
+                className="overflow-y-auto"
+                style={{ maxHeight: '40vh' }}
+              >
+                <div style={{ height: sectionVirtualizer.getTotalSize(), position: 'relative' }}>
+                  {sectionVirtualizer.getVirtualItems().map((virtualItem) => {
+                    const file = files[virtualItem.index]!
+                    return (
+                      <div
+                        key={virtualItem.key}
+                        style={{
+                          position: 'absolute', top: 0, left: 0, width: '100%',
+                          height: `${virtualItem.size}px`,
+                          transform: `translateY(${virtualItem.start}px)`
+                        }}
+                      >
+                        <FileRow
+                          file={file}
+                          selected={selectedFile === file.path}
+                          mode={mode}
+                          onSelect={() => setSelectedWorkingFile(file.path, mode)}
+                          onStage={
+                            canStage
+                              ? () => void stageAdd.mutateAsync({ paths: [file.path] })
+                              : () => void stageReset.mutateAsync({ paths: [file.path] })
+                          }
+                          onDiscard={() => requestDiscard(file.path, mode === 'staged')}
+                          onRemove={
+                            file.status !== 'untracked' && file.status !== 'conflicted'
+                              ? () => requestRemove(file.path)
+                              : undefined
+                          }
+                          onDelete={
+                            file.status === 'untracked' ? () => requestDelete(file.path) : undefined
+                          }
+                          onRename={() => setRenamePath(file.path)}
+                          onFileHistory={() => openFileHistory(file.path)}
+                          onAddToGitignore={() => requestAddToGitignore(file.path)}
+                          onOpenSubmodule={
+                            file.isSubmodule ? () => void openSubmodule(file.path) : undefined
+                          }
+                          onUpdateSubmodule={
+                            file.isSubmodule ? () => updateSubmodule(file.path) : undefined
+                          }
+                          onSyncSubmodule={file.isSubmodule ? () => syncSubmodule(file.path) : undefined}
+                          openMenu={openMenu}
+                          repoPath={activePath}
+                          stageLabel={stageLabel}
+                          unstageLabel={unstageLabel}
+                          t={t}
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-0.5">
+                {files.map((file) => (
+                  <FileRow
+                    key={file.path}
+                    file={file}
+                    selected={selectedFile === file.path}
+                    mode={mode}
+                    onSelect={() => setSelectedWorkingFile(file.path, mode)}
+                    onStage={
+                      canStage
+                        ? () => void stageAdd.mutateAsync({ paths: [file.path] })
+                        : () => void stageReset.mutateAsync({ paths: [file.path] })
+                    }
+                    onDiscard={() => requestDiscard(file.path, mode === 'staged')}
+                    onRemove={
+                      file.status !== 'untracked' && file.status !== 'conflicted'
+                        ? () => requestRemove(file.path)
+                        : undefined
+                    }
+                    onDelete={
+                      file.status === 'untracked' ? () => requestDelete(file.path) : undefined
+                    }
+                    onRename={() => setRenamePath(file.path)}
+                    onFileHistory={() => openFileHistory(file.path)}
+                    onAddToGitignore={() => requestAddToGitignore(file.path)}
+                    onOpenSubmodule={
+                      file.isSubmodule ? () => void openSubmodule(file.path) : undefined
+                    }
+                    onUpdateSubmodule={
+                      file.isSubmodule ? () => updateSubmodule(file.path) : undefined
+                    }
+                    onSyncSubmodule={file.isSubmodule ? () => syncSubmodule(file.path) : undefined}
+                    openMenu={openMenu}
+                    repoPath={activePath}
+                    stageLabel={stageLabel}
+                    unstageLabel={unstageLabel}
+                    t={t}
+                  />
+                ))}
+              </div>
+            )
           ) : (
             <div className="space-y-0.5">
               {buildFileTree(toTreeItems(files))
@@ -373,7 +453,9 @@ export function GitWorkingTree() {
             >
               {t('workingTree.discardAll')}
             </button>
-          ) : undefined
+          ) : undefined,
+          unstagedScrollRef,
+          unstagedVirtualizer
         )}
         <div className="my-4 border-t border-gf-border/70" />
         {renderSection(
@@ -392,7 +474,9 @@ export function GitWorkingTree() {
                 {t('workingTree.discardAll')}
               </button>
             )}
-          </div>
+          </div>,
+          stagedScrollRef,
+          stagedVirtualizer
         )}
       </div>
       {data && <CommitPanel working={data} />}

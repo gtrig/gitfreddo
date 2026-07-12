@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { ActionButton, ConfirmDialog, FieldLabel, Checkbox } from '@/components/Ui/Modal'
 import { RemoveStaleBranchesModal } from '@/components/DetailPanel/RemoveStaleBranchesModal'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
+import { shouldVirtualize, CODE_LINE_HEIGHT, VIRTUAL_OVERSCAN } from '@/lib/ui/virtualList'
 import type { AppSettings } from '@/hooks/useAppSettings'
 import { useAppUpdate } from '@/hooks/useAppUpdate'
 import type { MaintenancePruneResult, UnreachableSummary } from '@/lib/types'
@@ -122,6 +124,17 @@ export function MaintenanceSettingsPanel({ form, onChange }: PanelProps) {
   const previewTruncated = summary ? summary.totalCommitCount > summary.commits.length : false
   const otherObjectCount = summary ? summary.blobCount + summary.treeCount : 0
 
+  const commits = summary?.commits ?? []
+  const commitsScrollRef = useRef<HTMLUListElement>(null)
+  const useVirtualization = shouldVirtualize(commits.length)
+
+  const commitsVirtualizer = useVirtualizer({
+    count: useVirtualization ? commits.length : 0,
+    getScrollElement: () => commitsScrollRef.current,
+    estimateSize: () => CODE_LINE_HEIGHT,
+    overscan: VIRTUAL_OVERSCAN
+  })
+
   return (
     <div className="space-y-4">
       <div className="space-y-3 border-b border-gf-border pb-4">
@@ -226,18 +239,45 @@ export function MaintenanceSettingsPanel({ form, onChange }: PanelProps) {
             </p>
 
             {summary.commits.length > 0 && (
-              <ul className="mt-2 max-h-48 space-y-1 overflow-y-auto">
-                {summary.commits.map((commit) => (
-                  <li key={commit.hash} className="flex gap-2 truncate">
-                    <span className="shrink-0 font-mono text-gf-fg-subtle">{commit.shortHash}</span>
-                    <span className="truncate text-gf-fg">{commit.subject}</span>
-                    {commit.authorDate && (
-                      <span className="shrink-0 text-gf-fg-subtle">
-                        {formatAuthorDate(commit.authorDate)}
-                      </span>
-                    )}
-                  </li>
-                ))}
+              <ul ref={commitsScrollRef} className="mt-2 max-h-48 overflow-y-auto">
+                {useVirtualization ? (
+                  <div style={{ height: commitsVirtualizer.getTotalSize(), position: 'relative' }}>
+                    {commitsVirtualizer.getVirtualItems().map((virtualItem) => {
+                      const commit = commits[virtualItem.index]!
+                      return (
+                        <div
+                          key={virtualItem.key}
+                          style={{
+                            position: 'absolute', top: 0, left: 0, width: '100%',
+                            height: `${virtualItem.size}px`,
+                            transform: `translateY(${virtualItem.start}px)`
+                          }}
+                          className="flex gap-2 truncate"
+                        >
+                          <span className="shrink-0 font-mono text-gf-fg-subtle">{commit.shortHash}</span>
+                          <span className="truncate text-gf-fg">{commit.subject}</span>
+                          {commit.authorDate && (
+                            <span className="shrink-0 text-gf-fg-subtle">
+                              {formatAuthorDate(commit.authorDate)}
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  summary.commits.map((commit) => (
+                    <li key={commit.hash} className="flex gap-2 truncate">
+                      <span className="shrink-0 font-mono text-gf-fg-subtle">{commit.shortHash}</span>
+                      <span className="truncate text-gf-fg">{commit.subject}</span>
+                      {commit.authorDate && (
+                        <span className="shrink-0 text-gf-fg-subtle">
+                          {formatAuthorDate(commit.authorDate)}
+                        </span>
+                      )}
+                    </li>
+                  ))
+                )}
               </ul>
             )}
 
