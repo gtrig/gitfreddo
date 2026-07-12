@@ -1,8 +1,32 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { cleanup, screen } from '@testing-library/react'
+import { cleanup, fireEvent, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { SubmodulesSection } from './SubmodulesSection'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { renderWithProviders } from '@/test/render'
+
+const submodule = {
+  path: 'vendor/lib',
+  name: 'vendor',
+  url: 'https://example.com/lib.git',
+  status: 'initialized' as const,
+  hasWorkingTree: true
+}
+
+vi.mock('@/hooks/useGitMutations', () => ({
+  useGitMutations: () => {
+    const mutation = { mutateAsync: vi.fn(async () => undefined), isPending: false }
+    return {
+      submoduleInit: mutation,
+      submoduleUpdate: mutation,
+      submoduleSync: mutation,
+      submoduleDeinit: mutation,
+      submoduleRemove: mutation,
+      submoduleAdd: mutation,
+      stageAdd: mutation
+    }
+  }
+}))
 
 describe('SubmodulesSection', () => {
   afterEach(() => {
@@ -61,5 +85,37 @@ describe('SubmodulesSection', () => {
       <SubmodulesSection submodules={[]} filter="" isLoading={false} error={null} />
     )
     expect(screen.getByText(/no submodules/i)).toBeInTheDocument()
+  })
+
+  it('opens row context menu and the add submodule modal', async () => {
+    vi.mocked(window.gitfreddo.normalizeRepoPath).mockImplementation(async (path) => path)
+    renderWithProviders(
+      <SubmodulesSection submodules={[submodule]} filter="" isLoading={false} error={null} />
+    )
+
+    fireEvent.contextMenu(screen.getByText('vendor/lib'))
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: /add submodule/i }))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+  })
+
+  it('opens submodule in workspace tab from row click', async () => {
+    const openWorkspace = vi.fn(async () => undefined)
+    useWorkspaceStore.setState({ openWorkspace })
+    vi.mocked(window.gitfreddo.normalizeRepoPath).mockResolvedValue('/tmp/repo/vendor/lib')
+    vi.mocked(window.gitfreddo.invoke).mockImplementation(async (method: string) => {
+      if (method === 'repo.status') {
+        return { root: '/tmp/repo', head: 'abc', branch: 'main', isDetached: false }
+      }
+      return undefined
+    })
+
+    renderWithProviders(
+      <SubmodulesSection submodules={[submodule]} filter="" isLoading={false} error={null} />
+    )
+
+    await userEvent.click(screen.getByText('vendor/lib'))
+    expect(openWorkspace).toHaveBeenCalledWith('/tmp/repo/vendor/lib')
   })
 })

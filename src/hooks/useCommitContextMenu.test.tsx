@@ -6,7 +6,9 @@ import { act, renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { useCommitContextMenu } from './useCommitContextMenu'
+import { clickAllMenuItems } from '@/test/contextMenuTestUtils'
 import { makeCommit } from '@/test/fixtures/commit'
+import { useWorkingStatus } from './useGit'
 import { useSelectionStore } from '@/stores/selection'
 import { useToastStore } from '@/stores/toast'
 import { createGitFreddoMock } from '@/test/mocks/gitfreddo'
@@ -42,7 +44,7 @@ vi.mock('./useGitMutations', () => ({
 }))
 
 vi.mock('./useGit', () => ({
-  useWorkingStatus: () => ({ data: { isClean: true } })
+  useWorkingStatus: vi.fn(() => ({ data: { isClean: true } }))
 }))
 
 function wrapper({ children }: { children: ReactNode }) {
@@ -172,5 +174,91 @@ describe('useCommitContextMenu', () => {
 
     expect(mutateAsync).toHaveBeenCalledWith({ hash: mergeCommit.hash, mainline: 2 })
     expect(result.current.mergeParentPick).toBeNull()
+  })
+
+  it('invokes menu item handlers and modal setters', () => {
+    const parent = makeCommit({
+      hash: 'bbb222222222222222222222222222222222222',
+      shortHash: 'bbb2222',
+      parents: []
+    })
+    const { result } = renderHook(
+      () =>
+        useCommitContextMenu(true, {
+          ...options,
+          head: commit.hash,
+          commits: [commit, parent]
+        }),
+      { wrapper }
+    )
+
+    act(() => {
+      result.current.openMenu(parent, mouseEvent(3, 4))
+    })
+    clickAllMenuItems(result.current.items)
+
+    act(() => {
+      result.current.setCreateBranchAt(parent.hash)
+      result.current.setCreateTagAt(parent.hash)
+      result.current.setRewordCommit(parent)
+      result.current.setNoteCommit(parent)
+      result.current.setExplainCommits([parent])
+      result.current.setDeleteModal({ action: 'drop', commits: [parent] })
+      result.current.setRemoveStaleModal({ seedHash: parent.hash })
+      result.current.setInteractiveRebaseModal({ commits: [parent] })
+      result.current.setMergeSource('feature')
+      result.current.setWorktreeFromCommit({
+        hash: parent.hash,
+        shortHash: parent.shortHash
+      })
+    })
+
+    expect(result.current.createBranchAt).toBe(parent.hash)
+    expect(result.current.explainCommits).toEqual([parent])
+    expect(result.current.mergeSource).toBe('feature')
+  })
+
+  it('runs in-progress git operation handlers from the menu', async () => {
+    vi.mocked(useWorkingStatus).mockReturnValue({
+      data: {
+        branch: 'main',
+        ahead: 0,
+        behind: 0,
+        staged: [],
+        unstaged: [],
+        untracked: [],
+        conflicted: [],
+        isClean: true,
+        mergeInProgress: true,
+        rebaseInProgress: true,
+        cherryPickInProgress: true
+      }
+    } as unknown as ReturnType<typeof useWorkingStatus>)
+
+    const { result } = renderHook(() => useCommitContextMenu(true, options), { wrapper })
+
+    act(() => {
+      result.current.openMenu(commit, mouseEvent(5, 6))
+    })
+    clickAllMenuItems(result.current.items)
+
+    expect(mutateAsync).toHaveBeenCalled()
+  })
+
+  it('copies hash to clipboard and shows toast from menu actions', () => {
+    const show = vi.fn()
+    useToastStore.setState({ show, clear: vi.fn(), message: null, tone: 'info' })
+
+    const { result } = renderHook(() => useCommitContextMenu(true, options), { wrapper })
+
+    act(() => {
+      result.current.openMenu(commit, mouseEvent(7, 8))
+    })
+
+    const copyItem = result.current.items.find((item) => item.id === 'copy-hash')
+    copyItem?.onClick()
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(commit.hash)
+    expect(show).toHaveBeenCalled()
   })
 })

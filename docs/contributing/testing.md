@@ -18,14 +18,14 @@ npm run test:coverage
 
 Measured source: `src/`, `shared/`, and `electron/` (excluding test helpers and locale JSON). Thresholds in `vitest.config.ts` guard against regressions:
 
-| Scope | Line threshold |
-|-------|----------------|
-| Global | 70% |
-| `src/lib/**` | 78% |
-| `shared/**` | 80% |
-| `electron/**` | 40% |
+| Scope | Line threshold | Function threshold |
+|-------|----------------|--------------------|
+| Global | 78% | 66% |
+| `src/lib/**` | 78% | 64% |
+| `shared/**` | 80% | 85% |
+| `electron/**` | 45% | 40% |
 
-Pure logic in `src/lib/` is the primary coverage target (~80%). UI components and Electron bootstrap layers (`electron/main`, `electron/preload`, `App.tsx`) are excluded from coverage measurement; they are covered by E2E smoke where practical.
+Pure logic in `src/lib/` is the primary coverage target (~80%). UI components and Electron bootstrap layers (`electron/main`, `electron/preload`, `App.tsx`) are excluded from coverage measurement; they are covered by E2E smoke where practical. **Target:** 90% project-wide lines/functions; current global coverage is ~78% lines / ~66% functions.
 
 Coverage areas:
 

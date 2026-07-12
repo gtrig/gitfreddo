@@ -56,4 +56,33 @@ describe('bitbucket oauth helpers', () => {
       expect.objectContaining({ method: 'POST' })
     )
   })
+
+  it('throws when token exchange fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        text: async () => 'invalid_grant'
+      })
+    )
+
+    await expect(
+      exchangeAuthorizationCode('id', 'secret', 'code', 'http://127.0.0.1:8765/callback')
+    ).rejects.toThrow(/token exchange failed/i)
+  })
+
+  it('throws when response omits access token', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ error: 'invalid_request' })
+      })
+    )
+
+    await expect(
+      exchangeAuthorizationCode('id', 'secret', 'code', 'http://127.0.0.1:8765/callback')
+    ).rejects.toThrow(/invalid_request/)
+  })
 })

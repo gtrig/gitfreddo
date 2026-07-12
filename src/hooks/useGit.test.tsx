@@ -8,8 +8,25 @@ import type { ReactNode } from 'react'
 import {
   useBranches,
   useCommitChangedFiles,
+  useCommitTreeFiles,
+  useCleanPreview,
+  useConflictFileStages,
+  useDiffCommitRange,
+  useDiffCommits,
+  useDiffShow,
+  useDiffStaged,
+  useDiffWorking,
+  useFileRead,
   useLogGraph,
+  useMergeStatus,
+  useRemotes,
   useRepoStatus,
+  useStashDiff,
+  useStashFiles,
+  useStashList,
+  useSubmoduleList,
+  useTags,
+  useWorktreeList,
   useWorkingStatus
 } from './useGit'
 import { createGitFreddoMock, defaultMockSettings } from '@/test/mocks/gitfreddo'
@@ -106,5 +123,77 @@ describe('useGit query hooks', () => {
     const { result } = renderHook(() => useWorkingStatus(false), { wrapper })
     expect(result.current.fetchStatus).toBe('idle')
     expect(window.gitfreddo.invoke).not.toHaveBeenCalledWith('working.status')
+  })
+
+  it('fetches additional git query hooks for the active repository', async () => {
+    vi.mocked(window.gitfreddo.invoke).mockImplementation(async (method) => {
+      switch (method) {
+        case 'remote.list':
+          return []
+        case 'tag.list':
+          return []
+        case 'stash.list':
+          return []
+        case 'worktree.list':
+          return []
+        case 'submodule.list':
+          return []
+        case 'merge.status':
+          return { inProgress: false, kind: null, conflictedPaths: [] }
+        case 'working.cleanPreview':
+          return []
+        case 'stash.files':
+          return 'M\tREADME.md'
+        case 'stash.show':
+          return 'diff'
+        case 'diff.working':
+          return 'diff'
+        case 'diff.staged':
+          return 'diff'
+        case 'diff.commits':
+          return 'diff'
+        case 'diff.commitRange':
+          return 'diff'
+        case 'diff.show':
+          return 'diff'
+        case 'file.read':
+          return 'content'
+        case 'file.readStage':
+          return 'stage'
+        case 'log.tree':
+          return ['README.md']
+        case 'working.read':
+          return { content: 'working', exists: true }
+        default:
+          return null
+      }
+    })
+    connectWorkspace()
+
+    const hooks = [
+      useRemotes,
+      useTags,
+      useStashList,
+      useWorktreeList,
+      useSubmoduleList,
+      useMergeStatus,
+      () => useCleanPreview(true),
+      () => useStashFiles(0),
+      () => useStashDiff(0, 'README.md'),
+      () => useDiffWorking('README.md'),
+      () => useDiffStaged('README.md'),
+      () => useDiffCommits('abc', 'def'),
+      () => useDiffCommitRange('abc', 'def'),
+      () => useDiffShow('abc', 'README.md'),
+      () => useFileRead('abc', 'README.md'),
+      () => useCommitTreeFiles('abc'),
+      () => useConflictFileStages('README.md')
+    ] as Array<() => { isSuccess: boolean }>
+
+    for (const hook of hooks) {
+      const { result, unmount } = renderHook(hook, { wrapper })
+      await waitFor(() => expect(result.current.isSuccess).toBe(true))
+      unmount()
+    }
   })
 })

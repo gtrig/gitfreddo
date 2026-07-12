@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
 import type { GitBranch, GitTag, GitWorktreeEntry } from '@/lib/types'
+import { clickAllMenuItems } from '@/test/contextMenuTestUtils'
 import {
   folderContextMenuItems,
   issueContextMenuItems,
@@ -297,5 +298,146 @@ describe('issueContextMenuItems', () => {
     )
 
     expect(items.some((item) => item.id === 'branch')).toBe(true)
+  })
+})
+
+describe('menu handler invocation', () => {
+  beforeEach(() => {
+    vi.stubGlobal('window', { open: vi.fn() })
+  })
+
+  it('invokes all local branch menu handlers', () => {
+    const handlers = {
+      onCheckout: vi.fn(),
+      onSelectCommit: vi.fn(),
+      onMerge: vi.fn(),
+      onSquashMergeInto: vi.fn(),
+      onRename: vi.fn(),
+      onDelete: vi.fn(),
+      onSetUpstream: vi.fn(),
+      onUnsetUpstream: vi.fn(),
+      onCreatePr: vi.fn(),
+      onCheckoutInWorktree: vi.fn(),
+      onToggleGraphVisibility: vi.fn(),
+      isHiddenInGraph: true
+    }
+
+    clickAllMenuItems(
+      localBranchContextMenuItems(
+        branch({ isCurrent: true, upstream: 'origin/main', ahead: 2 }),
+        handlers
+      )
+    )
+    clickAllMenuItems(
+      localBranchContextMenuItems(branch({ ahead: 3, upstream: 'origin/main' }), handlers)
+    )
+
+    expect(handlers.onCheckout).toHaveBeenCalled()
+    expect(handlers.onSquashMergeInto).toHaveBeenCalled()
+    expect(handlers.onCreatePr).toHaveBeenCalled()
+    expect(handlers.onSetUpstream).toHaveBeenCalled()
+    expect(handlers.onUnsetUpstream).toHaveBeenCalled()
+  })
+
+  it('invokes handlers for other sidebar menus', () => {
+    const worktreeHandlers = {
+      onOpenInTab: vi.fn(),
+      onRemove: vi.fn(),
+      onCopyPath: vi.fn()
+    }
+    const entry: GitWorktreeEntry = {
+      path: '/tmp/wt',
+      head: 'abc',
+      branch: 'feature',
+      isDetached: false,
+      isMain: false,
+      isBare: false,
+      locked: 'reason'
+    }
+    clickAllMenuItems(worktreeContextMenuItems(entry, worktreeHandlers))
+    clickAllMenuItems(folderContextMenuItems('origin', false, vi.fn()))
+    clickAllMenuItems(
+      remoteFolderContextMenuItems('origin', true, {
+        onToggle: vi.fn(),
+        onFetch: vi.fn(),
+        onEditUrl: vi.fn(),
+        onRename: vi.fn(),
+        onDelete: vi.fn()
+      })
+    )
+    clickAllMenuItems(
+      remoteBranchContextMenuItems(branch({ name: 'origin/feature', isRemote: true }), {
+        onSelectCommit: vi.fn(),
+        onCheckout: vi.fn(),
+        onDeleteRemote: vi.fn(),
+        onToggleGraphVisibility: vi.fn(),
+        isHiddenInGraph: false
+      })
+    )
+    clickAllMenuItems(
+      stashContextMenuItems(0, 'abc', 'wip', {
+        onSelect: vi.fn(),
+        onApply: vi.fn(),
+        onPop: vi.fn(),
+        onDrop: vi.fn(),
+        onBranch: vi.fn()
+      })
+    )
+
+    const localTag: GitTag = {
+      name: 'v1.0.0',
+      target: 'abc1234',
+      isAnnotated: false,
+      isRemote: false
+    }
+    clickAllMenuItems(
+      tagContextMenuItems(localTag, {
+        defaultRemote: 'origin',
+        onSelectCommit: vi.fn(),
+        onCheckout: vi.fn(),
+        onPush: vi.fn(),
+        onRename: vi.fn(),
+        onDelete: vi.fn()
+      })
+    )
+    clickAllMenuItems(
+      tagContextMenuItems(
+        { ...localTag, name: 'origin/v1.0.0', isRemote: true, remote: 'origin' },
+        { onSelectCommit: vi.fn(), onCheckout: vi.fn(), onPush: vi.fn(), onDelete: vi.fn() }
+      )
+    )
+    clickAllMenuItems(
+      pullRequestContextMenuItems(
+        {
+          number: 1,
+          title: 'Fix bug',
+          state: 'open',
+          htmlUrl: 'https://github.com/org/repo/pull/1',
+          user: 'alice',
+          head: { ref: 'fix', sha: 'abc' },
+          base: { ref: 'main', sha: 'def' },
+          body: '',
+          draft: false,
+          mergeable: true
+        },
+        { onMerge: vi.fn() }
+      )
+    )
+    clickAllMenuItems(
+      issueContextMenuItems(
+        {
+          number: 42,
+          title: 'Login fails',
+          state: 'open',
+          htmlUrl: 'https://github.com/org/repo/issues/42',
+          user: 'alice',
+          body: '',
+          labels: []
+        },
+        { onBranchFromIssue: vi.fn(), onEdit: vi.fn(), onClose: vi.fn() }
+      )
+    )
+
+    expect(worktreeHandlers.onOpenInTab).toHaveBeenCalled()
   })
 })

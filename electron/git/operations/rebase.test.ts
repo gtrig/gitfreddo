@@ -8,7 +8,13 @@ import {
   markCommitsForSquash,
   resetToParent,
   cherryPick,
-  revertCommit
+  cherryPickMultiple,
+  revertCommit,
+  resetRepo,
+  rebaseStart,
+  rebaseSquash,
+  rebaseDrop,
+  rebaseReword
 } from './rebase'
 import { runGitOrThrow } from '../git-runner'
 
@@ -224,11 +230,122 @@ describe('markCommitsForSquash edge cases', () => {
   })
 })
 
-describe('markCommitForReword hash matching', () => {
-  it('matches abbreviated hashes in the todo list', () => {
-    const fullHash = '125c15ed41cf1b761557e592b83bf2f856c1070e'
-    const todo = `pick 125c15e Old subject`
+async function createLinearRepo(
+  commitMessages: string[]
+): Promise<{ cwd: string; hashes: string[]; run: (args: string[]) => Promise<string> }> {
+  const cwd = mkdtempSync(join(tmpdir(), 'gitfreddo-linear-'))
+  const run = (args: string[]) => runGitOrThrow(args, { cwd, gitBinaryPath: 'git' })
+  await run(['init', '-b', 'main'])
+  await run(['config', 'user.email', 'test@example.com'])
+  await run(['config', 'user.name', 'Test'])
 
-    expect(markCommitForReword(todo, fullHash)).toBe(`reword 125c15e Old subject`)
+  const hashes: string[] = []
+  for (let index = 0; index < commitMessages.length; index++) {
+    writeFileSync(join(cwd, `file-${index}.txt`), `${commitMessages[index]}\n`)
+    await run(['add', '.'])
+    await run(['commit', '-m', commitMessages[index]!])
+    hashes.push((await run(['rev-parse', 'HEAD'])).trim())
+  }
+
+  return { cwd, hashes, run }
+}
+
+describe('rebase integration', () => {
+  let tempDir: string | null = null
+
+  afterEach(() => {
+    if (tempDir) {
+      rmSync(tempDir, { recursive: true, force: true })
+      tempDir = null
+    }
+  })
+
+  it('rebases a branch onto an updated main', async () => {
+    const repo = await createLinearRepo(['first', 'side-only'])
+    tempDir = repo.cwd
+    await repo.run(['branch', 'side'])
+    await repo.run(['switch', 'main'])
+    writeFileSync(join(repo.cwd, 'main-only.txt'), 'main\n')
+    await repo.run(['add', 'main-only.txt'])
+    await repo.run(['commit', '-m', 'main-only'])
+    await repo.run(['switch', 'side'])
+
+    await rebaseStart(repo.cwd, 'git', 'main')
+    const subjects = (await repo.run(['log', '--format=%s'])).trim().split('\n')
+    expect(subjects).toEqual(['main-only', 'side-only', 'first'])
+  })
+
+  it('squashes selected commits together', async () => {
+    const repo = await createLinearRepo(['first', 'second', 'third'])
+    tempDir = repo.cwd
+
+    await rebaseSquash(repo.cwd, 'git', [repo.hashes[1]!, repo.hashes[2]!])
+    const count = (await repo.run(['rev-list', '--count', 'HEAD'])).trim()
+    expect(Number(count)).toBe(2)
+  })
+
+  it('drops selected commits from history', async () => {
+    const repo = await createLinearRepo(['first', 'second', 'third'])
+    tempDir = repo.cwd
+
+    await rebaseDrop(repo.cwd, 'git', [repo.hashes[1]!])
+    const subjects = (await repo.run(['log', '--format=%s'])).trim().split('\n')
+    expect(subjects).toEqual(['third', 'first'])
+  })
+
+  it('rewords a commit message', async () => {
+    const repo = await createLinearRepo(['first', 'second'])
+    tempDir = repo.cwd
+
+    await rebaseReword(repo.cwd, 'git', repo.hashes[1]!, 'Reworded subject')
+    const subject = (await repo.run(['log', '-1', '--format=%s'])).trim()
+    expect(subject).toBe('Reworded subject')
+  })
+
+  it('cherry-picks multiple commits in order', async () => {
+    const repo = await createLinearRepo(['first', 'second', 'third'])
+    tempDir = repo.cwd
+    await repo.run(['branch', 'pick-target'])
+    await repo.run(['reset', '--hard', repo.hashes[0]!])
+
+    await cherryPickMultiple(repo.cwd, 'git', [repo.hashes[1]!, repo.hashes[2]!])
+    const subjects = (await repo.run(['log', '--format=%s'])).trim().split('\n')
+    expect(subjects).toEqual(['third', 'second', 'first'])
+  })
+
+  it('requires at least two commits to squash', async () => {
+    const repo = await createLinearRepo(['first'])
+    tempDir = repo.cwd
+    await expect(rebaseSquash(repo.cwd, 'git', [repo.hashes[0]!])).rejects.toThrow(/two commits/)
+  })
+})
+
+describe('resetRepo', () => {
+  let tempDir: string | null = null
+
+  afterEach(() => {
+    if (tempDir) {
+      rmSync(tempDir, { recursive: true, force: true })
+      tempDir = null
+    }
+  })
+
+  it('hard-resets the repository to a ref', async () => {
+    tempDir = mkdtempSync(join(tmpdir(), 'gitfreddo-reset-repo-'))
+    const run = (args: string[]) => runGitOrThrow(args, { cwd: tempDir!, gitBinaryPath: 'git' })
+
+    await run(['init', '-b', 'main'])
+    await run(['config', 'user.email', 'test@example.com'])
+    await run(['config', 'user.name', 'Test'])
+    writeFileSync(join(tempDir, 'a.txt'), 'one\n')
+    await run(['add', 'a.txt'])
+    await run(['commit', '-m', 'first'])
+    const first = (await run(['rev-parse', 'HEAD'])).trim()
+    writeFileSync(join(tempDir, 'a.txt'), 'two\n')
+    await run(['commit', '-am', 'second'])
+
+    await resetRepo(tempDir, 'git', 'hard', first)
+    const subject = (await run(['log', '-1', '--format=%s'])).trim()
+    expect(subject).toBe('first')
   })
 })

@@ -7,6 +7,16 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-12 — Coverage push toward 90%
+
+- **Why:** Project-wide coverage was ~74% lines / ~65% functions; user requested raising overall coverage toward 90%.
+- **What:** Added integration tests for git merge/rebase operations, LLM context enrichment (`resolve_conflict`, `commit_message`, `stash_message`, `analyze_changes`), repo watcher, Bitbucket pulls API, and expanded component/hook tests (`LocalBranchesSection`, `RemoteBranchesSection`, `useTimelineDragSelect`, `MergeConflictsPanel`, Bitbucket/GitHub repo pickers, `CreateBitbucketRepoModal`, `ThreeWayCodePane`, `PullRequestCommitsPanel`, `ExplainCommitWithAi`, `CommitFileList`). Global coverage now ~78% lines / ~66% functions (~4.5k lines still needed for 90%). Raised Vitest line threshold to 78% and electron line threshold to 45%; documented 90% target in `docs/contributing/testing.md`.
+
+### 2026-07-12 — Function coverage push toward 70%
+
+- **Why:** Global function coverage lagged lines/statements (~54% vs ~70%); the Vitest functions threshold was raised to 70% but the suite did not yet meet it.
+- **What:** Expanded IPC dispatch tests (`electron/git/repo-manager-invoke.test.ts`), Bitbucket service API tests, context-menu and hook coverage (`useGit`, `useCommitContextMenu`, `useTimelineRefContextMenu`, `useGitMutations`), and component tests (`CommitTimeline`, `WorkspaceHub`, `GitWorkingTree`, `CommitPanel`, `MaintenanceSettingsPanel`, `SubmodulesSection`, `PullRequestDetail`, `CommitFileList`). Function coverage ~65% (up from ~54%); lines/statements ~74%. CI `test:coverage` still fails the 70% functions gate until remaining component/hook handlers are covered.
+
 ### 2026-07-12 — Project-wide 70% test coverage threshold
 
 - **Why:** Global coverage was ~46% with a 26% floor; CI did not enforce meaningful coverage on hooks, components, or electron integration code.

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { GitCommit } from '@/lib/types'
 import { buildMultiCommitContextMenuItems } from '@/lib/context-menus/multiCommitContextMenu'
+import { clickAllMenuItems } from '@/test/contextMenuTestUtils'
 
 function commit(hash: string, parents: string[] = []): GitCommit {
   const author = { name: 'Author', email: 'a@b.c', date: '2024-01-01T00:00:00+00:00' }
@@ -106,5 +107,22 @@ describe('buildMultiCommitContextMenuItems', () => {
     })
 
     expect(items.find((item) => item.id === 'explain-selected')).toBeDefined()
+  })
+
+  it('invokes bulk action handlers when items are clicked', () => {
+    const items = buildMultiCommitContextMenuItems({
+      selectedCommits: [allCommits[1]!, allCommits[2]!],
+      head: 'c3',
+      branch: 'feature',
+      isDetached: false,
+      allCommits,
+      working: cleanWorking,
+      actions,
+      aiEnabled: true
+    })
+
+    clickAllMenuItems(items)
+    expect(actions.copyAllHashes).toHaveBeenCalled()
+    expect(actions.explainCommits).toHaveBeenCalled()
   })
 })

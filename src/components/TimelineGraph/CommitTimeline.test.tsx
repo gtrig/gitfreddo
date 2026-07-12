@@ -2,13 +2,30 @@
  * @vitest-environment jsdom
  */
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { cleanup, screen } from '@testing-library/react'
+import { cleanup, fireEvent, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { CommitTimeline } from './CommitTimeline'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { useSelectionStore } from '@/stores/selection'
+import { useCommitSearchStore } from '@/stores/commitSearch'
 import { renderWithProviders } from '@/test/render'
 import { createGitFreddoMock } from '@/test/mocks/gitfreddo'
+import { makeCommit } from '@/test/fixtures/commit'
 import { DEFAULT_TIMELINE_COLUMN_VISIBILITY } from '@/lib/timeline/timelineColumnVisibility'
 import type { GitWorkingStatus } from '@/lib/types'
+
+const commitA = makeCommit({
+  hash: 'aaa111111111111111111111111111111111111',
+  shortHash: 'aaa1111',
+  subject: 'First commit',
+  refs: ['main']
+})
+const commitB = makeCommit({
+  hash: 'bbb222222222222222222222222222222222222',
+  shortHash: 'bbb2222',
+  subject: 'Second commit',
+  parents: [commitA.hash]
+})
 
 const emptyWorking: GitWorkingStatus = {
   branch: 'main',
@@ -24,10 +41,72 @@ const emptyWorking: GitWorkingStatus = {
   cherryPickInProgress: false
 }
 
+vi.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: vi.fn(({ count, estimateSize }: { count: number; estimateSize: () => number }) => ({
+    getVirtualItems: () =>
+      Array.from({ length: count }, (_, index) => ({
+        index,
+        key: index,
+        start: index * estimateSize(),
+        size: estimateSize()
+      })),
+    getTotalSize: () => count * estimateSize(),
+    measureElement: vi.fn()
+  }))
+}))
+
+vi.mock('@/components/Branches/MergeBranchDialog', () => ({ MergeBranchDialog: () => null }))
+vi.mock('@/components/Forge/ForgeCreatePrModal', () => ({ ForgeCreatePrModal: () => null }))
+vi.mock('@/components/Worktrees/AddWorktreeModal', () => ({ AddWorktreeModal: () => null }))
+vi.mock('@/components/Branches/CheckoutRemoteModal', () => ({ CheckoutRemoteModal: () => null }))
+vi.mock('@/components/Branches/CreateBranchModal', () => ({ CreateBranchModal: () => null }))
+vi.mock('@/components/Branches/RenameBranchModal', () => ({ RenameBranchModal: () => null }))
+vi.mock('@/components/Tags/RenameTagModal', () => ({ RenameTagModal: () => null }))
+vi.mock('@/components/Branches/SetUpstreamModal', () => ({ SetUpstreamModal: () => null }))
+vi.mock('@/components/Branches/RebaseSequenceModal', () => ({ RebaseSequenceModal: () => null }))
+vi.mock('@/components/Tags/CreateTagModal', () => ({ CreateTagModal: () => null }))
+vi.mock('@/components/DetailPanel/DeleteCommitModal', () => ({ DeleteCommitModal: () => null }))
+vi.mock('@/components/Tags/DeleteTagModal', () => ({ DeleteTagModal: () => null }))
+vi.mock('@/components/DetailPanel/RemoveStaleBranchesModal', () => ({ RemoveStaleBranchesModal: () => null }))
+vi.mock('@/components/DetailPanel/RewordCommitModal', () => ({ RewordCommitModal: () => null }))
+vi.mock('@/components/DetailPanel/ExplainCommitWithAi', () => ({ ExplainCommitModal: () => null }))
+vi.mock('@/components/DetailPanel/AddNoteModal', () => ({ AddNoteModal: () => null }))
+vi.mock('@/components/History/PickMergeParentModal', () => ({ PickMergeParentModal: () => null }))
+vi.mock('@/components/Ui/Modal', async () => {
+  const actual = await vi.importActual<typeof import('@/components/Ui/Modal')>('@/components/Ui/Modal')
+  return { ...actual, ConfirmDialog: () => null }
+})
+
+const checkoutMutate = vi.fn(async () => undefined)
+const stashApplyMutate = vi.fn(async () => undefined)
+
+vi.mock('@/hooks/useGitMutations', () => ({
+  useGitMutations: () => ({
+    checkout: { mutateAsync: checkoutMutate, isPending: false },
+    stashApply: { mutateAsync: stashApplyMutate, isPending: false },
+    stashPop: { mutateAsync: vi.fn(), isPending: false },
+    stashDrop: { mutateAsync: vi.fn(), isPending: false },
+    branchRename: { mutateAsync: vi.fn(), isPending: false },
+    branchDelete: { mutateAsync: vi.fn(), isPending: false },
+    tagDelete: { mutateAsync: vi.fn(), isPending: false },
+    remoteBranchDelete: { mutateAsync: vi.fn(), isPending: false }
+  })
+}))
+
 vi.mock('@/hooks/useGit', () => ({
-  useLogGraph: vi.fn(() => ({ data: { commits: [], maxLane: 0 }, isLoading: false, error: null })),
-  useBranches: vi.fn(() => ({ data: [], isLoading: false, error: null })),
-  useRepoStatus: vi.fn(() => ({ data: { head: 'abc', branch: 'main', isDetached: false } })),
+  useLogGraph: vi.fn(() => ({
+    data: { commits: [commitA, commitB], maxLane: 1 },
+    isLoading: false,
+    error: null
+  })),
+  useBranches: vi.fn(() => ({
+    data: [{ name: 'main', head: commitA.hash, isCurrent: true, isRemote: false, upstream: null }],
+    isLoading: false,
+    error: null
+  })),
+  useRepoStatus: vi.fn(() => ({
+    data: { head: commitA.hash, branch: 'main', isDetached: false, root: '/tmp/repo' }
+  })),
   useRemotes: vi.fn(() => ({ data: [] })),
   useStashList: vi.fn(() => ({ data: [] })),
   useTags: vi.fn(() => ({ data: [] })),
@@ -54,7 +133,23 @@ vi.mock('@/hooks/useTimelineColumnVisibility', () => ({
 
 describe('CommitTimeline', () => {
   afterEach(() => cleanup())
-  beforeEach(() => {
+
+  async function resetGitMocks() {
+    const git = await import('@/hooks/useGit')
+    vi.mocked(git.useLogGraph).mockReturnValue({
+      data: { commits: [commitA, commitB], maxLane: 1 },
+      isLoading: false,
+      error: null
+    } as unknown as ReturnType<typeof git.useLogGraph>)
+    vi.mocked(git.useWorkingStatus).mockReturnValue({
+      data: emptyWorking,
+      isLoading: false,
+      error: null
+    } as unknown as ReturnType<typeof git.useWorkingStatus>)
+    vi.mocked(git.useMergeStatus).mockReturnValue({ data: null } as unknown as ReturnType<typeof git.useMergeStatus>)
+  }
+
+  beforeEach(async () => {
     useWorkspaceStore.setState({
       tabs: [{ path: '/tmp/repo', connected: true, connecting: false }],
       activePath: '/tmp/repo',
@@ -62,7 +157,9 @@ describe('CommitTimeline', () => {
       workspacePath: '/tmp/repo',
       workspacePickerOpen: false
     })
+    useCommitSearchStore.setState({ query: '' })
     window.gitfreddo = createGitFreddoMock()
+    await resetGitMocks()
   })
   it('renders timeline when connected', () => {
     renderWithProviders(<CommitTimeline />)
@@ -92,5 +189,82 @@ describe('CommitTimeline', () => {
 
     renderWithProviders(<CommitTimeline />)
     expect(screen.getByText('Graph failed')).toBeInTheDocument()
+  })
+
+  it('renders commit rows and navigates with arrow keys', async () => {
+    useSelectionStore.setState({
+      timelineSelection: { kind: 'commit', id: commitA.hash },
+      selectedCommitHashes: [commitA.hash]
+    })
+
+    renderWithProviders(<CommitTimeline />)
+    expect(screen.getByText('First commit')).toBeInTheDocument()
+    expect(screen.getByText('Second commit')).toBeInTheDocument()
+
+    const region = screen.getByRole('region', { name: /commit/i })
+    region.focus()
+    await userEvent.keyboard('{ArrowDown}')
+    expect(useSelectionStore.getState().timelineSelection).toEqual({
+      kind: 'commit',
+      id: commitB.hash
+    })
+  })
+
+  it('shows working and merge prefix rows when repo state requires them', async () => {
+    const { useWorkingStatus, useMergeStatus } = await import('@/hooks/useGit')
+    vi.mocked(useWorkingStatus).mockReturnValue({
+      data: {
+        ...emptyWorking,
+        isClean: false,
+        unstaged: [{ path: 'dirty.txt', status: 'modified' }]
+      },
+      isLoading: false,
+      error: null
+    } as unknown as ReturnType<typeof useWorkingStatus>)
+    vi.mocked(useMergeStatus).mockReturnValue({
+      data: { inProgress: true, kind: 'merge', conflictedPaths: ['README.md'] }
+    } as unknown as ReturnType<typeof useMergeStatus>)
+
+    renderWithProviders(<CommitTimeline />)
+    expect(screen.getByText('Uncommitted changes')).toBeInTheDocument()
+    expect(screen.getByText('Merge conflicts detected')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByText('View Changes'))
+    expect(useSelectionStore.getState().timelineSelection).toEqual({
+      kind: 'working',
+      id: 'changes'
+    })
+
+    await userEvent.click(screen.getByText('Resolve'))
+    expect(useSelectionStore.getState().timelineSelection).toEqual({
+      kind: 'merge',
+      id: 'conflicts'
+    })
+  })
+
+  it('opens the header column visibility menu', async () => {
+    renderWithProviders(<CommitTimeline />)
+    const header = screen.getByText('Branch / Tag').closest('div.sticky')
+    expect(header).toBeTruthy()
+    fireEvent.contextMenu(header!)
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+  })
+
+  it('prompts to open a repo when disconnected', () => {
+    useWorkspaceStore.setState({
+      tabs: [],
+      activePath: null,
+      connected: false,
+      workspacePath: null,
+      workspacePickerOpen: false
+    })
+    renderWithProviders(<CommitTimeline />)
+    expect(screen.getByText(/Open a repository to view commits/i)).toBeInTheDocument()
+  })
+
+  it('dims commits that do not match the active search query', async () => {
+    useCommitSearchStore.setState({ query: 'Second' })
+    renderWithProviders(<CommitTimeline />)
+    expect(screen.getByText('Second commit')).toBeInTheDocument()
   })
 })

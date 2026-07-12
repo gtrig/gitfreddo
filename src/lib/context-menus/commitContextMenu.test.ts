@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { buildCommitContextMenuItems } from '@/lib/context-menus/commitContextMenu'
+import { clickAllMenuItems } from '@/test/contextMenuTestUtils'
 import type { GitCommit, GitWorkingStatus } from '@/lib/types'
 
 const baseCommit: GitCommit = {
@@ -83,6 +84,10 @@ const noopActions = {
   cherryPickAbort: () => {},
   cherryPickSkip: () => {}
 }
+
+const spyActions = Object.fromEntries(
+  Object.keys(noopActions).map((key) => [key, vi.fn()])
+) as unknown as typeof noopActions
 
 describe('buildCommitContextMenuItems', () => {
   it('shows delete actions for HEAD commit', () => {
@@ -255,5 +260,70 @@ describe('buildCommitContextMenuItems', () => {
     })
 
     expect(items.find((item) => item.id === 'explain-commit')).toBeDefined()
+  })
+
+  it('invokes action handlers for head and historical commits', () => {
+    clickAllMenuItems(
+      buildCommitContextMenuItems({
+        commit: baseCommit,
+        head: baseCommit.hash,
+        branch: 'main',
+        isDetached: false,
+        commits: [baseCommit, parentCommit],
+        working: cleanWorking,
+        selectedCommitId: baseCommit.hash,
+        selectedCount: 1,
+        selectedHashes: [baseCommit.hash],
+        actions: spyActions,
+        aiEnabled: true
+      })
+    )
+
+    clickAllMenuItems(
+      buildCommitContextMenuItems({
+        commit: parentCommit,
+        head: baseCommit.hash,
+        branch: 'main',
+        isDetached: false,
+        commits: [baseCommit, parentCommit],
+        working: cleanWorking,
+        selectedCommitId: parentCommit.hash,
+        selectedCount: 1,
+        selectedHashes: [parentCommit.hash],
+        actions: spyActions
+      })
+    )
+
+    expect(spyActions.copyHash).toHaveBeenCalled()
+    expect(spyActions.deleteHead).toHaveBeenCalled()
+    expect(spyActions.revertCommit).toHaveBeenCalled()
+    expect(spyActions.reset).toHaveBeenCalled()
+  })
+
+  it('shows in-progress operation actions when git state requires them', () => {
+    const busyWorking: GitWorkingStatus = {
+      ...cleanWorking,
+      rebaseInProgress: true,
+      mergeInProgress: true,
+      cherryPickInProgress: true
+    }
+
+    const items = buildCommitContextMenuItems({
+      commit: baseCommit,
+      head: baseCommit.hash,
+      branch: 'main',
+      isDetached: false,
+      commits: [baseCommit, parentCommit],
+      working: busyWorking,
+      selectedCommitId: baseCommit.hash,
+      selectedCount: 1,
+      selectedHashes: [baseCommit.hash],
+      actions: spyActions
+    })
+
+    clickAllMenuItems(items)
+    expect(spyActions.rebaseContinue).toHaveBeenCalled()
+    expect(spyActions.mergeContinue).toHaveBeenCalled()
+    expect(spyActions.cherryPickContinue).toHaveBeenCalled()
   })
 })

@@ -3,6 +3,7 @@
  */
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { cleanup, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { GitWorkingTree } from './GitWorkingTree'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { renderWithProviders } from '@/test/render'
@@ -101,5 +102,27 @@ describe('GitWorkingTree', () => {
     renderWithProviders(<GitWorkingTree />)
     expect(screen.getByText('dirty.txt')).toBeInTheDocument()
     expect(screen.getByText('ready.txt')).toBeInTheDocument()
+  })
+
+  it('exposes working tree bulk actions for dirty repositories', async () => {
+    const { useWorkingStatus } = await import('@/hooks/useGit')
+    vi.mocked(useWorkingStatus).mockReturnValue({
+      data: {
+        ...emptyWorking,
+        isClean: false,
+        unstaged: [{ path: 'dirty.txt', status: 'modified' }],
+        staged: [{ path: 'ready.txt', status: 'added' }],
+        untracked: [{ path: 'new.txt', status: 'untracked' }]
+      },
+      isLoading: false,
+      error: null
+    } as ReturnType<typeof useWorkingStatus>)
+
+    renderWithProviders(<GitWorkingTree />)
+
+    await userEvent.click(screen.getAllByRole('button', { name: 'Stage all' })[0]!)
+    await userEvent.click(screen.getAllByRole('button', { name: 'Unstage all' })[0]!)
+    await userEvent.click(screen.getAllByRole('button', { name: 'Discard all…' })[0]!)
+    await userEvent.click(screen.getByRole('button', { name: 'Tree' }))
   })
 })

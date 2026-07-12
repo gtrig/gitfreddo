@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
 import { cleanup, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { CommitPanel } from './CommitPanel'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { COMMIT_PANEL_DEFAULT, useLayoutStore } from '@/stores/layout'
@@ -57,5 +58,18 @@ describe('CommitPanel', () => {
     const view = renderWithProviders(<CommitPanel working={emptyWorking} />)
     expect(view.getByTestId('commit-panel')).toHaveStyle({ height: '320px' })
     expect(view.getByPlaceholderText('Description')).toHaveClass('flex-1')
+  })
+
+  it('enables commit when summary is provided and files are staged', async () => {
+    const stagedWorking: GitWorkingStatus = {
+      ...emptyWorking,
+      staged: [{ path: 'ready.txt', status: 'added' }]
+    }
+    renderWithProviders(<CommitPanel working={stagedWorking} />)
+    await userEvent.type(screen.getByPlaceholderText('Commit summary'), 'feat: add tests')
+    const primary = screen
+      .getAllByRole('button')
+      .find((button) => button.className.includes('emerald-600'))
+    expect(primary).toBeEnabled()
   })
 })

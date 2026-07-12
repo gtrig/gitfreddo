@@ -216,3 +216,151 @@ describe('enrichAiContext analyze_pull_request', () => {
     expect(enriched.context?.diffText).toContain('src/a.ts')
   })
 })
+
+describe('enrichAiContext resolve_conflict', () => {
+  it('loads conflict stages when not provided', async () => {
+    const invoke = vi.fn(async (_repoPath: string, method: string, params?: unknown) => {
+      if (method === 'file.readStage') {
+        const stage = (params as { stage: number }).stage
+        return stage === 1 ? 'base' : stage === 2 ? 'ours' : 'theirs'
+      }
+      if (method === 'working.read') {
+        return { content: '<<<<<<<\n=======\n>>>>>>>' }
+      }
+      if (method === 'merge.status') {
+        return {
+          currentBranch: 'main',
+          kind: 'merge',
+          incomingLabel: 'feature'
+        }
+      }
+      throw new Error(`unexpected ${method}`)
+    })
+
+    const enriched = await enrichAiContext(createManager(invoke), {
+      purpose: 'resolve_conflict',
+      context: { filePath: 'src/conflict.ts' }
+    })
+
+    expect(invoke).toHaveBeenCalledWith('/repo', 'file.readStage', {
+      stage: 2,
+      path: 'src/conflict.ts'
+    })
+    expect(enriched.context?.sideA).toBe('ours')
+    expect(enriched.context?.operationKind).toBe('merge')
+    expect(enriched.context?.incomingLabel).toBe('feature')
+  })
+
+  it('returns params unchanged when file path is missing', async () => {
+    const invoke = vi.fn()
+    const params = { purpose: 'resolve_conflict' as const, context: {} }
+    const enriched = await enrichAiContext(createManager(invoke), params)
+    expect(invoke).not.toHaveBeenCalled()
+    expect(enriched).toEqual(params)
+  })
+})
+
+describe('enrichAiContext commit_message', () => {
+  it('loads staged diff and file paths', async () => {
+    const invoke = vi.fn(async (_repoPath: string, method: string) => {
+      if (method === 'working.status') {
+        return {
+          branch: 'main',
+          staged: [{ path: 'src/auth.ts' }],
+          unstaged: [],
+          untracked: [],
+          conflicted: []
+        }
+      }
+      if (method === 'diff.staged') {
+        return { unified: '+++ b/src/auth.ts\n+export {}' }
+      }
+      if (method === 'repo.status') {
+        return { branch: 'main' }
+      }
+      throw new Error(`unexpected ${method}`)
+    })
+
+    const enriched = await enrichAiContext(createManager(invoke), {
+      purpose: 'commit_message',
+      context: {}
+    })
+
+    expect(enriched.context?.filePaths).toEqual(['src/auth.ts'])
+    expect(enriched.context?.diffText).toContain('src/auth.ts')
+    expect(enriched.context?.branch).toBe('main')
+  })
+})
+
+describe('enrichAiContext stash_message', () => {
+  it('loads working diff for unstaged and untracked files', async () => {
+    const invoke = vi.fn(async (_repoPath: string, method: string) => {
+      if (method === 'working.status') {
+        return {
+          branch: 'main',
+          staged: [],
+          unstaged: [{ path: 'README.md' }],
+          untracked: [{ path: 'notes.txt' }],
+          conflicted: []
+        }
+      }
+      if (method === 'diff.working') {
+        return { unified: '+++ b/README.md\n+change' }
+      }
+      throw new Error(`unexpected ${method}`)
+    })
+
+    const enriched = await enrichAiContext(createManager(invoke), {
+      purpose: 'stash_message',
+      context: {}
+    })
+
+    expect(enriched.context?.filePaths).toEqual(['README.md', 'notes.txt'])
+    expect(enriched.context?.diffText).toContain('README.md')
+  })
+})
+
+describe('enrichAiContext analyze_changes', () => {
+  it('combines staged and unstaged diffs with branch metadata', async () => {
+    const invoke = vi.fn(async (_repoPath: string, method: string) => {
+      if (method === 'working.status') {
+        return {
+          branch: 'feature',
+          staged: [{ path: 'src/a.ts' }],
+          unstaged: [{ path: 'README.md' }],
+          untracked: [],
+          conflicted: []
+        }
+      }
+      if (method === 'diff.staged') {
+        return { unified: 'staged diff' }
+      }
+      if (method === 'diff.working') {
+        return { unified: 'working diff' }
+      }
+      throw new Error(`unexpected ${method}`)
+    })
+
+    const enriched = await enrichAiContext(createManager(invoke), {
+      purpose: 'analyze_changes',
+      context: {}
+    })
+
+    expect(enriched.context?.branch).toBe('feature')
+    expect(enriched.context?.stagedFilePaths).toEqual(['src/a.ts'])
+    expect(enriched.context?.unstagedFilePaths).toEqual(['README.md'])
+    expect(enriched.context?.diffText).toContain('Staged changes')
+    expect(enriched.context?.diffText).toContain('Unstaged changes')
+  })
+})
+
+describe('enrichAiContext no repo', () => {
+  it('returns params unchanged when repo path is unavailable', async () => {
+    const manager = {
+      getRepoPath: () => null,
+      invoke: vi.fn()
+    } as unknown as RepoManager
+    const params = { purpose: 'commit_message' as const, context: {} }
+    await expect(enrichAiContext(manager, params)).resolves.toEqual(params)
+  })
+})

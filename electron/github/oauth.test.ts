@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { getGitHubClientId, requestDeviceCode } from './oauth'
+import { getGitHubClientId, pollForAccessToken, requestDeviceCode } from './oauth'
 
 describe('getGitHubClientId', () => {
   const original = process.env.GITHUB_CLIENT_ID
@@ -72,5 +72,35 @@ describe('requestDeviceCode', () => {
     await expect(requestDeviceCode('test-client-id')).rejects.toThrow(
       'Failed to start GitHub device flow (400)'
     )
+  })
+})
+
+describe('pollForAccessToken', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.stubGlobal('fetch', vi.fn())
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  it('returns an access token when authorization completes', async () => {
+    const mockFetch = vi.mocked(fetch)
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ error: 'authorization_pending' })
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'gh-token' })
+      } as Response)
+
+    const promise = pollForAccessToken('client', 'device-code', 5, 120)
+    await vi.advanceTimersByTimeAsync(5000)
+    await vi.advanceTimersByTimeAsync(5000)
+    await expect(promise).resolves.toBe('gh-token')
   })
 })

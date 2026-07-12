@@ -779,4 +779,41 @@ describe('buildAiMessages analyze_pull_request', () => {
     expect(user).toContain('src/auth.ts')
     expect(user).toContain('Add refresh helper')
   })
+
+  it('builds resolve_conflict prompts with merge context', () => {
+    const { system, user } = buildAiMessages('resolve_conflict', {
+      branch: 'main',
+      filePath: 'src/conflict.ts',
+      operationKind: 'merge',
+      incomingLabel: 'feature',
+      sideA: 'ours',
+      sideB: 'theirs',
+      conflictContent: '<<<<<<<\n=======\n>>>>>>>'
+    })
+
+    expect(system).toContain('valid JSON')
+    expect(user).toContain('src/conflict.ts')
+    expect(user).toContain('feature')
+    expect(user).toContain('ours')
+  })
+
+  it('builds refine pull request analysis prompts with prior analysis', () => {
+    const { user } = buildAiMessages('refine_pull_request_analysis', {
+      prNumber: 12,
+      prTitle: 'Auth refactor',
+      pullRequestAnalysis: {
+        summary: 'Auth updates',
+        keyChanges: 'Token refresh',
+        risks: 'Edge cases',
+        reviewFocus: 'Sessions',
+        testingNotes: 'E2E auth'
+      },
+      chatHistory: [{ role: 'user', content: 'Focus on logout path' }],
+      userMessage: 'Add more detail on risks'
+    })
+
+    expect(user).toContain('Auth updates')
+    expect(user).toContain('logout path')
+    expect(user).toContain('Add more detail on risks')
+  })
 })

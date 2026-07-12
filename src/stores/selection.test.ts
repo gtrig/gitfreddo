@@ -70,6 +70,49 @@ describe('useSelectionStore', () => {
     expect(state.selectedWorkingFile).toBeNull()
   })
 
+  it('supports primary commit, compare range, stash, and AI proposal state', () => {
+    const store = useSelectionStore.getState()
+    store.toggleCommitSelection('primary')
+    store.setPrimaryCommit('primary')
+    expect(useSelectionStore.getState().selectedCommitHash).toBe('primary')
+
+    store.showCompareCommitRange('old', 'new', 'Compare')
+    expect(useSelectionStore.getState().compareCommitRange).toEqual({
+      oldestHash: 'old',
+      newestHash: 'new',
+      label: 'Compare'
+    })
+
+    store.selectStash(2, 'stash-hash')
+    expect(useSelectionStore.getState().selectedStashIndex).toBe(2)
+    expect(useSelectionStore.getState().timelineSelection).toEqual({
+      kind: 'commit',
+      id: 'stash-hash'
+    })
+
+    store.setSelectedStashFile('README.md')
+    expect(useSelectionStore.getState().selectedStashFile).toBe('README.md')
+
+    store.setSelectedCommitFile('src/app.ts')
+    expect(useSelectionStore.getState().selectedCommitFile).toBe('src/app.ts')
+
+    store.setPendingAiProposals('src/conflict.ts', [
+      { hunkId: 0, text: 'resolved', analysis: '', confidence: 80 }
+    ])
+    expect(useSelectionStore.getState().pendingAiProposals['src/conflict.ts']).toHaveLength(1)
+
+    store.clearPendingAiProposals('src/conflict.ts')
+    expect(useSelectionStore.getState().pendingAiProposals['src/conflict.ts']).toBeUndefined()
+
+    store.setSelectedWorkingFile('dirty.ts', 'staged')
+    expect(useSelectionStore.getState().diffMode).toBe('staged')
+
+    store.closeDiffOverlay()
+    const cleared = useSelectionStore.getState()
+    expect(cleared.selectedWorkingFile).toBeNull()
+    expect(cleared.diffMode).toBeNull()
+  })
+
   it('opens file history and clears diff overlay state', () => {
     useSelectionStore.getState().setSelectedWorkingFile('src/app.ts', 'working')
     useSelectionStore.getState().openFileHistory('README.md')

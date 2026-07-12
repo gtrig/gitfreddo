@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { clickAllMenuItems } from '@/test/contextMenuTestUtils'
 import {
   commitFileContextMenuItems,
   commitFolderContextMenuItems,
@@ -136,5 +137,46 @@ describe('commitFileContextMenuItems', () => {
 
     expect(withHistory.some((item) => item.id === 'history')).toBe(true)
     expect(withoutHistory.some((item) => item.id === 'history')).toBe(false)
+  })
+})
+
+describe('menu handler invocation', () => {
+  it('invokes working tree and commit menu handlers', () => {
+    const handlers = {
+      onSelect: vi.fn(),
+      onStageToggle: vi.fn(),
+      onOpenInEditor: vi.fn(),
+      onDiscard: vi.fn(),
+      onDelete: vi.fn(),
+      onRemove: vi.fn(),
+      onRename: vi.fn(),
+      onFileHistory: vi.fn(),
+      onAddToGitignore: vi.fn(),
+      onOpenSubmodule: vi.fn(),
+      onUpdateSubmodule: vi.fn(),
+      onSyncSubmodule: vi.fn(),
+      onToggle: vi.fn(),
+      onStageFolder: vi.fn(),
+      onDiscardFolder: vi.fn()
+    }
+
+    clickAllMenuItems(
+      workingTreeFileContextMenuItems('src/app.ts', 'working', 'modified', handlers, {
+        isSubmodule: false
+      })
+    )
+    clickAllMenuItems(
+      workingTreeFolderContextMenuItems('src', true, 'working', {
+        onToggle: handlers.onToggle,
+        onStageFolder: handlers.onStageFolder,
+        onDiscardFolder: handlers.onDiscardFolder,
+        onAddToGitignore: handlers.onAddToGitignore
+      })
+    )
+    clickAllMenuItems(commitFolderContextMenuItems('src', true, handlers.onToggle))
+    clickAllMenuItems(commitFileContextMenuItems('src/a.ts', 'a.ts', handlers.onSelect, handlers.onFileHistory))
+
+    expect(handlers.onSelect).toHaveBeenCalled()
+    expect(handlers.onStageToggle).toHaveBeenCalled()
   })
 })
