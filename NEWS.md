@@ -5,6 +5,7 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+- Commit descriptions in the detail panel render Markdown (lists, bold, links, and more).
 - The right detail panel stays hidden until you select a commit, uncommitted changes, or merge conflicts — giving the timeline more room by default.
 - Error notifications now show a short, plain-language message instead of raw git/network output; the full technical details are still available in the Logs drawer.
 - Hover over a line in the Logs drawer to copy it to your clipboard.

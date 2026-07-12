@@ -1,23 +1,21 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { GitHubMarkdownBody } from '@/components/Ui/GitHubMarkdownBody'
 import { previewCommitDescription } from '@/lib/format/textPreview'
 
 export function CommitDescriptionPreview({ text }: { text: string }) {
   const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
   const { preview, truncated } = useMemo(() => previewCommitDescription(text), [text])
+  const content = !truncated || expanded ? text : `${preview}…`
 
   if (!truncated) {
-    return (
-      <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-gf-fg-subtle">{text}</p>
-    )
+    return <GitHubMarkdownBody content={text} className="mt-1.5 text-gf-fg-subtle" />
   }
 
   return (
     <div className="mt-1.5">
-      <p className="whitespace-pre-wrap text-sm leading-relaxed text-gf-fg-subtle">
-        {expanded ? text : `${preview}…`}
-      </p>
+      <GitHubMarkdownBody content={content} className="text-gf-fg-subtle" />
       <button
         type="button"
         onClick={() => setExpanded((value) => !value)}

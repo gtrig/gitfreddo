@@ -274,11 +274,6 @@ export function CommitPreview({ commit }: { commit: GitCommit }) {
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="border-b border-gf-border px-4 py-4">
-          <h2 className="text-lg font-semibold leading-snug text-gf-fg">{commit.subject}</h2>
-          {body && <CommitDescriptionPreview key={commit.hash} text={body} />}
-        </div>
-
         <div className="flex items-center justify-between gap-3 border-b border-gf-border px-4 py-3">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-gf-surface text-xs font-semibold text-gf-fg-muted">
@@ -299,6 +294,11 @@ export function CommitPreview({ commit }: { commit: GitCommit }) {
               <span className="text-gf-fg-muted">{parentShort}</span>
             </button>
           )}
+        </div>
+
+        <div className="border-b border-gf-border px-4 py-4">
+          <h2 className="text-lg font-semibold leading-snug text-gf-fg">{commit.subject}</h2>
+          {body && <CommitDescriptionPreview key={commit.hash} text={body} />}
         </div>
 
         <div className="border-b border-gf-border px-4 py-2.5">

@@ -7,7 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
-### 2026-07-11 — Hide detail panel when nothing is selected
+### 2026-07-12 — Markdown in commit descriptions
+
+- **Why:** Commit message bodies often use Markdown (lists, bold, links) but the detail panel showed raw syntax as plain text.
+- **What:** `CommitDescriptionPreview` renders the body with `GitHubMarkdownBody` (GFM); same component used in the expanded commit detail overlay. Test coverage for formatted descriptions.
+
 
 - **Why:** The right sidebar showed a placeholder (“Select a commit or uncommitted changes”) even when the timeline had no selection, wasting horizontal space on the commit graph.
 - **What:** `shouldShowDetailPanel()` in `src/lib/layout/detailPanelVisibility.ts`; `ResizableMainLayout` accepts `rightVisible` to omit the right column and resize handle; `App.tsx` hides the panel when disconnected or `timelineSelection` is empty; `DetailPanel` returns `null` instead of empty-state placeholders. Tests in `detailPanelVisibility.test.ts` and `ResizableMainLayout.test.tsx`.

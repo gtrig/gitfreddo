@@ -5,6 +5,18 @@ import { CommitDescriptionPreview } from './CommitDescriptionPreview'
 import { renderWithProviders } from '@/test/render'
 
 describe('CommitDescriptionPreview', () => {
+  it('renders markdown in commit descriptions', () => {
+    renderWithProviders(
+      <CommitDescriptionPreview text={'**Bold** and _italic_\n\n- first\n- second'} />
+    )
+
+    expect(screen.getByText('Bold')).toHaveProperty('tagName', 'STRONG')
+    expect(screen.getByText('italic')).toHaveProperty('tagName', 'EM')
+    expect(screen.getByRole('list')).toBeInTheDocument()
+    expect(screen.getByText('first')).toBeInTheDocument()
+    expect(screen.getByText('second')).toBeInTheDocument()
+  })
+
   it('renders short descriptions without a toggle', () => {
     renderWithProviders(<CommitDescriptionPreview text="Short body." />)
     expect(screen.getByText('Short body.')).toBeInTheDocument()

@@ -40,10 +40,14 @@ describe('StartupModal', () => {
     // getStartupNewsItems caps at 5; assert two bullets that are within the current top-5.
     expect(
       screen.getByText(
+        'Commit descriptions in the detail panel render Markdown (lists, bold, links, and more).'
+      )
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
         'The right detail panel stays hidden until you select a commit, uncommitted changes, or merge conflicts — giving the timeline more room by default.'
       )
     ).toBeInTheDocument()
-    expect(screen.getByText('Fixed the header logo not appearing in packaged app releases.')).toBeInTheDocument()
   })
 
   it('calls onClose when user dismisses the modal', async () => {

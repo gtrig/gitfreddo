@@ -14,6 +14,7 @@ import { useCommitDisplayFiles } from '@/hooks/useCommitDisplayFiles'
 import { useAppSettings } from '@/hooks/useAppSettings'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useSelectionStore } from '@/stores/selection'
+import { CommitDescriptionPreview } from '@/components/DetailPanel/CommitDescriptionPreview'
 import { commitMessageBody } from '@/lib/workspace/fileTree'
 import { defaultFileContentViewMode, type FileContentViewMode } from '@/lib/diff/fileViewMode'
 import { parseUnifiedDiffRows, splitRowsForDisplay } from '@/lib/diff/unifiedDiff'
@@ -106,7 +107,7 @@ export function CommitDetailOverlay({ commit, onClose }: CommitDetailOverlayProp
 
       {body && (
         <div className="shrink-0 border-b border-gf-border px-4 py-2">
-          <p className="line-clamp-2 whitespace-pre-wrap text-sm text-gf-fg-subtle">{body}</p>
+          <CommitDescriptionPreview text={body} />
         </div>
       )}
 
