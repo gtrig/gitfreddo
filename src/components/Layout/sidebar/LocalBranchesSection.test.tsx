@@ -282,6 +282,48 @@ describe('LocalBranchesSection', () => {
     expect(screen.getByText('branch-0')).toBeInTheDocument()
     expect(screen.getByText('branch-54')).toBeInTheDocument()
   })
+
+  it('opens branch context menu and merge dialog', async () => {
+    renderWithProviders(
+      <LocalBranchesSection
+        branches={branches}
+        filter="login"
+        isLoading={false}
+        error={null}
+        checkoutPending={false}
+        isDetached={false}
+        head="abc"
+        onSelectCommit={vi.fn()}
+        onCheckout={vi.fn()}
+        onCreateBranch={vi.fn()}
+      />
+    )
+
+    fireEvent.contextMenu(screen.getByRole('button', { name: /login/i }))
+    await userEvent.click(screen.getByRole('menuitem', { name: /merge into current/i }))
+    expect(screen.getByTestId('merge-dialog')).toHaveTextContent('feature/login')
+  })
+
+  it('calls onCreateBranch from the section header', async () => {
+    const onCreateBranch = vi.fn()
+    renderWithProviders(
+      <LocalBranchesSection
+        branches={branches}
+        filter=""
+        isLoading={false}
+        error={null}
+        checkoutPending={false}
+        isDetached={false}
+        head="abc"
+        onSelectCommit={vi.fn()}
+        onCheckout={vi.fn()}
+        onCreateBranch={onCreateBranch}
+      />
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: /create branch/i }))
+    expect(onCreateBranch).toHaveBeenCalled()
+  })
 })
 
 describe('RemoteBranchesSection', () => {
@@ -334,5 +376,22 @@ describe('RemoteBranchesSection', () => {
     expect(screen.getByText(/fetch/i)).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: /add remote/i }))
     expect(screen.getByTestId('add-remote-dialog')).toBeInTheDocument()
+  })
+
+  it('opens remote branch context menu and checkout dialog', async () => {
+    renderWithProviders(
+      <RemoteBranchesSection
+        branches={branches}
+        remotes={[{ name: 'origin', url: 'https://example.com/repo.git', fetch: '', push: '' }]}
+        filter=""
+        isLoading={false}
+        error={null}
+        onSelectCommit={vi.fn()}
+      />
+    )
+
+    fireEvent.contextMenu(screen.getByRole('button', { name: /feature/i }))
+    await userEvent.click(screen.getByRole('menuitem', { name: /checkout as local branch/i }))
+    expect(screen.getByTestId('checkout-remote-dialog')).toBeInTheDocument()
   })
 })

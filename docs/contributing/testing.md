@@ -20,12 +20,12 @@ Measured source: `src/`, `shared/`, and `electron/` (excluding test helpers and 
 
 | Scope | Line threshold | Function threshold |
 |-------|----------------|--------------------|
-| Global | 78% | 66% |
+| Global | 80% | 67% |
 | `src/lib/**` | 78% | 64% |
 | `shared/**` | 80% | 85% |
 | `electron/**` | 45% | 40% |
 
-Pure logic in `src/lib/` is the primary coverage target (~80%). UI components and Electron bootstrap layers (`electron/main`, `electron/preload`, `App.tsx`) are excluded from coverage measurement; they are covered by E2E smoke where practical. **Target:** 90% project-wide lines/functions; current global coverage is ~78% lines / ~66% functions.
+Pure logic in `src/lib/` is the primary coverage target (~80%). UI components and Electron bootstrap layers (`electron/main`, `electron/preload`, `App.tsx`) are excluded from coverage measurement; they are covered by E2E smoke where practical. **Target:** 90% project-wide lines/functions; current global coverage is ~80% lines / ~67.5% functions.
 
 Coverage areas:
 

@@ -60,4 +60,36 @@ describe('MaintenanceSettingsPanel', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Export settings' }))
   })
+
+  it('prunes unreachable objects after confirmation', async () => {
+    vi.mocked(window.gitfreddo.invoke).mockImplementation(async (method: string) => {
+      if (method === 'maintenance.unreachable') {
+        return {
+          totalCommitCount: 2,
+          commits: [{ hash: 'abc', subject: 'Old', authorDate: '2024-01-01T00:00:00Z' }],
+          blobCount: 1,
+          treeCount: 1
+        }
+      }
+      if (method === 'maintenance.prune') return { removedCommitCount: 2 }
+      return undefined
+    })
+
+    renderWithProviders(
+      <MaintenanceSettingsPanel form={defaultMockSettings} onChange={vi.fn()} />
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Scan' }))
+    expect(await screen.findByText('Old')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Remove unreachable' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Remove' }))
+
+    expect(window.gitfreddo.invoke).toHaveBeenCalledWith(
+      'maintenance.unreachable',
+      undefined,
+      '/tmp/repo'
+    )
+    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('maintenance.prune', undefined, '/tmp/repo')
+  })
 })

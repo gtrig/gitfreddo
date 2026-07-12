@@ -88,7 +88,7 @@ describe('MergeConflictsPanel', () => {
       },
       isLoading: false,
       error: null
-    } as ReturnType<typeof git.useMergeStatus>)
+    } as unknown as ReturnType<typeof git.useMergeStatus>)
     vi.mocked(git.useWorkingStatus).mockReturnValue({
       data: { staged: [], unstaged: [], untracked: [], conflicted: [{ path: 'file.txt' }] }
     } as unknown as ReturnType<typeof git.useWorkingStatus>)
@@ -133,7 +133,7 @@ describe('MergeConflictsPanel', () => {
       },
       isLoading: false,
       error: null
-    } as ReturnType<typeof git.useMergeStatus>)
+    } as unknown as ReturnType<typeof git.useMergeStatus>)
 
     renderWithProviders(<MergeConflictsPanel />)
     expect(screen.getByText('Rebase in progress')).toBeInTheDocument()
@@ -173,5 +173,48 @@ describe('MergeConflictsPanel', () => {
 
     renderWithProviders(<MergeConflictsPanel />)
     expect(screen.getByText('resolved.txt')).toBeInTheDocument()
+  })
+
+  it('shows prompt when no merge is in progress', async () => {
+    const git = await import('@/hooks/useGit')
+    vi.mocked(git.useMergeStatus).mockReturnValue({
+      data: null,
+      isLoading: false,
+      error: null
+    } as unknown as ReturnType<typeof git.useMergeStatus>)
+
+    renderWithProviders(<MergeConflictsPanel />)
+    expect(screen.getByText(/no merge operation in progress/i)).toBeInTheDocument()
+  })
+
+  it('shows cherry-pick title for cherry-pick conflicts', async () => {
+    const git = await import('@/hooks/useGit')
+    vi.mocked(git.useMergeStatus).mockReturnValue({
+      data: {
+        inProgress: true,
+        kind: 'cherry-pick',
+        conflictedPaths: ['pick.txt'],
+        incomingLabel: 'abc1234',
+        currentBranch: 'main'
+      },
+      isLoading: false,
+      error: null
+    } as unknown as ReturnType<typeof git.useMergeStatus>)
+
+    renderWithProviders(<MergeConflictsPanel />)
+    expect(screen.getByText(/cherry-pick in progress/i)).toBeInTheDocument()
+  })
+
+  it('prompts to open a repository when disconnected', () => {
+    useWorkspaceStore.setState({
+      tabs: [],
+      activePath: null,
+      connected: false,
+      workspacePath: null,
+      workspacePickerOpen: false
+    })
+
+    renderWithProviders(<MergeConflictsPanel />)
+    expect(screen.getByText(/open a repository/i)).toBeInTheDocument()
   })
 })

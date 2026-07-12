@@ -3,6 +3,7 @@
  */
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { cleanup, fireEvent, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { renderWithProviders } from '@/test/render'
 import { createGitFreddoMock } from '@/test/mocks/gitfreddo'
@@ -87,5 +88,113 @@ describe('CommitFileList', () => {
 
     expect(screen.getByText('file-0.ts')).toBeInTheDocument()
     expect(screen.getByText('file-59.ts')).toBeInTheDocument()
+  })
+
+  it('toggles show-all-files and switches to tree view', async () => {
+    const onShowAllFilesChange = vi.fn()
+    renderWithProviders(
+      <CommitFileList
+        files={[
+          { path: 'src/app.ts', kind: 'changed' },
+          { path: 'src/util.ts', kind: 'added' },
+          { path: 'old.ts', kind: 'removed' }
+        ]}
+        loading={false}
+        selectedPath={null}
+        onSelectFile={vi.fn()}
+        onFileHistory={vi.fn()}
+        showAllFiles={false}
+        onShowAllFilesChange={onShowAllFilesChange}
+      />
+    )
+
+    await userEvent.click(screen.getByRole('switch', { name: /show all files/i }))
+    expect(onShowAllFilesChange).toHaveBeenCalledWith(true)
+
+    await userEvent.click(screen.getByRole('button', { name: /^tree$/i }))
+    expect(screen.getByRole('button', { name: /^path$/i })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /expand all/i }))
+    expect(screen.getByText('util.ts')).toBeInTheDocument()
+  })
+
+  it('selects a file and shows loading, error, and empty states', async () => {
+    const onSelectFile = vi.fn()
+    const { rerender } = renderWithProviders(
+      <CommitFileList
+        files={[]}
+        loading
+        selectedPath={null}
+        onSelectFile={onSelectFile}
+        onFileHistory={vi.fn()}
+        showAllFiles={false}
+        onShowAllFilesChange={vi.fn()}
+      />
+    )
+    expect(screen.getByText(/loading files/i)).toBeInTheDocument()
+
+    rerender(
+      <CommitFileList
+        files={[]}
+        loading={false}
+        error={new Error('Failed to load files')}
+        selectedPath={null}
+        onSelectFile={onSelectFile}
+        onFileHistory={vi.fn()}
+        showAllFiles={false}
+        onShowAllFilesChange={vi.fn()}
+      />
+    )
+    expect(screen.getByText('Failed to load files')).toBeInTheDocument()
+
+    rerender(
+      <CommitFileList
+        files={[]}
+        loading={false}
+        selectedPath={null}
+        onSelectFile={onSelectFile}
+        onFileHistory={vi.fn()}
+        showAllFiles={false}
+        onShowAllFilesChange={vi.fn()}
+      />
+    )
+    expect(screen.getByText(/no file changes/i)).toBeInTheDocument()
+
+    rerender(
+      <CommitFileList
+        files={[{ path: 'README.md', kind: 'changed' }]}
+        loading={false}
+        selectedPath="README.md"
+        onSelectFile={onSelectFile}
+        onFileHistory={vi.fn()}
+        showAllFiles={false}
+        onShowAllFilesChange={vi.fn()}
+      />
+    )
+    await userEvent.click(screen.getByText('README.md'))
+    expect(onSelectFile).toHaveBeenCalledWith('README.md')
+  })
+
+  it('expands folders in tree view and opens folder context menu', async () => {
+    renderWithProviders(
+      <CommitFileList
+        files={[
+          { path: 'src/app.ts', kind: 'changed' },
+          { path: 'src/lib/util.ts', kind: 'added' }
+        ]}
+        loading={false}
+        selectedPath={null}
+        onSelectFile={vi.fn()}
+        onFileHistory={vi.fn()}
+        showAllFiles={false}
+        onShowAllFilesChange={vi.fn()}
+      />
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: /^tree$/i }))
+    await userEvent.click(screen.getByRole('button', { name: /expand all/i }))
+    expect(screen.getByText('util.ts')).toBeInTheDocument()
+
+    fireEvent.contextMenu(screen.getByText('src'))
+    expect(screen.getByRole('menu')).toBeInTheDocument()
   })
 })

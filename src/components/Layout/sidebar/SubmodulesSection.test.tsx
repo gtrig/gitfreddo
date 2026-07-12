@@ -118,4 +118,26 @@ describe('SubmodulesSection', () => {
     await userEvent.click(screen.getByText('vendor/lib'))
     expect(openWorkspace).toHaveBeenCalledWith('/tmp/repo/vendor/lib')
   })
+
+  it('shows loading, error, and filtered empty states', () => {
+    const { rerender } = renderWithProviders(
+      <SubmodulesSection submodules={[]} filter="" isLoading error={null} />
+    )
+    expect(screen.getByRole('status')).toBeInTheDocument()
+
+    rerender(
+      <SubmodulesSection
+        submodules={[]}
+        filter=""
+        isLoading={false}
+        error={new Error('Submodule load failed')}
+      />
+    )
+    expect(screen.getByText('Submodule load failed')).toBeInTheDocument()
+
+    rerender(
+      <SubmodulesSection submodules={[submodule]} filter="missing" isLoading={false} error={null} />
+    )
+    expect(screen.getByText(/no submodules/i)).toBeInTheDocument()
+  })
 })

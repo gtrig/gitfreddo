@@ -7,11 +7,13 @@ import { useTimelineDragSelect } from './useTimelineDragSelect'
 import { makeCommit } from '@/test/fixtures/commit'
 import { renderHook } from '@testing-library/react'
 import { useRef } from 'react'
+import type { GitStashEntry } from '@/lib/types'
 import { renderWithProviders } from '@/test/render'
 
 function renderDragHarness(options?: {
   commits?: ReturnType<typeof makeCommit>[]
-  stashes?: []
+  stashes?: GitStashEntry[]
+  onRowContextMenu?: (commit: ReturnType<typeof makeCommit>) => (event: React.MouseEvent) => void
 }) {
   const commits =
     options?.commits ??
@@ -53,25 +55,33 @@ function renderDragHarness(options?: {
           onPointerUp={drag.onPointerUp}
           onPointerCancel={drag.onPointerCancel}
           onClick={drag.onClick}
+          onContextMenu={
+            options?.onRowContextMenu
+              ? (event) => drag.onContextMenu(event, options.onRowContextMenu!)
+              : undefined
+          }
         />
       </div>
     )
   }
 
   const view = renderWithProviders(<Harness />)
-  const overlay = view.getByTestId('overlay')
-  overlay.getBoundingClientRect = () =>
-    ({
-      top: 100,
-      left: 0,
-      width: 400,
-      height: commits.length * 28,
-      bottom: 100 + commits.length * 28,
-      right: 400,
-      x: 0,
-      y: 100,
-      toJSON: () => ({})
-    }) as DOMRect
+    const overlay = view.getByTestId('overlay')
+    overlay.getBoundingClientRect = () =>
+      ({
+        top: 100,
+        left: 0,
+        width: 400,
+        height: commits.length * 28,
+        bottom: 100 + commits.length * 28,
+        right: 400,
+        x: 0,
+        y: 100,
+        toJSON: () => ({})
+      }) as DOMRect
+    overlay.setPointerCapture = vi.fn()
+    overlay.releasePointerCapture = vi.fn()
+    overlay.hasPointerCapture = vi.fn(() => true)
 
   const scroll = view.getByTestId('scroll')
   scroll.getBoundingClientRect = () =>
@@ -135,6 +145,47 @@ describe('useTimelineDragSelect', () => {
   it('toggles commit selection when meta-clicking', () => {
     const { overlay, actions, commits } = renderDragHarness()
     fireEvent.click(overlay, { clientY: 110, metaKey: true })
+
+    expect(actions.toggleCommitSelection).toHaveBeenCalledWith(commits[0]!.hash)
+  })
+
+  it('selects stash commits through the overlay click handler', () => {
+    const stashHash = 'c'.repeat(40)
+    const stashCommit = makeCommit({
+      hash: stashHash,
+      shortHash: 'ccccccc',
+      subject: 'WIP on main',
+      refs: ['stash'],
+      parents: ['b'.repeat(40)]
+    })
+    const commits = [
+      stashCommit,
+      makeCommit({
+        hash: 'b'.repeat(40),
+        shortHash: 'bbbbbbb',
+        subject: 'Second',
+        parents: ['a'.repeat(40)]
+      }),
+      makeCommit({ hash: 'a'.repeat(40), shortHash: 'aaaaaaa', subject: 'First' })
+    ]
+    const stashes: GitStashEntry[] = [{ index: 0, hash: stashHash, message: 'saved', branch: 'main' }]
+    const { overlay, actions } = renderDragHarness({ commits, stashes })
+
+    fireEvent.click(overlay, { clientY: 110 })
+    expect(actions.selectStash).toHaveBeenCalledWith(0, stashHash)
+  })
+
+  it('forwards context menu events to the row handler', () => {
+    const onRowContextMenu = vi.fn(() => vi.fn())
+    const { overlay, commits } = renderDragHarness({ onRowContextMenu })
+
+    fireEvent.contextMenu(overlay, { clientY: 138 })
+    expect(onRowContextMenu).toHaveBeenCalledWith(commits[1])
+  })
+
+  it('toggles commit selection when ctrl-clicking', () => {
+    const { overlay, actions, commits } = renderDragHarness()
+    fireEvent.click(overlay, { clientY: 110, ctrlKey: true })
 
     expect(actions.toggleCommitSelection).toHaveBeenCalledWith(commits[0]!.hash)
   })

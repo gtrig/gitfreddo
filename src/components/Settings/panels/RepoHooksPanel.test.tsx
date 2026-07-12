@@ -77,4 +77,62 @@ describe('RepoHooksPanel', () => {
       scope: 'local'
     })
   })
+
+  it('loads hook content and saves edits', async () => {
+    vi.mocked(window.gitfreddo.invoke).mockImplementation(async (method: string) => {
+      if (method === 'hooks.list') {
+        return {
+          hooks: [{ name: 'pre-commit', filename: 'pre-commit', enabled: true, executable: true }],
+          hooksDir: '/tmp/repo/.git/hooks'
+        }
+      }
+      if (method === 'hooks.read') return '#!/bin/sh\necho hook\n'
+      if (method === 'hooks.write') return undefined
+      return undefined
+    })
+
+    renderWithProviders(<RepoHooksPanel />)
+    const textarea = await screen.findByRole('textbox')
+    expect(textarea).toHaveValue('#!/bin/sh\necho hook\n')
+
+    await userEvent.type(textarea, '\necho updated')
+    await userEvent.click(screen.getByRole('button', { name: /save pre-commit/i }))
+
+    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('hooks.write', {
+      name: 'pre-commit',
+      content: '#!/bin/sh\necho hook\n\necho updated'
+    })
+  })
+
+  it('enables a disabled hook', async () => {
+    vi.mocked(window.gitfreddo.invoke).mockImplementation(async (method: string) => {
+      if (method === 'hooks.list') {
+        return {
+          hooks: [{ name: 'pre-push', filename: 'pre-push.sample', enabled: false, executable: false }],
+          hooksDir: '/tmp/repo/.git/hooks'
+        }
+      }
+      if (method === 'hooks.read') return '#!/bin/sh\n'
+      if (method === 'hooks.enable' || method === 'hooks.disable') return undefined
+      return undefined
+    })
+
+    renderWithProviders(<RepoHooksPanel />)
+    await screen.findByRole('textbox')
+    await userEvent.click(screen.getByRole('button', { name: 'Enable' }))
+    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('hooks.enable', { name: 'pre-push' })
+  })
+
+  it('shows connect prompt when no repository is open', () => {
+    useWorkspaceStore.setState({
+      tabs: [],
+      activePath: null,
+      connected: false,
+      workspacePath: null,
+      workspacePickerOpen: false
+    })
+
+    renderWithProviders(<RepoHooksPanel />)
+    expect(screen.getByText(/Open a repository to manage git hooks/i)).toBeInTheDocument()
+  })
 })

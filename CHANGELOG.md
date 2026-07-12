@@ -7,6 +7,16 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-12 — Coverage push toward 85% (~83% lines)
+
+- **Why:** User requested continuing test expansion toward 85% line coverage (from ~81.5%).
+- **What:** Expanded `CommitPanel` (stage/amend/sign/push/AI/stash/collapse), `WorkspaceHub` (clone URL/parent validation, GitHub/Bitbucket create, modal Escape), `CommitFileList` (tree mode, show-all, loading/empty), `LogDrawer` (git tab, resize, clear), `LocalBranchesSection`/`RemoteBranchesSection` (context menus, create branch), `GitWorkingTree` (context menu stage, clean untracked), `SidebarPullRequestsSection`/`SidebarIssuesSection` (row click, create/merge/filter), `TagsSection`, `MergeConflictsPanel`, and `multiCommitContextMenu`. Global coverage now **82.9% lines / 70.7% functions** (~790 lines still needed for 85%). Vitest thresholds remain at 80% lines until 85% is reached.
+
+### 2026-07-12 — Cross 80% line coverage threshold
+
+- **Why:** Continue toward 90% project-wide coverage; user requested reaching 80% lines first.
+- **What:** Expanded tests for `GitWorkingTree` (disconnected/loading/error/conflicted/path toggle), `RepoHooksPanel` (save/enable/connect prompt), `MaintenanceSettingsPanel` (prune flow), `commitContextMenu`, `timelineCommitColumns`, and `useTimelineDragSelect` (stash/ctrl click). Global coverage now **80.2% lines / 67.5% functions**. Raised Vitest global line threshold to **80%** (functions 67%).
+
 ### 2026-07-12 — Component and store test expansion (coverage ~80%)
 
 - **Why:** Continue closing the gap toward 90% project-wide coverage after the first expansion pass (~78.5% lines).

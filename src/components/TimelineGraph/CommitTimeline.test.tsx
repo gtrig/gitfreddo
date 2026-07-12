@@ -312,4 +312,16 @@ describe('CommitTimeline', () => {
       id: stashHash
     })
   })
+
+  it('shows empty state when there are no commits', async () => {
+    const git = await import('@/hooks/useGit')
+    vi.mocked(git.useLogGraph).mockReturnValue({
+      data: { commits: [], maxLane: 0 },
+      isLoading: false,
+      error: null
+    } as unknown as ReturnType<typeof git.useLogGraph>)
+
+    renderWithProviders(<CommitTimeline />)
+    expect(screen.getByText(/no commits yet/i)).toBeInTheDocument()
+  })
 })

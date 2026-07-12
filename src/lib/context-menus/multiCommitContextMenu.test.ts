@@ -125,4 +125,63 @@ describe('buildMultiCommitContextMenuItems', () => {
     expect(actions.copyAllHashes).toHaveBeenCalled()
     expect(actions.explainCommits).toHaveBeenCalled()
   })
+
+  it('enables remove stale history when all commits are off the current branch', () => {
+    const forked = [
+      commit('c3', ['c2']),
+      commit('c2', ['c1']),
+      commit('c1', []),
+      commit('d2', ['d1']),
+      commit('d1', ['c1'])
+    ]
+    const items = buildMultiCommitContextMenuItems({
+      selectedCommits: [forked[3]!, forked[4]!],
+      head: 'c3',
+      branch: 'feature',
+      isDetached: false,
+      allCommits: forked,
+      working: cleanWorking,
+      actions
+    })
+
+    const removeStale = items.find((item) => item.id === 'remove-stale-selected')
+    expect(removeStale?.disabled).toBe(false)
+  })
+
+  it('disables cherry-pick when the working tree is dirty', () => {
+    const dirtyWorking = {
+      ...cleanWorking,
+      isClean: false,
+      unstaged: [{ path: 'dirty.txt', status: 'modified' as const }]
+    }
+    const items = buildMultiCommitContextMenuItems({
+      selectedCommits: [allCommits[1]!, allCommits[2]!],
+      head: 'c3',
+      branch: 'feature',
+      isDetached: false,
+      allCommits,
+      working: dirtyWorking,
+      actions
+    })
+
+    expect(items.find((item) => item.id === 'cherry-pick-all')?.disabled).toBe(true)
+    expect(items.find((item) => item.id === 'interactive-rebase')?.disabled).toBe(true)
+  })
+
+  it('invokes cherry-pick and drop handlers', () => {
+    const items = buildMultiCommitContextMenuItems({
+      selectedCommits: [allCommits[1]!, allCommits[0]!],
+      head: 'c3',
+      branch: 'feature',
+      isDetached: false,
+      allCommits,
+      working: cleanWorking,
+      actions
+    })
+
+    items.find((item) => item.id === 'cherry-pick-all')?.onClick()
+    items.find((item) => item.id === 'drop-selected')?.onClick()
+    expect(actions.cherryPickAll).toHaveBeenCalled()
+    expect(actions.dropSelected).toHaveBeenCalled()
+  })
 })

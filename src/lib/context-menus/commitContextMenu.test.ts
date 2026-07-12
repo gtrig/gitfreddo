@@ -300,6 +300,84 @@ describe('buildCommitContextMenuItems', () => {
     expect(spyActions.reset).toHaveBeenCalled()
   })
 
+  it('returns no menu items for stash commits', () => {
+    const stashCommit: GitCommit = {
+      ...baseCommit,
+      refs: ['stash'],
+      subject: 'WIP on main'
+    }
+
+    expect(
+      buildCommitContextMenuItems({
+        commit: stashCommit,
+        head: baseCommit.hash,
+        branch: 'main',
+        isDetached: false,
+        commits: [baseCommit, stashCommit],
+        working: cleanWorking,
+        selectedCommitId: stashCommit.hash,
+        selectedCount: 1,
+        selectedHashes: [stashCommit.hash],
+        actions: noopActions
+      })
+    ).toEqual([])
+  })
+
+  it('offers detached checkout when the commit has no local branch ref', () => {
+    const items = buildCommitContextMenuItems({
+      commit: parentCommit,
+      head: baseCommit.hash,
+      branch: 'main',
+      isDetached: false,
+      commits: [baseCommit, parentCommit],
+      working: cleanWorking,
+      selectedCommitId: parentCommit.hash,
+      selectedCount: 1,
+      selectedHashes: [parentCommit.hash],
+      actions: spyActions
+    })
+
+    const checkout = items.find((item) => item.id === 'checkout')
+    expect(checkout?.label).toMatch(/detached HEAD/i)
+    checkout?.onClick()
+    expect(spyActions.checkout).toHaveBeenCalled()
+  })
+
+  it('uses move-back reset labels for commits behind HEAD', () => {
+    const items = buildCommitContextMenuItems({
+      commit: parentCommit,
+      head: baseCommit.hash,
+      branch: 'main',
+      isDetached: false,
+      commits: [baseCommit, parentCommit],
+      working: cleanWorking,
+      selectedCommitId: parentCommit.hash,
+      selectedCount: 1,
+      selectedHashes: [parentCommit.hash],
+      actions: noopActions
+    })
+
+    expect(items.some((item) => item.label.includes('move main back to bbb2222'))).toBe(true)
+  })
+
+  it('shows edit note when the commit already has notes', () => {
+    const notedCommit: GitCommit = { ...parentCommit, notes: 'Ship note' }
+    const items = buildCommitContextMenuItems({
+      commit: notedCommit,
+      head: baseCommit.hash,
+      branch: 'main',
+      isDetached: false,
+      commits: [baseCommit, notedCommit],
+      working: cleanWorking,
+      selectedCommitId: notedCommit.hash,
+      selectedCount: 1,
+      selectedHashes: [notedCommit.hash],
+      actions: noopActions
+    })
+
+    expect(items.find((item) => item.id === 'note')?.label).toMatch(/edit note/i)
+  })
+
   it('shows in-progress operation actions when git state requires them', () => {
     const busyWorking: GitWorkingStatus = {
       ...cleanWorking,
