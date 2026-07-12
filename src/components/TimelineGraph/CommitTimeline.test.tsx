@@ -267,4 +267,49 @@ describe('CommitTimeline', () => {
     renderWithProviders(<CommitTimeline />)
     expect(screen.getByText('Second commit')).toBeInTheDocument()
   })
+
+  it('renders stash commits with stash badge and selects on click', async () => {
+    const stashHash = 'ccc333333333333333333333333333333333333'
+    const stashCommit = makeCommit({
+      hash: stashHash,
+      shortHash: 'ccc3333',
+      subject: 'WIP on main: bbb2222 saved work',
+      parents: [commitB.hash],
+      refs: ['stash']
+    })
+
+    const git = await import('@/hooks/useGit')
+    vi.mocked(git.useLogGraph).mockReturnValue({
+      data: { commits: [stashCommit, commitB, commitA], maxLane: 2 },
+      isLoading: false,
+      error: null
+    } as unknown as ReturnType<typeof git.useLogGraph>)
+    vi.mocked(git.useRepoStatus).mockReturnValue({
+      data: { head: commitB.hash, branch: 'main', isDetached: false, root: '/tmp/repo' }
+    } as unknown as ReturnType<typeof git.useRepoStatus>)
+    vi.mocked(git.useBranches).mockReturnValue({
+      data: [{ name: 'main', head: commitB.hash, isCurrent: true, isRemote: false, upstream: null }],
+      isLoading: false,
+      error: null
+    } as unknown as ReturnType<typeof git.useBranches>)
+    vi.mocked(git.useStashList).mockReturnValue({
+      data: [{ index: 0, hash: stashHash, message: 'saved work' }]
+    } as unknown as ReturnType<typeof git.useStashList>)
+
+    renderWithProviders(<CommitTimeline />)
+    expect(screen.getByText('WIP on main: bbb2222 saved work')).toBeInTheDocument()
+    expect(screen.getAllByText('stash').length).toBeGreaterThan(0)
+
+    useSelectionStore.setState({
+      timelineSelection: { kind: 'commit', id: commitB.hash },
+      selectedCommitHashes: [commitB.hash]
+    })
+    const region = screen.getByRole('region', { name: /commit/i })
+    region.focus()
+    await userEvent.keyboard('{ArrowUp}')
+    expect(useSelectionStore.getState().timelineSelection).toEqual({
+      kind: 'commit',
+      id: stashHash
+    })
+  })
 })

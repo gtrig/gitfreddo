@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-12 — Component and store test expansion (coverage ~80%)
+
+- **Why:** Continue closing the gap toward 90% project-wide coverage after the first expansion pass (~78.5% lines).
+- **What:** Expanded or added tests for `MergeConflictsPanel` (rebase title, path/tree toggle, mark-all-resolved, resolved files), `RemoveStaleBranchesModal`, `SplitDiffView`, `ComposeCommitsModal`, `WorkspaceHub` (init repo, recents filter/open), `CommitTimeline` (stash rows/keyboard), and `operation` store (`showHookExecutionToast`, hook output). Global coverage now ~79.8% lines / ~67.2% functions.
+
 ### 2026-07-12 — Coverage push toward 90%
 
 - **Why:** Project-wide coverage was ~74% lines / ~65% functions; user requested raising overall coverage toward 90%.

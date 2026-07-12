@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import { runGlobalOperation, useOperationStore } from '@/stores/operation'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { runGlobalOperation, showHookExecutionToast, useOperationStore } from '@/stores/operation'
 
 describe('useOperationStore', () => {
   beforeEach(() => {
@@ -30,6 +30,16 @@ describe('useOperationStore', () => {
     begin('Second')
     expect(useOperationStore.getState().output).toBe('')
   })
+
+  it('stores hook results and appends output', () => {
+    const { begin, appendOutput, setHookResult, end } = useOperationStore.getState()
+    begin('Hook')
+    appendOutput('line 1\n')
+    setHookResult({ status: 'passed', hookName: 'pre-commit' })
+    expect(useOperationStore.getState().output).toContain('line 1')
+    expect(useOperationStore.getState().hookResult?.hookName).toBe('pre-commit')
+    end()
+  })
 })
 
 describe('runGlobalOperation', () => {
@@ -51,5 +61,31 @@ describe('runGlobalOperation', () => {
     const value = await runGlobalOperation(async () => 42, 'Loading')
     expect(value).toBe(42)
     expect(useOperationStore.getState().count).toBe(0)
+  })
+})
+
+describe('showHookExecutionToast', () => {
+  it('shows success toast for passing hooks', () => {
+    const showToast = vi.fn()
+    const t = vi.fn((key: string, options?: Record<string, string>) =>
+      key === 'toast.hook.passed' ? `Passed ${options?.name}` : key
+    )
+
+    showHookExecutionToast(showToast, t, { status: 'passed', hookName: 'pre-commit' })
+    expect(showToast).toHaveBeenCalledWith('Passed pre-commit', 'success')
+  })
+
+  it('shows error toast with details when a hook fails', () => {
+    const showToast = vi.fn()
+    const t = vi.fn((key: string, options?: Record<string, string>) =>
+      key === 'toast.hook.failed' ? `Failed ${options?.name}` : key
+    )
+
+    showHookExecutionToast(showToast, t, {
+      status: 'failed',
+      hookName: 'commit-msg',
+      details: 'subject too long'
+    })
+    expect(showToast).toHaveBeenCalledWith('Failed commit-msg\nsubject too long', 'error')
   })
 })
