@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { diffCommits, diffWorking, diffStaged, fileRead } from './diff'
+import { diffCommits, diffWorking, diffStaged, fileRead, diffCommitRange, diffShow } from './diff'
 
 let tmpDir: string
 let firstHash: string
@@ -42,6 +42,19 @@ describe('diffWorking', () => {
     expect(result.unified).toContain('changed')
     expect(result.path).toBe('file.txt')
   })
+
+  it('shows word diff output when requested', async () => {
+    writeFileSync(join(tmpDir, 'file.txt'), 'line1\nchanged\n')
+    const result = await diffWorking(tmpDir, 'git', 'file.txt', true)
+    expect(result.unified.length).toBeGreaterThan(0)
+  })
+
+  it('diffs an untracked file against /dev/null', async () => {
+    writeFileSync(join(tmpDir, 'new-file.txt'), 'brand new\n')
+    const result = await diffWorking(tmpDir, 'git', 'new-file.txt')
+    expect(result.unified).toContain('brand new')
+    expect(result.path).toBe('new-file.txt')
+  })
 })
 
 describe('diffStaged', () => {
@@ -67,6 +80,29 @@ describe('diffCommits', () => {
   it('returns empty unified when commits are the same', async () => {
     const result = await diffCommits(tmpDir, 'git', firstHash, firstHash)
     expect(result.unified).toBe('')
+  })
+
+  it('supports merge-base and multi-path diffs', async () => {
+    const result = await diffCommits(tmpDir, 'git', firstHash, secondHash, undefined, true, [
+      'file.txt'
+    ])
+    expect(result.path).toBe('file.txt')
+  })
+})
+
+describe('diffCommitRange', () => {
+  it('shows changes across a commit range', async () => {
+    const result = await diffCommitRange(tmpDir, 'git', firstHash, secondHash)
+    expect(result.unified).toContain('line3')
+    expect(result.path).toContain('..')
+  })
+})
+
+describe('diffShow', () => {
+  it('shows the patch introduced by a commit', async () => {
+    const result = await diffShow(tmpDir, 'git', secondHash, 'file.txt')
+    expect(result.unified).toContain('line3')
+    expect(result.path).toBe('file.txt')
   })
 })
 

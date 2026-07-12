@@ -8,14 +8,18 @@ import { PullRequestDetail } from './PullRequestDetail'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { renderWithProviders } from '@/test/render'
 import { createGitFreddoMock } from '@/test/mocks/gitfreddo'
+import { useDiffCommits } from '@/hooks/useGit'
+import { useToastStore } from '@/stores/toast'
 import type { GitHubPullRequest } from '@shared/github'
+
+const showToast = vi.fn()
 
 vi.mock('@/hooks/useAppSettings', () => ({
   useAppSettings: () => ({ data: { diffViewMode: 'unified' } })
 }))
 
 vi.mock('@/hooks/useGit', () => ({
-  useDiffCommits: () => ({ data: '', isLoading: false, error: null })
+  useDiffCommits: vi.fn(() => ({ data: null, isLoading: false, error: null }))
 }))
 
 const filesMock = vi.fn<
@@ -50,8 +54,14 @@ vi.mock('@/components/DetailPanel/PullRequestSidebar', () => ({
     onSelectPane: (pane: { kind: string; path?: string }) => void
   }) => (
     <div>
+      <button type="button" onClick={() => onSelectPane({ kind: 'overview' })}>
+        Overview tab
+      </button>
       <button type="button" onClick={() => onSelectPane({ kind: 'commits' })}>
         Commits tab
+      </button>
+      <button type="button" onClick={() => onSelectPane({ kind: 'files' })}>
+        Files tab
       </button>
       <button type="button" onClick={() => onSelectPane({ kind: 'file', path: 'src/app.ts' })}>
         Open file
@@ -89,6 +99,13 @@ describe('PullRequestDetail', () => {
   beforeEach(() => {
     filesMock.mockReturnValue({ data: [], isLoading: false, error: null })
     commitsMock.mockReturnValue({ data: [], isLoading: false, error: null })
+    showToast.mockClear()
+    useToastStore.setState({ message: null, tone: 'info', show: showToast, clear: vi.fn() })
+    vi.mocked(useDiffCommits).mockReturnValue({
+      data: null,
+      isLoading: false,
+      error: null
+    } as unknown as ReturnType<typeof useDiffCommits>)
     useWorkspaceStore.setState({
       tabs: [{ path: '/tmp/repo', connected: true, connecting: false }],
       activePath: '/tmp/repo',
@@ -162,5 +179,88 @@ describe('PullRequestDetail', () => {
     expect(screen.getByText('Commits panel')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Open file' }))
     expect(screen.getByText('src/app.ts')).toBeInTheDocument()
+  })
+
+  it('shows files loading state and select-file hint on files tab', async () => {
+    filesMock.mockReturnValue({ data: [], isLoading: true, error: null })
+    renderWithProviders(<PullRequestDetail pr={pr} onClose={vi.fn()} />)
+    expect(screen.getByText(/loading files/i)).toBeInTheDocument()
+
+    filesMock.mockReturnValue({
+      data: [{ path: 'src/app.ts', additions: 1, deletions: 0, status: 'modified' }],
+      isLoading: false,
+      error: null
+    })
+    await userEvent.click(screen.getByRole('button', { name: 'Files tab' }))
+    expect(screen.getByText(/select a file/i)).toBeInTheDocument()
+  })
+
+  it('shows diff loading state for file pane', async () => {
+    vi.mocked(useDiffCommits).mockReturnValue({
+      data: null,
+      isLoading: true,
+      error: null
+    } as unknown as ReturnType<typeof useDiffCommits>)
+    renderWithProviders(<PullRequestDetail pr={pr} onClose={vi.fn()} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Open file' }))
+    expect(screen.getByText(/loading diff/i)).toBeInTheDocument()
+  })
+
+  it('shows diff error state for file pane', async () => {
+    vi.mocked(useDiffCommits).mockReturnValue({
+      data: null,
+      isLoading: false,
+      error: new Error('Diff unavailable')
+    } as unknown as ReturnType<typeof useDiffCommits>)
+    renderWithProviders(<PullRequestDetail pr={pr} onClose={vi.fn()} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Open file' }))
+    expect(screen.getByText(/not available locally/i)).toBeInTheDocument()
+  })
+
+  it('shows empty diff state for selected file', async () => {
+    vi.mocked(useDiffCommits).mockReturnValue({
+      data: { path: 'src/app.ts', unified: '' },
+      isLoading: false,
+      error: null
+    } as unknown as ReturnType<typeof useDiffCommits>)
+    renderWithProviders(<PullRequestDetail pr={pr} onClose={vi.fn()} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Open file' }))
+    expect(screen.getByText(/no changes in this range/i)).toBeInTheDocument()
+  })
+
+  it('renders unified and split diff views for selected file', async () => {
+    vi.mocked(useDiffCommits).mockReturnValue({
+      data: {
+        path: 'src/app.ts',
+        unified: `diff --git a/src/app.ts b/src/app.ts
+--- a/src/app.ts
++++ b/src/app.ts
+@@ -1 +1,2 @@
+-old
++new
++line`
+      },
+      isLoading: false,
+      error: null
+    } as unknown as ReturnType<typeof useDiffCommits>)
+    renderWithProviders(<PullRequestDetail pr={pr} onClose={vi.fn()} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Open file' }))
+    expect(screen.getByText('new')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /side by side/i }))
+    expect(screen.getByText('old')).toBeInTheDocument()
+  })
+
+  it('shows error toasts when merge or reopen actions fail', async () => {
+    vi.mocked(window.gitfreddo.githubMergePullRequest).mockRejectedValue(new Error('Merge blocked'))
+    renderWithProviders(<PullRequestDetail pr={pr} onClose={vi.fn()} />)
+    await userEvent.click(screen.getByRole('button', { name: /merge pull request/i }))
+    expect(showToast).toHaveBeenCalledWith('Merge blocked', 'error')
+
+    vi.mocked(window.gitfreddo.githubReopenPullRequest).mockRejectedValue(new Error('Reopen failed'))
+    renderWithProviders(
+      <PullRequestDetail pr={{ ...pr, state: 'closed', mergeable: false }} onClose={vi.fn()} />
+    )
+    await userEvent.click(screen.getByRole('button', { name: /reopen/i }))
+    expect(showToast).toHaveBeenCalledWith('Reopen failed', 'error')
   })
 })

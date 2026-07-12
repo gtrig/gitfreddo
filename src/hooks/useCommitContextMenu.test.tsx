@@ -9,6 +9,7 @@ import { useCommitContextMenu } from './useCommitContextMenu'
 import { clickAllMenuItems } from '@/test/contextMenuTestUtils'
 import { makeCommit } from '@/test/fixtures/commit'
 import { useWorkingStatus } from './useGit'
+import { useAiEnabled } from './useAppSettings'
 import { useSelectionStore } from '@/stores/selection'
 import { useToastStore } from '@/stores/toast'
 import { createGitFreddoMock } from '@/test/mocks/gitfreddo'
@@ -19,7 +20,7 @@ vi.mock('react-i18next', () => ({
 }))
 
 vi.mock('./useAppSettings', () => ({
-  useAiEnabled: () => false
+  useAiEnabled: vi.fn(() => false)
 }))
 
 const mutateAsync = vi.fn(async () => undefined)
@@ -259,6 +260,238 @@ describe('useCommitContextMenu', () => {
     copyItem?.onClick()
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(commit.hash)
+    expect(show).toHaveBeenCalled()
+  })
+
+  it('confirms merge-parent revert with the chosen mainline', () => {
+    const mergeCommit = makeCommit({
+      hash: 'mergehashmergehashmergehashmergehashmergehash12',
+      shortHash: 'merge12',
+      parents: ['parent1hashparent1hashparent1hashparent1hash12', 'parent2hashparent2hashparent2hashparent2hash12']
+    })
+    const { result } = renderHook(
+      () =>
+        useCommitContextMenu(true, {
+          ...options,
+          commits: [mergeCommit]
+        }),
+      { wrapper }
+    )
+
+    act(() => {
+      result.current.setMergeParentPick({ commit: mergeCommit, action: 'revert' })
+    })
+
+    act(() => {
+      result.current.confirmMergeParentPick(1)
+    })
+
+    expect(mutateAsync).toHaveBeenCalledWith({ hash: mergeCommit.hash, mainline: 1 })
+    expect(result.current.mergeParentPick).toBeNull()
+  })
+
+  it('confirms merge-parent cherry-pick without commit', () => {
+    const mergeCommit = makeCommit({
+      hash: 'mergehashmergehashmergehashmergehashmergehash12',
+      shortHash: 'merge12',
+      parents: ['parent1hashparent1hashparent1hashparent1hash12', 'parent2hashparent2hashparent2hashparent2hash12']
+    })
+    const { result } = renderHook(
+      () =>
+        useCommitContextMenu(true, {
+          ...options,
+          commits: [mergeCommit]
+        }),
+      { wrapper }
+    )
+
+    act(() => {
+      result.current.setMergeParentPick({ commit: mergeCommit, action: 'cherry-pick-no-commit' })
+    })
+
+    act(() => {
+      result.current.confirmMergeParentPick(2)
+    })
+
+    expect(mutateAsync).toHaveBeenCalledWith({
+      hash: mergeCommit.hash,
+      noCommit: true,
+      mainline: 2
+    })
+    expect(result.current.mergeParentPick).toBeNull()
+  })
+
+  it('no-ops confirmMergeParentPick when modal state is cleared', () => {
+    const { result } = renderHook(() => useCommitContextMenu(true, options), { wrapper })
+
+    act(() => {
+      result.current.confirmMergeParentPick(1)
+    })
+
+    expect(mutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('opens merge-parent picker when cherry-picking a merge commit from the menu', () => {
+    const mergeCommit = makeCommit({
+      hash: 'mergehashmergehashmergehashmergehashmergehash12',
+      shortHash: 'merge12',
+      parents: ['parent1hashparent1hashparent1hashparent1hash12', 'parent2hashparent2hashparent2hashparent2hash12']
+    })
+    const { result } = renderHook(
+      () =>
+        useCommitContextMenu(true, {
+          ...options,
+          commits: [mergeCommit]
+        }),
+      { wrapper }
+    )
+
+    act(() => {
+      result.current.openMenu(mergeCommit, mouseEvent(9, 10))
+    })
+
+    const cherryPickItem = result.current.items.find((item) => item.id === 'cherry-pick')
+    act(() => {
+      cherryPickItem?.onClick()
+    })
+
+    expect(result.current.menu).toBeNull()
+    expect(result.current.mergeParentPick).toEqual({
+      commit: mergeCommit,
+      action: 'cherry-pick'
+    })
+    expect(mutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('shows error toast when a mutation fails', async () => {
+    const show = vi.fn()
+    useToastStore.setState({ show, clear: vi.fn(), message: null, tone: 'info' })
+    mutateAsync.mockRejectedValueOnce(new Error('reset failed'))
+
+    const parent = makeCommit({
+      hash: 'bbb222222222222222222222222222222222222',
+      shortHash: 'bbb2222',
+      parents: []
+    })
+    const { result } = renderHook(
+      () =>
+        useCommitContextMenu(true, {
+          ...options,
+          head: commit.hash,
+          commits: [commit, parent]
+        }),
+      { wrapper }
+    )
+
+    act(() => {
+      result.current.openMenu(parent, mouseEvent(11, 12))
+    })
+
+    const resetItem = result.current.items.find((item) => item.id === 'reset-soft')
+    act(() => {
+      resetItem?.onClick()
+    })
+
+    await vi.waitFor(() => {
+      expect(show).toHaveBeenCalledWith('reset failed', 'error')
+    })
+  })
+
+  it('runs multi-select compare and copy-all actions', () => {
+    const older = makeCommit({
+      hash: 'olderhasholderhasholderhasholderhasholderhash12',
+      shortHash: 'older12',
+      parents: [commit.hash]
+    })
+    const showCompareCommitRange = vi.fn()
+    useSelectionStore.setState({
+      selectedCommitHashes: [older.hash, commit.hash],
+      showCompareCommitRange
+    })
+
+    const { result } = renderHook(
+      () =>
+        useCommitContextMenu(true, {
+          ...options,
+          commits: [commit, older]
+        }),
+      { wrapper }
+    )
+
+    act(() => {
+      result.current.openMenu(commit, mouseEvent(13, 14))
+    })
+
+    result.current.items.find((item) => item.id === 'compare-selected')?.onClick()
+    expect(showCompareCommitRange).toHaveBeenCalled()
+
+    result.current.items.find((item) => item.id === 'copy-all-hashes')?.onClick()
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      [older.hash, commit.hash].join('\n')
+    )
+  })
+
+  it('opens explain modal when AI is enabled', () => {
+    vi.mocked(useAiEnabled).mockReturnValue(true)
+
+    const { result } = renderHook(() => useCommitContextMenu(true, options), { wrapper })
+
+    act(() => {
+      result.current.openMenu(commit, mouseEvent(15, 16))
+    })
+
+    act(() => {
+      result.current.items.find((item) => item.id === 'explain-commit')?.onClick()
+    })
+
+    expect(result.current.explainCommits).toEqual([commit])
+    expect(result.current.menu).toBeNull()
+  })
+
+  it('captures branch name when creating a worktree from a commit', () => {
+    const branchCommit = makeCommit({
+      refs: ['main', 'feature']
+    })
+    useSelectionStore.setState({
+      selectedCommitHashes: [branchCommit.hash]
+    })
+
+    const { result } = renderHook(
+      () =>
+        useCommitContextMenu(true, {
+          ...options,
+          commits: [branchCommit]
+        }),
+      { wrapper }
+    )
+
+    act(() => {
+      result.current.openMenu(branchCommit, mouseEvent(17, 18))
+    })
+
+    act(() => {
+      result.current.items.find((item) => item.id === 'worktree')?.onClick()
+    })
+
+    expect(result.current.worktreeFromCommit).toMatchObject({
+      hash: branchCommit.hash,
+      shortHash: branchCommit.shortHash,
+      branchName: 'main'
+    })
+  })
+
+  it('copies short hash from the menu', () => {
+    const show = vi.fn()
+    useToastStore.setState({ show, clear: vi.fn(), message: null, tone: 'info' })
+
+    const { result } = renderHook(() => useCommitContextMenu(true, options), { wrapper })
+
+    act(() => {
+      result.current.openMenu(commit, mouseEvent(19, 20))
+    })
+
+    result.current.items.find((item) => item.id === 'copy-short')?.onClick()
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(commit.shortHash)
     expect(show).toHaveBeenCalled()
   })
 })

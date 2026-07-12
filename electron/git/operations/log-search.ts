@@ -44,7 +44,7 @@ export async function logSearch(
   }
 ): Promise<GitCommit[]> {
   const maxCount = options.maxCount ?? 200
-  const stdout = await runGitOrThrow(buildLogSearchArgs({ maxCount, ...options }), {
+  const stdout = await runGitOrThrow(buildLogSearchArgs({ ...options, maxCount }), {
     cwd,
     gitBinaryPath
   })

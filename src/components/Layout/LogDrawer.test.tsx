@@ -4,7 +4,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { LogDrawer } from './LogDrawer'
+import { LogDrawer, LogToggleButton, useLogSubscription } from './LogDrawer'
 import { useLogStore } from '@/stores/logs'
 import { renderWithProviders } from '@/test/render'
 import { copyToClipboard } from '@/lib/clipboard'
@@ -12,6 +12,48 @@ import { copyToClipboard } from '@/lib/clipboard'
 vi.mock('@/lib/clipboard', () => ({
   copyToClipboard: vi.fn()
 }))
+
+vi.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: vi.fn(
+    ({
+      count,
+      estimateSize
+    }: {
+      count: number
+      estimateSize: (index: number) => number
+    }) => ({
+      getVirtualItems: () =>
+        Array.from({ length: count }, (_, index) => ({
+          index,
+          key: index,
+          start: index * estimateSize(index),
+          size: estimateSize(index)
+        })),
+      getTotalSize: () =>
+        Array.from({ length: count }, (_, index) => estimateSize(index)).reduce(
+          (total, size) => total + size,
+          0
+        ),
+      measureElement: vi.fn(),
+      scrollToIndex: vi.fn()
+    })
+  )
+}))
+
+function LogSubscriptionProbe() {
+  useLogSubscription()
+  return null
+}
+
+function makeLogEntry(index: number) {
+  return {
+    id: `app-${index}`,
+    stream: 'app' as const,
+    level: 'info' as const,
+    timestamp: index,
+    message: `entry ${index}`
+  }
+}
 
 describe('LogDrawer', () => {
   afterEach(() => {
@@ -130,5 +172,101 @@ describe('LogDrawer', () => {
     renderWithProviders(<LogDrawer />)
     expect(screen.getByRole('button', { name: /git/i })).toHaveTextContent('1')
     expect(screen.getByRole('button', { name: /application/i })).toHaveTextContent('1')
+  })
+
+  it('shows git logging off message on empty git tab', async () => {
+    useLogStore.setState({ activeTab: 'git', gitListening: false, gitEntries: [] })
+    renderWithProviders(<LogDrawer />)
+    expect(screen.getByText(/git logging is off/i)).toBeInTheDocument()
+  })
+
+  it('toggles drawer open state from collapsed header', async () => {
+    useLogStore.setState({
+      open: false,
+      appEntries: [
+        { id: 'app-1', stream: 'app', level: 'info', timestamp: 0, message: 'collapsed entry' }
+      ]
+    })
+
+    const user = userEvent.setup()
+    renderWithProviders(<LogDrawer />)
+    expect(screen.getByText(/\(1\)/)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /logs/i }))
+    expect(useLogStore.getState().open).toBe(true)
+    expect(screen.getByText('collapsed entry')).toBeInTheDocument()
+  })
+
+  it('virtualizes long log lists', () => {
+    useLogStore.setState({
+      open: true,
+      activeTab: 'app',
+      appEntries: Array.from({ length: 55 }, (_, index) => makeLogEntry(index))
+    })
+
+    renderWithProviders(<LogDrawer />)
+    expect(screen.getByText('entry 0')).toBeInTheDocument()
+    expect(screen.getByText('entry 54')).toBeInTheDocument()
+  })
+})
+
+describe('LogToggleButton', () => {
+  afterEach(() => cleanup())
+
+  beforeEach(() => {
+    useLogStore.setState({
+      open: false,
+      gitEntries: [],
+      appEntries: [{ id: 'app-1', stream: 'app', level: 'info', timestamp: 0, message: 'one' }]
+    })
+  })
+
+  it('shows total log count badge and toggles drawer', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<LogToggleButton />)
+
+    expect(screen.getByLabelText(/logs \(1\)/i)).toBeInTheDocument()
+    await user.click(screen.getByLabelText(/logs \(1\)/i))
+    expect(useLogStore.getState().open).toBe(true)
+  })
+
+  it('caps badge display at 99+', () => {
+    useLogStore.setState({
+      appEntries: Array.from({ length: 120 }, (_, index) => makeLogEntry(index))
+    })
+    renderWithProviders(<LogToggleButton />)
+    expect(screen.getByText('99+')).toBeInTheDocument()
+  })
+})
+
+describe('useLogSubscription', () => {
+  afterEach(() => cleanup())
+
+  it('appends log entries and ignores git entries when listening is off', () => {
+    useLogStore.setState({ gitListening: false, gitEntries: [], appEntries: [] })
+    const onLogEntry = vi.fn((handler: (entry: unknown) => void) => {
+      handler({
+        id: 'git-1',
+        stream: 'git',
+        level: 'info',
+        timestamp: 1,
+        message: 'ignored git'
+      })
+      handler({
+        id: 'app-1',
+        stream: 'app',
+        level: 'info',
+        timestamp: 2,
+        message: 'app log'
+      })
+      return vi.fn()
+    })
+    window.gitfreddo.onLogEntry = onLogEntry as typeof window.gitfreddo.onLogEntry
+
+    renderWithProviders(<LogSubscriptionProbe />)
+
+    expect(useLogStore.getState().gitEntries).toHaveLength(0)
+    expect(useLogStore.getState().appEntries).toHaveLength(1)
+    expect(useLogStore.getState().appEntries[0]?.message).toBe('app log')
   })
 })

@@ -1,17 +1,29 @@
+/**
+ * @vitest-environment jsdom
+ */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { RepoHooksPanel } from './RepoHooksPanel'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { useToastStore } from '@/stores/toast'
 import { renderWithProviders } from '@/test/render'
+import { createGitFreddoMock } from '@/test/mocks/gitfreddo'
+
+const showToast = vi.fn()
 
 describe('RepoHooksPanel', () => {
   afterEach(() => {
     cleanup()
     vi.mocked(window.gitfreddo.invoke).mockReset()
+    vi.mocked(window.confirm).mockReset()
   })
 
   beforeEach(() => {
+    showToast.mockClear()
+    useToastStore.setState({ message: null, tone: 'info', show: showToast, clear: vi.fn() })
+    window.gitfreddo = createGitFreddoMock()
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
     useWorkspaceStore.setState({
       tabs: [{ path: '/tmp/repo', connected: true, connecting: false }],
       activePath: '/tmp/repo',

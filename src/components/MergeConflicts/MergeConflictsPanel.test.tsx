@@ -52,7 +52,7 @@ vi.mock('@/hooks/useAiFill', () => ({
 }))
 
 vi.mock('@/hooks/useAppSettings', () => ({
-  useAiEnabled: () => true
+  useAiEnabled: vi.fn(() => true)
 }))
 
 vi.mock('@/hooks/useInvalidateGit', () => ({
@@ -82,6 +82,8 @@ describe('MergeConflictsPanel', () => {
     aiFillMutate.mockReset()
     aiFillMutate.mockResolvedValue('')
     showToast.mockClear()
+    const settings = await import('@/hooks/useAppSettings')
+    vi.mocked(settings.useAiEnabled).mockReturnValue(true)
     useToastStore.setState({ message: null, tone: 'info', show: showToast, clear: vi.fn() })
     const git = await import('@/hooks/useGit')
     vi.mocked(git.useMergeStatus).mockReturnValue({
@@ -282,5 +284,144 @@ describe('MergeConflictsPanel', () => {
     await userEvent.click(screen.getByRole('button', { name: 'src/' }))
     await userEvent.click(screen.getByRole('button', { name: 'nested/' }))
     expect(screen.getByText('src/nested/conflict.ts')).toBeInTheDocument()
+  })
+
+  it('shows loading row while merge status is loading', async () => {
+    const git = await import('@/hooks/useGit')
+    vi.mocked(git.useMergeStatus).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null
+    } as unknown as ReturnType<typeof git.useMergeStatus>)
+
+    renderWithProviders(<MergeConflictsPanel />)
+    expect(screen.getByText(/loading/i)).toBeInTheDocument()
+  })
+
+  it('shows placeholder when there are no conflicted files', async () => {
+    const git = await import('@/hooks/useGit')
+    vi.mocked(git.useMergeStatus).mockReturnValue({
+      data: {
+        inProgress: true,
+        kind: 'merge',
+        conflictedPaths: [],
+        incomingLabel: 'feature',
+        currentBranch: 'main'
+      },
+      isLoading: false,
+      error: null
+    } as unknown as ReturnType<typeof git.useMergeStatus>)
+
+    renderWithProviders(<MergeConflictsPanel />)
+    expect(screen.getAllByText('—')).toHaveLength(2)
+    expect(screen.queryByRole('button', { name: /auto-resolve all/i })).not.toBeInTheDocument()
+  })
+
+  it('shows AI proposal badges and ready message', () => {
+    useSelectionStore.setState({
+      pendingAiProposals: {
+        'file.txt': [{ hunkId: 0, text: 'merged', analysis: 'Use merged text', confidence: 85 }]
+      }
+    })
+
+    renderWithProviders(<MergeConflictsPanel />)
+    expect(screen.getByText('85%')).toBeInTheDocument()
+    expect(screen.getByText(/ai proposals ready/i)).toBeInTheDocument()
+  })
+
+  it('shows generic merge operation title for unknown kind', async () => {
+    const git = await import('@/hooks/useGit')
+    vi.mocked(git.useMergeStatus).mockReturnValue({
+      data: {
+        inProgress: true,
+        kind: 'unknown',
+        conflictedPaths: ['file.txt'],
+        incomingLabel: 'feature',
+        currentBranch: 'main'
+      },
+      isLoading: false,
+      error: null
+    } as unknown as ReturnType<typeof git.useMergeStatus>)
+
+    renderWithProviders(<MergeConflictsPanel />)
+    expect(screen.getByText(/merge operation in progress/i)).toBeInTheDocument()
+  })
+
+  it('shows an error toast when staging all resolved files fails', async () => {
+    mutation.mutateAsync.mockRejectedValueOnce(new Error('Stage failed'))
+    vi.mocked(window.gitfreddo.invoke).mockImplementation(async (method: string) => {
+      if (method === 'working.read') {
+        return { content: 'resolved content without markers' }
+      }
+      return undefined
+    })
+
+    renderWithProviders(<MergeConflictsPanel />)
+    await userEvent.click(screen.getByRole('button', { name: /mark all resolved/i }))
+    expect(showToast).toHaveBeenCalledWith('Stage failed', 'error')
+  })
+
+  it('shows an error toast when bulk AI resolve fails', async () => {
+    aiFillMutate.mockRejectedValueOnce(new Error('AI failed'))
+    vi.mocked(window.gitfreddo.invoke).mockImplementation(async (method: string) => {
+      if (method === 'working.read') {
+        return { content: '<<<<<<< HEAD\nours\n=======\ntheirs\n>>>>>>> feature\n' }
+      }
+      return undefined
+    })
+
+    renderWithProviders(<MergeConflictsPanel />)
+    await userEvent.click(screen.getByRole('button', { name: /auto-resolve all/i }))
+    expect(showToast).toHaveBeenCalledWith('AI failed', 'error')
+  })
+
+  it('hides AI resolve button when AI is disabled', async () => {
+    const settings = await import('@/hooks/useAppSettings')
+    vi.mocked(settings.useAiEnabled).mockReturnValue(false)
+
+    renderWithProviders(<MergeConflictsPanel />)
+    expect(screen.queryByRole('button', { name: /auto-resolve all/i })).not.toBeInTheDocument()
+  })
+
+  it('shows merge branch labels in the operation title', () => {
+    renderWithProviders(<MergeConflictsPanel />)
+    expect(screen.getByText(/merging feature into main/i)).toBeInTheDocument()
+  })
+
+  it('virtualizes conflict files in path view when the list is large', async () => {
+    const git = await import('@/hooks/useGit')
+    const manyPaths = Array.from({ length: 55 }, (_, index) => `src/file-${index}.ts`)
+    vi.mocked(git.useMergeStatus).mockReturnValue({
+      data: {
+        inProgress: true,
+        kind: 'merge',
+        conflictedPaths: manyPaths,
+        incomingLabel: 'feature',
+        currentBranch: 'main'
+      },
+      isLoading: false,
+      error: null
+    } as unknown as ReturnType<typeof git.useMergeStatus>)
+
+    renderWithProviders(<MergeConflictsPanel />)
+    await userEvent.click(screen.getByRole('button', { name: /^tree$/i }))
+    expect(screen.getByText('src/file-0.ts')).toBeInTheDocument()
+    expect(screen.getByText('src/file-54.ts')).toBeInTheDocument()
+  })
+
+  it('lists resolved files in path view', async () => {
+    const git = await import('@/hooks/useGit')
+    vi.mocked(git.useWorkingStatus).mockReturnValue({
+      data: {
+        staged: [{ path: 'resolved.txt' }],
+        unstaged: [],
+        untracked: [],
+        conflicted: [{ path: 'file.txt' }]
+      }
+    } as unknown as ReturnType<typeof git.useWorkingStatus>)
+
+    renderWithProviders(<MergeConflictsPanel />)
+    await userEvent.click(screen.getByRole('button', { name: /^tree$/i }))
+    expect(screen.getByText('resolved.txt')).toBeInTheDocument()
   })
 })

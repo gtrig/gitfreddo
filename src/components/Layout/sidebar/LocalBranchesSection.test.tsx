@@ -398,6 +398,196 @@ describe('LocalBranchesSection', () => {
     await userEvent.click(screen.getByRole('menuitem', { name: /squash and merge into/i }))
     expect(screen.getByTestId('squash-dialog')).toHaveTextContent('main')
   })
+
+  it('shows checkout pending state', () => {
+    renderWithProviders(
+      <LocalBranchesSection
+        branches={branches}
+        filter=""
+        isLoading={false}
+        error={null}
+        checkoutPending
+        isDetached={false}
+        head="abc"
+        onSelectCommit={vi.fn()}
+        onCheckout={vi.fn()}
+        onCreateBranch={vi.fn()}
+      />
+    )
+    expect(screen.getByText(/checking out/i)).toBeInTheDocument()
+  })
+
+  it('selects commit on branch row click', async () => {
+    const onSelectCommit = vi.fn()
+    renderWithProviders(
+      <LocalBranchesSection
+        branches={branches}
+        filter="login"
+        isLoading={false}
+        error={null}
+        checkoutPending={false}
+        isDetached={false}
+        head="abc"
+        onSelectCommit={onSelectCommit}
+        onCheckout={vi.fn()}
+        onCreateBranch={vi.fn()}
+      />
+    )
+    await userEvent.click(screen.getByRole('button', { name: /login/i }))
+    expect(onSelectCommit).toHaveBeenCalledWith('def')
+  })
+
+  it('does not checkout the current branch on double click', async () => {
+    const onCheckout = vi.fn()
+    renderWithProviders(
+      <LocalBranchesSection
+        branches={branches}
+        filter=""
+        isLoading={false}
+        error={null}
+        checkoutPending={false}
+        isDetached={false}
+        head="abc"
+        onSelectCommit={vi.fn()}
+        onCheckout={onCheckout}
+        onCreateBranch={vi.fn()}
+      />
+    )
+    fireEvent.doubleClick(screen.getByRole('button', { name: /^main$/i }))
+    expect(onCheckout).not.toHaveBeenCalled()
+  })
+
+  it('shows ahead and behind counts on branch rows', () => {
+    renderWithProviders(
+      <LocalBranchesSection
+        branches={branches}
+        filter="login"
+        isLoading={false}
+        error={null}
+        checkoutPending={false}
+        isDetached={false}
+        head="abc"
+        onSelectCommit={vi.fn()}
+        onCheckout={vi.fn()}
+        onCreateBranch={vi.fn()}
+      />
+    )
+    expect(screen.getByText(/↑2/)).toBeInTheDocument()
+    expect(screen.getByText(/↓1/)).toBeInTheDocument()
+  })
+
+  it('toggles branch graph visibility from the row action', async () => {
+    const toggleBranchVisibility = vi.fn()
+    useBranchVisibilityStore.setState({
+      hiddenBranches: new Set(),
+      toggleBranchVisibility,
+      isBranchHidden: () => false,
+      setBranchVisibility: vi.fn()
+    })
+    renderWithProviders(
+      <LocalBranchesSection
+        branches={branches}
+        filter="login"
+        isLoading={false}
+        error={null}
+        checkoutPending={false}
+        isDetached={false}
+        head="abc"
+        onSelectCommit={vi.fn()}
+        onCheckout={vi.fn()}
+        onCreateBranch={vi.fn()}
+      />
+    )
+    await userEvent.click(screen.getByRole('button', { name: /hide from graph/i }))
+    expect(toggleBranchVisibility).toHaveBeenCalled()
+  })
+
+  it('opens worktree, merge, and upstream dialogs from branch menu actions', async () => {
+    renderWithProviders(
+      <LocalBranchesSection
+        branches={[
+          ...branches,
+          {
+            name: 'feature/upstream',
+            head: 'jkl',
+            isCurrent: false,
+            isRemote: false,
+            ahead: 0,
+            behind: 0,
+            upstream: 'origin/feature/upstream'
+          }
+        ]}
+        filter="upstream"
+        isLoading={false}
+        error={null}
+        checkoutPending={false}
+        isDetached={false}
+        head="abc"
+        onSelectCommit={vi.fn()}
+        onCheckout={vi.fn()}
+        onCreateBranch={vi.fn()}
+      />
+    )
+
+    const upstreamRow = screen.getByRole('button', { name: /upstream/i })
+
+    fireEvent.contextMenu(upstreamRow)
+    await userEvent.click(screen.getByRole('menuitem', { name: /checkout in new worktree/i }))
+    expect(screen.getByTestId('worktree-dialog')).toHaveTextContent('feature/upstream')
+
+    fireEvent.contextMenu(upstreamRow)
+    await userEvent.click(screen.getByRole('menuitem', { name: /change upstream/i }))
+    expect(screen.getByTestId('upstream-dialog')).toHaveTextContent('feature/upstream')
+
+    fireEvent.contextMenu(upstreamRow)
+    await userEvent.click(screen.getByRole('menuitem', { name: /unset upstream/i }))
+    expect(mutation.mutateAsync).toHaveBeenCalledWith({ branch: 'feature/upstream' })
+  })
+
+  it('does not offer squash merge on non-current branches', async () => {
+    renderWithProviders(
+      <LocalBranchesSection
+        branches={branches}
+        filter="login"
+        isLoading={false}
+        error={null}
+        checkoutPending={false}
+        isDetached={false}
+        head="abc"
+        onSelectCommit={vi.fn()}
+        onCheckout={vi.fn()}
+        onCreateBranch={vi.fn()}
+      />
+    )
+
+    fireEvent.contextMenu(screen.getByRole('button', { name: /login/i }))
+    expect(
+      screen.queryByRole('menuitem', { name: /squash and merge into/i })
+    ).not.toBeInTheDocument()
+  })
+
+  it('expands and collapses nested branch folders', async () => {
+    renderWithProviders(
+      <LocalBranchesSection
+        branches={branches}
+        filter=""
+        isLoading={false}
+        error={null}
+        checkoutPending={false}
+        isDetached={false}
+        head="abc"
+        onSelectCommit={vi.fn()}
+        onCheckout={vi.fn()}
+        onCreateBranch={vi.fn()}
+      />
+    )
+
+    expect(screen.queryByRole('button', { name: /login/i })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /^feature$/i }))
+    expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /^feature$/i }))
+    expect(screen.queryByRole('button', { name: /login/i })).not.toBeInTheDocument()
+  })
 })
 
 describe('RemoteBranchesSection', () => {
@@ -467,5 +657,147 @@ describe('RemoteBranchesSection', () => {
     fireEvent.contextMenu(screen.getByRole('button', { name: /feature/i }))
     await userEvent.click(screen.getByRole('menuitem', { name: /checkout as local branch/i }))
     expect(screen.getByTestId('checkout-remote-dialog')).toBeInTheDocument()
+  })
+
+  it('shows loading, error, and empty remote states', () => {
+    const { rerender } = renderWithProviders(
+      <RemoteBranchesSection
+        branches={[]}
+        remotes={[]}
+        filter=""
+        isLoading
+        error={null}
+        onSelectCommit={vi.fn()}
+      />
+    )
+    expect(screen.getByRole('status')).toBeInTheDocument()
+
+    rerender(
+      <RemoteBranchesSection
+        branches={[]}
+        remotes={[]}
+        filter=""
+        isLoading={false}
+        error={new Error('Remote load failed')}
+        onSelectCommit={vi.fn()}
+      />
+    )
+    expect(screen.getByText('Remote load failed')).toBeInTheDocument()
+
+    rerender(
+      <RemoteBranchesSection
+        branches={[]}
+        remotes={[]}
+        filter=""
+        isLoading={false}
+        error={null}
+        onSelectCommit={vi.fn()}
+      />
+    )
+    expect(screen.getByText(/no remotes/i)).toBeInTheDocument()
+  })
+
+  it('selects commit when a remote branch row is clicked', async () => {
+    const onSelectCommit = vi.fn()
+    renderWithProviders(
+      <RemoteBranchesSection
+        branches={branches}
+        remotes={[{ name: 'origin', url: 'https://example.com/repo.git', fetch: '', push: '' }]}
+        filter=""
+        isLoading={false}
+        error={null}
+        onSelectCommit={onSelectCommit}
+      />
+    )
+    await userEvent.click(screen.getByRole('button', { name: /feature/i }))
+    expect(onSelectCommit).toHaveBeenCalledWith('def')
+  })
+
+  it('filters remote branches and remotes by search query', () => {
+    renderWithProviders(
+      <RemoteBranchesSection
+        branches={branches}
+        remotes={[
+          { name: 'origin', url: 'https://example.com/repo.git', fetch: '', push: '' },
+          { name: 'upstream', url: 'https://example.com/up.git', fetch: '', push: '' }
+        ]}
+        filter="upstream"
+        isLoading={false}
+        error={null}
+        onSelectCommit={vi.fn()}
+      />
+    )
+    expect(screen.getByText('upstream')).toBeInTheDocument()
+    expect(screen.queryByText(/^origin$/i)).not.toBeInTheDocument()
+  })
+
+  it('runs remote folder actions from the context menu', async () => {
+    renderWithProviders(
+      <RemoteBranchesSection
+        branches={branches}
+        remotes={[{ name: 'origin', url: 'https://example.com/repo.git', fetch: '', push: '' }]}
+        filter=""
+        isLoading={false}
+        error={null}
+        onSelectCommit={vi.fn()}
+      />
+    )
+
+    fireEvent.contextMenu(screen.getByRole('button', { name: /^origin$/i }))
+    await userEvent.click(screen.getByRole('menuitem', { name: /fetch from remote/i }))
+    expect(mutation.mutateAsync).toHaveBeenCalledWith({ remote: 'origin' })
+
+    fireEvent.contextMenu(screen.getByRole('button', { name: /^origin$/i }))
+    await userEvent.click(screen.getByRole('menuitem', { name: /edit url/i }))
+    expect(screen.getByTestId('edit-remote-dialog')).toHaveTextContent('origin')
+
+    fireEvent.contextMenu(screen.getByRole('button', { name: /^origin$/i }))
+    await userEvent.click(screen.getByRole('menuitem', { name: /^rename/i }))
+    expect(screen.getByTestId('rename-remote-dialog')).toHaveTextContent('origin')
+
+    fireEvent.contextMenu(screen.getByRole('button', { name: /^origin$/i }))
+    await userEvent.click(screen.getByRole('menuitem', { name: /delete remote/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm' }))
+    expect(mutation.mutateAsync).toHaveBeenCalledWith({ name: 'origin' })
+  })
+
+  it('deletes a remote branch after confirmation', async () => {
+    renderWithProviders(
+      <RemoteBranchesSection
+        branches={branches}
+        remotes={[{ name: 'origin', url: 'https://example.com/repo.git', fetch: '', push: '' }]}
+        filter=""
+        isLoading={false}
+        error={null}
+        onSelectCommit={vi.fn()}
+      />
+    )
+
+    fireEvent.contextMenu(screen.getByRole('button', { name: /feature/i }))
+    await userEvent.click(screen.getByRole('menuitem', { name: /delete remote branch/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm' }))
+    expect(mutation.mutateAsync).toHaveBeenCalledWith({ remote: 'origin', branch: 'feature' })
+  })
+
+  it('toggles remote branch graph visibility', async () => {
+    const toggleBranchVisibility = vi.fn()
+    useBranchVisibilityStore.setState({
+      hiddenBranches: new Set(),
+      toggleBranchVisibility,
+      isBranchHidden: () => false,
+      setBranchVisibility: vi.fn()
+    })
+    renderWithProviders(
+      <RemoteBranchesSection
+        branches={branches}
+        remotes={[{ name: 'origin', url: 'https://example.com/repo.git', fetch: '', push: '' }]}
+        filter=""
+        isLoading={false}
+        error={null}
+        onSelectCommit={vi.fn()}
+      />
+    )
+    await userEvent.click(screen.getAllByRole('button', { name: /hide from graph/i })[0]!)
+    expect(toggleBranchVisibility).toHaveBeenCalled()
   })
 })

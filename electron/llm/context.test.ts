@@ -363,4 +363,293 @@ describe('enrichAiContext no repo', () => {
     const params = { purpose: 'commit_message' as const, context: {} }
     await expect(enrichAiContext(manager, params)).resolves.toEqual(params)
   })
+
+  it('uses explicit repo path when provided', async () => {
+    const invoke = vi.fn(async (_repoPath: string, method: string) => {
+      if (method === 'working.status') {
+        return {
+          branch: 'main',
+          staged: [{ path: 'src/a.ts' }],
+          unstaged: [],
+          untracked: [],
+          conflicted: []
+        }
+      }
+      if (method === 'diff.staged') {
+        return { unified: '+++ b/src/a.ts\n+line' }
+      }
+      if (method === 'repo.status') {
+        return { branch: 'main' }
+      }
+      throw new Error(`unexpected ${method}`)
+    })
+
+    await enrichAiContext(createManager(invoke), { purpose: 'commit_message', context: {} }, '/other')
+    expect(invoke).toHaveBeenCalledWith('/other', 'working.status')
+  })
+})
+
+describe('enrichAiContext compose_commits', () => {
+  it('loads staged diff like commit_message', async () => {
+    const invoke = vi.fn(async (_repoPath: string, method: string) => {
+      if (method === 'working.status') {
+        return {
+          branch: 'main',
+          staged: [{ path: 'src/compose.ts' }],
+          unstaged: [],
+          untracked: [],
+          conflicted: []
+        }
+      }
+      if (method === 'diff.staged') {
+        return { unified: '+++ b/src/compose.ts\n+composed' }
+      }
+      if (method === 'repo.status') {
+        return { branch: 'main' }
+      }
+      throw new Error(`unexpected ${method}`)
+    })
+
+    const enriched = await enrichAiContext(createManager(invoke), {
+      purpose: 'compose_commits',
+      context: {}
+    })
+
+    expect(enriched.context?.filePaths).toEqual(['src/compose.ts'])
+    expect(enriched.context?.diffText).toContain('compose.ts')
+  })
+})
+
+describe('enrichAiContext refine_pull_request_analysis', () => {
+  it('loads merge-base diff for full pull request scope', async () => {
+    const invoke = vi.fn(async (_repoPath: string, method: string, params?: unknown) => {
+      if (method === 'diff.commits') {
+        expect(params).toEqual({
+          fromRef: 'base',
+          toRef: 'head',
+          mergeBase: true,
+          paths: undefined
+        })
+        return { unified: '+++ b/src/pr.ts\n+change' }
+      }
+      throw new Error(`unexpected ${method}`)
+    })
+
+    const enriched = await enrichAiContext(createManager(invoke), {
+      purpose: 'refine_pull_request_analysis',
+      context: { baseSha: 'base', headSha: 'head', analysisScope: 'full' }
+    })
+
+    expect(enriched.context?.diffText).toContain('pr.ts')
+  })
+})
+
+describe('enrichAiContext resolve_conflict preloaded', () => {
+  it('reuses provided conflict stages without reading git stages', async () => {
+    const invoke = vi.fn()
+    const enriched = await enrichAiContext(createManager(invoke), {
+      purpose: 'resolve_conflict',
+      context: {
+        filePath: 'src/conflict.ts',
+        sideA: 'ours',
+        sideB: 'theirs',
+        conflictContent: '<<<<<<<\n=======\n>>>>>>>',
+        branch: 'main',
+        operationKind: 'rebase'
+      }
+    })
+
+    expect(invoke).not.toHaveBeenCalled()
+    expect(enriched.context?.sideA).toBe('ours')
+    expect(enriched.context?.operationKind).toBe('rebase')
+  })
+
+  it('returns params unchanged when stage loading fails', async () => {
+    const invoke = vi.fn(async () => {
+      throw new Error('read failed')
+    })
+    const params = {
+      purpose: 'resolve_conflict' as const,
+      context: { filePath: 'src/conflict.ts' }
+    }
+    const enriched = await enrichAiContext(createManager(invoke), params)
+    expect(enriched).toEqual(params)
+  })
+})
+
+describe('enrichAiContext explain_commit edge cases', () => {
+  it('preserves an existing commit message without calling log.message', async () => {
+    const invoke = vi.fn(async (_repoPath: string, method: string, params?: unknown) => {
+      if (method === 'diff.show') {
+        return { unified: `diff for ${(params as { ref: string }).ref}` }
+      }
+      if (method === 'repo.status') {
+        return { branch: 'main' }
+      }
+      throw new Error(`unexpected ${method}`)
+    })
+
+    const enriched = await enrichAiContext(createManager(invoke), {
+      purpose: 'explain_commit',
+      context: {
+        commits: [
+          {
+            hash: 'abc123def456',
+            shortHash: 'abc123d',
+            subject: 'Existing message',
+            message: 'Existing message\n\nBody'
+          }
+        ]
+      }
+    })
+
+    expect(invoke).not.toHaveBeenCalledWith('/repo', 'log.message', expect.anything())
+    expect(enriched.context?.commits?.[0]?.message).toBe('Existing message\n\nBody')
+  })
+
+  it('returns params when enrichment throws', async () => {
+    const invoke = vi.fn(async () => {
+      throw new Error('git unavailable')
+    })
+    const params = {
+      purpose: 'explain_commit' as const,
+      context: {
+        commits: [{ hash: 'abc', shortHash: 'abc', subject: 'x' }]
+      }
+    }
+    const enriched = await enrichAiContext(createManager(invoke), params)
+    expect(enriched).toEqual(params)
+  })
+
+  it('truncates very long diffs', async () => {
+    const longDiff = 'x'.repeat(9000)
+    const invoke = vi.fn(async (_repoPath: string, method: string) => {
+      if (method === 'diff.show') {
+        return { unified: longDiff }
+      }
+      if (method === 'repo.status') {
+        return { branch: 'main' }
+      }
+      throw new Error(`unexpected ${method}`)
+    })
+
+    const enriched = await enrichAiContext(createManager(invoke), {
+      purpose: 'explain_commit',
+      context: {
+        commits: [{ hash: 'abc', shortHash: 'abc', subject: 'big', message: 'big' }]
+      }
+    })
+
+    expect(enriched.context?.diffText).toContain('… (truncated)')
+    expect(enriched.context?.diffText!.length).toBeLessThan(longDiff.length)
+  })
+})
+
+describe('enrichAiContext analyze_changes branch fallback', () => {
+  it('falls back to repo.status when working status branch is missing', async () => {
+    const invoke = vi.fn(async (_repoPath: string, method: string) => {
+      if (method === 'working.status') {
+        return {
+          branch: 'working-branch',
+          staged: [{ path: 'src/a.ts' }],
+          unstaged: [],
+          untracked: [],
+          conflicted: []
+        }
+      }
+      if (method === 'diff.staged') {
+        return { unified: 'staged diff' }
+      }
+      if (method === 'repo.status') {
+        return { branch: 'repo-branch' }
+      }
+      throw new Error(`unexpected ${method}`)
+    })
+
+    const enriched = await enrichAiContext(createManager(invoke), {
+      purpose: 'analyze_changes',
+      context: { branch: 'provided-branch' }
+    })
+
+    expect(enriched.context?.branch).toBe('provided-branch')
+  })
+
+  it('returns params when there are no changes to analyze', async () => {
+    const invoke = vi.fn(async (_repoPath: string, method: string) => {
+      if (method === 'working.status') {
+        return {
+          branch: 'main',
+          staged: [],
+          unstaged: [],
+          untracked: [],
+          conflicted: []
+        }
+      }
+      throw new Error(`unexpected ${method}`)
+    })
+
+    const params = { purpose: 'analyze_changes' as const, context: {} }
+    const enriched = await enrichAiContext(createManager(invoke), params)
+    expect(enriched).toEqual(params)
+  })
+})
+
+describe('enrichAiContext pull_request edge cases', () => {
+  it('returns params when diff is empty', async () => {
+    const invoke = vi.fn(async (_repoPath: string, method: string) => {
+      if (method === 'diff.commits') {
+        return { unified: '   ' }
+      }
+      throw new Error(`unexpected ${method}`)
+    })
+
+    const params = {
+      purpose: 'pull_request' as const,
+      context: { headBranch: 'feature', baseBranch: 'main' }
+    }
+    const enriched = await enrichAiContext(createManager(invoke), params)
+    expect(enriched).toEqual(params)
+  })
+
+  it('returns params when diff loading fails', async () => {
+    const invoke = vi.fn(async () => {
+      throw new Error('diff failed')
+    })
+    const params = {
+      purpose: 'pull_request' as const,
+      context: { headBranch: 'feature', baseBranch: 'main' }
+    }
+    const enriched = await enrichAiContext(createManager(invoke), params)
+    expect(enriched).toEqual(params)
+  })
+})
+
+describe('enrichAiContext commit_message edge cases', () => {
+  it('returns params when working status throws', async () => {
+    const invoke = vi.fn(async () => {
+      throw new Error('status failed')
+    })
+    const params = { purpose: 'commit_message' as const, context: {} }
+    const enriched = await enrichAiContext(createManager(invoke), params)
+    expect(enriched).toEqual(params)
+  })
+
+  it('returns params when there are no staged files', async () => {
+    const invoke = vi.fn(async (_repoPath: string, method: string) => {
+      if (method === 'working.status') {
+        return {
+          branch: 'main',
+          staged: [],
+          unstaged: [],
+          untracked: [],
+          conflicted: []
+        }
+      }
+      throw new Error(`unexpected ${method}`)
+    })
+
+    const params = { purpose: 'commit_message' as const, context: {} }
+    const enriched = await enrichAiContext(createManager(invoke), params)
+    expect(enriched).toEqual(params)
+  })
 })

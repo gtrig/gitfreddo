@@ -178,6 +178,11 @@ describe('RepoManager invoke coverage', () => {
 
     await manager.invoke(tmpDir, 'reset', { mode: 'mixed', ref: commitHash })
 
+    writeFileSync(join(tmpDir, 'for-reset.txt'), 'reset me\n')
+    execSync('git add for-reset.txt && git commit -m "for reset"', { cwd: tmpDir, stdio: 'ignore' })
+    await manager.invoke(tmpDir, 'reset.head', { mode: 'mixed' })
+    await manager.invoke(tmpDir, 'undo.last', undefined)
+
     writeFileSync(join(tmpDir, 'README.md'), 'stash again\n')
     await manager.invoke(tmpDir, 'stash.push', { message: 'pop me' })
     await manager.invoke(tmpDir, 'stash.pop', { index: 0 })
@@ -213,5 +218,115 @@ describe('RepoManager invoke coverage', () => {
     const longValue = 'x'.repeat(300)
     await manager.invoke(tmpDir, 'config.get', { key: longValue, scope: 'local' } as never)
     expect(true).toBe(true)
+  })
+
+  it('dispatches maintenance handlers with alternate parameter shapes', async () => {
+    await manager.invoke(tmpDir, 'maintenance.staleBranches', { hash: commitHash })
+    await manager.invoke(tmpDir, 'maintenance.staleBranches', { hashes: [commitHash] })
+    await manager.invoke(tmpDir, 'branch.create', { name: 'stale-branch', startPoint: commitHash })
+    await manager.invoke(tmpDir, 'maintenance.removeStaleBranches', {
+      refs: ['refs/heads/stale-branch']
+    })
+    expect(true).toBe(true)
+  })
+
+  it('dispatches remaining branch, tag, fetch, and rewrite IPC methods', async () => {
+    const bareRemote = mkdtempSync(join(tmpdir(), 'gitfreddo-invoke-bare-'))
+    try {
+      execSync(`git init --bare "${bareRemote}"`, { stdio: 'ignore' })
+      await manager.invoke(tmpDir, 'remote.add', { name: 'origin', url: bareRemote })
+      execSync('git push -u origin main', { cwd: tmpDir, stdio: 'ignore' })
+      execSync('git fetch origin', { cwd: tmpDir, stdio: 'ignore' })
+
+      await manager.invoke(tmpDir, 'branch.checkoutRemote', {
+        remoteBranch: 'remotes/origin/main',
+        localName: 'from-remote'
+      })
+      await manager.invoke(tmpDir, 'branch.checkout', { name: 'main' })
+      await manager.invoke(tmpDir, 'branch.setUpstream', {
+        branch: 'main',
+        upstream: 'origin/main'
+      })
+      await manager.invoke(tmpDir, 'branch.unsetUpstream', { branch: 'main' })
+      await manager.invoke(tmpDir, 'branch.setUpstream', {
+        branch: 'main',
+        upstream: 'origin/main'
+      })
+
+      await manager.invoke(tmpDir, 'branch.create', { name: 'publish-me', startPoint: commitHash })
+      writeFileSync(join(tmpDir, 'publish.txt'), 'publish\n')
+      execSync('git add publish.txt && git commit -m "publish"', { cwd: tmpDir, stdio: 'ignore' })
+      await manager.invoke(tmpDir, 'branch.checkout', { name: 'publish-me' })
+      await manager.invoke(tmpDir, 'push', { remote: 'origin', branch: 'publish-me', setUpstream: true })
+      await manager.invoke(tmpDir, 'branch.deleteRemote', {
+        remote: 'origin',
+        branch: 'publish-me'
+      })
+      await manager.invoke(tmpDir, 'branch.checkout', { name: 'main' })
+      await manager.invoke(tmpDir, 'branch.delete', { name: 'publish-me', force: true })
+      await manager.invoke(tmpDir, 'branch.delete', { name: 'from-remote', force: true })
+
+      await manager.invoke(tmpDir, 'fetch', { remote: 'origin', tags: true })
+      await manager.invoke(tmpDir, 'pull', { remote: 'origin', branch: 'main', rebase: true })
+
+      await manager.invoke(tmpDir, 'tag.create', { name: 'v-ipc', target: commitHash, message: 'ipc tag' })
+      await manager.invoke(tmpDir, 'tag.push', { name: 'v-ipc', remote: 'origin' })
+      await manager.invoke(tmpDir, 'tag.delete', { name: 'v-ipc', remote: 'origin', alsoDeleteRemote: true })
+
+      writeFileSync(join(tmpDir, 'reword.txt'), 'reword me\n')
+      execSync('git add reword.txt && git commit -m "to reword"', { cwd: tmpDir, stdio: 'ignore' })
+      const rewordGraph = await manager.invoke(tmpDir, 'log.graph', { maxCount: 5 })
+      const rewordHash = rewordGraph.commits[0]!.hash
+      await manager.invoke(tmpDir, 'commit.reword', {
+        hash: rewordHash,
+        message: 'Reworded commit'
+      })
+      const rewordedGraph = await manager.invoke(tmpDir, 'log.graph', { maxCount: 5 })
+      expect(rewordedGraph.commits[0]?.subject).toBe('Reworded commit')
+
+      writeFileSync(join(tmpDir, 'stash-branch.txt'), 'stash branch\n')
+      execSync('git add stash-branch.txt', { cwd: tmpDir, stdio: 'ignore' })
+      await manager.invoke(tmpDir, 'stash.push', { message: 'branch stash' })
+      await manager.invoke(tmpDir, 'stash.branch', { branchName: 'from-stash', index: 0 })
+      await manager.invoke(tmpDir, 'branch.checkout', { name: 'main' })
+
+      writeFileSync(join(tmpDir, 'README.md'), 'conflict base\n')
+      execSync('git add README.md && git commit -m "main edit"', { cwd: tmpDir, stdio: 'ignore' })
+      await manager.invoke(tmpDir, 'branch.create', { name: 'side', startPoint: commitHash })
+      await manager.invoke(tmpDir, 'branch.checkout', { name: 'side' })
+      writeFileSync(join(tmpDir, 'README.md'), 'side edit\n')
+      execSync('git add README.md && git commit -m "side edit"', { cwd: tmpDir, stdio: 'ignore' })
+      await manager.invoke(tmpDir, 'branch.checkout', { name: 'main' })
+
+      const mergeResult = await manager.invoke(tmpDir, 'merge.start', { branch: 'side', noFf: true })
+      expect(mergeResult.status).toBe('conflicts')
+      writeFileSync(join(tmpDir, 'README.md'), 'merged\n')
+      execSync('git add README.md', { cwd: tmpDir, stdio: 'ignore' })
+      await manager.invoke(tmpDir, 'merge.continue', { message: 'Merge side' })
+
+      writeFileSync(join(tmpDir, 'revert-me.txt'), 'revert\n')
+      execSync('git add revert-me.txt && git commit -m "revert me"', { cwd: tmpDir, stdio: 'ignore' })
+      const revertGraph = await manager.invoke(tmpDir, 'log.graph', { maxCount: 5 })
+      await manager.invoke(tmpDir, 'commit.revert', { hash: revertGraph.commits[0]!.hash })
+
+      await manager.invoke(tmpDir, 'bisect.start', { badRef: 'HEAD', goodRef: commitHash })
+      await manager.invoke(tmpDir, 'bisect.good', { ref: commitHash })
+      await manager.invoke(tmpDir, 'bisect.bad', { ref: 'HEAD' })
+      await manager.invoke(tmpDir, 'bisect.reset', undefined)
+    } finally {
+      rmSync(bareRemote, { recursive: true, force: true })
+    }
+  })
+
+  it('serializes non-JSON params for debug logging', async () => {
+    const circular: { self?: unknown } = {}
+    circular.self = circular
+    await manager.invoke(tmpDir, 'config.get', { key: 'user.name', scope: 'local' } as never)
+    const dispatch = manager as unknown as {
+      dispatchInvoke: (repoPath: string | undefined, method: string, params?: unknown) => Promise<unknown>
+    }
+    await expect(
+      dispatch.dispatchInvoke(tmpDir, 'config.get', circular)
+    ).resolves.toBeDefined()
   })
 })

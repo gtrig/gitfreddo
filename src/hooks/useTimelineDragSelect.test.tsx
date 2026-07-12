@@ -114,10 +114,7 @@ describe('useTimelineDragSelect', () => {
   beforeEach(() => {
     vi.stubGlobal(
       'requestAnimationFrame',
-      vi.fn((callback: FrameRequestCallback) => {
-        callback(0)
-        return 1
-      })
+      vi.fn(() => 1)
     )
     vi.stubGlobal('cancelAnimationFrame', vi.fn())
   })

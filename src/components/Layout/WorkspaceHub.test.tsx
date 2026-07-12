@@ -55,6 +55,45 @@ vi.mock('@/components/Bitbucket/CreateBitbucketRepoModal', () => ({
     open ? <div role="dialog">Create Bitbucket repo</div> : null
 }))
 
+vi.mock('@/components/GitHub/ForkGitHubRepoModal', () => ({
+  ForkGitHubRepoModal: ({
+    open,
+    onForked
+  }: {
+    open: boolean
+    onForked: (repo: { cloneUrl: string }) => void
+  }) =>
+    open ? (
+      <div role="dialog">
+        Fork GitHub repo
+        <button type="button" onClick={() => onForked({ cloneUrl: 'https://github.com/me/fork.git' })}>
+          Fork
+        </button>
+      </div>
+    ) : null
+}))
+
+vi.mock('@/components/Bitbucket/ForkBitbucketRepoModal', () => ({
+  ForkBitbucketRepoModal: ({
+    open,
+    onForked
+  }: {
+    open: boolean
+    onForked: (repo: { cloneUrl: string }) => void
+  }) =>
+    open ? (
+      <div role="dialog">
+        Fork Bitbucket repo
+        <button
+          type="button"
+          onClick={() => onForked({ cloneUrl: 'https://bitbucket.org/me/fork.git' })}
+        >
+          Fork
+        </button>
+      </div>
+    ) : null
+}))
+
 vi.mock('@tanstack/react-virtual', () => ({
   useVirtualizer: vi.fn(({ count, estimateSize }: { count: number; estimateSize: () => number }) => ({
     getVirtualItems: () =>
@@ -245,5 +284,133 @@ describe('WorkspaceHub', () => {
     await screen.findByRole('button', { name: /recent-repo/i })
     await userEvent.type(screen.getByPlaceholderText(/filter recent repositories/i), 'zzzzz')
     expect(screen.getByText(/no repositories match your filter/i)).toBeInTheDocument()
+  })
+
+  it('returns null when modal variant is closed', () => {
+    const { container } = renderWithProviders(
+      <WorkspaceHub variant="modal" open={false} onOpen={vi.fn()} onClose={vi.fn()} />
+    )
+    expect(container).toBeEmptyDOMElement()
+  })
+
+  it('closes modal variant from the close button', async () => {
+    const onClose = vi.fn()
+    renderWithProviders(
+      <WorkspaceHub variant="modal" open onOpen={vi.fn()} onClose={onClose} />
+    )
+    await userEvent.click(screen.getByRole('button', { name: /close/i }))
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('shows no recents message when history is empty', async () => {
+    window.gitfreddo = createGitFreddoMock({
+      getRecentRepos: vi.fn(async () => [])
+    })
+    renderWithProviders(<WorkspaceHub variant="page" onOpen={vi.fn()} />)
+    expect(await screen.findByText(/no recent repositories/i)).toBeInTheDocument()
+  })
+
+  it('shows predicted clone folder name', async () => {
+    renderWithProviders(<WorkspaceHub variant="page" onOpen={vi.fn()} />)
+    await userEvent.click(screen.getAllByText('Clone a repository')[0]!)
+    await userEvent.type(
+      screen.getByLabelText(/repository url/i),
+      'https://github.com/octo/demo.git'
+    )
+    expect(screen.getByText(/will create/i)).toBeInTheDocument()
+  })
+
+  it('opens fork dialog for GitHub URLs', async () => {
+    renderWithProviders(<WorkspaceHub variant="page" onOpen={vi.fn()} />)
+    await userEvent.click(screen.getAllByText('Clone a repository')[0]!)
+    await userEvent.type(
+      screen.getByLabelText(/repository url/i),
+      'https://github.com/octo/demo.git'
+    )
+    await userEvent.click(screen.getByRole('button', { name: /fork to my account/i }))
+    expect(screen.getByText('Fork GitHub repo')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /^fork$/i }))
+    expect(screen.getByLabelText(/repository url/i)).toHaveValue('https://github.com/me/fork.git')
+  })
+
+  it('clones from the Bitbucket picker tab', async () => {
+    const onOpen = vi.fn(async () => undefined)
+    renderWithProviders(<WorkspaceHub variant="page" onOpen={onOpen} />)
+
+    await userEvent.click(screen.getAllByText('Clone a repository')[0]!)
+    await userEvent.click(screen.getByRole('button', { name: /^bitbucket$/i }))
+    await userEvent.click(screen.getByRole('button', { name: /pick bitbucket repo/i }))
+    await userEvent.click(screen.getByRole('button', { name: /^clone$/i }))
+
+    await waitFor(() => {
+      expect(window.gitfreddo.cloneRepository).toHaveBeenCalledWith(
+        'https://bitbucket.org/team/repo.git',
+        '/tmp'
+      )
+    })
+  })
+
+  it('opens create repo modal from clone GitHub tab', async () => {
+    renderWithProviders(<WorkspaceHub variant="page" onOpen={vi.fn()} />)
+    await userEvent.click(screen.getAllByText('Clone a repository')[0]!)
+    await userEvent.click(screen.getByRole('button', { name: /^github$/i }))
+    await userEvent.click(screen.getByRole('button', { name: /create new repository/i }))
+    expect(screen.getByText('Create GitHub repo')).toBeInTheDocument()
+  })
+
+  it('virtualizes very large recent repository lists', async () => {
+    window.gitfreddo = createGitFreddoMock({
+      getRecentRepos: vi.fn(async () =>
+        Array.from({ length: 55 }, (_, index) => `/tmp/repo-${index}`)
+      )
+    })
+    renderWithProviders(<WorkspaceHub variant="page" onOpen={vi.fn()} />)
+    expect(await screen.findByRole('button', { name: /repo-0/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /repo-54/i })).toBeInTheDocument()
+  })
+
+  it('surfaces errors from open folder, init, clone, and recent actions', async () => {
+    window.gitfreddo = createGitFreddoMock({
+      getRecentRepos: vi.fn(async () => ['/tmp/recent-repo']),
+      openWorkspace: vi.fn(async () => {
+        throw new Error('Open failed')
+      }),
+      initRepository: vi.fn(async () => {
+        throw new Error('Init failed')
+      }),
+      cloneRepository: vi.fn(async () => {
+        throw new Error('Clone failed')
+      })
+    })
+    const onOpen = vi.fn(async () => {
+      throw new Error('Recent failed')
+    })
+
+    renderWithProviders(<WorkspaceHub variant="page" onOpen={onOpen} />)
+
+    await userEvent.click(screen.getAllByText('Open a folder')[0]!)
+    expect(await screen.findByText('Open failed')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: /initialize a new repository/i }))
+    expect(await screen.findByText('Init failed')).toBeInTheDocument()
+
+    await userEvent.click(screen.getAllByText('Clone a repository')[0]!)
+    await userEvent.type(
+      screen.getByLabelText(/repository url/i),
+      'https://github.com/octo/demo.git'
+    )
+    await userEvent.click(screen.getByRole('button', { name: /^clone$/i }))
+    expect(await screen.findByText('Clone failed')).toBeInTheDocument()
+
+    await userEvent.click(await screen.findByRole('button', { name: /recent-repo/i }))
+    expect(await screen.findByText('Recent failed')).toBeInTheDocument()
+  })
+
+  it('validates repo selection on forge clone tabs', async () => {
+    renderWithProviders(<WorkspaceHub variant="page" onOpen={vi.fn()} />)
+    await userEvent.click(screen.getAllByText('Clone a repository')[0]!)
+    await userEvent.click(screen.getByRole('button', { name: /^github$/i }))
+    await userEvent.click(screen.getByRole('button', { name: /^clone$/i }))
+    expect(screen.getByText(/select a repository/i)).toBeInTheDocument()
   })
 })

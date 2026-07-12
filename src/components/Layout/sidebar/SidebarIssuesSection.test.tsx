@@ -10,8 +10,11 @@ import { renderWithProviders } from '@/test/render'
 import { createGitFreddoMock } from '@/test/mocks/gitfreddo'
 import { useForgeContext } from '@/hooks/useForgeContext'
 import { useGitHubIssues } from '@/hooks/useGitHubIssues'
+import { useBitbucketIssues } from '@/hooks/useBitbucketIssues'
+import { useToastStore } from '@/stores/toast'
 
 const createBranchMutate = vi.fn(async () => undefined)
+const showToast = vi.fn()
 
 vi.mock('@/hooks/useForgeContext', () => ({
   useForgeContext: vi.fn(() => ({
@@ -66,6 +69,8 @@ describe('SidebarIssuesSection', () => {
   })
   beforeEach(() => {
     localStorage.clear()
+    showToast.mockClear()
+    useToastStore.setState({ message: null, tone: 'info', show: showToast, clear: vi.fn() })
     vi.mocked(useForgeContext).mockReturnValue({
       provider: 'github',
       expectedProvider: 'github',
@@ -188,5 +193,149 @@ describe('SidebarIssuesSection', () => {
     renderWithProviders(<SidebarIssuesSection />)
     await expandSection()
     expect(screen.getByText(/connect/i)).toBeInTheDocument()
+  })
+
+  it('prompts to open a repository when workspace is disconnected', async () => {
+    useWorkspaceStore.setState({
+      tabs: [],
+      activePath: null,
+      connected: false,
+      workspacePath: null,
+      workspacePickerOpen: false
+    })
+    renderWithProviders(<SidebarIssuesSection />)
+    await expandSection()
+    expect(screen.getByText(/open a repository/i)).toBeInTheDocument()
+  })
+
+  it('shows not-linked message when forge is connected but repo is unlinked', async () => {
+    vi.mocked(useForgeContext).mockReturnValue({
+      provider: null,
+      expectedProvider: 'github',
+      connected: true,
+      login: 'testuser'
+    } as ReturnType<typeof useForgeContext>)
+    renderWithProviders(<SidebarIssuesSection />)
+    await expandSection()
+    expect(screen.getByText('forge.notLinked')).toBeInTheDocument()
+  })
+
+  it('shows empty state when there are no open issues', async () => {
+    vi.mocked(useGitHubIssues).mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: null
+    } as unknown as ReturnType<typeof useGitHubIssues>)
+    renderWithProviders(<SidebarIssuesSection />)
+    await expandSection()
+    expect(screen.getByText(/no open issues/i)).toBeInTheDocument()
+  })
+
+  it('shows fetch error message', async () => {
+    vi.mocked(useGitHubIssues).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error('Issues API failed')
+    } as unknown as ReturnType<typeof useGitHubIssues>)
+    renderWithProviders(<SidebarIssuesSection />)
+    await expandSection()
+    expect(screen.getByText('Issues API failed')).toBeInTheDocument()
+  })
+
+  it('opens edit modal from the issue context menu', async () => {
+    renderWithProviders(<SidebarIssuesSection />)
+    await expandSection()
+    fireEvent.contextMenu(screen.getByText(/#1 Fix bug/))
+    await userEvent.click(screen.getByRole('menuitem', { name: /edit issue/i }))
+    expect(screen.getByText('Edit issue')).toBeInTheDocument()
+  })
+
+  it('reopens a closed issue from the context menu', async () => {
+    vi.mocked(useGitHubIssues).mockReturnValue({
+      data: [
+        {
+          number: 3,
+          title: 'Closed issue',
+          state: 'closed',
+          htmlUrl: 'https://github.com/t/r/issues/3',
+          user: 'test',
+          body: '',
+          labels: []
+        }
+      ],
+      isLoading: false,
+      error: null
+    } as unknown as ReturnType<typeof useGitHubIssues>)
+    renderWithProviders(<SidebarIssuesSection />)
+    await expandSection()
+    fireEvent.contextMenu(screen.getByText(/#3 Closed issue/))
+    await userEvent.click(screen.getByRole('menuitem', { name: /reopen issue/i }))
+    expect(window.gitfreddo.githubUpdateIssue).toHaveBeenCalledWith('/tmp/repo', 3, { state: 'open' })
+  })
+
+  it('cancels the create issue dialog', async () => {
+    renderWithProviders(<SidebarIssuesSection />)
+    await userEvent.click(screen.getByRole('button', { name: /create issue/i }))
+    await userEvent.click(screen.getByRole('button', { name: /^cancel$/i }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('creates bitbucket issues and closes them from the context menu', async () => {
+    vi.mocked(useForgeContext).mockReturnValue({
+      provider: 'bitbucket',
+      expectedProvider: 'bitbucket',
+      connected: true,
+      login: 'bb-user'
+    } as ReturnType<typeof useForgeContext>)
+    vi.mocked(useBitbucketIssues).mockReturnValue({
+      data: [
+        {
+          number: 10,
+          title: 'BB issue',
+          state: 'open',
+          htmlUrl: 'https://bitbucket.org/acme/app/issues/10',
+          user: 'bb-user',
+          body: ''
+        }
+      ],
+      isLoading: false,
+      error: null
+    } as unknown as ReturnType<typeof useBitbucketIssues>)
+    window.gitfreddo = createGitFreddoMock({
+      bitbucketCreateIssue: vi.fn(async () => ({
+        number: 11,
+        title: 'New BB',
+        state: 'open',
+        htmlUrl: 'https://bitbucket.org/acme/app/issues/11',
+        user: 'bb-user',
+        body: '',
+        labels: []
+      })),
+      bitbucketUpdateIssue: vi.fn(async () => ({
+        number: 10,
+        title: 'BB issue',
+        state: 'closed',
+        htmlUrl: 'https://bitbucket.org/acme/app/issues/10',
+        user: 'bb-user',
+        body: '',
+        labels: []
+      }))
+    })
+
+    renderWithProviders(<SidebarIssuesSection />)
+    await userEvent.click(screen.getByRole('button', { name: /create issue/i }))
+    await userEvent.type(screen.getAllByRole('textbox')[0]!, 'New BB')
+    await userEvent.click(screen.getByRole('button', { name: /^create$/i }))
+    expect(window.gitfreddo.bitbucketCreateIssue).toHaveBeenCalledWith('/tmp/repo', {
+      title: 'New BB',
+      body: ''
+    })
+
+    await expandSection()
+    fireEvent.contextMenu(screen.getByText(/#10 BB issue/))
+    await userEvent.click(screen.getByRole('menuitem', { name: /close issue/i }))
+    expect(window.gitfreddo.bitbucketUpdateIssue).toHaveBeenCalledWith('/tmp/repo', 10, {
+      state: 'closed'
+    })
   })
 })

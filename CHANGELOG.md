@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-12 — Test coverage to 90% and CI fixes
+
+- **Why:** Raise project line coverage to 90% and fix test regressions blocking CI.
+- **What:** Added/expanded co-located tests across renderer components, hooks, electron/git operations, OAuth helpers, and shared parsers (timeline, working tree, detail panel, sidebar, modals, merge conflicts, forge flows). Fixed stale expectations (i18n strings, virtualizer mocks), **`MergeCommitFooter`** description label and rebase/cherry-pick continue without commit message, and **Bitbucket OAuth** callback server lifecycle (listen before progress, clean shutdown). **1,903 tests pass; 90.82% line coverage.** CI green: typecheck, test:coverage, build, smoke.
+
 ### 2026-07-12 — Coverage push toward 85% (~84% lines)
 
 - **Why:** User requested continuing test expansion toward 85% line coverage.

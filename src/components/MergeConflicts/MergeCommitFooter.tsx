@@ -91,7 +91,7 @@ export function MergeCommitFooter({ mergeStatus, conflictedCount }: MergeCommitF
   async function handleContinue() {
     if (!canContinue || !kind) return
     const message = buildCommitMessage(summary, description)
-    if (!message.trim()) {
+    if (kind === 'merge' && !message.trim()) {
       showToast(t('conflicts.enterCommitSummary'), 'error')
       return
     }
@@ -99,9 +99,9 @@ export function MergeCommitFooter({ mergeStatus, conflictedCount }: MergeCommitF
       if (kind === 'merge') {
         await mergeContinue.mutateAsync({ message })
       } else if (kind === 'rebase') {
-        await rebaseContinue.mutateAsync({ message })
+        await rebaseContinue.mutateAsync(message.trim() ? { message } : undefined)
       } else {
-        await cherryPickContinue.mutateAsync({ message })
+        await cherryPickContinue.mutateAsync(message.trim() ? { message } : undefined)
       }
       showToast(t('conflicts.operationContinued'), 'success')
     } catch (error) {
@@ -180,8 +180,14 @@ export function MergeCommitFooter({ mergeStatus, conflictedCount }: MergeCommitF
             />
           </div>
           <div>
-            <label className="mb-1 block text-[10px] uppercase text-gf-fg-subtle">{t('conflicts.description')}</label>
+            <label
+              htmlFor="merge-commit-description"
+              className="mb-1 block text-[10px] uppercase text-gf-fg-subtle"
+            >
+              {t('conflicts.description')}
+            </label>
             <textarea
+              id="merge-commit-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}

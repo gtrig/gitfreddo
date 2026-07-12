@@ -343,4 +343,227 @@ describe('GitWorkingTree', () => {
     await userEvent.click(screen.getByRole('menuitem', { name: /^rename/i }))
     expect(screen.getByTestId('rename-modal')).toHaveTextContent('dirty.txt')
   })
+
+  it('confirms discard all for unstaged changes', async () => {
+    const { useWorkingStatus } = await import('@/hooks/useGit')
+    const { useGitMutations } = await import('@/hooks/useGitMutations')
+    const workingDiscard = vi.fn(async () => undefined)
+    vi.mocked(useGitMutations).mockReturnValue({
+      stageAdd: { isPending: false, mutateAsync: vi.fn() },
+      stageReset: { isPending: false, mutateAsync: vi.fn() },
+      workingDiscard: { isPending: false, mutateAsync: workingDiscard },
+      workingRemove: { isPending: false, mutateAsync: vi.fn() },
+      workingAddToGitignore: { isPending: false, mutateAsync: vi.fn() },
+      submoduleUpdate: { isPending: false, mutateAsync: vi.fn() },
+      submoduleSync: { isPending: false, mutateAsync: vi.fn() },
+      commit: { isPending: false, mutateAsync: vi.fn() }
+    } as unknown as ReturnType<typeof useGitMutations>)
+
+    vi.mocked(useWorkingStatus).mockReturnValue({
+      data: {
+        ...emptyWorking,
+        isClean: false,
+        unstaged: [
+          { path: 'dirty.txt', status: 'modified' },
+          { path: 'old.txt', status: 'deleted' }
+        ]
+      },
+      isLoading: false,
+      error: null
+    } as ReturnType<typeof useWorkingStatus>)
+
+    renderWithProviders(<GitWorkingTree />)
+    await userEvent.click(screen.getAllByRole('button', { name: 'Discard all…' })[0]!)
+    await userEvent.click(screen.getByRole('button', { name: 'Discard' }))
+    expect(workingDiscard).toHaveBeenCalledWith({
+      paths: ['dirty.txt', 'old.txt'],
+      staged: false
+    })
+  })
+
+  it('deletes an untracked file from the row context menu', async () => {
+    const { useWorkingStatus } = await import('@/hooks/useGit')
+    const invalidate = vi.fn()
+    const { useInvalidateGit } = await import('@/hooks/useInvalidateGit')
+    vi.mocked(useInvalidateGit).mockReturnValue(invalidate)
+    window.gitfreddo.deleteWorkspaceFile = vi.fn(async () => undefined)
+
+    vi.mocked(useWorkingStatus).mockReturnValue({
+      data: {
+        ...emptyWorking,
+        isClean: false,
+        untracked: [{ path: 'new.txt', status: 'untracked' }]
+      },
+      isLoading: false,
+      error: null
+    } as ReturnType<typeof useWorkingStatus>)
+
+    renderWithProviders(<GitWorkingTree />)
+    fireEvent.contextMenu(screen.getByText('new.txt'))
+    await userEvent.click(screen.getByRole('menuitem', { name: /delete file/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Delete' }))
+    expect(window.gitfreddo.deleteWorkspaceFile).toHaveBeenCalledWith('new.txt', '/tmp/repo')
+    expect(invalidate).toHaveBeenCalledWith('working.status')
+  })
+
+  it('shows submodule actions in the row context menu', async () => {
+    const { useWorkingStatus } = await import('@/hooks/useGit')
+    const { useGitMutations } = await import('@/hooks/useGitMutations')
+    const submoduleUpdate = vi.fn(async () => undefined)
+    const submoduleSync = vi.fn(async () => undefined)
+    vi.mocked(useGitMutations).mockReturnValue({
+      stageAdd: { isPending: false, mutateAsync: vi.fn() },
+      stageReset: { isPending: false, mutateAsync: vi.fn() },
+      workingDiscard: { isPending: false, mutateAsync: vi.fn() },
+      workingRemove: { isPending: false, mutateAsync: vi.fn() },
+      workingAddToGitignore: { isPending: false, mutateAsync: vi.fn() },
+      submoduleUpdate: { isPending: false, mutateAsync: submoduleUpdate },
+      submoduleSync: { isPending: false, mutateAsync: submoduleSync },
+      commit: { isPending: false, mutateAsync: vi.fn() }
+    } as unknown as ReturnType<typeof useGitMutations>)
+
+    vi.mocked(useWorkingStatus).mockReturnValue({
+      data: {
+        ...emptyWorking,
+        isClean: false,
+        unstaged: [
+          {
+            path: 'vendor/lib',
+            status: 'modified',
+            isSubmodule: true,
+            submoduleStatus: 'dirty'
+          }
+        ]
+      },
+      isLoading: false,
+      error: null
+    } as ReturnType<typeof useWorkingStatus>)
+
+    renderWithProviders(<GitWorkingTree />)
+    await userEvent.click(screen.getByRole('button', { name: /expand all/i }))
+    fireEvent.contextMenu(screen.getByText('lib'))
+    await userEvent.click(screen.getByRole('menuitem', { name: /^update$/i }))
+    expect(submoduleUpdate).toHaveBeenCalledWith({ paths: ['vendor/lib'], init: true })
+
+    fireEvent.contextMenu(screen.getByText('lib'))
+    await userEvent.click(screen.getByRole('menuitem', { name: /^sync$/i }))
+    expect(submoduleSync).toHaveBeenCalledWith({ paths: ['vendor/lib'] })
+  })
+
+  it('stages and discards folder contents from the tree context menu', async () => {
+    const { useWorkingStatus } = await import('@/hooks/useGit')
+    const { useGitMutations } = await import('@/hooks/useGitMutations')
+    const stageAdd = vi.fn(async () => undefined)
+    const workingDiscard = vi.fn(async () => undefined)
+    vi.mocked(useGitMutations).mockReturnValue({
+      stageAdd: { isPending: false, mutateAsync: stageAdd },
+      stageReset: { isPending: false, mutateAsync: vi.fn() },
+      workingDiscard: { isPending: false, mutateAsync: workingDiscard },
+      workingRemove: { isPending: false, mutateAsync: vi.fn() },
+      workingAddToGitignore: { isPending: false, mutateAsync: vi.fn() },
+      submoduleUpdate: { isPending: false, mutateAsync: vi.fn() },
+      submoduleSync: { isPending: false, mutateAsync: vi.fn() },
+      commit: { isPending: false, mutateAsync: vi.fn() }
+    } as unknown as ReturnType<typeof useGitMutations>)
+
+    vi.mocked(useWorkingStatus).mockReturnValue({
+      data: {
+        ...emptyWorking,
+        isClean: false,
+        unstaged: [
+          { path: 'src/app.ts', status: 'modified' },
+          { path: 'src/lib/util.ts', status: 'added' }
+        ]
+      },
+      isLoading: false,
+      error: null
+    } as ReturnType<typeof useWorkingStatus>)
+
+    renderWithProviders(<GitWorkingTree />)
+    await userEvent.click(screen.getByRole('button', { name: /expand all/i }))
+    fireEvent.contextMenu(screen.getByText('src'))
+    await userEvent.click(screen.getByRole('menuitem', { name: /stage folder contents/i }))
+    expect(stageAdd).toHaveBeenCalledWith({ paths: ['src/app.ts', 'src/lib/util.ts'] })
+
+    fireEvent.contextMenu(screen.getByText('src'))
+    await userEvent.click(screen.getByRole('menuitem', { name: /discard changes in folder/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Discard' }))
+    expect(workingDiscard).toHaveBeenCalledWith({
+      paths: ['src/app.ts', 'src/lib/util.ts'],
+      staged: false
+    })
+  })
+
+  it('unstages all staged files from the bulk action', async () => {
+    const { useWorkingStatus } = await import('@/hooks/useGit')
+    const { useGitMutations } = await import('@/hooks/useGitMutations')
+    const stageReset = vi.fn(async () => undefined)
+    vi.mocked(useGitMutations).mockReturnValue({
+      stageAdd: { isPending: false, mutateAsync: vi.fn() },
+      stageReset: { isPending: false, mutateAsync: stageReset },
+      workingDiscard: { isPending: false, mutateAsync: vi.fn() },
+      workingRemove: { isPending: false, mutateAsync: vi.fn() },
+      workingAddToGitignore: { isPending: false, mutateAsync: vi.fn() },
+      submoduleUpdate: { isPending: false, mutateAsync: vi.fn() },
+      submoduleSync: { isPending: false, mutateAsync: vi.fn() },
+      commit: { isPending: false, mutateAsync: vi.fn() }
+    } as unknown as ReturnType<typeof useGitMutations>)
+
+    vi.mocked(useWorkingStatus).mockReturnValue({
+      data: {
+        ...emptyWorking,
+        isClean: false,
+        staged: [
+          { path: 'ready.txt', status: 'added' },
+          { path: 'staged.txt', status: 'modified' }
+        ]
+      },
+      isLoading: false,
+      error: null
+    } as ReturnType<typeof useWorkingStatus>)
+
+    renderWithProviders(<GitWorkingTree />)
+    await userEvent.click(screen.getByRole('button', { name: 'Unstage all' }))
+    expect(stageReset).toHaveBeenCalledWith({})
+  })
+
+  it('virtualizes large path lists and removes tracked files from the context menu', async () => {
+    const { useWorkingStatus } = await import('@/hooks/useGit')
+    const { useGitMutations } = await import('@/hooks/useGitMutations')
+    const workingRemove = vi.fn(async () => undefined)
+    vi.mocked(useGitMutations).mockReturnValue({
+      stageAdd: { isPending: false, mutateAsync: vi.fn() },
+      stageReset: { isPending: false, mutateAsync: vi.fn() },
+      workingDiscard: { isPending: false, mutateAsync: vi.fn() },
+      workingRemove: { isPending: false, mutateAsync: workingRemove },
+      workingAddToGitignore: { isPending: false, mutateAsync: vi.fn() },
+      submoduleUpdate: { isPending: false, mutateAsync: vi.fn() },
+      submoduleSync: { isPending: false, mutateAsync: vi.fn() },
+      commit: { isPending: false, mutateAsync: vi.fn() }
+    } as unknown as ReturnType<typeof useGitMutations>)
+
+    const unstaged = Array.from({ length: 55 }, (_, index) => ({
+      path: `file-${index}.txt`,
+      status: 'modified' as const
+    }))
+    vi.mocked(useWorkingStatus).mockReturnValue({
+      data: {
+        ...emptyWorking,
+        isClean: false,
+        unstaged
+      },
+      isLoading: false,
+      error: null
+    } as ReturnType<typeof useWorkingStatus>)
+
+    renderWithProviders(<GitWorkingTree />)
+    await userEvent.click(screen.getByRole('button', { name: /^tree$/i }))
+    expect(screen.getByText('file-0.txt')).toBeInTheDocument()
+    expect(screen.getByText('file-54.txt')).toBeInTheDocument()
+
+    fireEvent.contextMenu(screen.getByText('file-0.txt'))
+    await userEvent.click(screen.getByRole('menuitem', { name: /remove from repository/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Remove' }))
+    expect(workingRemove).toHaveBeenCalledWith({ paths: ['file-0.txt'] })
+  })
 })

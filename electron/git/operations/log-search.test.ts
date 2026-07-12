@@ -68,6 +68,14 @@ describe('logSearch', () => {
     expect(commits[0].subject).toContain('goodbye')
   })
 
+  it('defaults maxCount when IPC passes explicit undefined', async () => {
+    const commits = await logSearch(tmpDir, 'git', {
+      grep: 'goodbye',
+      maxCount: undefined
+    })
+    expect(commits).toHaveLength(1)
+  })
+
   it('returns empty list for non-matching grep', async () => {
     const commits = await logSearch(tmpDir, 'git', { grep: 'zzz_not_found_zzz' })
     expect(commits).toHaveLength(0)

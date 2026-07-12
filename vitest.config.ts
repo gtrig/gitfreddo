@@ -32,24 +32,24 @@ export default defineConfig({
         'src/components/DiffViewer/ConflictMergeOverlay.tsx'
       ],
       thresholds: {
-        lines: 80,
-        branches: 73,
-        functions: 67,
-        statements: 80,
+        lines: 90,
+        branches: 80,
+        functions: 70,
+        statements: 85,
         'src/lib/**': {
-          lines: 78,
-          branches: 60,
-          functions: 64,
-          statements: 78
+          lines: 90,
+          branches: 70,
+          functions: 75,
+          statements: 85
         },
         'shared/**': {
-          lines: 80,
+          lines: 90,
           branches: 65,
           functions: 85,
           statements: 80
         },
         'electron/**': {
-          lines: 45,
+          lines: 90,
           branches: 60,
           functions: 40,
           statements: 45

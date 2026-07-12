@@ -66,6 +66,11 @@ describe('formatRefLabel', () => {
     expect(classifyRef('refs/remotes/origin/main')).toBe('remote')
     expect(classifyRef('refs/tags/v1.0.0')).toBe('tag')
   })
+
+  it('labels unknown refs as other', () => {
+    expect(formatRefLabel('refs/notes/commits')).toBe('notes/commits')
+    expect(classifyRef('refs/notes/commits')).toBe('other')
+  })
 })
 
 describe('toStaleBranchSummary', () => {
@@ -186,5 +191,65 @@ describe('maintenance git operations', () => {
 
   it('requires at least one ref to remove', async () => {
     await expect(removeStaleRefs(cwd, gitBinaryPath, [])).rejects.toThrow(/at least one reference/i)
+  })
+
+  it('throws when fsck fails without stdout', async () => {
+    vi.mocked(runCommand).mockResolvedValue({ code: 1, stdout: '', stderr: 'fsck exploded' })
+
+    await expect(listUnreachableCommits(cwd, gitBinaryPath)).rejects.toThrow(/fsck exploded/i)
+  })
+
+  it('uses fallback details when commit metadata cannot be read', async () => {
+    vi.mocked(runCommand).mockResolvedValue({
+      code: 0,
+      stdout: `unreachable commit ${hash}`,
+      stderr: ''
+    })
+    vi.mocked(runGitOrThrow).mockRejectedValue(new Error('show failed'))
+
+    await expect(listUnreachableCommits(cwd, gitBinaryPath)).resolves.toEqual({
+      commits: [
+        {
+          hash,
+          shortHash: hash.slice(0, 7),
+          subject: '(unreadable commit)',
+          authorDate: ''
+        }
+      ],
+      totalCommitCount: 1,
+      blobCount: 0,
+      treeCount: 0
+    })
+  })
+
+  it('matches refs through ancestor checks', async () => {
+    vi.mocked(runGitOrThrow)
+      .mockResolvedValueOnce(hash)
+      .mockResolvedValueOnce(`refs/heads/stale commit ${hash}\nrefs/tags/v1.0.0 tag ${hash}\n`)
+    vi.mocked(runCommand).mockImplementation(async (_cmd, params) => {
+      if (params && typeof params === 'object' && 'descendant' in params) {
+        const descendant = (params as { descendant: string }).descendant
+        if (descendant === hash) return { code: 0, stdout: '', stderr: '' }
+      }
+      return { code: 1, stdout: '', stderr: '' }
+    })
+
+    await expect(findRefsForCommits(cwd, gitBinaryPath, [hash.slice(0, 7)])).resolves.toEqual([
+      'refs/heads/stale'
+    ])
+  })
+
+  it('deletes non-branch refs and wraps removeStaleBranches', async () => {
+    const { removeStaleBranches } = await import('./maintenance')
+    vi.mocked(runGitOrThrow)
+      .mockResolvedValueOnce('refs/heads/main')
+      .mockResolvedValueOnce('2')
+      .mockResolvedValueOnce('1')
+      .mockResolvedValue('')
+    vi.mocked(runCommand).mockResolvedValue({ code: 0, stdout: '', stderr: '' })
+
+    const result = await removeStaleBranches(cwd, gitBinaryPath, ['refs/tags/v-old'])
+    expect(result.deletedRefs).toEqual(['refs/tags/v-old'])
+    expect(runGitOrThrow).toHaveBeenCalled()
   })
 })

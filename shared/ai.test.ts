@@ -287,6 +287,16 @@ describe('parseRefineCommitPlanResponse', () => {
       parseRefineCommitPlanResponse(JSON.stringify({ message: 'Done.', commits: [] }), changedPaths)
     ).toThrow(/no usable commit proposals/)
   })
+
+  it('uses a default assistant message when omitted', () => {
+    const result = parseRefineCommitPlanResponse(
+      JSON.stringify({
+        commits: [{ summary: 'feat: auth', files: ['src/a.ts'] }]
+      }),
+      ['src/a.ts']
+    )
+    expect(result.message).toBe('Updated the commit plan.')
+  })
 })
 
 describe('parseExplainCommitResponse', () => {
@@ -356,6 +366,18 @@ describe('parseExplainCommitResponse', () => {
 
     expect(result.commits[0]?.hash).toBe('abc123def456')
     expect(result.commits[0]?.shortHash).toBe('abc123d')
+  })
+
+  it('ignores entries without usable explanation text', () => {
+    expect(() =>
+      parseExplainCommitResponse(
+        JSON.stringify({
+          summary: 'Nothing useful',
+          commits: [{ shortHash: 'abc123d', summary: '', keyChanges: '', rationale: '' }]
+        }),
+        [{ hash: 'abc123def456', shortHash: 'abc123d' }]
+      )
+    ).toThrow(/no usable commit explanations/)
   })
 })
 
@@ -506,6 +528,23 @@ describe('parseAnalyzeChangesResponse', () => {
   it('throws on invalid JSON', () => {
     expect(() => parseAnalyzeChangesResponse('not json', changed)).toThrow('valid JSON')
   })
+
+  it('rejects null JSON payloads', () => {
+    expect(() => parseAnalyzeChangesResponse('null', changed)).toThrow(/JSON object/)
+  })
+
+  it('uses zero-based commit indices in feature groups', () => {
+    const result = parseAnalyzeChangesResponse(
+      JSON.stringify({
+        summary: 'Auth',
+        features: [{ title: 'Auth', commitIndices: [0] }],
+        commits: [{ message: 'feat: auth', files: ['src/auth.ts'] }]
+      }),
+      ['src/auth.ts']
+    )
+
+    expect(result.features).toEqual([{ title: 'Auth', commitIndices: [0] }])
+  })
 })
 
 describe('parsePullRequestResponse', () => {
@@ -528,6 +567,10 @@ describe('parsePullRequestResponse', () => {
 
   it('throws on invalid JSON', () => {
     expect(() => parsePullRequestResponse('not json')).toThrow('valid JSON')
+  })
+
+  it('rejects array JSON payloads without a title', () => {
+    expect(() => parsePullRequestResponse(JSON.stringify(['array']))).toThrow(/no PR title/)
   })
 })
 
@@ -572,6 +615,19 @@ describe('parseComposeCommitsResponse', () => {
   it('throws on invalid JSON', () => {
     expect(() => parseComposeCommitsResponse('not json', staged)).toThrow('valid JSON')
   })
+
+  it('rejects empty proposal arrays and non-array payloads', () => {
+    expect(() => parseComposeCommitsResponse(JSON.stringify([]), staged)).toThrow(/no commit proposals/)
+    expect(() => parseComposeCommitsResponse(JSON.stringify({}), staged)).toThrow(/no commit proposals/)
+  })
+
+  it('resolves staged paths with leading ./ prefixes', () => {
+    const proposals = parseComposeCommitsResponse(
+      JSON.stringify([{ message: 'fix: auth', files: ['./src/auth.ts'] }]),
+      ['src/auth.ts']
+    )
+    expect(proposals[0]?.files).toEqual(['src/auth.ts'])
+  })
 })
 
 describe('pickChatModelId', () => {
@@ -603,6 +659,7 @@ describe('ai helper utilities', () => {
       ])
     )
     expect(averageConfidence(proposals)).toBe(70)
+    expect(averageConfidence([])).toBe(0)
   })
 
   it('detects non-chat model ids', () => {
@@ -718,6 +775,13 @@ describe('parseConflictResolveResponse', () => {
       )
     ).toThrow(/missing resolution/)
   })
+
+  it('throws when resolutions array is missing or empty', () => {
+    expect(() => parseConflictResolveResponse(JSON.stringify({}), 1)).toThrow(/resolutions/)
+    expect(() =>
+      parseConflictResolveResponse(JSON.stringify({ resolutions: [] }), 1)
+    ).toThrow(/no usable conflict resolutions/)
+  })
 })
 
 describe('parseAnalyzePullRequestResponse', () => {
@@ -737,6 +801,29 @@ describe('parseAnalyzePullRequestResponse', () => {
     expect(result.risks).toContain('logout')
     expect(result.reviewFocus).toBe('Session edge cases')
     expect(result.testingNotes).toBe('Run auth e2e')
+  })
+
+  it('normalizes array fields into newline-separated text', () => {
+    const result = parseAnalyzePullRequestResponse(
+      JSON.stringify({
+        summary: 'Auth refactor',
+        keyChanges: ['Token refresh', 'Session store']
+      })
+    )
+
+    expect(result.keyChanges).toBe('Token refresh\nSession store')
+  })
+
+  it('rejects empty analysis payloads', () => {
+    expect(() =>
+      parseAnalyzePullRequestResponse(JSON.stringify({ summary: '', keyChanges: '' }))
+    ).toThrow(/empty pull request analysis/)
+  })
+
+  it('rejects array JSON payloads without analysis content', () => {
+    expect(() => parseAnalyzePullRequestResponse(JSON.stringify(['not-an-object']))).toThrow(
+      /empty pull request analysis/
+    )
   })
 })
 
@@ -758,6 +845,25 @@ describe('parseRefinePullRequestAnalysisResponse', () => {
     expect(result.message).toContain('focused the risks')
     expect(result.analysis.summary).toBe('Auth refactor')
     expect(result.analysis.risks).toContain('Expired session')
+  })
+
+  it('rejects missing analysis and reply message', () => {
+    expect(() =>
+      parseRefinePullRequestAnalysisResponse(
+        JSON.stringify({ message: 'Updated', analysis: { summary: '', keyChanges: '' } })
+      )
+    ).toThrow(/empty pull request analysis/)
+    expect(() =>
+      parseRefinePullRequestAnalysisResponse(
+        JSON.stringify({
+          message: '',
+          analysis: { summary: 'Auth', keyChanges: 'Refresh' }
+        })
+      )
+    ).toThrow(/no reply message/)
+    expect(() =>
+      parseRefinePullRequestAnalysisResponse(JSON.stringify({ message: 'Updated' }))
+    ).toThrow(/no updated pull request analysis/)
   })
 })
 
