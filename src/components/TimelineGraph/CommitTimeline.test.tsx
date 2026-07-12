@@ -147,6 +147,32 @@ describe('CommitTimeline', () => {
       error: null
     } as unknown as ReturnType<typeof git.useWorkingStatus>)
     vi.mocked(git.useMergeStatus).mockReturnValue({ data: null } as unknown as ReturnType<typeof git.useMergeStatus>)
+    vi.mocked(git.useRepoStatus).mockReturnValue({
+      data: { head: commitA.hash, branch: 'main', isDetached: false, root: '/tmp/repo' }
+    } as unknown as ReturnType<typeof git.useRepoStatus>)
+    vi.mocked(git.useTags).mockReturnValue({ data: [] } as unknown as ReturnType<typeof git.useTags>)
+    vi.mocked(git.useRemotes).mockReturnValue({ data: [] } as unknown as ReturnType<typeof git.useRemotes>)
+  }
+
+  function mockTimelineOverlay(container: HTMLElement, top = 200) {
+    const overlay = container.querySelector('[role="presentation"]') as HTMLElement | null
+    expect(overlay).toBeTruthy()
+    overlay!.setPointerCapture = vi.fn()
+    overlay!.releasePointerCapture = vi.fn()
+    overlay!.hasPointerCapture = vi.fn(() => true)
+    overlay!.getBoundingClientRect = () =>
+      ({
+        top,
+        left: 0,
+        width: 800,
+        height: 56,
+        bottom: top + 56,
+        right: 800,
+        x: 0,
+        y: top,
+        toJSON: () => ({})
+      }) as DOMRect
+    return overlay!
   }
 
   beforeEach(async () => {
@@ -323,5 +349,72 @@ describe('CommitTimeline', () => {
 
     renderWithProviders(<CommitTimeline />)
     expect(screen.getByText(/no commits yet/i)).toBeInTheDocument()
+  })
+
+  it('selects the newest commit when pressing arrow up with no selection', async () => {
+    useSelectionStore.setState({
+      timelineSelection: null,
+      selectedCommitHashes: []
+    })
+
+    const { container } = renderWithProviders(<CommitTimeline />)
+    const region = screen.getByRole('region', { name: /commit/i })
+    region.focus()
+    await userEvent.keyboard('{ArrowUp}')
+
+    expect(useSelectionStore.getState().timelineSelection).toEqual({
+      kind: 'commit',
+      id: commitB.hash
+    })
+    expect(container.querySelector('[role="presentation"]')).toBeTruthy()
+  })
+
+  it('selects commits from overlay clicks and opens the commit context menu', async () => {
+    const { container } = renderWithProviders(<CommitTimeline />)
+    const overlay = mockTimelineOverlay(container)
+
+    fireEvent.click(overlay, { clientY: 214 })
+    expect(useSelectionStore.getState().timelineSelection).toEqual({
+      kind: 'commit',
+      id: commitA.hash
+    })
+
+    fireEvent.contextMenu(overlay, { clientY: 242 })
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+  })
+
+  it('checks out a commit when double-clicking the overlay', async () => {
+    checkoutMutate.mockClear()
+    const { container } = renderWithProviders(<CommitTimeline />)
+    const overlay = mockTimelineOverlay(container)
+
+    fireEvent.doubleClick(overlay, { clientY: 214 })
+    expect(checkoutMutate).toHaveBeenCalled()
+  })
+
+  it('shows detached HEAD metadata and tag names in the graph column', async () => {
+    const taggedCommit = {
+      ...commitA,
+      refs: ['main', 'v1.0.0', 'origin/main']
+    }
+    const git = await import('@/hooks/useGit')
+    vi.mocked(git.useLogGraph).mockReturnValue({
+      data: { commits: [taggedCommit, commitB], maxLane: 1 },
+      isLoading: false,
+      error: null
+    } as unknown as ReturnType<typeof git.useLogGraph>)
+    vi.mocked(git.useRepoStatus).mockReturnValue({
+      data: { head: commitA.hash, branch: '', isDetached: true, root: '/tmp/repo' }
+    } as unknown as ReturnType<typeof git.useRepoStatus>)
+    vi.mocked(git.useTags).mockReturnValue({
+      data: [{ name: 'v1.0.0', hash: commitA.hash, remote: null }]
+    } as unknown as ReturnType<typeof git.useTags>)
+    vi.mocked(git.useRemotes).mockReturnValue({
+      data: [{ name: 'origin', url: 'https://example.com/repo.git', fetch: '', push: '' }]
+    } as unknown as ReturnType<typeof git.useRemotes>)
+
+    renderWithProviders(<CommitTimeline />)
+    expect(screen.getByText('v1.0.0')).toBeInTheDocument()
+    expect(screen.getAllByText('HEAD').length).toBeGreaterThan(0)
   })
 })

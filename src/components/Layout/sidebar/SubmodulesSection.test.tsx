@@ -1,3 +1,6 @@
+/**
+ * @vitest-environment jsdom
+ */
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { cleanup, fireEvent, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -13,14 +16,19 @@ const submodule = {
   hasWorkingTree: true
 }
 
+const submoduleUpdate = vi.fn(async () => undefined)
+const submoduleSync = vi.fn(async () => undefined)
+const submoduleInit = vi.fn(async () => undefined)
+const submoduleDeinit = vi.fn(async () => undefined)
+
 vi.mock('@/hooks/useGitMutations', () => ({
   useGitMutations: () => {
     const mutation = { mutateAsync: vi.fn(async () => undefined), isPending: false }
     return {
-      submoduleInit: mutation,
-      submoduleUpdate: mutation,
-      submoduleSync: mutation,
-      submoduleDeinit: mutation,
+      submoduleInit: { mutateAsync: submoduleInit, isPending: false },
+      submoduleUpdate: { mutateAsync: submoduleUpdate, isPending: false },
+      submoduleSync: { mutateAsync: submoduleSync, isPending: false },
+      submoduleDeinit: { mutateAsync: submoduleDeinit, isPending: false },
       submoduleRemove: mutation,
       submoduleAdd: mutation,
       stageAdd: mutation
@@ -34,6 +42,10 @@ describe('SubmodulesSection', () => {
   })
 
   beforeEach(() => {
+    submoduleUpdate.mockClear()
+    submoduleSync.mockClear()
+    submoduleInit.mockClear()
+    submoduleDeinit.mockClear()
     useWorkspaceStore.setState({
       tabs: [{ path: '/tmp/repo', connected: true, connecting: false }],
       activePath: '/tmp/repo',
@@ -139,5 +151,49 @@ describe('SubmodulesSection', () => {
       <SubmodulesSection submodules={[submodule]} filter="missing" isLoading={false} error={null} />
     )
     expect(screen.getByText(/no submodules/i)).toBeInTheDocument()
+  })
+
+  it('runs bulk update and sync actions from the section menu', async () => {
+    renderWithProviders(
+      <SubmodulesSection submodules={[submodule]} filter="" isLoading={false} error={null} />
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: /submodules actions/i }))
+    await userEvent.click(screen.getByRole('menuitem', { name: /update all/i }))
+    expect(submoduleUpdate).toHaveBeenCalledWith({ init: true, recursive: true })
+
+    await userEvent.click(screen.getByRole('button', { name: /submodules actions/i }))
+    await userEvent.click(screen.getByRole('menuitem', { name: /sync all/i }))
+    expect(submoduleSync).toHaveBeenCalledWith({ recursive: true })
+  })
+
+  it('updates and deinitializes a submodule from the row menu', async () => {
+    renderWithProviders(
+      <SubmodulesSection submodules={[submodule]} filter="" isLoading={false} error={null} />
+    )
+
+    fireEvent.contextMenu(screen.getByText('vendor/lib'))
+    await userEvent.click(screen.getByRole('menuitem', { name: /^update$/i }))
+    expect(submoduleUpdate).toHaveBeenCalledWith({ paths: ['vendor/lib'], init: true })
+
+    fireEvent.contextMenu(screen.getByText('vendor/lib'))
+    await userEvent.click(screen.getByRole('menuitem', { name: /deinitialize/i }))
+    await userEvent.click(screen.getByRole('button', { name: /deinitialize/i }))
+    expect(submoduleDeinit).toHaveBeenCalledWith({ path: 'vendor/lib', force: false })
+  })
+
+  it('initializes an uninitialized submodule from the row menu', async () => {
+    renderWithProviders(
+      <SubmodulesSection
+        submodules={[{ ...submodule, status: 'uninitialized', hasWorkingTree: false }]}
+        filter=""
+        isLoading={false}
+        error={null}
+      />
+    )
+
+    fireEvent.contextMenu(screen.getByText('vendor/lib'))
+    await userEvent.click(screen.getByRole('menuitem', { name: /^initialize$/i }))
+    expect(submoduleInit).toHaveBeenCalledWith({ paths: ['vendor/lib'] })
   })
 })

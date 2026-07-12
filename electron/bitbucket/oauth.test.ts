@@ -1,5 +1,9 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 
+vi.mock('electron', () => ({
+  shell: { openExternal: vi.fn(async () => undefined) }
+}))
+
 vi.mock('./client', () => ({
   getAuthenticatedUser: vi.fn()
 }))
@@ -20,7 +24,8 @@ describe('bitbucket oauth helpers', () => {
 
   afterEach(() => {
     process.env = originalEnv
-    vi.restoreAllMocks()
+    vi.clearAllMocks()
+    vi.unstubAllGlobals()
   })
 
   it('reads client credentials from env', () => {

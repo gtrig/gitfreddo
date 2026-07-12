@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-12 — Coverage push toward 85% (~84% lines)
+
+- **Why:** User requested continuing test expansion toward 85% line coverage.
+- **What:** Expanded `CommitTimeline` (overlay click/context menu/double-click checkout, arrow-up with no selection, detached HEAD/tags), `useTimelineDragSelect` (drag range, double-click, auto-scroll, pointer cancel), `LocalBranchesSection` (rename/squash/PR/delete menus), `GitWorkingTree` (unstage, discard confirm, rename modal), `MergeConflictsPanel` (AI auto-resolve, marker guard, nested tree), `PullRequestDetail` (merge/reopen, comments, pane switching), `SubmodulesSection` (bulk update/sync, row init/deinit), and `electron/github/service` (PR commits/comments/reviews/threads/reply). Global coverage now **84.1% lines / 72.1% functions** (~340 lines still needed for 85%). Vitest thresholds remain at 80% lines until 85% is reached.
+
 ### 2026-07-12 — Coverage push toward 85% (~83% lines)
 
 - **Why:** User requested continuing test expansion toward 85% line coverage (from ~81.5%).

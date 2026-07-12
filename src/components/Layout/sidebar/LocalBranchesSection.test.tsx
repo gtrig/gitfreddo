@@ -92,6 +92,29 @@ vi.mock('@/components/Remotes/RenameRemoteModal', () => ({
     <div data-testid="rename-remote-dialog">{currentName}</div>
   )
 }))
+vi.mock('@/components/Ui/Modal', async () => {
+  const actual = await vi.importActual<typeof import('@/components/Ui/Modal')>('@/components/Ui/Modal')
+  return {
+    ...actual,
+    ConfirmDialog: ({
+      open,
+      onConfirm,
+      message
+    }: {
+      open: boolean
+      onConfirm: () => void | Promise<void>
+      message: string
+    }) =>
+      open ? (
+        <div role="dialog">
+          <p>{message}</p>
+          <button type="button" onClick={() => void onConfirm()}>
+            Confirm
+          </button>
+        </div>
+      ) : null
+  }
+})
 
 const branches = [
   { name: 'main', head: 'abc', isCurrent: true, isRemote: false, ahead: 0, behind: 0 },
@@ -323,6 +346,57 @@ describe('LocalBranchesSection', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /create branch/i }))
     expect(onCreateBranch).toHaveBeenCalled()
+  })
+
+  it('opens rename, squash merge, create PR, and delete dialogs from the branch menu', async () => {
+    renderWithProviders(
+      <LocalBranchesSection
+        branches={branches}
+        filter="login"
+        isLoading={false}
+        error={null}
+        checkoutPending={false}
+        isDetached={false}
+        head="abc"
+        onSelectCommit={vi.fn()}
+        onCheckout={vi.fn()}
+        onCreateBranch={vi.fn()}
+      />
+    )
+
+    const loginRow = screen.getByRole('button', { name: /login/i })
+
+    fireEvent.contextMenu(loginRow)
+    await userEvent.click(screen.getByRole('menuitem', { name: /^rename/i }))
+    expect(screen.getByTestId('rename-dialog')).toHaveTextContent('feature/login')
+
+    fireEvent.contextMenu(loginRow)
+    await userEvent.click(screen.getByRole('menuitem', { name: /create pull request/i }))
+    expect(screen.getByTestId('pr-dialog')).toHaveTextContent('feature/login')
+
+    fireEvent.contextMenu(loginRow)
+    await userEvent.click(screen.getByRole('menuitem', { name: /delete branch/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm' }))
+    expect(mutation.mutateAsync).toHaveBeenCalledWith({ name: 'feature/login', force: true })
+
+    cleanup()
+    renderWithProviders(
+      <LocalBranchesSection
+        branches={branches}
+        filter=""
+        isLoading={false}
+        error={null}
+        checkoutPending={false}
+        isDetached={false}
+        head="abc"
+        onSelectCommit={vi.fn()}
+        onCheckout={vi.fn()}
+        onCreateBranch={vi.fn()}
+      />
+    )
+    fireEvent.contextMenu(screen.getByRole('button', { name: /^main$/i }))
+    await userEvent.click(screen.getByRole('menuitem', { name: /squash and merge into/i }))
+    expect(screen.getByTestId('squash-dialog')).toHaveTextContent('main')
   })
 })
 

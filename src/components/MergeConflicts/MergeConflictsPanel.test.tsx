@@ -9,8 +9,11 @@ import { useSelectionStore } from '@/stores/selection'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { renderWithProviders } from '@/test/render'
 import { createGitFreddoMock } from '@/test/mocks/gitfreddo'
+import { useToastStore } from '@/stores/toast'
 
 const mutation = { mutateAsync: vi.fn(async () => undefined), isPending: false }
+const aiFillMutate = vi.fn(async () => '')
+const showToast = vi.fn()
 
 vi.mock('@/hooks/useGit', () => ({
   useMergeStatus: vi.fn(() => ({
@@ -45,7 +48,7 @@ vi.mock('@/hooks/useGitMutations', () => ({
 }))
 
 vi.mock('@/hooks/useAiFill', () => ({
-  useAiFill: () => ({ mutateAsync: vi.fn(), isPending: false })
+  useAiFill: () => ({ mutateAsync: aiFillMutate, isPending: false })
 }))
 
 vi.mock('@/hooks/useAppSettings', () => ({
@@ -76,6 +79,10 @@ describe('MergeConflictsPanel', () => {
   afterEach(() => cleanup())
   beforeEach(async () => {
     mutation.mutateAsync.mockClear()
+    aiFillMutate.mockReset()
+    aiFillMutate.mockResolvedValue('')
+    showToast.mockClear()
+    useToastStore.setState({ message: null, tone: 'info', show: showToast, clear: vi.fn() })
     const git = await import('@/hooks/useGit')
     vi.mocked(git.useMergeStatus).mockReturnValue({
       data: {
@@ -216,5 +223,64 @@ describe('MergeConflictsPanel', () => {
 
     renderWithProviders(<MergeConflictsPanel />)
     expect(screen.getByText(/open a repository/i)).toBeInTheDocument()
+  })
+
+  it('shows an error toast when staged files still contain conflict markers', async () => {
+    vi.mocked(window.gitfreddo.invoke).mockImplementation(async (method: string) => {
+      if (method === 'working.read') {
+        return { content: '<<<<<<< HEAD\nours\n=======\ntheirs\n>>>>>>> feature\n' }
+      }
+      return undefined
+    })
+
+    renderWithProviders(<MergeConflictsPanel />)
+    await userEvent.click(screen.getByRole('button', { name: /mark all resolved/i }))
+    expect(showToast).toHaveBeenCalledWith(
+      expect.stringMatching(/still contain conflict markers/i),
+      'error'
+    )
+  })
+
+  it('auto-resolves conflicted files with AI proposals', async () => {
+    aiFillMutate.mockResolvedValue(
+      JSON.stringify({
+        resolutions: [{ hunkId: 0, text: 'merged content', confidence: 90 }]
+      })
+    )
+
+    vi.mocked(window.gitfreddo.invoke).mockImplementation(async (method: string) => {
+      if (method === 'working.read') {
+        return { content: '<<<<<<< HEAD\nours\n=======\ntheirs\n>>>>>>> feature\n' }
+      }
+      return undefined
+    })
+
+    renderWithProviders(<MergeConflictsPanel />)
+    await userEvent.click(screen.getByRole('button', { name: /auto-resolve all/i }))
+    expect(aiFillMutate).toHaveBeenCalled()
+    expect(showToast).toHaveBeenCalledWith(
+      expect.stringMatching(/ai proposals ready/i),
+      'info'
+    )
+  })
+
+  it('renders conflict files in tree view with nested folders', async () => {
+    const git = await import('@/hooks/useGit')
+    vi.mocked(git.useMergeStatus).mockReturnValue({
+      data: {
+        inProgress: true,
+        kind: 'merge',
+        conflictedPaths: ['src/nested/conflict.ts'],
+        incomingLabel: 'feature',
+        currentBranch: 'main'
+      },
+      isLoading: false,
+      error: null
+    } as unknown as ReturnType<typeof git.useMergeStatus>)
+
+    renderWithProviders(<MergeConflictsPanel />)
+    await userEvent.click(screen.getByRole('button', { name: 'src/' }))
+    await userEvent.click(screen.getByRole('button', { name: 'nested/' }))
+    expect(screen.getByText('src/nested/conflict.ts')).toBeInTheDocument()
   })
 })

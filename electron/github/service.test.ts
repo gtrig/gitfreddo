@@ -162,6 +162,19 @@ vi.mock('./ssh-keys', () => ({
 
 import { clearRepoCache } from './api/repos'
 import {
+  listPullRequestCommits,
+  postPullRequestReviewComment,
+  findPendingPullRequestReviewId,
+  listPullRequestConversationComments,
+  listPullRequestReviewComments,
+  listPullRequestReviews
+} from './api/pulls'
+import {
+  listPullRequestReviewThreads,
+  replyToPullRequestReviewComment,
+  unresolvePullRequestReviewThread
+} from './api/pullThreads'
+import {
   getGitHubStatus,
   uploadGitHubSshKey,
   disconnectGitHub,
@@ -182,7 +195,15 @@ import {
   listGitHubPullRequestFiles,
   reopenGitHubPullRequest,
   postGitHubPullRequestComment,
-  resolveGitHubPullRequestReviewThread
+  resolveGitHubPullRequestReviewThread,
+  listGitHubPullRequestCommits,
+  postGitHubPullRequestReviewComment,
+  replyGitHubPullRequestReviewComment,
+  listGitHubPullRequestConversationComments,
+  listGitHubPullRequestReviewComments,
+  listGitHubPullRequestReviews,
+  listGitHubPullRequestReviewThreads,
+  unresolveGitHubPullRequestReviewThread
 } from './service'
 import { hasGitHubToken, loadGitHubToken, clearGitHubToken, saveGitHubToken } from './token-store'
 import { getAuthenticatedUser } from './client'
@@ -500,5 +521,72 @@ describe('github service ssh key state', () => {
     await expect(
       resolveGitHubPullRequestReviewThread('/tmp/repo', { githubLogin: 'octo' } as AppSettings, 'thread-1')
     ).resolves.toBeUndefined()
+  })
+
+  it('lists pull request commits, comments, reviews, and threads', async () => {
+    const settings = { githubLogin: 'octo' } as AppSettings
+    const repository = { owner: 'octo', repo: 'repo' }
+
+    await expect(listGitHubPullRequestCommits('/tmp/repo', settings, 7, repository)).resolves.toEqual([])
+    expect(listPullRequestCommits).toHaveBeenCalledWith('octo', 'repo', 7)
+
+    await expect(
+      listGitHubPullRequestConversationComments('/tmp/repo', settings, 7, repository)
+    ).resolves.toEqual([])
+    expect(listPullRequestConversationComments).toHaveBeenCalledWith('octo', 'repo', 7)
+
+    await expect(
+      listGitHubPullRequestReviewComments('/tmp/repo', settings, 7, repository)
+    ).resolves.toEqual([])
+    expect(listPullRequestReviewComments).toHaveBeenCalledWith('octo', 'repo', 7)
+
+    await expect(listGitHubPullRequestReviews('/tmp/repo', settings, 7, repository)).resolves.toEqual([])
+    expect(listPullRequestReviews).toHaveBeenCalledWith('octo', 'repo', 7)
+
+    await expect(
+      listGitHubPullRequestReviewThreads('/tmp/repo', settings, 7, repository)
+    ).resolves.toEqual([])
+    expect(listPullRequestReviewThreads).toHaveBeenCalledWith('octo', 'repo', 7)
+  })
+
+  it('posts and replies to pull request review comments', async () => {
+    const settings = { githubLogin: 'octo' } as AppSettings
+    vi.mocked(findPendingPullRequestReviewId).mockResolvedValue(99)
+
+    await expect(
+      postGitHubPullRequestReviewComment('/tmp/repo', settings, 7, {
+        body: 'Looks good',
+        commitId: 'abc123',
+        path: 'src/app.ts',
+        line: 12,
+        side: 'RIGHT'
+      })
+    ).resolves.toBeUndefined()
+    expect(postPullRequestReviewComment).toHaveBeenCalledWith(
+      'octo',
+      'repo',
+      7,
+      expect.objectContaining({ body: 'Looks good' }),
+      99
+    )
+
+    await expect(
+      replyGitHubPullRequestReviewComment('/tmp/repo', settings, 7, 42, 'Thanks!')
+    ).resolves.toBeUndefined()
+    expect(replyToPullRequestReviewComment).toHaveBeenCalledWith(
+      'octo',
+      'repo',
+      7,
+      42,
+      'Thanks!',
+      99
+    )
+  })
+
+  it('unresolves pull request review threads by id', async () => {
+    await expect(
+      unresolveGitHubPullRequestReviewThread('/tmp/repo', { githubLogin: 'octo' } as AppSettings, 'thread-2')
+    ).resolves.toBeUndefined()
+    expect(unresolvePullRequestReviewThread).toHaveBeenCalledWith('thread-2')
   })
 })

@@ -1,10 +1,11 @@
 /**
  * @vitest-environment jsdom
  */
-import { describe, expect, it, vi, afterEach } from 'vitest'
+import { describe, expect, it, vi, afterEach, beforeEach } from 'vitest'
 import { cleanup, fireEvent } from '@testing-library/react'
 import { useTimelineDragSelect } from './useTimelineDragSelect'
 import { makeCommit } from '@/test/fixtures/commit'
+import userEvent from '@testing-library/user-event'
 import { renderHook } from '@testing-library/react'
 import { useRef } from 'react'
 import type { GitStashEntry } from '@/lib/types'
@@ -14,6 +15,7 @@ function renderDragHarness(options?: {
   commits?: ReturnType<typeof makeCommit>[]
   stashes?: GitStashEntry[]
   onRowContextMenu?: (commit: ReturnType<typeof makeCommit>) => (event: React.MouseEvent) => void
+  onCommitDoubleClick?: (commit: ReturnType<typeof makeCommit>) => void
 }) {
   const commits =
     options?.commits ??
@@ -60,6 +62,14 @@ function renderDragHarness(options?: {
               ? (event) => drag.onContextMenu(event, options.onRowContextMenu!)
               : undefined
           }
+          onDoubleClick={
+            options?.onCommitDoubleClick
+              ? (event) =>
+                  drag.onDoubleClick(event, (commit) => {
+                    options.onCommitDoubleClick!(commit)
+                  })
+              : undefined
+          }
         />
       </div>
     )
@@ -101,7 +111,21 @@ function renderDragHarness(options?: {
 }
 
 describe('useTimelineDragSelect', () => {
-  afterEach(() => cleanup())
+  beforeEach(() => {
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn((callback: FrameRequestCallback) => {
+        callback(0)
+        return 1
+      })
+    )
+    vi.stubGlobal('cancelAnimationFrame', vi.fn())
+  })
+
+  afterEach(() => {
+    cleanup()
+    vi.unstubAllGlobals()
+  })
 
   it('starts inactive and exposes overlay ref', () => {
     const scrollRef = { current: document.createElement('div') }
@@ -188,5 +212,55 @@ describe('useTimelineDragSelect', () => {
     fireEvent.click(overlay, { clientY: 110, ctrlKey: true })
 
     expect(actions.toggleCommitSelection).toHaveBeenCalledWith(commits[0]!.hash)
+  })
+
+  it('selects a commit range when dragging across rows', async () => {
+    const user = userEvent.setup()
+    const { overlay, actions, commits } = renderDragHarness()
+
+    await user.pointer([
+      { keys: '[MouseLeft>]', target: overlay, coords: { clientY: 110 } },
+      { coords: { clientY: 138 } },
+      { keys: '[/MouseLeft]' }
+    ])
+
+    expect(actions.selectTimelineNode).toHaveBeenCalledWith('commit', commits[0]!.hash)
+    expect(actions.selectCommitRange).toHaveBeenCalledWith(commits[1]!.hash, commits)
+  })
+
+  it('forwards double click to the commit handler', () => {
+    const onCommitDoubleClick = vi.fn()
+    const { overlay, commits } = renderDragHarness({ onCommitDoubleClick })
+
+    fireEvent.doubleClick(overlay, { clientY: 138 })
+    expect(onCommitDoubleClick).toHaveBeenCalledWith(commits[1])
+  })
+
+  it('clears drag state on pointer cancel', async () => {
+    const user = userEvent.setup()
+    const { overlay, actions } = renderDragHarness()
+
+    await user.pointer([
+      { keys: '[MouseLeft>]', target: overlay, coords: { clientY: 110 } },
+      { coords: { clientY: 138 } },
+      { keys: '[/MouseLeft]' }
+    ])
+    actions.selectTimelineNode.mockClear()
+    await user.click(overlay)
+
+    expect(actions.selectTimelineNode).toHaveBeenCalledWith('commit', expect.any(String))
+  })
+
+  it('starts auto-scroll when dragging near the scroll container edge', async () => {
+    const user = userEvent.setup()
+    const { overlay } = renderDragHarness()
+    const raf = vi.mocked(requestAnimationFrame)
+
+    await user.pointer([
+      { keys: '[MouseLeft>]', target: overlay, coords: { clientY: 110 } },
+      { coords: { clientY: 8 } }
+    ])
+
+    expect(raf).toHaveBeenCalled()
   })
 })

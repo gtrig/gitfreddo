@@ -36,7 +36,8 @@ vi.mock('@/components/WorkingTree/CleanUntrackedModal', () => ({
     open ? <div role="dialog">Clean untracked</div> : null
 }))
 vi.mock('@/components/WorkingTree/RenameFileModal', () => ({
-  RenameFileModal: () => null
+  RenameFileModal: ({ open, oldPath }: { open: boolean; oldPath: string }) =>
+    open ? <div data-testid="rename-modal">{oldPath}</div> : null
 }))
 
 vi.mock('@/hooks/useGit', () => ({
@@ -260,5 +261,86 @@ describe('GitWorkingTree', () => {
     renderWithProviders(<GitWorkingTree />)
     await userEvent.click(screen.getByRole('button', { name: /clean untracked/i }))
     expect(screen.getByText('Clean untracked')).toBeInTheDocument()
+  })
+
+  it('unstages a staged file from the row context menu', async () => {
+    const { useWorkingStatus } = await import('@/hooks/useGit')
+    const { useGitMutations } = await import('@/hooks/useGitMutations')
+    const stageReset = vi.fn(async () => undefined)
+    vi.mocked(useGitMutations).mockReturnValue({
+      stageAdd: { isPending: false, mutateAsync: vi.fn() },
+      stageReset: { isPending: false, mutateAsync: stageReset },
+      workingDiscard: { isPending: false, mutateAsync: vi.fn() },
+      workingRemove: { isPending: false, mutateAsync: vi.fn() },
+      workingAddToGitignore: { isPending: false, mutateAsync: vi.fn() },
+      submoduleUpdate: { isPending: false, mutateAsync: vi.fn() },
+      submoduleSync: { isPending: false, mutateAsync: vi.fn() },
+      commit: { isPending: false, mutateAsync: vi.fn() }
+    } as unknown as ReturnType<typeof useGitMutations>)
+
+    vi.mocked(useWorkingStatus).mockReturnValue({
+      data: {
+        ...emptyWorking,
+        isClean: false,
+        staged: [{ path: 'ready.txt', status: 'added' }]
+      },
+      isLoading: false,
+      error: null
+    } as ReturnType<typeof useWorkingStatus>)
+
+    renderWithProviders(<GitWorkingTree />)
+    fireEvent.contextMenu(screen.getByText('ready.txt'))
+    await userEvent.click(screen.getByRole('menuitem', { name: /^unstage$/i }))
+    expect(stageReset).toHaveBeenCalledWith({ paths: ['ready.txt'] })
+  })
+
+  it('confirms discard from the row context menu', async () => {
+    const { useWorkingStatus } = await import('@/hooks/useGit')
+    const { useGitMutations } = await import('@/hooks/useGitMutations')
+    const workingDiscard = vi.fn(async () => undefined)
+    vi.mocked(useGitMutations).mockReturnValue({
+      stageAdd: { isPending: false, mutateAsync: vi.fn() },
+      stageReset: { isPending: false, mutateAsync: vi.fn() },
+      workingDiscard: { isPending: false, mutateAsync: workingDiscard },
+      workingRemove: { isPending: false, mutateAsync: vi.fn() },
+      workingAddToGitignore: { isPending: false, mutateAsync: vi.fn() },
+      submoduleUpdate: { isPending: false, mutateAsync: vi.fn() },
+      submoduleSync: { isPending: false, mutateAsync: vi.fn() },
+      commit: { isPending: false, mutateAsync: vi.fn() }
+    } as unknown as ReturnType<typeof useGitMutations>)
+
+    vi.mocked(useWorkingStatus).mockReturnValue({
+      data: {
+        ...emptyWorking,
+        isClean: false,
+        unstaged: [{ path: 'dirty.txt', status: 'modified' }]
+      },
+      isLoading: false,
+      error: null
+    } as ReturnType<typeof useWorkingStatus>)
+
+    renderWithProviders(<GitWorkingTree />)
+    fireEvent.contextMenu(screen.getByText('dirty.txt'))
+    await userEvent.click(screen.getByRole('menuitem', { name: /discard changes/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Discard' }))
+    expect(workingDiscard).toHaveBeenCalledWith({ paths: ['dirty.txt'], staged: false })
+  })
+
+  it('opens the rename modal from the row context menu', async () => {
+    const { useWorkingStatus } = await import('@/hooks/useGit')
+    vi.mocked(useWorkingStatus).mockReturnValue({
+      data: {
+        ...emptyWorking,
+        isClean: false,
+        unstaged: [{ path: 'dirty.txt', status: 'modified' }]
+      },
+      isLoading: false,
+      error: null
+    } as ReturnType<typeof useWorkingStatus>)
+
+    renderWithProviders(<GitWorkingTree />)
+    fireEvent.contextMenu(screen.getByText('dirty.txt'))
+    await userEvent.click(screen.getByRole('menuitem', { name: /^rename/i }))
+    expect(screen.getByTestId('rename-modal')).toHaveTextContent('dirty.txt')
   })
 })

@@ -3,10 +3,12 @@
  */
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { cleanup, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { PullRequestDetail } from './PullRequestDetail'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { renderWithProviders } from '@/test/render'
 import { createGitFreddoMock } from '@/test/mocks/gitfreddo'
+import type { GitHubPullRequest } from '@shared/github'
 
 vi.mock('@/hooks/useAppSettings', () => ({
   useAppSettings: () => ({ data: { diffViewMode: 'unified' } })
@@ -16,29 +18,50 @@ vi.mock('@/hooks/useGit', () => ({
   useDiffCommits: () => ({ data: '', isLoading: false, error: null })
 }))
 
+const filesMock = vi.fn<
+  () => { data: Array<{ path: string; additions: number; deletions: number; status: string }>; isLoading: boolean; error: null }
+>(() => ({ data: [], isLoading: false, error: null }))
+const commitsMock = vi.fn<
+  () => { data: Array<{ sha: string; message: string; author: string; date: string }>; isLoading: boolean; error: null }
+>(() => ({ data: [], isLoading: false, error: null }))
+
 vi.mock('@/hooks/useGitHubPullRequest', () => ({
-  useGitHubPullRequestCommits: () => ({ data: [], isLoading: false, error: null }),
-  useGitHubPullRequestFiles: () => ({ data: [], isLoading: false, error: null }),
+  useGitHubPullRequestCommits: () => commitsMock(),
+  useGitHubPullRequestFiles: () => filesMock(),
   useGitHubPullRequestReviewThreads: () => ({ data: [], isLoading: false, error: null }),
   useGitHubPullRequestTimeline: () => ({ data: [], isLoading: false, error: null }),
   useInvalidateGitHubPullRequestDetail: () => vi.fn()
 }))
 
 vi.mock('@/hooks/useGitHubPullRequests', () => ({
-  useInvalidateGitHubPullRequests: () => vi.fn()
+  useInvalidateGitHubPullRequests: () => vi.fn(async () => undefined)
 }))
 
 vi.mock('@/components/DetailPanel/PullRequestOverviewPanel', () => ({
-  PullRequestOverviewPanel: () => null
+  PullRequestOverviewPanel: () => <div>Overview panel</div>
 }))
 vi.mock('@/components/DetailPanel/PullRequestCommitsPanel', () => ({
-  PullRequestCommitsPanel: () => null
+  PullRequestCommitsPanel: () => <div>Commits panel</div>
 }))
 vi.mock('@/components/DetailPanel/PullRequestSidebar', () => ({
-  PullRequestSidebar: () => null
+  PullRequestSidebar: ({
+    onSelectPane
+  }: {
+    onSelectPane: (pane: { kind: string; path?: string }) => void
+  }) => (
+    <div>
+      <button type="button" onClick={() => onSelectPane({ kind: 'commits' })}>
+        Commits tab
+      </button>
+      <button type="button" onClick={() => onSelectPane({ kind: 'file', path: 'src/app.ts' })}>
+        Open file
+      </button>
+    </div>
+  )
 }))
 vi.mock('@/components/DetailPanel/AddPrCommentModal', () => ({
-  AddPrCommentModal: () => null
+  AddPrCommentModal: ({ open }: { open: boolean }) =>
+    open ? <div role="dialog">Add PR comment</div> : null
 }))
 vi.mock('@/components/DetailPanel/AddPrLineCommentModal', () => ({
   AddPrLineCommentModal: () => null
@@ -64,6 +87,8 @@ const pr = {
 describe('PullRequestDetail', () => {
   afterEach(() => cleanup())
   beforeEach(() => {
+    filesMock.mockReturnValue({ data: [], isLoading: false, error: null })
+    commitsMock.mockReturnValue({ data: [], isLoading: false, error: null })
     useWorkspaceStore.setState({
       tabs: [{ path: '/tmp/repo', connected: true, connecting: false }],
       activePath: '/tmp/repo',
@@ -72,11 +97,70 @@ describe('PullRequestDetail', () => {
       workspacePickerOpen: false
     })
     window.gitfreddo = createGitFreddoMock()
+    vi.spyOn(window, 'open').mockImplementation(() => null)
   })
 
-  it('renders pull request header and close action', () => {
-    renderWithProviders(<PullRequestDetail pr={pr} onClose={vi.fn()} />)
+  it('renders pull request header and close action', async () => {
+    const onClose = vi.fn()
+    renderWithProviders(<PullRequestDetail pr={pr} onClose={onClose} />)
     expect(screen.getByText('Feature pull request')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /close/i })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /close/i }))
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('shows file and commit summaries when data is available', () => {
+    filesMock.mockReturnValue({
+      data: [{ path: 'src/app.ts', additions: 3, deletions: 1, status: 'modified' }],
+      isLoading: false,
+      error: null
+    })
+    commitsMock.mockReturnValue({
+      data: [{ sha: 'abc', message: 'Fix bug', author: 'octo', date: '2026-01-01' }],
+      isLoading: false,
+      error: null
+    })
+
+    renderWithProviders(<PullRequestDetail pr={pr} onClose={vi.fn()} />)
+    expect(screen.getByText(/1 file/i)).toBeInTheDocument()
+    expect(screen.getByText(/1 commit/i)).toBeInTheDocument()
+  })
+
+  it('merges an open pull request from the header actions', async () => {
+    vi.mocked(window.gitfreddo.githubMergePullRequest).mockResolvedValue(undefined)
+    renderWithProviders(<PullRequestDetail pr={pr} onClose={vi.fn()} />)
+    await userEvent.click(screen.getByRole('button', { name: /merge pull request/i }))
+    expect(window.gitfreddo.githubMergePullRequest).toHaveBeenCalledWith('/tmp/repo', 7, 'merge')
+  })
+
+  it('reopens a closed pull request', async () => {
+    vi.mocked(window.gitfreddo.githubReopenPullRequest).mockResolvedValue({
+      ...pr,
+      state: 'open'
+    } as GitHubPullRequest)
+    renderWithProviders(
+      <PullRequestDetail
+        pr={{ ...pr, state: 'closed', mergeable: false }}
+        onClose={vi.fn()}
+      />
+    )
+    await userEvent.click(screen.getByRole('button', { name: /reopen/i }))
+    expect(window.gitfreddo.githubReopenPullRequest).toHaveBeenCalledWith('/tmp/repo', 7)
+  })
+
+  it('opens the add-comment modal and external browser link', async () => {
+    renderWithProviders(<PullRequestDetail pr={pr} onClose={vi.fn()} />)
+    await userEvent.click(screen.getByRole('button', { name: /add comment/i }))
+    expect(screen.getByText('Add PR comment')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /open in browser/i }))
+    expect(window.open).toHaveBeenCalledWith(pr.htmlUrl, '_blank', 'noopener,noreferrer')
+  })
+
+  it('switches sidebar panes to commits and file diff', async () => {
+    renderWithProviders(<PullRequestDetail pr={pr} onClose={vi.fn()} />)
+    expect(screen.getByText('Overview panel')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Commits tab' }))
+    expect(screen.getByText('Commits panel')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Open file' }))
+    expect(screen.getByText('src/app.ts')).toBeInTheDocument()
   })
 })
