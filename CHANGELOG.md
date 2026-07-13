@@ -7,6 +7,8 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-13
+
 ### 2026-07-13 — GitLab integration (OAuth/PAT, MRs, issues, SSH keys)
 
 - **Why:** Add GitLab (including self-managed instances) as a first-class forge alongside GitHub and Bitbucket.
