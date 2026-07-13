@@ -2,11 +2,13 @@ import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CreatePrModal as BitbucketCreatePrModal } from '@/components/Bitbucket/CreatePrModal'
 import { CreatePrModal as GitHubCreatePrModal } from '@/components/GitHub/CreatePrModal'
+import { CreatePrModal as GitlabCreatePrModal } from '@/components/GitLab/CreatePrModal'
 import { SidebarSection } from '@/components/Layout/sidebar/SidebarSection'
 import { SidebarIconPullRequest } from '@/components/Layout/sidebar/SidebarIcons'
 import { SidebarTreeRow } from '@/components/Layout/sidebar/SidebarTreeRow'
 import { ContextMenu } from '@/components/Ui/ContextMenu'
 import { useBitbucketPullRequests, useInvalidateBitbucketPullRequests } from '@/hooks/useBitbucketPullRequests'
+import { useGitlabPullRequests, useInvalidateGitlabPullRequests } from '@/hooks/useGitlabPullRequests'
 import { useForgeContext, forgeConnectKey, forgeNotLinkedKey } from '@/hooks/useForgeContext'
 import { useGitHubPullRequests, useInvalidateGitHubPullRequests } from '@/hooks/useGitHubPullRequests'
 import { useBranches } from '@/hooks/useGit'
@@ -18,8 +20,9 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { COMPACT_ROW_HEIGHT, VIRTUAL_OVERSCAN, shouldVirtualize } from '@/lib/ui/virtualList'
 import type { BitbucketPullRequest } from '@shared/bitbucket'
 import type { GitHubPullRequest } from '@shared/github'
+import type { GitlabMergeRequest } from '@shared/gitlab'
 
-type ForgePullRequest = GitHubPullRequest | BitbucketPullRequest
+type ForgePullRequest = GitHubPullRequest | BitbucketPullRequest | GitlabMergeRequest
 
 interface SidebarPullRequestsSectionProps {
   onOpenPrDetail?: (target: {
@@ -42,9 +45,14 @@ export function SidebarPullRequestsSection({ onOpenPrDetail }: SidebarPullReques
     repoPath,
     connected && forge.provider === 'bitbucket'
   )
+  const { data: glPrs, isLoading: glLoading, error: glError } = useGitlabPullRequests(
+    repoPath,
+    connected && forge.provider === 'gitlab'
+  )
   const { data: branches } = useBranches(connected)
   const invalidateGitHub = useInvalidateGitHubPullRequests()
   const invalidateBitbucket = useInvalidateBitbucketPullRequests()
+  const invalidateGitlab = useInvalidateGitlabPullRequests()
   const show = useToastStore((s) => s.show)
   const [createOpen, setCreateOpen] = useState(false)
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
@@ -57,9 +65,17 @@ export function SidebarPullRequestsSection({ onOpenPrDetail }: SidebarPullReques
 
   const canUseForge = connected && Boolean(forge.provider) && forge.connected
   const prs: ForgePullRequest[] =
-    forge.provider === 'bitbucket' ? (bbPrs ?? []) : forge.provider === 'github' ? (ghPrs ?? []) : []
-  const isLoading = forge.provider === 'bitbucket' ? bbLoading : ghLoading
-  const error = forge.provider === 'bitbucket' ? bbError : ghError
+    forge.provider === 'bitbucket'
+      ? (bbPrs ?? [])
+      : forge.provider === 'gitlab'
+        ? (glPrs ?? [])
+        : forge.provider === 'github'
+          ? (ghPrs ?? [])
+          : []
+  const isLoading =
+    forge.provider === 'bitbucket' ? bbLoading : forge.provider === 'gitlab' ? glLoading : ghLoading
+  const error =
+    forge.provider === 'bitbucket' ? bbError : forge.provider === 'gitlab' ? glError : ghError
   const count = canUseForge ? prs.length : 0
   const prsScrollRef = useRef<HTMLDivElement>(null)
   const useVirtualization = shouldVirtualize(prs.length)
@@ -76,6 +92,9 @@ export function SidebarPullRequestsSection({ onOpenPrDetail }: SidebarPullReques
     if (forge.provider === 'bitbucket') {
       await window.gitfreddo.bitbucketMergePullRequest(repoPath, prNumber, method)
       await invalidateBitbucket(repoPath)
+    } else if (forge.provider === 'gitlab') {
+      await window.gitfreddo.gitlabMergePullRequest(repoPath, prNumber, method)
+      await invalidateGitlab(repoPath)
     } else {
       await window.gitfreddo.githubMergePullRequest(repoPath, prNumber, method)
       await invalidateGitHub(repoPath)
@@ -93,6 +112,9 @@ export function SidebarPullRequestsSection({ onOpenPrDetail }: SidebarPullReques
     if (forge.provider === 'bitbucket') {
       await window.gitfreddo.bitbucketCreatePullRequest(repoPath, params)
       await invalidateBitbucket(repoPath)
+    } else if (forge.provider === 'gitlab') {
+      await window.gitfreddo.gitlabCreatePullRequest(repoPath, params)
+      await invalidateGitlab(repoPath)
     } else {
       await window.gitfreddo.githubCreatePullRequest(repoPath, params)
       await invalidateGitHub(repoPath)
@@ -241,6 +263,15 @@ export function SidebarPullRequestsSection({ onOpenPrDetail }: SidebarPullReques
       )}
       {canUseForge && forge.provider === 'bitbucket' && (
         <BitbucketCreatePrModal
+          open={createOpen}
+          onClose={() => setCreateOpen(false)}
+          defaultHead={currentBranch}
+          defaultBase={defaultBase}
+          onSubmit={createPullRequest}
+        />
+      )}
+      {canUseForge && forge.provider === 'gitlab' && (
+        <GitlabCreatePrModal
           open={createOpen}
           onClose={() => setCreateOpen(false)}
           defaultHead={currentBranch}

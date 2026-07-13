@@ -8,7 +8,12 @@ export const INTEGRATION_SETTINGS_KEYS = [
   'bitbucketAuthLogin',
   'bitbucketConnectedAt',
   'bitbucketAuthType',
-  'bitbucketSshKeyTitle'
+  'bitbucketSshKeyTitle',
+  'gitlabLogin',
+  'gitlabConnectedAt',
+  'gitlabAuthType',
+  'gitlabSshKeyTitle',
+  'gitlabHost'
 ] as const satisfies readonly (keyof AppSettings)[]
 
 export const SESSION_SETTINGS_KEYS = [
@@ -43,6 +48,14 @@ export function inferBitbucketAuthType(
   return 'oauth'
 }
 
+function patchClearsGitlabIntegration(patch: Partial<AppSettings>): boolean {
+  return (
+    ('gitlabLogin' in patch && !patch.gitlabLogin?.trim()) ||
+    ('gitlabAuthType' in patch && !patch.gitlabAuthType) ||
+    ('gitlabConnectedAt' in patch && patch.gitlabConnectedAt == null)
+  )
+}
+
 function patchClearsBitbucketIntegration(patch: Partial<AppSettings>): boolean {
   return (
     ('bitbucketLogin' in patch && !patch.bitbucketLogin?.trim()) ||
@@ -62,7 +75,7 @@ function patchClearsGitHubIntegration(patch: Partial<AppSettings>): boolean {
 export function preserveIntegrationSettings(
   current: AppSettings,
   patch: Partial<AppSettings>,
-  options: { hasBitbucketToken: boolean; hasGitHubToken: boolean }
+  options: { hasBitbucketToken: boolean; hasGitHubToken: boolean; hasGitlabToken: boolean }
 ): Partial<AppSettings> {
   const next = { ...patch }
 
@@ -78,6 +91,14 @@ export function preserveIntegrationSettings(
     next.githubLogin = current.githubLogin
     next.githubConnectedAt = current.githubConnectedAt
     next.githubSshKeyTitle = current.githubSshKeyTitle
+  }
+
+  if (options.hasGitlabToken && patchClearsGitlabIntegration(patch)) {
+    next.gitlabLogin = current.gitlabLogin
+    next.gitlabConnectedAt = current.gitlabConnectedAt
+    next.gitlabAuthType = current.gitlabAuthType
+    next.gitlabSshKeyTitle = current.gitlabSshKeyTitle
+    next.gitlabHost = current.gitlabHost
   }
 
   return next

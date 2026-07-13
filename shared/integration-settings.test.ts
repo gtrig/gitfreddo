@@ -34,6 +34,11 @@ const baseSettings = {
   bitbucketConnectedAt: 2,
   bitbucketAuthType: 'app_password',
   bitbucketSshKeyTitle: '',
+  gitlabLogin: 'gtrig',
+  gitlabConnectedAt: 3,
+  gitlabAuthType: 'oauth',
+  gitlabSshKeyTitle: '',
+  gitlabHost: 'gitlab.com',
   pullRebase: false,
   submoduleRecursion: 'on-demand',
   pushSubmoduleRecursion: 'check',
@@ -83,7 +88,7 @@ describe('preserveIntegrationSettings', () => {
         bitbucketConnectedAt: null,
         bitbucketAuthType: null
       },
-      { hasBitbucketToken: true, hasGitHubToken: false }
+      { hasBitbucketToken: true, hasGitHubToken: false, hasGitlabToken: false }
     )
 
     expect(patch.theme).toBe('iced-matcha')

@@ -4,6 +4,7 @@ import type { ContextMenuItem } from '@/components/Ui/ContextMenu'
 import type { GitBranch, GitTag, GitWorktreeEntry } from '@/lib/types'
 import type { BitbucketIssue, BitbucketMergeMethod, BitbucketPullRequest } from '@shared/bitbucket'
 import type { GitHubIssue, GitHubMergeMethod, GitHubPullRequest } from '@shared/github'
+import type { GitlabIssue, GitlabMergeMethod, GitlabMergeRequest } from '@shared/gitlab'
 import type { ForgeProvider } from '@/lib/forge/detect'
 import { copyToClipboard } from '@/lib/clipboard'
 import { detachedRefCheckoutParams, localBranchCheckoutParams } from '@/lib/git/branchCheckout'
@@ -477,22 +478,25 @@ export function tagContextMenuItems(
   return items
 }
 
+function forgeOpenLabel(provider: ForgeProvider, t?: TFunction): string {
+  if (provider === 'bitbucket') {
+    return t ? t('contextMenu.sidebar.openOnBitbucket') : 'Open on Bitbucket'
+  }
+  if (provider === 'gitlab') {
+    return t ? t('contextMenu.sidebar.openOnGitlab') : 'Open on GitLab'
+  }
+  return t ? t('contextMenu.sidebar.openOnGitHub') : 'Open on GitHub'
+}
+
 export function pullRequestContextMenuItems(
-  pr: GitHubPullRequest | BitbucketPullRequest,
+  pr: GitHubPullRequest | BitbucketPullRequest | GitlabMergeRequest,
   handlers: {
-    onMerge: (method: GitHubMergeMethod | BitbucketMergeMethod) => void
+    onMerge: (method: GitHubMergeMethod | BitbucketMergeMethod | GitlabMergeMethod) => void
   },
   t?: TFunction,
   provider: ForgeProvider = 'github'
 ): ContextMenuItem[] {
-  const openLabel =
-    provider === 'bitbucket'
-      ? t
-        ? t('contextMenu.sidebar.openOnBitbucket')
-        : 'Open on Bitbucket'
-      : t
-        ? t('contextMenu.sidebar.openOnGitHub')
-        : 'Open on GitHub'
+  const openLabel = forgeOpenLabel(provider, t)
   return [
     {
       id: 'open',
@@ -524,25 +528,23 @@ export function pullRequestContextMenuItems(
 }
 
 export function issueContextMenuItems(
-  issue: GitHubIssue | BitbucketIssue,
+  issue: GitHubIssue | BitbucketIssue | GitlabIssue,
   handlers: {
     onBranchFromIssue: (issueNumber: number, title: string) => void
-    onEdit?: (issue: GitHubIssue | BitbucketIssue) => void
-    onClose?: (issue: GitHubIssue | BitbucketIssue) => void
-    onReopen?: (issue: GitHubIssue | BitbucketIssue) => void
+    onEdit?: (issue: GitHubIssue | BitbucketIssue | GitlabIssue) => void
+    onClose?: (issue: GitHubIssue | BitbucketIssue | GitlabIssue) => void
+    onReopen?: (issue: GitHubIssue | BitbucketIssue | GitlabIssue) => void
   },
   t?: TFunction,
   provider: ForgeProvider = 'github'
 ): ContextMenuItem[] {
-  const openLabel =
+  const openLabel = forgeOpenLabel(provider, t)
+  const issueNs =
     provider === 'bitbucket'
-      ? t
-        ? t('contextMenu.sidebar.openOnBitbucket')
-        : 'Open on Bitbucket'
-      : t
-        ? t('contextMenu.sidebar.openOnGitHub')
-        : 'Open on GitHub'
-  const issueNs = provider === 'bitbucket' ? 'bitbucket.issue' : 'github.issue'
+      ? 'bitbucket.issue'
+      : provider === 'gitlab'
+        ? 'gitlab.issue'
+        : 'github.issue'
   const items: ContextMenuItem[] = [
     {
       id: 'open',

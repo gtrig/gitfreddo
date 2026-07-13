@@ -10,6 +10,7 @@ import { loadSettings, nextRecentRepos, saveSettings } from '../settings'
 import { preserveIntegrationSettings } from '../../shared/integration-settings'
 import { hasBitbucketToken } from '../bitbucket/token-store'
 import { hasGitHubToken } from '../github/token-store'
+import { hasGitlabToken } from '../gitlab/token-store'
 import { exportSettingsBackup, importSettingsBackup } from '../settings-backup'
 import { buildAppMenu, pickGitBinary, setMainWindow } from '../menu'
 import {
@@ -31,6 +32,7 @@ import { enrichAiContext } from '../llm/context'
 import { applyStoredZoom, getZoomFactor, zoomIn, zoomOut } from '../zoom'
 import { registerGitHubIpc } from './ipc/github'
 import { registerBitbucketIpc } from './ipc/bitbucket'
+import { registerGitlabIpc } from './ipc/gitlab'
 import type { AiFillParams } from '../../shared/ai'
 import type { AppSettings, LogEntry, RepoChangeEvent } from '../../shared/ipc'
 import { THEME_BG_COLORS } from '../../shared/themes'
@@ -101,6 +103,11 @@ let settings: AppSettings = {
   bitbucketConnectedAt: null,
   bitbucketAuthType: null,
   bitbucketSshKeyTitle: '',
+  gitlabLogin: '',
+  gitlabConnectedAt: null,
+  gitlabAuthType: null,
+  gitlabSshKeyTitle: '',
+  gitlabHost: '',
   pullRebase: false,
   submoduleRecursion: 'on-demand',
   pushSubmoduleRecursion: 'check',
@@ -304,7 +311,8 @@ function registerIpc(): void {
     const previous = settings
     const safePatch = preserveIntegrationSettings(settings, patch, {
       hasBitbucketToken: await hasBitbucketToken(),
-      hasGitHubToken: await hasGitHubToken()
+      hasGitHubToken: await hasGitHubToken(),
+      hasGitlabToken: await hasGitlabToken()
     })
     settings = await saveSettings(safePatch)
     applySettingsSideEffects(previous, settings)
@@ -340,6 +348,7 @@ function registerIpc(): void {
   }
   registerGitHubIpc(ipcMain, settingsRef)
   registerBitbucketIpc(ipcMain, settingsRef)
+  registerGitlabIpc(ipcMain, settingsRef)
 
   ipcMain.handle('gitfreddo:pick-file', async () => {
     const repo = repoManager.getRepoPath()

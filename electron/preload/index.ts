@@ -181,6 +181,39 @@ const api: GitFreddoAPI = {
     ) => callback(progress)
     ipcRenderer.on('gitfreddo:bitbucket-connect-progress', listener)
     return () => ipcRenderer.removeListener('gitfreddo:bitbucket-connect-progress', listener)
+  },
+  gitlabGetStatus: () => ipcRenderer.invoke('gitfreddo:gitlab-get-status'),
+  gitlabConnect: () => ipcRenderer.invoke('gitfreddo:gitlab-connect'),
+  gitlabConnectPat: (token, host) =>
+    ipcRenderer.invoke('gitfreddo:gitlab-connect-pat', token, host),
+  gitlabDisconnect: () => ipcRenderer.invoke('gitfreddo:gitlab-disconnect'),
+  gitlabListRepos: (params) => ipcRenderer.invoke('gitfreddo:gitlab-list-repos', params),
+  gitlabListNamespaces: () => ipcRenderer.invoke('gitfreddo:gitlab-list-namespaces'),
+  gitlabCreateRepo: (params) => ipcRenderer.invoke('gitfreddo:gitlab-create-repo', params),
+  gitlabForkRepo: (namespace, repo) =>
+    ipcRenderer.invoke('gitfreddo:gitlab-fork-repo', namespace, repo),
+  gitlabUploadSshKey: (title) => ipcRenderer.invoke('gitfreddo:gitlab-upload-ssh-key', title),
+  gitlabGetRepoContext: (repoPath) =>
+    ipcRenderer.invoke('gitfreddo:gitlab-get-repo-context', repoPath),
+  gitlabListPullRequests: (repoPath) =>
+    ipcRenderer.invoke('gitfreddo:gitlab-list-pull-requests', repoPath),
+  gitlabCreatePullRequest: (repoPath, params) =>
+    ipcRenderer.invoke('gitfreddo:gitlab-create-pull-request', repoPath, params),
+  gitlabMergePullRequest: (repoPath, number, method) =>
+    ipcRenderer.invoke('gitfreddo:gitlab-merge-pull-request', repoPath, number, method),
+  gitlabListIssues: (repoPath, assigneeLogin) =>
+    ipcRenderer.invoke('gitfreddo:gitlab-list-issues', repoPath, assigneeLogin),
+  gitlabCreateIssue: (repoPath, params) =>
+    ipcRenderer.invoke('gitfreddo:gitlab-create-issue', repoPath, params),
+  gitlabUpdateIssue: (repoPath, number, params) =>
+    ipcRenderer.invoke('gitfreddo:gitlab-update-issue', repoPath, number, params),
+  onGitlabConnectProgress: (callback) => {
+    const listener = (
+      _event: Electron.IpcRendererEvent,
+      progress: import('../../shared/gitlab').GitlabConnectProgress
+    ) => callback(progress)
+    ipcRenderer.on('gitfreddo:gitlab-connect-progress', listener)
+    return () => ipcRenderer.removeListener('gitfreddo:gitlab-connect-progress', listener)
   }
 }
 

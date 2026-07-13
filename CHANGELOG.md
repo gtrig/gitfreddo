@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-13 — GitLab integration (OAuth/PAT, MRs, issues, SSH keys)
+
+- **Why:** Add GitLab (including self-managed instances) as a first-class forge alongside GitHub and Bitbucket.
+- **What:** New renderer layer mirroring Bitbucket — `useGitlab*` hooks; `src/components/GitLab/` (RepoPicker, Create/Fork repo modals, CreatePrModal, EditIssueModal); `GitlabIntegrationCard` (OAuth + PAT + self-managed host); forge detection/context/PR-action wiring with precedence Bitbucket > GitLab > GitHub; sidebar PR/issue and WorkspaceHub clone/create dispatch; GitLab merge requests open in the browser. Added full backend test coverage for `electron/gitlab/**` (client, http, repos, pulls, issues, oauth incl. callback-server flow, service delegation, ssh-keys, token-store, repo-context) plus renderer tests for the integration card, WorkspaceHub GitLab paths, forge modal, and detect. **95.0% line coverage**; typecheck, build, smoke, and e2e green.
+
 ### 2026-07-13 — Coverage expansion batch 5 (95% lines)
 
 - **Why:** Close the gap to 95% line coverage after batches 1–4 and flaky-test fixes.

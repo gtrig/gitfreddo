@@ -11,35 +11,43 @@ import {
 } from './useForgeContext'
 import { useBitbucketRepoContext } from '@/hooks/useBitbucketRepos'
 import { useBitbucketStatus } from '@/hooks/useBitbucketStatus'
+import { useGitlabRepoContext } from '@/hooks/useGitlabRepos'
+import { useGitlabStatus } from '@/hooks/useGitlabStatus'
 import { useRemotes } from '@/hooks/useGit'
 import { useGitHubRepoContext } from '@/hooks/useGitHubRepos'
 import { useGitHubStatus } from '@/hooks/useGitHubStatus'
 
 vi.mock('@/hooks/useGitHubStatus', () => ({ useGitHubStatus: vi.fn() }))
 vi.mock('@/hooks/useBitbucketStatus', () => ({ useBitbucketStatus: vi.fn() }))
+vi.mock('@/hooks/useGitlabStatus', () => ({ useGitlabStatus: vi.fn() }))
 vi.mock('@/hooks/useGitHubRepos', () => ({ useGitHubRepoContext: vi.fn() }))
 vi.mock('@/hooks/useBitbucketRepos', () => ({ useBitbucketRepoContext: vi.fn() }))
+vi.mock('@/hooks/useGitlabRepos', () => ({ useGitlabRepoContext: vi.fn() }))
 vi.mock('@/hooks/useGit', () => ({ useRemotes: vi.fn() }))
 
 const ghCtx = { owner: 'octo', repo: 'hello', host: 'github.com' }
 const bbCtx = { workspace: 'acme', owner: 'acme', repo: 'app', host: 'bitbucket.org' }
+const glCtx = { namespace: 'acme', owner: 'acme', repo: 'app', host: 'gitlab.com' }
 
 describe('useForgeContext helpers', () => {
   it('maps forge providers to connect keys', () => {
     expect(forgeConnectKey('github')).toBe('sidebar.connectGitHub')
     expect(forgeConnectKey('bitbucket')).toBe('sidebar.connectBitbucket')
+    expect(forgeConnectKey('gitlab')).toBe('sidebar.connectGitlab')
     expect(forgeConnectKey(null)).toBe('sidebar.connectForge')
   })
 
   it('maps forge providers to not-linked keys', () => {
     expect(forgeNotLinkedKey('github')).toBe('sidebar.notLinkedGitHub')
     expect(forgeNotLinkedKey('bitbucket')).toBe('sidebar.notLinkedBitbucket')
+    expect(forgeNotLinkedKey('gitlab')).toBe('sidebar.notLinkedGitlab')
     expect(forgeNotLinkedKey(null)).toBe('sidebar.notLinkedForge')
   })
 
   it('returns display names for forges', () => {
     expect(forgeDisplayName('github')).toBe('GitHub')
     expect(forgeDisplayName('bitbucket')).toBe('Bitbucket')
+    expect(forgeDisplayName('gitlab')).toBe('GitLab')
     expect(forgeDisplayName(null)).toBe('GitHub')
   })
 })
@@ -62,6 +70,14 @@ describe('useForgeContext', () => {
       data: undefined,
       isLoading: false
     } as unknown as ReturnType<typeof useBitbucketRepoContext>)
+    vi.mocked(useGitlabStatus).mockReturnValue({
+      data: { connected: false, login: null, avatarUrl: null, authType: null, sshKeyTitle: null, host: 'gitlab.com' },
+      isLoading: false
+    } as unknown as ReturnType<typeof useGitlabStatus>)
+    vi.mocked(useGitlabRepoContext).mockReturnValue({
+      data: undefined,
+      isLoading: false
+    } as unknown as ReturnType<typeof useGitlabRepoContext>)
     vi.mocked(useRemotes).mockReturnValue({
       data: [],
       isLoading: false
@@ -105,6 +121,33 @@ describe('useForgeContext', () => {
       ctx: ghCtx,
       connected: true,
       login: 'gh-user'
+    })
+  })
+
+  it('returns gitlab context when repo is linked to GitLab', () => {
+    vi.mocked(useGitlabRepoContext).mockReturnValue({
+      data: glCtx,
+      isLoading: false
+    } as unknown as ReturnType<typeof useGitlabRepoContext>)
+    vi.mocked(useGitlabStatus).mockReturnValue({
+      data: {
+        connected: true,
+        login: 'gl-user',
+        avatarUrl: null,
+        authType: null,
+        sshKeyTitle: null,
+        host: 'gitlab.com'
+      },
+      isLoading: false
+    } as unknown as ReturnType<typeof useGitlabStatus>)
+
+    const { result } = renderHook(() => useForgeContext('/tmp/repo', true))
+
+    expect(result.current).toEqual({
+      provider: 'gitlab',
+      ctx: glCtx,
+      connected: true,
+      login: 'gl-user'
     })
   })
 

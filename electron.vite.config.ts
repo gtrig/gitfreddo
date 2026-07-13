@@ -14,11 +14,17 @@ export default defineConfig(({ mode }) => {
   const bitbucketClientId = env.BITBUCKET_CLIENT_ID || process.env.BITBUCKET_CLIENT_ID || ''
   const bitbucketClientSecret =
     env.BITBUCKET_CLIENT_SECRET || process.env.BITBUCKET_CLIENT_SECRET || ''
+  const gitlabClientId = env.GITLAB_CLIENT_ID || process.env.GITLAB_CLIENT_ID || ''
+  const gitlabClientSecret = env.GITLAB_CLIENT_SECRET || process.env.GITLAB_CLIENT_SECRET || ''
+  const gitlabHost = env.GITLAB_HOST || process.env.GITLAB_HOST || ''
 
   const forgeOAuthDefines = {
     'process.env.GITFREDDO_BUILD_GITHUB_CLIENT_ID': quoteEnv(githubClientId),
     'process.env.GITFREDDO_BUILD_BITBUCKET_CLIENT_ID': quoteEnv(bitbucketClientId),
-    'process.env.GITFREDDO_BUILD_BITBUCKET_CLIENT_SECRET': quoteEnv(bitbucketClientSecret)
+    'process.env.GITFREDDO_BUILD_BITBUCKET_CLIENT_SECRET': quoteEnv(bitbucketClientSecret),
+    'process.env.GITFREDDO_BUILD_GITLAB_CLIENT_ID': quoteEnv(gitlabClientId),
+    'process.env.GITFREDDO_BUILD_GITLAB_CLIENT_SECRET': quoteEnv(gitlabClientSecret),
+    'process.env.GITFREDDO_BUILD_GITLAB_HOST': quoteEnv(gitlabHost)
   }
 
   return {

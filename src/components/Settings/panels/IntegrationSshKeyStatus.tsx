@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 
 interface IntegrationSshKeyStatusProps {
   sshKeyTitle: string | null
-  namespace: 'github' | 'bitbucket'
+  namespace: 'github' | 'bitbucket' | 'gitlab'
 }
 
 export function IntegrationSshKeyStatus({ sshKeyTitle, namespace }: IntegrationSshKeyStatusProps) {
