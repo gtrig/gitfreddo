@@ -28,6 +28,8 @@ describe('parseBitbucketRemote', () => {
 
   it('returns null for non-bitbucket urls', () => {
     expect(parseBitbucketRemote('https://github.com/org/repo.git')).toBeNull()
+    expect(parseBitbucketRemote('')).toBeNull()
+    expect(parseBitbucketRemote('not-a-url')).toBeNull()
   })
 })
 
@@ -49,6 +51,8 @@ describe('normalizeBitbucketPrState', () => {
   it('normalizes PR states', () => {
     expect(normalizeBitbucketPrState('OPEN')).toBe('open')
     expect(normalizeBitbucketPrState('MERGED')).toBe('closed')
+    expect(normalizeBitbucketPrState('DECLINED')).toBe('closed')
+    expect(normalizeBitbucketPrState('custom')).toBe('custom')
   })
 })
 
@@ -56,5 +60,7 @@ describe('normalizeBitbucketIssueState', () => {
   it('normalizes issue states', () => {
     expect(normalizeBitbucketIssueState('OPEN')).toBe('open')
     expect(normalizeBitbucketIssueState('RESOLVED')).toBe('closed')
+    expect(normalizeBitbucketIssueState('NEW')).toBe('open')
+    expect(normalizeBitbucketIssueState('custom')).toBe('custom')
   })
 })

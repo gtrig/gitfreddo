@@ -12,8 +12,13 @@ vi.mock('../settings', () => ({
   loadSettings: vi.fn()
 }))
 
+vi.mock('../gitlab/token-store', () => ({
+  loadGitlabToken: vi.fn()
+}))
+
 import { loadBitbucketToken } from '../bitbucket/token-store'
 import { loadGitHubToken } from '../github/token-store'
+import { loadGitlabToken } from '../gitlab/token-store'
 import { loadSettings } from '../settings'
 import { buildGitEnv } from './credentials'
 
@@ -33,6 +38,7 @@ describe('buildGitEnv', () => {
     process.env = originalEnv
     vi.mocked(loadGitHubToken).mockReset()
     vi.mocked(loadBitbucketToken).mockReset()
+    vi.mocked(loadGitlabToken).mockReset()
     vi.mocked(loadSettings).mockReset()
   })
 
@@ -43,6 +49,7 @@ describe('buildGitEnv', () => {
 
     vi.mocked(loadGitHubToken).mockResolvedValue(null)
     vi.mocked(loadBitbucketToken).mockResolvedValue(null)
+    vi.mocked(loadGitlabToken).mockResolvedValue(null)
     const env = await buildGitEnv()
 
     expect(env.GIT_ASKPASS).toBeUndefined()
@@ -56,6 +63,7 @@ describe('buildGitEnv', () => {
 
     vi.mocked(loadGitHubToken).mockResolvedValue(null)
     vi.mocked(loadBitbucketToken).mockResolvedValue(null)
+    vi.mocked(loadGitlabToken).mockResolvedValue(null)
     const env = await buildGitEnv()
 
     expect(env.GIT_ASKPASS).toBe('/usr/local/bin/my-askpass')
@@ -64,6 +72,7 @@ describe('buildGitEnv', () => {
   it('injects askpass env when a github token is present', async () => {
     vi.mocked(loadGitHubToken).mockResolvedValue('gho_test_token')
     vi.mocked(loadBitbucketToken).mockResolvedValue(null)
+    vi.mocked(loadGitlabToken).mockResolvedValue(null)
     const env = await buildGitEnv()
     expect(env.GIT_TERMINAL_PROMPT).toBe('0')
     expect(env.GIT_ASKPASS).toContain('forge-askpass.cjs')
@@ -73,10 +82,27 @@ describe('buildGitEnv', () => {
   it('injects bitbucket auth env when a bitbucket token is present', async () => {
     vi.mocked(loadGitHubToken).mockResolvedValue(null)
     vi.mocked(loadBitbucketToken).mockResolvedValue('bb_app_password')
+    vi.mocked(loadGitlabToken).mockResolvedValue(null)
     const env = await buildGitEnv()
     expect(env.GIT_ASKPASS).toContain('forge-askpass.cjs')
     expect(env.gitfreddo_BITBUCKET_TOKEN).toBe('bb_app_password')
     expect(env.gitfreddo_BITBUCKET_LOGIN).toBe('alice@example.com')
     expect(env.gitfreddo_BITBUCKET_AUTH_TYPE).toBe('app_password')
+  })
+
+  it('injects gitlab auth env when a gitlab token is present', async () => {
+    vi.mocked(loadGitHubToken).mockResolvedValue(null)
+    vi.mocked(loadBitbucketToken).mockResolvedValue(null)
+    vi.mocked(loadGitlabToken).mockResolvedValue('gl_token')
+    vi.mocked(loadSettings).mockResolvedValue({
+      bitbucketLogin: '',
+      bitbucketAuthLogin: '',
+      bitbucketAuthType: null,
+      gitlabHost: 'https://gitlab.example.com/'
+    } as Awaited<ReturnType<typeof loadSettings>>)
+
+    const env = await buildGitEnv()
+    expect(env.gitfreddo_GITLAB_TOKEN).toBe('gl_token')
+    expect(env.gitfreddo_GITLAB_HOST).toBe('gitlab.example.com')
   })
 })

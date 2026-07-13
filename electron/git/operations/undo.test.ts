@@ -1,10 +1,10 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { afterEach, describe, expect, it } from 'vitest'
-import { analyzeUndoFromReflog, pickUndoResetMode } from './undo'
-import { peekUndoAction, undoLastAction } from './undo'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { runGitOrThrow } from '../git-runner'
+import * as statusModule from './status'
+import { analyzeUndoFromReflog, pickUndoResetMode, peekUndoAction, undoLastAction } from './undo'
 
 describe('pickUndoResetMode', () => {
   it('uses soft reset for commits', () => {
@@ -65,6 +65,13 @@ describe('analyzeUndoFromReflog', () => {
       subject: 'checkout: moving to side'
     })
   })
+
+  it('reports nothing to undo when reflog is empty', () => {
+    expect(analyzeUndoFromReflog([])).toEqual({
+      canUndo: false,
+      reason: 'nothing-to-undo'
+    })
+  })
 })
 
 describe('undoLastAction', () => {
@@ -75,6 +82,7 @@ describe('undoLastAction', () => {
       rmSync(tempDir, { recursive: true, force: true })
       tempDir = null
     }
+    vi.restoreAllMocks()
   })
 
   async function createRepoWithTwoCommits(): Promise<string> {
@@ -124,5 +132,28 @@ describe('undoLastAction', () => {
       await runGitOrThrow(['log', '-1', '--format=%s'], { cwd: tempDir, gitBinaryPath: 'git' })
     ).trim()
     expect(headSubject).toBe('second')
+  })
+
+  it('reports git-busy when a merge is in progress', async () => {
+    tempDir = await createRepoWithTwoCommits()
+    vi.spyOn(statusModule, 'workingStatus').mockResolvedValue({
+      branch: 'main',
+      ahead: 0,
+      behind: 0,
+      staged: [],
+      unstaged: [],
+      untracked: [],
+      conflicted: [],
+      isClean: true,
+      mergeInProgress: true,
+      rebaseInProgress: false,
+      cherryPickInProgress: false
+    })
+
+    await expect(peekUndoAction(tempDir, 'git')).resolves.toEqual({
+      canUndo: false,
+      reason: 'git-busy'
+    })
+    await expect(undoLastAction(tempDir, 'git')).rejects.toThrow(/current git operation/)
   })
 })

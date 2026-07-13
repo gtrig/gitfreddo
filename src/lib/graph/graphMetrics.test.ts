@@ -3,6 +3,7 @@ import {
   BRANCH_TAG_WIDTH_DEFAULT,
   columnCenterX,
   DEFAULT_GRAPH_METRICS,
+  graphMetricsWithLaneWidth,
   graphWidth,
   laneWidthForGraphColumn,
   loadBranchTagWidth,
@@ -68,5 +69,21 @@ describe('graph metric persistence', () => {
     saveBranchTagWidth(10)
     expect(loadGraphLaneWidth()).toBe(64)
     expect(loadBranchTagWidth()).toBe(72)
+  })
+
+  it('returns defaults when localStorage is unavailable', () => {
+    vi.stubGlobal('localStorage', undefined)
+    expect(loadGraphLaneWidth()).toBe(18)
+    expect(loadBranchTagWidth()).toBe(BRANCH_TAG_WIDTH_DEFAULT)
+    expect(() => saveGraphLaneWidth(24)).not.toThrow()
+    expect(() => saveBranchTagWidth(120)).not.toThrow()
+  })
+
+  it('builds metrics and graph widths for multi-lane graphs', () => {
+    const metrics = graphMetricsWithLaneWidth(40)
+    expect(metrics.laneWidth).toBe(40)
+    expect(graphWidth(1, metrics)).toBeGreaterThanOrEqual(56)
+    expect(graphWidth(3, metrics)).toBeGreaterThanOrEqual(72)
+    expect(minGraphColumnWidth(3, metrics)).toBeGreaterThanOrEqual(72)
   })
 })

@@ -30,6 +30,17 @@ describe('reduceUpdateState', () => {
     expect(next.status).toBe('error')
     expect(next.errorMessage).toBe('network')
   })
+
+  it('tracks checking and up-to-date states', () => {
+    expect(reduceUpdateState(base, { type: 'checking' }).status).toBe('checking')
+    const upToDate = reduceUpdateState(
+      { ...base, status: 'available', availableVersion: '0.3.0', releaseNotes: 'notes' },
+      { type: 'not-available', version: '0.2.8' }
+    )
+    expect(upToDate.status).toBe('up-to-date')
+    expect(upToDate.availableVersion).toBeUndefined()
+    expect(upToDate.releaseNotes).toBeUndefined()
+  })
 })
 
 describe('applyUpdateChannel', () => {
@@ -52,6 +63,12 @@ describe('classifyUpdateError', () => {
 
   it('detects network failures', () => {
     expect(classifyUpdateError('getaddrinfo ENOTFOUND github.com')).toBe('network')
+    expect(classifyUpdateError('connect ECONNREFUSED')).toBe('network')
+    expect(classifyUpdateError('request ETIMEDOUT')).toBe('network')
+  })
+
+  it('falls back to unknown errors', () => {
+    expect(classifyUpdateError('something unexpected happened')).toBe('unknown')
   })
 })
 
@@ -80,6 +97,11 @@ describe('formatReleaseNotesForDisplay', () => {
     expect(formatReleaseNotesForDisplay(undefined)).toBeUndefined()
     expect(formatReleaseNotesForDisplay('')).toBeUndefined()
     expect(formatReleaseNotesForDisplay([])).toBeUndefined()
+    expect(formatReleaseNotesForDisplay({})).toBeUndefined()
+  })
+
+  it('formats plain string entries inside release note arrays', () => {
+    expect(formatReleaseNotesForDisplay(['<p>Plain <em>note</em></p>', ''])).toBe('Plain note')
   })
 })
 
@@ -90,5 +112,12 @@ describe('sanitizeUpdateErrorMessage', () => {
     expect(sanitizeUpdateErrorMessage(message)).toBe(
       '404 — https://github.com/gtrig/gitfreddo/releases.atom'
     )
+  })
+
+  it('truncates long first-line messages without status or url', () => {
+    const longLine = 'x'.repeat(250)
+    const sanitized = sanitizeUpdateErrorMessage(longLine)
+    expect(sanitized.length).toBeLessThan(longLine.length)
+    expect(sanitized.endsWith('…')).toBe(true)
   })
 })

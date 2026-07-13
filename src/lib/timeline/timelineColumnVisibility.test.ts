@@ -84,4 +84,30 @@ describe('timelineColumnVisibility', () => {
       )
     ).toBe(false)
   })
+
+  it('returns defaults when localStorage is unavailable or invalid', () => {
+    vi.stubGlobal('localStorage', undefined)
+    expect(loadTimelineColumnVisibility()).toEqual(DEFAULT_TIMELINE_COLUMN_VISIBILITY)
+    expect(() => saveTimelineColumnVisibility(DEFAULT_TIMELINE_COLUMN_VISIBILITY)).not.toThrow()
+
+    const storage = new Map<string, string>()
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        storage.set(key, value)
+      }
+    })
+    storage.set('gitfreddo.timeline.columnVisibility', '{not json')
+
+    expect(loadTimelineColumnVisibility()).toEqual(DEFAULT_TIMELINE_COLUMN_VISIBILITY)
+  })
+
+  it('toggles columns from the header menu', () => {
+    const toggled: string[] = []
+    const items = timelineHeaderContextMenuItems(DEFAULT_TIMELINE_COLUMN_VISIBILITY, (column) => {
+      toggled.push(column)
+    })
+    items.find((item) => item.id === 'author')?.onClick()
+    expect(toggled).toEqual(['author'])
+  })
 })

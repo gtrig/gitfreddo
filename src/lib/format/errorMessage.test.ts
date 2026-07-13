@@ -100,6 +100,15 @@ describe('humanizeErrorMessage', () => {
     )
   })
 
+  it('recognizes forge API not-found and generic client errors', () => {
+    expect(humanizeErrorMessage('Bitbucket API error (404): Not Found')).toBe(
+      "Bitbucket couldn't find that. It may have been deleted or renamed, or you may not have access."
+    )
+    expect(humanizeErrorMessage('GitHub API error (418): I am a teapot')).toBe(
+      'GitHub rejected the request (418).'
+    )
+  })
+
   it('falls back to a cleaned, sentence-cased first fatal/error line for unknown errors', () => {
     const raw = 'warning: something noisy\nfatal: some very specific unmapped git failure occurred'
     expect(humanizeErrorMessage(raw)).toBe('Some very specific unmapped git failure occurred.')

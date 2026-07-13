@@ -13,12 +13,14 @@ vi.mock('./repo-path', () => ({
 }))
 
 import { runGitOrThrow } from './git-runner'
+import { hasGitDir } from './repo-path'
 import { initRepository } from './init'
 
 describe('initRepository', () => {
   beforeEach(() => {
     vi.mocked(runGitOrThrow).mockReset()
     vi.mocked(runGitOrThrow).mockResolvedValue('')
+    vi.mocked(hasGitDir).mockReturnValue(false)
   })
 
   it('runs git init via catalog args', async () => {
@@ -34,5 +36,10 @@ describe('initRepository', () => {
     } finally {
       await rm(parentDir, { recursive: true, force: true })
     }
+  })
+
+  it('rejects when the folder is already a git repository', async () => {
+    vi.mocked(hasGitDir).mockReturnValue(true)
+    await expect(initRepository('/existing/repo')).rejects.toThrow(/already a git repository/i)
   })
 })

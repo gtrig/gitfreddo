@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import type { Query } from '@tanstack/react-query'
 import { QueryClient } from '@tanstack/react-query'
 import { invalidateRepoChange, shouldHandleRepoChangeEvent } from './repoChange'
 import { useOperationStore } from '@/stores/operation'
@@ -25,9 +26,14 @@ describe('invalidateRepoChange', () => {
     invalidateRepoChange(queryClient, { repoPath: '/repo', scope: 'working' })
 
     expect(invalidateSpy).toHaveBeenCalled()
+    const predicateCall = invalidateSpy.mock.calls.find(([options]) => options?.predicate)?.[0]
+    expect(predicateCall?.predicate).toBeTypeOf('function')
     expect(
-      invalidateSpy.mock.calls.some(([options]) => options?.predicate !== undefined)
+      predicateCall?.predicate?.({ queryKey: ['repo', '/repo', 'diff.working'] } as Query)
     ).toBe(true)
+    expect(
+      predicateCall?.predicate?.({ queryKey: ['repo', '/other', 'diff.file'] } as Query)
+    ).toBe(false)
   })
 })
 

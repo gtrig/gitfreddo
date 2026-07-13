@@ -126,4 +126,44 @@ describe('timelineRefContextMenu', () => {
       isRemote: false
     })
   })
+
+  it('returns null for non-tag timeline refs in findTagForTimelineRef', () => {
+    expect(
+      findTagForTimelineRef(
+        [],
+        { label: 'main', kind: 'branch', fullRef: 'main', sourceOrder: 0 },
+        'abc123'
+      )
+    ).toBeNull()
+  })
+
+  it('builds local branch menu with graph visibility toggle', () => {
+    const branches: GitBranch[] = [
+      {
+        name: 'feature',
+        head: 'abc123',
+        ahead: 1,
+        behind: 0,
+        isCurrent: false,
+        isRemote: false
+      }
+    ]
+    const onToggleGraphVisibility = vi.fn()
+
+    const items = buildTimelineRefContextMenuItems(
+      { label: 'feature', kind: 'branch', fullRef: 'feature', sourceOrder: 0 },
+      'abc123',
+      branches,
+      [],
+      'main',
+      {
+        ...handlers,
+        onToggleGraphVisibility,
+        isBranchHiddenInGraph: () => true
+      }
+    )
+
+    items?.find((item) => item.id === 'toggle-graph-visibility')?.onClick()
+    expect(onToggleGraphVisibility).toHaveBeenCalled()
+  })
 })

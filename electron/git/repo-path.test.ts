@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join, resolve } from 'path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { canonicalizePath, resolveGitDirSync } from './repo-path'
+import { canonicalizePath, hasGitDir, normalizeRepoPath, resolveGitDirSync } from './repo-path'
 
 describe('resolveGitDirSync', () => {
   let tempDir = ''
@@ -31,6 +31,14 @@ describe('resolveGitDirSync', () => {
     writeFileSync(join(worktree, '.git'), `gitdir: ${actualGitDir}\n`)
     expect(resolveGitDirSync(worktree)).toBe(resolve(actualGitDir))
   })
+
+  it('throws when .git is missing or invalid', () => {
+    tempDir = mkdtempSync(join(tmpdir(), 'gitfreddo-missing-'))
+    expect(() => resolveGitDirSync(tempDir)).toThrow(/No \.git found/)
+
+    writeFileSync(join(tempDir, '.git'), 'not a gitdir pointer\n')
+    expect(() => resolveGitDirSync(tempDir)).toThrow(/Invalid \.git file/)
+  })
 })
 
 describe('canonicalizePath', () => {
@@ -50,5 +58,13 @@ describe('canonicalizePath', () => {
     mkdirSync(target)
     symlinkSync(target, link, 'dir')
     expect(canonicalizePath(link)).toBe(canonicalizePath(target))
+  })
+
+  it('normalizes and detects git repositories', () => {
+    tempDir = mkdtempSync(join(tmpdir(), 'gitfreddo-hasgit-'))
+    expect(hasGitDir(tempDir)).toBe(false)
+    mkdirSync(join(tempDir, '.git'))
+    expect(hasGitDir(tempDir)).toBe(true)
+    expect(normalizeRepoPath('./relative')).toBe(resolve('./relative'))
   })
 })

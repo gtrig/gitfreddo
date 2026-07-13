@@ -50,6 +50,20 @@ const cleanWorking = {
 describe('buildMultiCommitContextMenuItems', () => {
   const allCommits = [commit('c3', ['c2']), commit('c2', ['c1']), commit('c1', [])]
 
+  it('returns no items for a single selected commit', () => {
+    expect(
+      buildMultiCommitContextMenuItems({
+        selectedCommits: [allCommits[0]!],
+        head: 'c3',
+        branch: 'feature',
+        isDetached: false,
+        allCommits,
+        working: cleanWorking,
+        actions
+      })
+    ).toEqual([])
+  })
+
   it('includes bulk actions for multiple contiguous commits', () => {
     const items = buildMultiCommitContextMenuItems({
       selectedCommits: [allCommits[1]!, allCommits[2]!],
@@ -183,5 +197,67 @@ describe('buildMultiCommitContextMenuItems', () => {
     items.find((item) => item.id === 'drop-selected')?.onClick()
     expect(actions.cherryPickAll).toHaveBeenCalled()
     expect(actions.dropSelected).toHaveBeenCalled()
+  })
+
+  it('uses detached-head labels and blocks squash on detached HEAD', () => {
+    const items = buildMultiCommitContextMenuItems({
+      selectedCommits: [allCommits[1]!, allCommits[2]!],
+      head: 'c3',
+      branch: '',
+      isDetached: true,
+      allCommits,
+      working: cleanWorking,
+      actions
+    })
+
+    expect(items.find((item) => item.id === 'squash-selected')?.disabled).toBe(true)
+    expect(items.find((item) => item.id === 'cherry-pick-all')?.label).toContain('detached HEAD')
+  })
+
+  it('labels drop action for merge commits and non-head selections', () => {
+    const mergeCommit = commit('m1', ['c3', 'd1'])
+    const withMerge = [mergeCommit, ...allCommits]
+    const mergeItems = buildMultiCommitContextMenuItems({
+      selectedCommits: [mergeCommit, allCommits[0]!],
+      head: 'm1',
+      branch: 'feature',
+      isDetached: false,
+      allCommits: withMerge,
+      working: cleanWorking,
+      actions
+    })
+    expect(mergeItems.find((item) => item.id === 'drop-selected')?.label).toContain('merge')
+
+    const offHeadItems = buildMultiCommitContextMenuItems({
+      selectedCommits: [allCommits[2]!, allCommits[0]!],
+      head: 'c3',
+      branch: 'feature',
+      isDetached: false,
+      allCommits,
+      working: cleanWorking,
+      actions
+    })
+    expect(offHeadItems.find((item) => item.id === 'drop-selected')?.label).toContain(
+      'not contiguous on branch'
+    )
+  })
+
+  it('disables compare when git is busy', () => {
+    const busyWorking = {
+      ...cleanWorking,
+      rebaseInProgress: true
+    }
+    const items = buildMultiCommitContextMenuItems({
+      selectedCommits: [allCommits[1]!, allCommits[2]!],
+      head: 'c3',
+      branch: 'feature',
+      isDetached: false,
+      allCommits,
+      working: busyWorking,
+      actions
+    })
+
+    expect(items.find((item) => item.id === 'compare-selected')?.disabled).toBe(true)
+    expect(items.find((item) => item.id === 'remove-stale-selected')?.disabled).toBe(true)
   })
 })

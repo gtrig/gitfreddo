@@ -28,4 +28,12 @@ describe('applyGitHubMarkdownAction', () => {
     const result = applyGitHubMarkdownAction('const x = 1', 0, 11, 'code-block')
     expect(result.value).toBe('```\nconst x = 1\n```')
   })
+
+  it('supports additional inline and list actions', () => {
+    expect(applyGitHubMarkdownAction('text', 0, 4, 'italic').value).toBe('_text_')
+    expect(applyGitHubMarkdownAction('text', 0, 4, 'strikethrough').value).toBe('~~text~~')
+    expect(applyGitHubMarkdownAction('text', 0, 4, 'code').value).toBe('`text`')
+    expect(applyGitHubMarkdownAction('one\ntwo', 0, 7, 'bullet-list').value).toBe('- one\n- two')
+    expect(applyGitHubMarkdownAction('one\ntwo', 0, 7, 'numbered-list').value).toBe('1. one\n2. two')
+  })
 })

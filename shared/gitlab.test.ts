@@ -20,6 +20,7 @@ describe('isGitlabHost', () => {
   it('matches gitlab.com', () => {
     expect(isGitlabHost('gitlab.com')).toBe(true)
     expect(isGitlabHost('https://gitlab.com')).toBe(true)
+    expect(isGitlabHost('group.gitlab.com')).toBe(true)
   })
 
   it('matches self-managed host when configured', () => {
@@ -64,6 +65,8 @@ describe('parseGitlabRemote', () => {
 
   it('returns null for non-gitlab urls', () => {
     expect(parseGitlabRemote('https://github.com/org/repo.git')).toBeNull()
+    expect(parseGitlabRemote('')).toBeNull()
+    expect(parseGitlabRemote('not-a-url')).toBeNull()
   })
 })
 
@@ -85,6 +88,8 @@ describe('normalizeGitlabMrState', () => {
   it('normalizes MR states', () => {
     expect(normalizeGitlabMrState('opened')).toBe('open')
     expect(normalizeGitlabMrState('merged')).toBe('closed')
+    expect(normalizeGitlabMrState('locked')).toBe('closed')
+    expect(normalizeGitlabMrState('custom')).toBe('custom')
   })
 })
 

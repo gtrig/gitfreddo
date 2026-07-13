@@ -84,4 +84,31 @@ describe('stash ref helpers', () => {
     const commits = [stash, parent]
     expect(resolveStashAnchorHash(stash, commits, 'parent1234567890')).toBe('parent1234567890')
   })
+
+  it('returns null when stash lists are empty or unmatched', () => {
+    expect(resolveStashEntry(makeCommit('x', ['stash@{0}']), undefined)).toBeNull()
+    expect(resolveStashEntry(makeCommit('x', ['main']), [{ index: 0, message: 'a', branch: 'main', hash: 'y' }])).toBeNull()
+    expect(stashRefIndex(makeCommit('x', ['main']))).toBeNull()
+    expect(stashBaseParentHash({ parents: [] })).toBeNull()
+  })
+
+  it('resolves stash anchors from subject and parent prefix fallbacks', () => {
+    const target = makeCommit('abcdef1234567890', [], { subject: 'save work' })
+    const stash = makeCommit('stash1', [], {
+      parents: ['missingparent'],
+      subject: 'WIP on main: abcdef1 save work'
+    })
+    expect(resolveStashAnchorHash(stash, [stash, target], 'abcdef1234567890')).toBe(
+      'abcdef1234567890'
+    )
+
+    const parent = makeCommit('fullhash1234567890', [])
+    const prefixStash = makeCommit('stash2', [], {
+      parents: ['fullhash'],
+      subject: 'WIP on main: ignored'
+    })
+    expect(resolveStashAnchorHash(prefixStash, [prefixStash, parent], null)).toBe(
+      'fullhash1234567890'
+    )
+  })
 })

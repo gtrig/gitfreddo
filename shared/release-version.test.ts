@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  findReleaseTagVersionMismatches,
   normalizeReleaseTag,
   packageVersionMatchesReleaseTag,
   parseReleaseTagsFromPrePush
@@ -58,5 +59,25 @@ describe('parseReleaseTagsFromPrePush', () => {
       'refs/tags/v0.3.5 abc123 refs/tags/v0.3.5 0000000000000000000000000000000000000000'
 
     expect(parseReleaseTagsFromPrePush(input)).toEqual(['v0.3.5'])
+  })
+
+  it('skips malformed lines and non-release tag refs', () => {
+    const input = [
+      '',
+      'refs/tags/v0.3.5',
+      'refs/tags/feature-flag abc123 refs/tags/feature-flag def456',
+      'refs/tags/v0.3.6 0000000000000000000000000000000000000000 refs/tags/v0.3.6 def456'
+    ].join('\n')
+
+    expect(parseReleaseTagsFromPrePush(input)).toEqual([])
+  })
+})
+
+describe('findReleaseTagVersionMismatches', () => {
+  it('returns tags whose semver does not match package.json', () => {
+    expect(findReleaseTagVersionMismatches(['v0.3.5', 'v0.3.0', 'latest'], '0.3.5')).toEqual([
+      'v0.3.0',
+      'latest'
+    ])
   })
 })

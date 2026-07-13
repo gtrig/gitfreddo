@@ -139,6 +139,40 @@ describe('git-runner', () => {
 
     expect(mocks.stripGitTraceLines).toHaveBeenCalled()
     expect(mocks.emitLog).toHaveBeenCalledWith('git', 'debug', expect.stringContaining('commit'), '/repo')
+    expect(mocks.emitLog).toHaveBeenCalledWith('operation', 'info', expect.any(String))
+  })
+
+  it('logs hook failures and execution results on non-zero exit', async () => {
+    mocks.gitCommandMayRunHooks.mockReturnValue(true)
+    mocks.detectGitHookFailure.mockReturnValue({
+      message: 'pre-commit hook failed',
+      details: 'lint errors'
+    })
+    mocks.detectGitHookExecution.mockReturnValue({
+      passed: false,
+      output: 'hook stderr'
+    })
+    mockChild({ exitCode: 1, stderr: 'trace: hook\nfailed\n', stdout: '' })
+
+    const result = await runGit(['commit', '-m', 'test'], { cwd: '/repo' })
+
+    expect(result.code).toBe(1)
+    expect(mocks.emitLog).toHaveBeenCalledWith('app', 'error', 'pre-commit hook failed', 'lint errors')
+    expect(mocks.emitLog).toHaveBeenCalledWith('operation', 'error', expect.any(String), 'hook stderr')
+  })
+
+  it('rejects runCommandOrThrow when exit code is not accepted', async () => {
+    mockChild({ exitCode: 2, stderr: 'fatal: merge failed' })
+    const descriptor = {
+      id: 'merge-tree',
+      subcommand: 'merge-tree',
+      buildArgs: () => ['merge-tree', 'HEAD'],
+      acceptExitCodes: [0, 1] as const
+    }
+
+    await expect(runCommandOrThrow(descriptor, undefined, { cwd: '/repo' })).rejects.toThrow(
+      /merge failed/
+    )
   })
 })
 

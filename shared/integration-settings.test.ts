@@ -96,6 +96,70 @@ describe('preserveIntegrationSettings', () => {
     expect(patch.bitbucketAuthLogin).toBe('user@example.com')
     expect(patch.bitbucketAuthType).toBe('app_password')
   })
+
+  it('keeps github integration fields when a stale form tries to clear them', () => {
+    const patch = preserveIntegrationSettings(
+      baseSettings,
+      {
+        githubLogin: '',
+        githubConnectedAt: null
+      },
+      { hasBitbucketToken: false, hasGitHubToken: true, hasGitlabToken: false }
+    )
+
+    expect(patch.githubLogin).toBe('octo')
+    expect(patch.githubConnectedAt).toBe(1)
+    expect(patch.githubSshKeyTitle).toBe('')
+  })
+
+  it('keeps gitlab integration fields when a stale form tries to clear them', () => {
+    const patch = preserveIntegrationSettings(
+      baseSettings,
+      {
+        gitlabLogin: '',
+        gitlabConnectedAt: null,
+        gitlabAuthType: null
+      },
+      { hasBitbucketToken: false, hasGitHubToken: false, hasGitlabToken: true }
+    )
+
+    expect(patch.gitlabLogin).toBe('gtrig')
+    expect(patch.gitlabConnectedAt).toBe(3)
+    expect(patch.gitlabAuthType).toBe('oauth')
+    expect(patch.gitlabHost).toBe('gitlab.com')
+  })
+
+  it('does not restore integration fields when no token is stored', () => {
+    const patch = preserveIntegrationSettings(
+      baseSettings,
+      {
+        bitbucketLogin: '',
+        githubLogin: '',
+        gitlabLogin: ''
+      },
+      { hasBitbucketToken: false, hasGitHubToken: false, hasGitlabToken: false }
+    )
+
+    expect(patch.bitbucketLogin).toBe('')
+    expect(patch.githubLogin).toBe('')
+    expect(patch.gitlabLogin).toBe('')
+  })
+
+  it('preserves ssh key titles when restoring cleared integrations', () => {
+    const patch = preserveIntegrationSettings(
+      { ...baseSettings, githubSshKeyTitle: 'gh-key', gitlabSshKeyTitle: 'gl-key' },
+      { githubLogin: '', githubConnectedAt: null },
+      { hasBitbucketToken: false, hasGitHubToken: true, hasGitlabToken: false }
+    )
+    expect(patch.githubSshKeyTitle).toBe('gh-key')
+
+    const gitlabPatch = preserveIntegrationSettings(
+      { ...baseSettings, gitlabSshKeyTitle: 'gl-key' },
+      { gitlabLogin: '', gitlabConnectedAt: null, gitlabAuthType: null },
+      { hasBitbucketToken: false, hasGitHubToken: false, hasGitlabToken: true }
+    )
+    expect(gitlabPatch.gitlabSshKeyTitle).toBe('gl-key')
+  })
 })
 
 describe('inferBitbucketAuthType', () => {
@@ -107,5 +171,39 @@ describe('inferBitbucketAuthType', () => {
         bitbucketAuthType: null
       })
     ).toBe('app_password')
+  })
+
+  it('returns explicit oauth or app_password when already set', () => {
+    expect(
+      inferBitbucketAuthType({
+        bitbucketLogin: 'gtrig',
+        bitbucketAuthLogin: null,
+        bitbucketAuthType: 'oauth'
+      })
+    ).toBe('oauth')
+    expect(
+      inferBitbucketAuthType({
+        bitbucketLogin: 'gtrig',
+        bitbucketAuthLogin: null,
+        bitbucketAuthType: 'app_password'
+      })
+    ).toBe('app_password')
+  })
+
+  it('infers app password from bitbucketLogin email and defaults to oauth', () => {
+    expect(
+      inferBitbucketAuthType({
+        bitbucketLogin: 'user@example.com',
+        bitbucketAuthLogin: null,
+        bitbucketAuthType: null
+      })
+    ).toBe('app_password')
+    expect(
+      inferBitbucketAuthType({
+        bitbucketLogin: 'gtrig',
+        bitbucketAuthLogin: null,
+        bitbucketAuthType: null
+      })
+    ).toBe('oauth')
   })
 })

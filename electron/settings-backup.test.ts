@@ -25,11 +25,22 @@ vi.mock('./bitbucket/token-store', () => ({
   saveBitbucketToken: vi.fn()
 }))
 
+vi.mock('./gitlab/token-store', () => ({
+  loadGitlabToken: vi.fn(),
+  saveGitlabToken: vi.fn()
+}))
+
 import { dialog } from 'electron'
 import { loadSettings, saveSettings } from './settings'
 import { loadGitHubToken, saveGitHubToken } from './github/token-store'
 import { loadBitbucketToken, saveBitbucketToken } from './bitbucket/token-store'
-import { buildSettingsBackup, exportSettingsBackup, importSettingsBackup } from './settings-backup'
+import { loadGitlabToken, saveGitlabToken } from './gitlab/token-store'
+import {
+  buildSettingsBackup,
+  exportSettingsBackup,
+  importSettingsBackup,
+  importSettingsBackupFromFile
+} from './settings-backup'
 import type { AppSettings } from '../shared/ipc'
 
 const sampleSettings = {
@@ -86,8 +97,10 @@ describe('settings backup service', () => {
     vi.mocked(loadSettings).mockResolvedValue(sampleSettings)
     vi.mocked(loadGitHubToken).mockResolvedValue('gho_test')
     vi.mocked(loadBitbucketToken).mockResolvedValue(null)
+    vi.mocked(loadGitlabToken).mockResolvedValue(null)
     vi.mocked(saveGitHubToken).mockResolvedValue(undefined)
     vi.mocked(saveBitbucketToken).mockResolvedValue(undefined)
+    vi.mocked(saveGitlabToken).mockResolvedValue(undefined)
   })
 
   afterEach(() => {
@@ -100,6 +113,12 @@ describe('settings backup service', () => {
     expect(backup.settings).toEqual(sampleSettings)
     expect(backup.appVersion).toBe('1.0.0')
     expect(backup.secrets).toEqual({ githubToken: 'gho_test' })
+  })
+
+  it('includes gitlab tokens in backup secrets when present', async () => {
+    vi.mocked(loadGitlabToken).mockResolvedValue('gl_test')
+    const backup = await buildSettingsBackup(sampleSettings, '1.0.0')
+    expect(backup.secrets).toEqual({ githubToken: 'gho_test', gitlabToken: 'gl_test' })
   })
 
   it('exports a backup file when the save dialog succeeds', async () => {
@@ -154,6 +173,35 @@ describe('settings backup service', () => {
     expect(saveSettings).toHaveBeenCalledWith({ ...sampleSettings, theme: 'iced-latte', locale: 'el' })
     expect(saveGitHubToken).toHaveBeenCalledWith('gho_restore')
     expect(saveBitbucketToken).toHaveBeenCalledWith('bb_restore')
+    expect(saveGitlabToken).not.toHaveBeenCalled()
+  })
+
+  it('returns null when import is cancelled', async () => {
+    vi.mocked(dialog.showOpenDialog).mockResolvedValue({
+      canceled: true,
+      filePaths: []
+    })
+    await expect(importSettingsBackup()).resolves.toBeNull()
+  })
+
+  it('imports directly from a provided file path', async () => {
+    const importPath = join(settingsDir, 'direct.json')
+    await writeFile(
+      importPath,
+      JSON.stringify({
+        formatVersion: 1,
+        exportedAt: '2026-07-08T08:00:00.000Z',
+        settings: { ...sampleSettings, locale: 'fr' },
+        secrets: { gitlabToken: 'gl_restore' }
+      }),
+      'utf8'
+    )
+    vi.mocked(loadSettings).mockResolvedValue({ ...sampleSettings, locale: 'fr' })
+    vi.mocked(saveSettings).mockResolvedValue({ ...sampleSettings, locale: 'fr' })
+
+    const restored = await importSettingsBackupFromFile(importPath)
+    expect(restored.locale).toBe('fr')
+    expect(saveGitlabToken).toHaveBeenCalledWith('gl_restore')
   })
 
   it('throws when import file is invalid', async () => {
