@@ -54,6 +54,10 @@ Test helpers: `src/test/setup.ts`, `src/test/mocks/gitfreddo.ts`, `src/test/rend
 - E2E: use `page.evaluate()` for IPC — avoid native file dialogs.
 - Git fixture repo: `test/fixtures/minimal-repo/`.
 
+### Coverage buffer
+
+Vitest enforces minimum thresholds in `vitest.config.ts` (`coverage.thresholds`). **Keep measured coverage at least 0.5 percentage points above each enforced threshold** — e.g. a 95% lines floor means the suite should stay at ≥95.5% lines. Check the `Coverage summary` from `npm run test:coverage` (global and per-glob: `src/lib/**`, `shared/**`, `electron/**`). When adding code or refactoring without tests, or when coverage drifts toward the floor, add or extend co-located tests until the buffer is restored.
+
 ### Before finishing a task
 
 Do not mark work complete until CI would pass. Run the checks below yourself — do not assume green without executing them.
