@@ -85,7 +85,8 @@ describe('loadDotEnvFile', () => {
   })
 
   it('ignores missing or unreadable .env files', () => {
-    tempDir = mkdtempSync(join(tmpdir(), 'gitfreddo-dotenv-'))
-    expect(() => loadDotEnvFile(tempDir)).not.toThrow()
+    const dir = mkdtempSync(join(tmpdir(), 'gitfreddo-dotenv-'))
+    tempDir = dir
+    expect(() => loadDotEnvFile(dir)).not.toThrow()
   })
 })

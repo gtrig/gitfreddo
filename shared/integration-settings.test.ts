@@ -177,14 +177,14 @@ describe('inferBitbucketAuthType', () => {
     expect(
       inferBitbucketAuthType({
         bitbucketLogin: 'gtrig',
-        bitbucketAuthLogin: null,
+        bitbucketAuthLogin: '',
         bitbucketAuthType: 'oauth'
       })
     ).toBe('oauth')
     expect(
       inferBitbucketAuthType({
         bitbucketLogin: 'gtrig',
-        bitbucketAuthLogin: null,
+        bitbucketAuthLogin: '',
         bitbucketAuthType: 'app_password'
       })
     ).toBe('app_password')
@@ -194,14 +194,14 @@ describe('inferBitbucketAuthType', () => {
     expect(
       inferBitbucketAuthType({
         bitbucketLogin: 'user@example.com',
-        bitbucketAuthLogin: null,
+        bitbucketAuthLogin: '',
         bitbucketAuthType: null
       })
     ).toBe('app_password')
     expect(
       inferBitbucketAuthType({
         bitbucketLogin: 'gtrig',
-        bitbucketAuthLogin: null,
+        bitbucketAuthLogin: '',
         bitbucketAuthType: null
       })
     ).toBe('oauth')

@@ -191,16 +191,16 @@ describe('settings backup service', () => {
       JSON.stringify({
         formatVersion: 1,
         exportedAt: '2026-07-08T08:00:00.000Z',
-        settings: { ...sampleSettings, locale: 'fr' },
+        settings: { ...sampleSettings, locale: 'el' },
         secrets: { gitlabToken: 'gl_restore' }
       }),
       'utf8'
     )
-    vi.mocked(loadSettings).mockResolvedValue({ ...sampleSettings, locale: 'fr' })
-    vi.mocked(saveSettings).mockResolvedValue({ ...sampleSettings, locale: 'fr' })
+    vi.mocked(loadSettings).mockResolvedValue({ ...sampleSettings, locale: 'el' })
+    vi.mocked(saveSettings).mockResolvedValue({ ...sampleSettings, locale: 'el' })
 
     const restored = await importSettingsBackupFromFile(importPath)
-    expect(restored.locale).toBe('fr')
+    expect(restored.locale).toBe('el')
     expect(saveGitlabToken).toHaveBeenCalledWith('gl_restore')
   })
 

@@ -27,7 +27,7 @@ describe('bisect operations', () => {
   })
 
   it('reports inactive when BISECT_LOG is missing', async () => {
-    vi.mocked(readGitMetadataFile).mockResolvedValue(null)
+    vi.mocked(readGitMetadataFile).mockResolvedValue(undefined)
 
     await expect(bisectStatus('/repo', 'git')).resolves.toEqual({ active: false })
   })

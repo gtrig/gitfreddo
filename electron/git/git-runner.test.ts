@@ -1,12 +1,13 @@
 import { EventEmitter } from 'node:events'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { GitHookExecution, GitHookFailure } from './hook-failure'
 
 const mocks = vi.hoisted(() => ({
   spawnMock: vi.fn(),
   emitLog: vi.fn(),
   buildGitEnv: vi.fn(async () => ({})),
-  detectGitHookFailure: vi.fn(() => null),
-  detectGitHookExecution: vi.fn(() => null),
+  detectGitHookFailure: vi.fn<() => GitHookFailure | null>(() => null),
+  detectGitHookExecution: vi.fn<() => GitHookExecution | null>(() => null),
   formatHookResultLogMessage: vi.fn(() => 'hook ran'),
   gitCommandMayRunHooks: vi.fn(() => false),
   stripGitTraceLines: vi.fn((value: string) => value)
@@ -145,10 +146,12 @@ describe('git-runner', () => {
   it('logs hook failures and execution results on non-zero exit', async () => {
     mocks.gitCommandMayRunHooks.mockReturnValue(true)
     mocks.detectGitHookFailure.mockReturnValue({
+      hookName: 'pre-commit',
       message: 'pre-commit hook failed',
       details: 'lint errors'
     })
     mocks.detectGitHookExecution.mockReturnValue({
+      hookName: 'pre-commit',
       passed: false,
       output: 'hook stderr'
     })

@@ -27,13 +27,12 @@ describe('invalidateRepoChange', () => {
 
     expect(invalidateSpy).toHaveBeenCalled()
     const predicateCall = invalidateSpy.mock.calls.find(([options]) => options?.predicate)?.[0]
-    expect(predicateCall?.predicate).toBeTypeOf('function')
-    expect(
-      predicateCall?.predicate?.({ queryKey: ['repo', '/repo', 'diff.working'] } as Query)
-    ).toBe(true)
-    expect(
-      predicateCall?.predicate?.({ queryKey: ['repo', '/other', 'diff.file'] } as Query)
-    ).toBe(false)
+    const predicate = predicateCall?.predicate
+    expect(predicate).toBeTypeOf('function')
+    const asQuery = (queryKey: readonly unknown[]): Query =>
+      ({ queryKey }) as unknown as Query
+    expect(predicate?.(asQuery(['repo', '/repo', 'diff.working']))).toBe(true)
+    expect(predicate?.(asQuery(['repo', '/other', 'diff.file']))).toBe(false)
   })
 })
 
