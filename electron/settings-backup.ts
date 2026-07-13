@@ -9,6 +9,7 @@ import type { AppSettings } from '../shared/ipc'
 import { loadSettings, saveSettings } from './settings'
 import { loadGitHubToken, saveGitHubToken } from './github/token-store'
 import { loadBitbucketToken, saveBitbucketToken } from './bitbucket/token-store'
+import { loadGitlabToken, saveGitlabToken } from './gitlab/token-store'
 
 function defaultBackupFilename(): string {
   const date = new Date().toISOString().slice(0, 10)
@@ -21,11 +22,13 @@ export async function buildSettingsBackup(
 ): Promise<SettingsBackupFile> {
   const githubToken = await loadGitHubToken()
   const bitbucketToken = await loadBitbucketToken()
+  const gitlabToken = await loadGitlabToken()
   const secrets =
-    githubToken || bitbucketToken
+    githubToken || bitbucketToken || gitlabToken
       ? {
           ...(githubToken ? { githubToken } : {}),
-          ...(bitbucketToken ? { bitbucketToken } : {})
+          ...(bitbucketToken ? { bitbucketToken } : {}),
+          ...(gitlabToken ? { gitlabToken } : {})
         }
       : undefined
 
@@ -68,6 +71,10 @@ async function restoreIntegrationTokens(secrets: SettingsBackupFile['secrets']):
 
   if (secrets.bitbucketToken) {
     await saveBitbucketToken(secrets.bitbucketToken)
+  }
+
+  if (secrets.gitlabToken) {
+    await saveGitlabToken(secrets.gitlabToken)
   }
 }
 

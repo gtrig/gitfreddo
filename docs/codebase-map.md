@@ -48,6 +48,8 @@ flowchart TB
 | Working tree | `src/components/WorkingTree/` | Stage/commit UI |
 | Merge conflicts | `src/components/MergeConflicts/` | Full-screen conflict flow |
 | GitHub UI | `src/components/GitHub/` | PR creation, repo picker |
+| GitLab UI | `src/components/GitLab/` | MR creation, repo picker |
+| Bitbucket UI | `src/components/Bitbucket/` | PR creation, repo picker |
 | In-app help | `src/components/Help/` | Docs modal, markdown viewer |
 | Settings | `src/components/Settings/` | Settings modal and panels |
 | UI primitives | `src/components/Ui/` | Modal, Spinner, overlays |
@@ -98,6 +100,8 @@ Root-level: `types.ts`, `themes.ts`, `clipboard.ts`.
 | Git runner | `electron/git/git-runner.ts` | Spawns `git` subprocess |
 | Operations | `electron/git/operations/` | One module per git domain |
 | GitHub | `electron/github/` | OAuth, API client, token store |
+| GitLab | `electron/gitlab/` | OAuth, API client, token store |
+| Bitbucket | `electron/bitbucket/` | OAuth, API client, token store |
 | LLM | `electron/llm/` | AI fill and conflict assist |
 | Settings | `electron/settings.ts` | App settings persistence |
 
@@ -127,6 +131,8 @@ Root-level: `types.ts`, `themes.ts`, `clipboard.ts`.
 | `ipc.ts` | IPC method types, app settings, menu actions |
 | `git.ts` | URL parsing helpers |
 | `github.ts` | GitHub API types |
+| `gitlab.ts` | GitLab API types |
+| `bitbucket.ts` | Bitbucket API types |
 | `gitLog.ts` | Log/graph shared types |
 | `ai.ts` | AI fill and conflict proposal types |
 | `themes/` | Theme definitions and colors |

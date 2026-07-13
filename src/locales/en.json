@@ -58,7 +58,8 @@
       "cloneTab": {
         "url": "URL",
         "github": "GitHub",
-        "bitbucket": "Bitbucket"
+        "bitbucket": "Bitbucket",
+        "gitlab": "GitLab"
       },
       "createGithub": {
         "title": "Create on GitHub",
@@ -67,6 +68,10 @@
       "createBitbucket": {
         "title": "Create on Bitbucket",
         "description": "Create a new repository on Bitbucket and clone it locally."
+      },
+      "createGitlab": {
+        "title": "Create on GitLab",
+        "description": "Create a new repository on GitLab and clone it locally."
       },
       "recent": "Recent",
       "filter": "Filter recent repositories…",
@@ -284,6 +289,34 @@
       "sshKeyMissing": "No GitFreddo SSH key found on this account.",
       "sshKeyUploaded": "SSH: {{title}}"
     },
+    "gitlab": {
+      "title": "GitLab",
+      "description": "Connect GitLab (or a self-managed instance) to browse repositories, open merge requests, and manage remotes.",
+      "connected": "Connected",
+      "notConnected": "Not connected",
+      "signedInAs": "Signed in as @{{login}}",
+      "noAccount": "No GitLab account connected.",
+      "oauth": "OAuth",
+      "token": "Token",
+      "host": "Host (self-managed)",
+      "hostPlaceholder": "gitlab.com",
+      "patPlaceholder": "glpat-…",
+      "tokenHint": "OAuth opens your browser for sign-in. Personal access tokens need api scope and are stored only on this machine. Set a host to connect to a self-managed GitLab instance.",
+      "waitingAuth": "Waiting for authorization in your browser…",
+      "exchangingToken": "Exchanging authorization code…",
+      "startingAuth": "Starting GitLab authorization…",
+      "connectWithGitlab": "Connect with GitLab",
+      "connectWithToken": "Connect with token",
+      "connecting": "Connecting…",
+      "disconnect": "Disconnect",
+      "disconnecting": "Disconnecting…",
+      "uploadSshKey": "Upload SSH key",
+      "uploading": "Uploading…",
+      "sshKeyActive": "SSH key active",
+      "sshKeyIdentifier": "{{title}}",
+      "sshKeyMissing": "No GitFreddo SSH key found on this account.",
+      "sshKeyUploaded": "SSH: {{title}}"
+    },
     "maintenance": {
       "updates": "Application updates",
       "updatesDesc": "GitFreddo checks GitHub Releases for new versions when the app starts.",
@@ -435,9 +468,11 @@
     "openRepoForPr": "Open a repository to view pull requests.",
     "connectGitHub": "Connect GitHub in Settings → Integrations.",
     "connectBitbucket": "Connect Bitbucket in Settings → Integrations.",
-    "connectForge": "Connect GitHub or Bitbucket in Settings → Integrations.",
+    "connectGitlab": "Connect GitLab in Settings → Integrations.",
+    "connectForge": "Connect GitHub, Bitbucket, or GitLab in Settings → Integrations.",
     "notLinkedGitHub": "This repository is not linked to GitHub.",
     "notLinkedBitbucket": "This repository is not linked to Bitbucket.",
+    "notLinkedGitlab": "This repository is not linked to GitLab.",
     "notLinkedForge": "This repository is not linked to a supported forge.",
     "noOpenPullRequests": "No open pull requests.",
     "prMerged": "PR #{{number}} merged",
@@ -1231,6 +1266,56 @@
       "private": "Private"
     }
   },
+  "gitlab": {
+    "fork": {
+      "title": "Fork repository",
+      "description": "Create a fork under your GitLab account, then clone it locally.",
+      "namespace": "Namespace",
+      "repo": "Repository",
+      "action": "Fork",
+      "success": "Repository forked.",
+      "missingFields": "Enter namespace and repository name.",
+      "connectFirst": "Connect GitLab in Settings → Integrations to fork repositories.",
+      "forkToAccount": "Fork to my account…"
+    },
+    "issue": {
+      "editTitle": "Edit issue #{{number}}",
+      "titleRequired": "Issue title is required.",
+      "updated": "Issue updated.",
+      "close": "Close issue",
+      "reopen": "Reopen issue",
+      "edit": "Edit issue…"
+    },
+    "pr": {
+      "createTitle": "Create merge request",
+      "description": "Description",
+      "head": "Source",
+      "base": "Target",
+      "fillWithAi": "Fill with AI",
+      "squash": "Squash",
+      "rebase": "Rebase"
+    },
+    "repo": {
+      "namespace": "Namespace",
+      "connectFirst": "Connect GitLab in Settings → Integrations to create repositories.",
+      "name": "Repository name",
+      "namePlaceholder": "my-new-repo",
+      "descriptionOptional": "Description (optional)",
+      "descriptionPlaceholder": "Short description",
+      "nameRequired": "Namespace and repository name are required",
+      "create": "Create repository",
+      "public": "Public",
+      "private": "Private"
+    },
+    "repoPicker": {
+      "connectFirst": "Connect GitLab in Settings → Integrations to browse repositories.",
+      "searchPlaceholder": "Search repositories…",
+      "loading": "Loading repositories…",
+      "empty": "No repositories found.",
+      "public": "Public",
+      "private": "Private"
+    }
+  },
   "contextMenu": {
     "detachedHead": "detached HEAD",
     "currentBranch": "current branch",
@@ -1358,6 +1443,7 @@
       "copyTagName": "Copy tag name",
       "openOnGitHub": "Open on GitHub",
       "openOnBitbucket": "Open on Bitbucket",
+      "openOnGitlab": "Open on GitLab",
       "copyLink": "Copy link",
       "mergeCommit": "Merge commit",
       "squashAndMerge": "Squash and merge",
@@ -1442,6 +1528,11 @@
     "bitbucket": {
       "connected": "Connected to Bitbucket as @{{login}}",
       "disconnected": "Disconnected from Bitbucket",
+      "sshKeyUploaded": "SSH key uploaded: {{title}}"
+    },
+    "gitlab": {
+      "connected": "Connected to GitLab as @{{login}}",
+      "disconnected": "Disconnected from GitLab",
       "sshKeyUploaded": "SSH key uploaded: {{title}}"
     },
     "maintenance": {

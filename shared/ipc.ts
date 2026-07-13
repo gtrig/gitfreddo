@@ -55,6 +55,11 @@ export interface AppSettings {
   bitbucketConnectedAt: number | null
   bitbucketAuthType: import('./bitbucket').BitbucketAuthType | null
   bitbucketSshKeyTitle: string
+  gitlabLogin: string
+  gitlabConnectedAt: number | null
+  gitlabAuthType: import('./gitlab').GitlabAuthType | null
+  gitlabSshKeyTitle: string
+  gitlabHost: string
   pullRebase: boolean
   submoduleRecursion: SubmoduleRecursion
   pushSubmoduleRecursion: PushSubmoduleRecursion
@@ -80,6 +85,15 @@ export interface BitbucketStatus {
   avatarUrl: string | null
   authType: import('./bitbucket').BitbucketAuthType | null
   sshKeyTitle: string | null
+}
+
+export interface GitlabStatus {
+  connected: boolean
+  login: string | null
+  avatarUrl: string | null
+  authType: import('./gitlab').GitlabAuthType | null
+  sshKeyTitle: string | null
+  host: string
 }
 
 export type BitbucketAuthSettings = Pick<
@@ -281,6 +295,50 @@ export interface GitFreddoAPI {
   ) => Promise<import('./bitbucket').BitbucketIssue>
   onBitbucketConnectProgress: (
     callback: (progress: import('./bitbucket').BitbucketConnectProgress) => void
+  ) => () => void
+  gitlabGetStatus: () => Promise<GitlabStatus>
+  gitlabConnect: () => Promise<GitlabStatus>
+  gitlabConnectPat: (token: string, host?: string) => Promise<GitlabStatus>
+  gitlabDisconnect: () => Promise<void>
+  gitlabListRepos: (
+    params?: import('./gitlab').GitlabListReposParams
+  ) => Promise<import('./gitlab').GitlabRepo[]>
+  gitlabListNamespaces: () => Promise<string[]>
+  gitlabCreateRepo: (
+    params: import('./gitlab').GitlabCreateRepoParams
+  ) => Promise<import('./gitlab').GitlabRepo>
+  gitlabForkRepo: (namespace: string, repo: string) => Promise<import('./gitlab').GitlabRepo>
+  gitlabUploadSshKey: (title: string) => Promise<{ title: string; publicKey: string }>
+  gitlabGetRepoContext: (
+    repoPath: string
+  ) => Promise<import('./gitlab').GitlabRepoContext | null>
+  gitlabListPullRequests: (
+    repoPath: string
+  ) => Promise<import('./gitlab').GitlabMergeRequest[]>
+  gitlabCreatePullRequest: (
+    repoPath: string,
+    params: import('./gitlab').GitlabCreateMergeRequestParams
+  ) => Promise<import('./gitlab').GitlabMergeRequest>
+  gitlabMergePullRequest: (
+    repoPath: string,
+    number: number,
+    method: import('./gitlab').GitlabMergeMethod
+  ) => Promise<void>
+  gitlabListIssues: (
+    repoPath: string,
+    assigneeLogin?: string
+  ) => Promise<import('./gitlab').GitlabIssue[]>
+  gitlabCreateIssue: (
+    repoPath: string,
+    params: { title: string; body?: string; labels?: string[] }
+  ) => Promise<import('./gitlab').GitlabIssue>
+  gitlabUpdateIssue: (
+    repoPath: string,
+    number: number,
+    params: { title?: string; body?: string; state?: 'open' | 'closed' }
+  ) => Promise<import('./gitlab').GitlabIssue>
+  onGitlabConnectProgress: (
+    callback: (progress: import('./gitlab').GitlabConnectProgress) => void
   ) => () => void
   onMenuAction: (callback: (action: MenuAction) => void) => () => void
   onLogEntry: (callback: (entry: LogEntry) => void) => () => void

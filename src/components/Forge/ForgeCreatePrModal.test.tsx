@@ -20,8 +20,18 @@ describe('ForgeCreatePrModal', () => {
     })
     window.gitfreddo = createGitFreddoMock()
   })
-  it('renders dialog', () => {
+  it('renders the GitHub dialog', () => {
     renderWithProviders(<ForgeCreatePrModal provider="github" open onClose={vi.fn()} defaultHead="feature" defaultBase="main" onSubmit={vi.fn()} />)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+  })
+
+  it('renders the Bitbucket dialog', () => {
+    renderWithProviders(<ForgeCreatePrModal provider="bitbucket" open onClose={vi.fn()} defaultHead="feature" defaultBase="main" onSubmit={vi.fn()} />)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+  })
+
+  it('renders the GitLab dialog', () => {
+    renderWithProviders(<ForgeCreatePrModal provider="gitlab" open onClose={vi.fn()} defaultHead="feature" defaultBase="main" onSubmit={vi.fn()} />)
     expect(screen.getByRole('dialog')).toBeInTheDocument()
   })
 })

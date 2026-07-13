@@ -2,12 +2,14 @@ import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { EditIssueModal as BitbucketEditIssueModal } from '@/components/Bitbucket/EditIssueModal'
 import { EditIssueModal as GitHubEditIssueModal } from '@/components/GitHub/EditIssueModal'
+import { EditIssueModal as GitlabEditIssueModal } from '@/components/GitLab/EditIssueModal'
 import { SidebarSection } from '@/components/Layout/sidebar/SidebarSection'
 import { SidebarIconIssues } from '@/components/Layout/sidebar/SidebarIcons'
 import { SidebarTreeRow } from '@/components/Layout/sidebar/SidebarTreeRow'
 import { ActionButton, Modal } from '@/components/Ui/Modal'
 import { ContextMenu } from '@/components/Ui/ContextMenu'
 import { useBitbucketIssues, useInvalidateBitbucketIssues } from '@/hooks/useBitbucketIssues'
+import { useGitlabIssues, useInvalidateGitlabIssues } from '@/hooks/useGitlabIssues'
 import { useForgeContext, forgeConnectKey, forgeNotLinkedKey } from '@/hooks/useForgeContext'
 import { useGitHubIssues, useInvalidateGitHubIssues } from '@/hooks/useGitHubIssues'
 import { useGitMutations } from '@/hooks/useGitMutations'
@@ -20,9 +22,10 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { COMPACT_ROW_HEIGHT, VIRTUAL_OVERSCAN, shouldVirtualize } from '@/lib/ui/virtualList'
 import type { BitbucketIssue } from '@shared/bitbucket'
 import type { GitHubIssue } from '@shared/github'
+import type { GitlabIssue } from '@shared/gitlab'
 
 const FILTER_IDS = ['all', 'mine'] as const
-type ForgeIssue = GitHubIssue | BitbucketIssue
+type ForgeIssue = GitHubIssue | BitbucketIssue | GitlabIssue
 
 export function SidebarIssuesSection() {
   const { t } = useTranslation()
@@ -42,8 +45,14 @@ export function SidebarIssuesSection() {
     assignee,
     connected && forge.provider === 'bitbucket'
   )
+  const { data: glIssues, isLoading: glLoading, error: glError } = useGitlabIssues(
+    repoPath,
+    assignee,
+    connected && forge.provider === 'gitlab'
+  )
   const invalidateGitHub = useInvalidateGitHubIssues()
   const invalidateBitbucket = useInvalidateBitbucketIssues()
+  const invalidateGitlab = useInvalidateGitlabIssues()
   const { createBranch } = useGitMutations()
   const show = useToastStore((s) => s.show)
   const [createOpen, setCreateOpen] = useState(false)
@@ -56,11 +65,15 @@ export function SidebarIssuesSection() {
   const issues: ForgeIssue[] =
     forge.provider === 'bitbucket'
       ? (bbIssues ?? [])
-      : forge.provider === 'github'
-        ? (ghIssues ?? [])
-        : []
-  const isLoading = forge.provider === 'bitbucket' ? bbLoading : ghLoading
-  const error = forge.provider === 'bitbucket' ? bbError : ghError
+      : forge.provider === 'gitlab'
+        ? (glIssues ?? [])
+        : forge.provider === 'github'
+          ? (ghIssues ?? [])
+          : []
+  const isLoading =
+    forge.provider === 'bitbucket' ? bbLoading : forge.provider === 'gitlab' ? glLoading : ghLoading
+  const error =
+    forge.provider === 'bitbucket' ? bbError : forge.provider === 'gitlab' ? glError : ghError
   const count = canUseForge ? issues.length : 0
   const issuesScrollRef = useRef<HTMLDivElement>(null)
   const useVirtualization = shouldVirtualize(issues.length)
@@ -77,6 +90,9 @@ export function SidebarIssuesSection() {
     if (forge.provider === 'bitbucket') {
       await window.gitfreddo.bitbucketCreateIssue(repoPath, { title: title.trim(), body })
       await invalidateBitbucket(repoPath)
+    } else if (forge.provider === 'gitlab') {
+      await window.gitfreddo.gitlabCreateIssue(repoPath, { title: title.trim(), body })
+      await invalidateGitlab(repoPath)
     } else {
       await window.gitfreddo.githubCreateIssue(repoPath, { title: title.trim(), body })
       await invalidateGitHub(repoPath)
@@ -99,6 +115,10 @@ export function SidebarIssuesSection() {
       await window.gitfreddo.bitbucketUpdateIssue(repoPath, issue.number, { state })
       await invalidateBitbucket(repoPath)
       show(t('bitbucket.issue.updated'), 'success')
+    } else if (forge.provider === 'gitlab') {
+      await window.gitfreddo.gitlabUpdateIssue(repoPath, issue.number, { state })
+      await invalidateGitlab(repoPath)
+      show(t('gitlab.issue.updated'), 'success')
     } else {
       await window.gitfreddo.githubUpdateIssue(repoPath, issue.number, { state })
       await invalidateGitHub(repoPath)
@@ -278,6 +298,15 @@ export function SidebarIssuesSection() {
           repoPath={repoPath}
           onClose={() => setEditIssue(null)}
           onUpdated={() => invalidateBitbucket(repoPath)}
+        />
+      )}
+      {editIssue && repoPath && forge.provider === 'gitlab' && (
+        <GitlabEditIssueModal
+          open
+          issue={editIssue as GitlabIssue}
+          repoPath={repoPath}
+          onClose={() => setEditIssue(null)}
+          onUpdated={() => invalidateGitlab(repoPath)}
         />
       )}
     </>

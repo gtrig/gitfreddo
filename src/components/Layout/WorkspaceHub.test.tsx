@@ -45,6 +45,26 @@ vi.mock('@/components/Bitbucket/RepoPicker', () => ({
   )
 }))
 
+vi.mock('@/components/GitLab/RepoPicker', () => ({
+  RepoPicker: ({
+    onSelect
+  }: {
+    onSelect: (repo: { fullName: string; cloneUrl: string }) => void
+  }) => (
+    <button
+      type="button"
+      onClick={() =>
+        onSelect({
+          fullName: 'group/repo',
+          cloneUrl: 'https://gitlab.com/group/repo.git'
+        })
+      }
+    >
+      Pick GitLab repo
+    </button>
+  )
+}))
+
 vi.mock('@/components/GitHub/CreateGitHubRepoModal', () => ({
   CreateGitHubRepoModal: ({ open }: { open: boolean }) =>
     open ? <div role="dialog">Create GitHub repo</div> : null
@@ -53,6 +73,11 @@ vi.mock('@/components/GitHub/CreateGitHubRepoModal', () => ({
 vi.mock('@/components/Bitbucket/CreateBitbucketRepoModal', () => ({
   CreateBitbucketRepoModal: ({ open }: { open: boolean }) =>
     open ? <div role="dialog">Create Bitbucket repo</div> : null
+}))
+
+vi.mock('@/components/GitLab/CreateGitlabRepoModal', () => ({
+  CreateGitlabRepoModal: ({ open }: { open: boolean }) =>
+    open ? <div role="dialog">Create GitLab repo</div> : null
 }))
 
 vi.mock('@/components/GitHub/ForkGitHubRepoModal', () => ({
@@ -88,6 +113,24 @@ vi.mock('@/components/Bitbucket/ForkBitbucketRepoModal', () => ({
           type="button"
           onClick={() => onForked({ cloneUrl: 'https://bitbucket.org/me/fork.git' })}
         >
+          Fork
+        </button>
+      </div>
+    ) : null
+}))
+
+vi.mock('@/components/GitLab/ForkGitlabRepoModal', () => ({
+  ForkGitlabRepoModal: ({
+    open,
+    onForked
+  }: {
+    open: boolean
+    onForked: (repo: { cloneUrl: string }) => void
+  }) =>
+    open ? (
+      <div role="dialog">
+        Fork GitLab repo
+        <button type="button" onClick={() => onForked({ cloneUrl: 'https://gitlab.com/me/fork.git' })}>
           Fork
         </button>
       </div>
@@ -412,5 +455,50 @@ describe('WorkspaceHub', () => {
     await userEvent.click(screen.getByRole('button', { name: /^github$/i }))
     await userEvent.click(screen.getByRole('button', { name: /^clone$/i }))
     expect(screen.getByText(/select a repository/i)).toBeInTheDocument()
+  })
+
+  it('opens create-on-GitLab modal from the hub', async () => {
+    renderWithProviders(<WorkspaceHub variant="page" onOpen={vi.fn()} />)
+
+    await userEvent.click(screen.getByRole('button', { name: /create on gitlab/i }))
+    expect(screen.getByText('Create GitLab repo')).toBeInTheDocument()
+  })
+
+  it('clones from the GitLab picker tab', async () => {
+    const onOpen = vi.fn(async () => undefined)
+    renderWithProviders(<WorkspaceHub variant="page" onOpen={onOpen} />)
+
+    await userEvent.click(screen.getAllByText('Clone a repository')[0]!)
+    await userEvent.click(screen.getByRole('button', { name: /^gitlab$/i }))
+    await userEvent.click(screen.getByRole('button', { name: /pick gitlab repo/i }))
+    await userEvent.click(screen.getByRole('button', { name: /^clone$/i }))
+
+    await waitFor(() => {
+      expect(window.gitfreddo.cloneRepository).toHaveBeenCalledWith(
+        'https://gitlab.com/group/repo.git',
+        '/tmp'
+      )
+    })
+  })
+
+  it('opens create repo modal from clone GitLab tab', async () => {
+    renderWithProviders(<WorkspaceHub variant="page" onOpen={vi.fn()} />)
+    await userEvent.click(screen.getAllByText('Clone a repository')[0]!)
+    await userEvent.click(screen.getByRole('button', { name: /^gitlab$/i }))
+    await userEvent.click(screen.getByRole('button', { name: /create new repository/i }))
+    expect(screen.getByText('Create GitLab repo')).toBeInTheDocument()
+  })
+
+  it('opens fork dialog for GitLab URLs', async () => {
+    renderWithProviders(<WorkspaceHub variant="page" onOpen={vi.fn()} />)
+    await userEvent.click(screen.getAllByText('Clone a repository')[0]!)
+    await userEvent.type(
+      screen.getByLabelText(/repository url/i),
+      'https://gitlab.com/group/demo.git'
+    )
+    await userEvent.click(screen.getByRole('button', { name: /fork to my account/i }))
+    expect(screen.getByText('Fork GitLab repo')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /^fork$/i }))
+    expect(screen.getByLabelText(/repository url/i)).toHaveValue('https://gitlab.com/me/fork.git')
   })
 })

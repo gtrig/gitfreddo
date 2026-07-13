@@ -1,17 +1,21 @@
 import { useMemo } from 'react'
 import { useBitbucketRepoContext } from '@/hooks/useBitbucketRepos'
 import { useBitbucketStatus } from '@/hooks/useBitbucketStatus'
+import { useGitlabRepoContext } from '@/hooks/useGitlabRepos'
+import { useGitlabStatus } from '@/hooks/useGitlabStatus'
 import { useRemotes } from '@/hooks/useGit'
 import { useGitHubRepoContext } from '@/hooks/useGitHubRepos'
 import { useGitHubStatus } from '@/hooks/useGitHubStatus'
 import { detectForgeFromRemote } from '@/lib/forge/detect'
 import type { BitbucketRepoContext } from '@shared/bitbucket'
 import type { GitHubRepoContext } from '@shared/github'
+import type { GitlabRepoContext } from '@shared/gitlab'
 import type { ForgeProvider } from '@/lib/forge/detect'
 
 export type ForgeContext =
   | { provider: 'github'; ctx: GitHubRepoContext; connected: boolean; login: string | null }
   | { provider: 'bitbucket'; ctx: BitbucketRepoContext; connected: boolean; login: string | null }
+  | { provider: 'gitlab'; ctx: GitlabRepoContext; connected: boolean; login: string | null }
   | {
       provider: ForgeProvider | null
       ctx: null
@@ -23,8 +27,10 @@ export type ForgeContext =
 export function useForgeContext(repoPath: string | null, workspaceConnected: boolean): ForgeContext {
   const { data: ghStatus } = useGitHubStatus()
   const { data: bbStatus } = useBitbucketStatus()
+  const { data: glStatus } = useGitlabStatus()
   const { data: ghCtx } = useGitHubRepoContext(repoPath, workspaceConnected)
   const { data: bbCtx } = useBitbucketRepoContext(repoPath, workspaceConnected)
+  const { data: glCtx } = useGitlabRepoContext(repoPath, workspaceConnected)
   const { data: remotes } = useRemotes(workspaceConnected)
 
   const expectedProvider = useMemo(() => {
@@ -44,6 +50,14 @@ export function useForgeContext(repoPath: string | null, workspaceConnected: boo
         login: bbStatus?.login ?? null
       }
     }
+    if (glCtx) {
+      return {
+        provider: 'gitlab' as const,
+        ctx: glCtx,
+        connected: Boolean(glStatus?.connected),
+        login: glStatus?.login ?? null
+      }
+    }
     if (ghCtx) {
       return {
         provider: 'github' as const,
@@ -56,21 +70,28 @@ export function useForgeContext(repoPath: string | null, workspaceConnected: boo
     const connected =
       provider === 'bitbucket'
         ? Boolean(bbStatus?.connected)
-        : provider === 'github'
-          ? Boolean(ghStatus?.connected)
-          : false
+        : provider === 'gitlab'
+          ? Boolean(glStatus?.connected)
+          : provider === 'github'
+            ? Boolean(ghStatus?.connected)
+            : false
     const login =
       provider === 'bitbucket'
         ? (bbStatus?.login ?? null)
-        : provider === 'github'
-          ? (ghStatus?.login ?? null)
-          : null
+        : provider === 'gitlab'
+          ? (glStatus?.login ?? null)
+          : provider === 'github'
+            ? (ghStatus?.login ?? null)
+            : null
     return { provider: null, ctx: null, connected, login, expectedProvider: provider }
   }, [
     bbCtx,
+    glCtx,
     ghCtx,
     bbStatus?.connected,
     bbStatus?.login,
+    glStatus?.connected,
+    glStatus?.login,
     ghStatus?.connected,
     ghStatus?.login,
     expectedProvider
@@ -79,17 +100,20 @@ export function useForgeContext(repoPath: string | null, workspaceConnected: boo
 
 export function forgeConnectKey(provider: ForgeProvider | null): string {
   if (provider === 'bitbucket') return 'sidebar.connectBitbucket'
+  if (provider === 'gitlab') return 'sidebar.connectGitlab'
   if (provider === 'github') return 'sidebar.connectGitHub'
   return 'sidebar.connectForge'
 }
 
 export function forgeNotLinkedKey(provider: ForgeProvider | null): string {
   if (provider === 'bitbucket') return 'sidebar.notLinkedBitbucket'
+  if (provider === 'gitlab') return 'sidebar.notLinkedGitlab'
   if (provider === 'github') return 'sidebar.notLinkedGitHub'
   return 'sidebar.notLinkedForge'
 }
 
 export function forgeDisplayName(provider: ForgeProvider | null): string {
   if (provider === 'bitbucket') return 'Bitbucket'
+  if (provider === 'gitlab') return 'GitLab'
   return 'GitHub'
 }

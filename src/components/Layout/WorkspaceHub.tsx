@@ -6,18 +6,22 @@ import { workspaceTabLabel } from '@/stores/workspace'
 import { repoNameFromUrl } from '@/lib/git/git'
 import { parseBitbucketRemote } from '@shared/bitbucket'
 import { parseGitHubRemote } from '@shared/github'
+import { parseGitlabRemote } from '@shared/gitlab'
 import { RepoPicker as GitHubRepoPicker } from '@/components/GitHub/RepoPicker'
 import { CreateGitHubRepoModal } from '@/components/GitHub/CreateGitHubRepoModal'
 import { ForkGitHubRepoModal } from '@/components/GitHub/ForkGitHubRepoModal'
 import { RepoPicker as BitbucketRepoPicker } from '@/components/Bitbucket/RepoPicker'
 import { CreateBitbucketRepoModal } from '@/components/Bitbucket/CreateBitbucketRepoModal'
 import { ForkBitbucketRepoModal } from '@/components/Bitbucket/ForkBitbucketRepoModal'
+import { RepoPicker as GitlabRepoPicker } from '@/components/GitLab/RepoPicker'
+import { CreateGitlabRepoModal } from '@/components/GitLab/CreateGitlabRepoModal'
+import { ForkGitlabRepoModal } from '@/components/GitLab/ForkGitlabRepoModal'
 import { Spinner } from '@/components/Ui/Spinner'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { shouldVirtualize, VIRTUAL_OVERSCAN } from '@/lib/ui/virtualList'
 
 type HubView = 'hub' | 'clone'
-type CloneTab = 'url' | 'github' | 'bitbucket'
+type CloneTab = 'url' | 'github' | 'bitbucket' | 'gitlab'
 
 interface WorkspaceHubProps {
   variant: 'page' | 'modal'
@@ -80,11 +84,14 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
   const [cloneTab, setCloneTab] = useState<CloneTab>('url')
   const [selectedRepo, setSelectedRepo] = useState<string | null>(null)
   const [createRepoOpen, setCreateRepoOpen] = useState(false)
-  const [createRepoProvider, setCreateRepoProvider] = useState<'github' | 'bitbucket'>('github')
+  const [createRepoProvider, setCreateRepoProvider] = useState<'github' | 'bitbucket' | 'gitlab'>(
+    'github'
+  )
   const [forkOpen, setForkOpen] = useState(false)
 
   const githubCloneTarget = useMemo(() => parseGitHubRemote(cloneUrl), [cloneUrl])
   const bitbucketCloneTarget = useMemo(() => parseBitbucketRemote(cloneUrl), [cloneUrl])
+  const gitlabCloneTarget = useMemo(() => parseGitlabRemote(cloneUrl), [cloneUrl])
 
   const loadRecents = useCallback(() => {
     void window.gitfreddo.getRecentRepos().then(setRecents)
@@ -313,6 +320,20 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
                 }}
                 disabled={busy}
               />
+              <ActionCard
+                title={t('workspace.hub.createGitlab.title')}
+                description={t('workspace.hub.createGitlab.description')}
+                icon={<CloneIcon />}
+                onClick={() => {
+                  setCreateRepoProvider('gitlab')
+                  setCreateRepoOpen(true)
+                  setError(null)
+                  if (!cloneParent && recents[0]) {
+                    setCloneParent(recents[0].replace(/[/\\][^/\\]+$/, ''))
+                  }
+                }}
+                disabled={busy}
+              />
             </>
           ) : (
             <div className="space-y-4">
@@ -328,7 +349,7 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
               </button>
 
               <div className="flex flex-wrap gap-2">
-                {(['url', 'github', 'bitbucket'] as const).map((tab) => (
+                {(['url', 'github', 'bitbucket', 'gitlab'] as const).map((tab) => (
                   <button
                     key={tab}
                     type="button"
@@ -372,13 +393,22 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
                       {t('github.fork.forkToAccount')}
                     </button>
                   )}
-                  {bitbucketCloneTarget && (
+                  {bitbucketCloneTarget && !gitlabCloneTarget && (
                     <button
                       type="button"
                       onClick={() => setForkOpen(true)}
                       className="text-xs text-gf-accent hover:underline"
                     >
                       {t('bitbucket.fork.forkToAccount')}
+                    </button>
+                  )}
+                  {gitlabCloneTarget && (
+                    <button
+                      type="button"
+                      onClick={() => setForkOpen(true)}
+                      className="text-xs text-gf-accent hover:underline"
+                    >
+                      {t('gitlab.fork.forkToAccount')}
                     </button>
                   )}
                 </div>
@@ -403,7 +433,7 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
                     {t('workspace.hub.createNewRepo')}
                   </button>
                 </div>
-              ) : (
+              ) : cloneTab === 'bitbucket' ? (
                 <div className="space-y-3">
                   <BitbucketRepoPicker
                     selectedFullName={selectedRepo}
@@ -417,6 +447,27 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
                     type="button"
                     onClick={() => {
                       setCreateRepoProvider('bitbucket')
+                      setCreateRepoOpen(true)
+                    }}
+                    className="text-xs text-gf-accent hover:underline"
+                  >
+                    {t('workspace.hub.createNewRepo')}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <GitlabRepoPicker
+                    selectedFullName={selectedRepo}
+                    onSelect={(repo) => {
+                      setSelectedRepo(repo.fullName)
+                      setCloneUrl(repo.cloneUrl)
+                    }}
+                    compact
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCreateRepoProvider('gitlab')
                       setCreateRepoOpen(true)
                     }}
                     className="text-xs text-gf-accent hover:underline"
@@ -554,6 +605,13 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
         submitLabel={t('workspace.hub.createAndClone')}
         onCreated={handleCreateRepoAndClone}
       />
+    ) : createRepoProvider === 'gitlab' ? (
+      <CreateGitlabRepoModal
+        open={createRepoOpen}
+        onClose={() => setCreateRepoOpen(false)}
+        submitLabel={t('workspace.hub.createAndClone')}
+        onCreated={handleCreateRepoAndClone}
+      />
     ) : (
       <CreateGitHubRepoModal
         open={createRepoOpen}
@@ -565,7 +623,16 @@ export function WorkspaceHub({ variant, open = true, onClose, onOpen }: Workspac
     )
 
   const forkDialog =
-    bitbucketCloneTarget && !githubCloneTarget ? (
+    gitlabCloneTarget && !githubCloneTarget ? (
+      <ForkGitlabRepoModal
+        open={forkOpen}
+        initialUrl={cloneUrl}
+        onClose={() => setForkOpen(false)}
+        onForked={(repo) => {
+          setCloneUrl(repo.cloneUrl)
+        }}
+      />
+    ) : bitbucketCloneTarget && !githubCloneTarget ? (
       <ForkBitbucketRepoModal
         open={forkOpen}
         initialUrl={cloneUrl}

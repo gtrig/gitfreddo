@@ -18,18 +18,27 @@ describe('resolveForgeOAuthEnv', () => {
         {
           GITHUB_CLIENT_ID: 'runtime-github',
           BITBUCKET_CLIENT_ID: 'runtime-bb',
-          BITBUCKET_CLIENT_SECRET: 'runtime-secret'
+          BITBUCKET_CLIENT_SECRET: 'runtime-secret',
+          GITLAB_CLIENT_ID: 'runtime-gl',
+          GITLAB_CLIENT_SECRET: 'runtime-gl-secret',
+          GITLAB_HOST: 'gitlab.mycompany.com'
         },
         {
           githubClientId: 'build-github',
           bitbucketClientId: 'build-bb',
-          bitbucketClientSecret: 'build-secret'
+          bitbucketClientSecret: 'build-secret',
+          gitlabClientId: 'build-gl',
+          gitlabClientSecret: 'build-gl-secret',
+          gitlabHost: 'build-host'
         }
       )
     ).toEqual({
       githubClientId: 'runtime-github',
       bitbucketClientId: 'runtime-bb',
-      bitbucketClientSecret: 'runtime-secret'
+      bitbucketClientSecret: 'runtime-secret',
+      gitlabClientId: 'runtime-gl',
+      gitlabClientSecret: 'runtime-gl-secret',
+      gitlabHost: 'gitlab.mycompany.com'
     })
   })
 
@@ -40,13 +49,19 @@ describe('resolveForgeOAuthEnv', () => {
         {
           githubClientId: 'build-github',
           bitbucketClientId: 'build-bb',
-          bitbucketClientSecret: 'build-secret'
+          bitbucketClientSecret: 'build-secret',
+          gitlabClientId: 'build-gl',
+          gitlabClientSecret: 'build-gl-secret',
+          gitlabHost: 'build-host'
         }
       )
     ).toEqual({
       githubClientId: 'build-github',
       bitbucketClientId: 'build-bb',
-      bitbucketClientSecret: 'build-secret'
+      bitbucketClientSecret: 'build-secret',
+      gitlabClientId: 'build-gl',
+      gitlabClientSecret: 'build-gl-secret',
+      gitlabHost: 'build-host'
     })
   })
 })

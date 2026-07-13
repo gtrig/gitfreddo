@@ -37,15 +37,10 @@ describe('StartupModal', () => {
       />
     )
 
-    // getStartupNewsItems caps at 5; assert two bullets that are within the current top-5.
+    // getStartupNewsItems prefers [Unreleased] when it has bullets (capped at 5).
     expect(
       screen.getByText(
-        'Commit descriptions in the detail panel render Markdown (lists, bold, links, and more).'
-      )
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText(
-        'The right detail panel stays hidden until you select a commit, uncommitted changes, or merge conflicts — giving the timeline more room by default.'
+        'Connect GitLab — including self-managed instances — with OAuth or a personal access token to browse repositories, open merge requests, track issues, and manage SSH keys.'
       )
     ).toBeInTheDocument()
   })

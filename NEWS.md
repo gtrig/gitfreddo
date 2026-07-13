@@ -5,6 +5,8 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+- Connect GitLab — including self-managed instances — with OAuth or a personal access token to browse repositories, open merge requests, track issues, and manage SSH keys.
+
 ## [0.3.9]
 
 - Squash and merge your current branch into another (e.g. `main`) from the branch sidebar — no manual checkout first.

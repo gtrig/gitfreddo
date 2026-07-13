@@ -37,6 +37,11 @@ const DEFAULT_SETTINGS: AppSettings = {
   bitbucketConnectedAt: null,
   bitbucketAuthType: null,
   bitbucketSshKeyTitle: '',
+  gitlabLogin: '',
+  gitlabConnectedAt: null,
+  gitlabAuthType: null,
+  gitlabSshKeyTitle: '',
+  gitlabHost: 'gitlab.com',
   pullRebase: false,
   submoduleRecursion: 'on-demand',
   pushSubmoduleRecursion: 'check',
@@ -84,6 +89,14 @@ function normalizeSettings(parsed: AppSettings): AppSettings {
         ? parsed.bitbucketAuthType
         : null,
     bitbucketSshKeyTitle: parsed.bitbucketSshKeyTitle ?? '',
+    gitlabLogin: parsed.gitlabLogin ?? '',
+    gitlabConnectedAt: parsed.gitlabConnectedAt ?? null,
+    gitlabAuthType:
+      parsed.gitlabAuthType === 'oauth' || parsed.gitlabAuthType === 'pat'
+        ? parsed.gitlabAuthType
+        : null,
+    gitlabSshKeyTitle: parsed.gitlabSshKeyTitle ?? '',
+    gitlabHost: parsed.gitlabHost ?? DEFAULT_SETTINGS.gitlabHost,
     pullRebase: Boolean(parsed.pullRebase),
     submoduleRecursion:
       parsed.submoduleRecursion === 'always' || parsed.submoduleRecursion === 'none'

@@ -58,7 +58,8 @@
       "cloneTab": {
         "url": "URL",
         "github": "GitHub",
-        "bitbucket": "Bitbucket"
+        "bitbucket": "Bitbucket",
+        "gitlab": "GitLab"
       },
       "createGithub": {
         "title": "Δημιουργία στο GitHub",
@@ -67,6 +68,10 @@
       "createBitbucket": {
         "title": "Δημιουργία στο Bitbucket",
         "description": "Δημιουργήστε νέο αποθετήριο στο Bitbucket και κλωνοποιήστε το τοπικά."
+      },
+      "createGitlab": {
+        "title": "Δημιουργία στο GitLab",
+        "description": "Δημιουργήστε νέο αποθετήριο στο GitLab και κλωνοποιήστε το τοπικά."
       },
       "recent": "Πρόσφατα",
       "filter": "Φίλτρο πρόσφατων αποθετηρίων…",
@@ -284,6 +289,34 @@
       "sshKeyMissing": "Δεν βρέθηκε SSH κλειδί GitFreddo σε αυτόν τον λογαριασμό.",
       "sshKeyUploaded": "SSH: {{title}}"
     },
+    "gitlab": {
+      "title": "GitLab",
+      "description": "Συνδέστε το GitLab (ή μια self-managed εγκατάσταση) για περιήγηση αποθετηρίων, merge requests και remotes.",
+      "connected": "Συνδεδεμένο",
+      "notConnected": "Μη συνδεδεμένο",
+      "signedInAs": "Σύνδεση ως @{{login}}",
+      "noAccount": "Δεν υπάρχει συνδεδεμένος λογαριασμός GitLab.",
+      "oauth": "OAuth",
+      "token": "Token",
+      "host": "Host (self-managed)",
+      "hostPlaceholder": "gitlab.com",
+      "patPlaceholder": "glpat-…",
+      "tokenHint": "Το OAuth ανοίγει τον browser. Τα personal access tokens χρειάζονται api scope και αποθηκεύονται μόνο τοπικά. Ορίστε host για σύνδεση σε self-managed GitLab.",
+      "waitingAuth": "Αναμονή εξουσιοδότησης στον browser…",
+      "exchangingToken": "Ανταλλαγή κωδικού εξουσιοδότησης…",
+      "startingAuth": "Έναρξη εξουσιοδότησης GitLab…",
+      "connectWithGitlab": "Σύνδεση με GitLab",
+      "connectWithToken": "Σύνδεση με token",
+      "connecting": "Σύνδεση…",
+      "disconnect": "Αποσύνδεση",
+      "disconnecting": "Αποσύνδεση…",
+      "uploadSshKey": "Μεταφόρτωση SSH κλειδιού",
+      "uploading": "Μεταφόρτωση…",
+      "sshKeyActive": "Ενεργό SSH κλειδί",
+      "sshKeyIdentifier": "{{title}}",
+      "sshKeyMissing": "Δεν βρέθηκε SSH κλειδί GitFreddo σε αυτόν τον λογαριασμό.",
+      "sshKeyUploaded": "SSH: {{title}}"
+    },
     "maintenance": {
       "updates": "Ενημερώσεις εφαρμογής",
       "updatesDesc": "Το GitFreddo ελέγχει το GitHub Releases για νέες εκδόσεις κατά την εκκίνηση.",
@@ -435,9 +468,11 @@
     "openRepoForPr": "Ανοίξτε ένα αποθετήριο για προβολή pull requests.",
     "connectGitHub": "Συνδεθείτε στο GitHub από Ρυθμίσεις → Ενσωματώσεις.",
     "connectBitbucket": "Συνδεθείτε στο Bitbucket από Ρυθμίσεις → Ενσωματώσεις.",
-    "connectForge": "Συνδεθείτε στο GitHub ή Bitbucket από Ρυθμίσεις → Ενσωματώσεις.",
+    "connectGitlab": "Συνδεθείτε στο GitLab από Ρυθμίσεις → Ενσωματώσεις.",
+    "connectForge": "Συνδεθείτε στο GitHub, Bitbucket ή GitLab από Ρυθμίσεις → Ενσωματώσεις.",
     "notLinkedGitHub": "Αυτό το αποθετήριο δεν είναι συνδεδεμένο με το GitHub.",
     "notLinkedBitbucket": "Αυτό το αποθετήριο δεν είναι συνδεδεμένο με το Bitbucket.",
+    "notLinkedGitlab": "Αυτό το αποθετήριο δεν είναι συνδεδεμένο με το GitLab.",
     "notLinkedForge": "Αυτό το αποθετήριο δεν είναι συνδεδεμένο με υποστηριζόμενο forge.",
     "noOpenPullRequests": "Κανένα ανοιχτό pull request.",
     "prMerged": "Το PR #{{number}} συγχωνεύτηκε",
@@ -1258,6 +1293,7 @@
       "copyTagName": "Αντιγραφή ονόματος tag",
       "openOnGitHub": "Άνοιγμα στο GitHub",
       "openOnBitbucket": "Άνοιγμα στο Bitbucket",
+      "openOnGitlab": "Άνοιγμα στο GitLab",
       "copyLink": "Αντιγραφή συνδέσμου",
       "mergeCommit": "Merge commit",
       "squashAndMerge": "Squash and merge",
@@ -1394,6 +1430,56 @@
       "private": "Ιδιωτικό"
     }
   },
+  "gitlab": {
+    "fork": {
+      "title": "Fork αποθετηρίου",
+      "description": "Δημιουργήστε fork στον λογαριασμό σας στο GitLab και κλωνοποιήστε το τοπικά.",
+      "namespace": "Namespace",
+      "repo": "Αποθετήριο",
+      "action": "Fork",
+      "success": "Το αποθετήριο fork-αρίστηκε.",
+      "missingFields": "Εισάγετε namespace και όνομα αποθετηρίου.",
+      "connectFirst": "Συνδεθείτε στο GitLab από Ρυθμίσεις → Ενσωματώσεις για fork.",
+      "forkToAccount": "Fork στον λογαριασμό μου…"
+    },
+    "issue": {
+      "editTitle": "Επεξεργασία issue #{{number}}",
+      "titleRequired": "Ο τίτλος issue είναι υποχρεωτικός.",
+      "updated": "Το issue ενημερώθηκε.",
+      "close": "Κλείσιμο issue",
+      "reopen": "Επανάνοιγμα issue",
+      "edit": "Επεξεργασία issue…"
+    },
+    "pr": {
+      "createTitle": "Δημιουργία merge request",
+      "description": "Περιγραφή",
+      "head": "Source",
+      "base": "Target",
+      "fillWithAi": "Συμπλήρωση με AI",
+      "squash": "Squash",
+      "rebase": "Rebase"
+    },
+    "repo": {
+      "namespace": "Namespace",
+      "connectFirst": "Συνδεθείτε στο GitLab από Ρυθμίσεις → Ενσωματώσεις για δημιουργία αποθετηρίων.",
+      "name": "Όνομα αποθετηρίου",
+      "namePlaceholder": "my-new-repo",
+      "descriptionOptional": "Περιγραφή (προαιρετικά)",
+      "descriptionPlaceholder": "Σύντομη περιγραφή",
+      "nameRequired": "Απαιτούνται namespace και όνομα αποθετηρίου",
+      "create": "Δημιουργία αποθετηρίου",
+      "public": "Δημόσιο",
+      "private": "Ιδιωτικό"
+    },
+    "repoPicker": {
+      "connectFirst": "Συνδεθείτε στο GitLab από Ρυθμίσεις → Ενσωματώσεις για περιήγηση σε αποθετήρια.",
+      "searchPlaceholder": "Αναζήτηση αποθετηρίων…",
+      "loading": "Φόρτωση αποθετηρίων…",
+      "empty": "Δεν βρέθηκαν αποθετήρια.",
+      "public": "Δημόσιο",
+      "private": "Ιδιωτικό"
+    }
+  },
   "update": {
     "available": "Διαθέσιμο GitFreddo {{version}}",
     "readyToInstall": "Το GitFreddo {{version}} είναι έτοιμο για εγκατάσταση",
@@ -1442,6 +1528,11 @@
     "bitbucket": {
       "connected": "Σύνδεση με Bitbucket ως @{{login}}",
       "disconnected": "Αποσύνδεση από Bitbucket",
+      "sshKeyUploaded": "Το SSH key ανέβηκε: {{title}}"
+    },
+    "gitlab": {
+      "connected": "Σύνδεση με GitLab ως @{{login}}",
+      "disconnected": "Αποσύνδεση από GitLab",
       "sshKeyUploaded": "Το SSH key ανέβηκε: {{title}}"
     },
     "maintenance": {
