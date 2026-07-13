@@ -6,11 +6,14 @@ import { cleanup, fireEvent, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useBranchVisibilityStore } from '@/stores/branchVisibility'
+import { useToastStore } from '@/stores/toast'
 import { renderWithProviders } from '@/test/render'
 import { createGitFreddoMock } from '@/test/mocks/gitfreddo'
 import { LocalBranchesSection, RemoteBranchesSection } from './LocalBranchesSection'
 
 const mutation = { mutateAsync: vi.fn(async () => undefined), isPending: false }
+const submitPullRequest = vi.fn(async () => undefined)
+let canCreatePr = true
 
 vi.mock('@/hooks/useGitMutations', () => ({
   useGitMutations: () => ({
@@ -24,9 +27,9 @@ vi.mock('@/hooks/useGitMutations', () => ({
 
 vi.mock('@/hooks/useForgePullRequestActions', () => ({
   useForgePullRequestActions: () => ({
-    canCreatePr: true,
+    canCreatePr,
     provider: 'github' as const,
-    submitPullRequest: vi.fn(async () => undefined)
+    submitPullRequest
   })
 }))
 
@@ -60,8 +63,29 @@ vi.mock('@/components/Branches/RenameBranchModal', () => ({
   )
 }))
 vi.mock('@/components/Forge/ForgeCreatePrModal', () => ({
-  ForgeCreatePrModal: ({ defaultHead }: { defaultHead: string }) => (
-    <div data-testid="pr-dialog">{defaultHead}</div>
+  ForgeCreatePrModal: ({
+    defaultHead,
+    onSubmit,
+    onClose
+  }: {
+    defaultHead: string
+    onSubmit?: (params: { title: string; body: string; head: string; base: string }) => Promise<void>
+    onClose?: () => void
+  }) => (
+    <div data-testid="pr-dialog">
+      {defaultHead}
+      <button
+        type="button"
+        onClick={() =>
+          void onSubmit?.({ title: 'PR title', body: 'PR body', head: defaultHead, base: 'main' })
+        }
+      >
+        Submit PR
+      </button>
+      <button type="button" onClick={() => onClose?.()}>
+        Close PR
+      </button>
+    </div>
   )
 }))
 vi.mock('@/components/Worktrees/AddWorktreeModal', () => ({
@@ -128,6 +152,7 @@ describe('LocalBranchesSection', () => {
   afterEach(() => cleanup())
   beforeEach(() => {
     mutation.mutateAsync.mockClear()
+    canCreatePr = true
     useWorkspaceStore.setState({
       tabs: [{ path: '/tmp/repo', connected: true, connecting: false }],
       activePath: '/tmp/repo',
@@ -563,6 +588,162 @@ describe('LocalBranchesSection', () => {
     fireEvent.contextMenu(screen.getByRole('button', { name: /login/i }))
     expect(
       screen.queryByRole('menuitem', { name: /squash and merge into/i })
+    ).not.toBeInTheDocument()
+  })
+
+  it('renders detached HEAD as the first row in a virtualized list', async () => {
+    const onSelectCommit = vi.fn()
+    const manyBranches = Array.from({ length: 55 }, (_, index) => ({
+      name: `branch-${index}`,
+      head: `${index}`.padStart(40, '0'),
+      isCurrent: index === 0,
+      isRemote: false,
+      ahead: 0,
+      behind: 0
+    }))
+
+    renderWithProviders(
+      <LocalBranchesSection
+        branches={manyBranches}
+        filter=""
+        isLoading={false}
+        error={null}
+        checkoutPending={false}
+        isDetached
+        head="detached-hash"
+        onSelectCommit={onSelectCommit}
+        onCheckout={vi.fn()}
+        onCreateBranch={vi.fn()}
+      />
+    )
+
+    await userEvent.click(screen.getByText(/HEAD/i))
+    expect(onSelectCommit).toHaveBeenCalledWith('detached-hash')
+  })
+
+  it('renders nested folders in a virtualized branch list', async () => {
+    const manyNested = [
+      ...Array.from({ length: 26 }, (_, index) => ({
+        name: `group-a/branch-${index}`,
+        head: `a${index}`.padStart(39, '0'),
+        isCurrent: index === 0,
+        isRemote: false,
+        ahead: 0,
+        behind: 0
+      })),
+      ...Array.from({ length: 26 }, (_, index) => ({
+        name: `group-b/branch-${index}`,
+        head: `b${index}`.padStart(39, '0'),
+        isCurrent: false,
+        isRemote: false,
+        ahead: 0,
+        behind: 0
+      }))
+    ]
+
+    renderWithProviders(
+      <LocalBranchesSection
+        branches={manyNested}
+        filter="branch"
+        isLoading={false}
+        error={null}
+        checkoutPending={false}
+        isDetached={false}
+        head={manyNested[0]!.head}
+        onSelectCommit={vi.fn()}
+        onCheckout={vi.fn()}
+        onCreateBranch={vi.fn()}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: /^group-a$/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^group-b$/i })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /^branch-0$/i })).toHaveLength(2)
+  })
+
+  it('shows success toast after creating a pull request', async () => {
+    submitPullRequest.mockClear()
+    const show = vi.fn()
+    useToastStore.setState({ show })
+
+    renderWithProviders(
+      <LocalBranchesSection
+        branches={branches}
+        filter="login"
+        isLoading={false}
+        error={null}
+        checkoutPending={false}
+        isDetached={false}
+        head="abc"
+        onSelectCommit={vi.fn()}
+        onCheckout={vi.fn()}
+        onCreateBranch={vi.fn()}
+      />
+    )
+
+    fireEvent.contextMenu(screen.getByRole('button', { name: /login/i }))
+    await userEvent.click(screen.getByRole('menuitem', { name: /create pull request/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Submit PR' }))
+
+    expect(submitPullRequest).toHaveBeenCalled()
+    expect(show).toHaveBeenCalledWith(expect.any(String), 'success')
+  })
+
+  it('dims branches hidden from the graph in virtualized lists', () => {
+    useBranchVisibilityStore.setState({
+      hiddenBranches: new Set(['feature/login']),
+      toggleBranchVisibility: vi.fn(),
+      isBranchHidden: (key: string) => key === 'feature/login',
+      setBranchVisibility: vi.fn()
+    })
+
+    const manyBranches = Array.from({ length: 55 }, (_, index) => ({
+      name: index === 5 ? 'feature/login' : `branch-${index}`,
+      head: `${index}`.padStart(40, '0'),
+      isCurrent: index === 0,
+      isRemote: false,
+      ahead: 0,
+      behind: 0
+    }))
+
+    renderWithProviders(
+      <LocalBranchesSection
+        branches={manyBranches}
+        filter="login"
+        isLoading={false}
+        error={null}
+        checkoutPending={false}
+        isDetached={false}
+        head={manyBranches[0]!.head}
+        onSelectCommit={vi.fn()}
+        onCheckout={vi.fn()}
+        onCreateBranch={vi.fn()}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: /^login$/i }).className).toContain('opacity-60')
+  })
+
+  it('hides create pull request when forge integration is unavailable', async () => {
+    canCreatePr = false
+    renderWithProviders(
+      <LocalBranchesSection
+        branches={branches}
+        filter="login"
+        isLoading={false}
+        error={null}
+        checkoutPending={false}
+        isDetached={false}
+        head="abc"
+        onSelectCommit={vi.fn()}
+        onCheckout={vi.fn()}
+        onCreateBranch={vi.fn()}
+      />
+    )
+
+    fireEvent.contextMenu(screen.getByRole('button', { name: /login/i }))
+    expect(
+      screen.queryByRole('menuitem', { name: /create pull request/i })
     ).not.toBeInTheDocument()
   })
 

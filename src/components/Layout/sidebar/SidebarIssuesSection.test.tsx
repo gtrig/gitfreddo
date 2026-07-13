@@ -62,6 +62,20 @@ vi.mock('@/components/Bitbucket/EditIssueModal', () => ({
     open ? <div role="dialog">Edit issue</div> : null
 }))
 
+vi.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: vi.fn(({ count, estimateSize }: { count: number; estimateSize: () => number }) => ({
+    getVirtualItems: () =>
+      Array.from({ length: count }, (_, index) => ({
+        index,
+        key: index,
+        start: index * estimateSize(),
+        size: estimateSize()
+      })),
+    getTotalSize: () => count * estimateSize(),
+    measureElement: vi.fn()
+  }))
+}))
+
 describe('SidebarIssuesSection', () => {
   afterEach(() => {
     cleanup()
@@ -337,5 +351,38 @@ describe('SidebarIssuesSection', () => {
     expect(window.gitfreddo.bitbucketUpdateIssue).toHaveBeenCalledWith('/tmp/repo', 10, {
       state: 'closed'
     })
+  })
+
+  it('opens the issue in the browser when a row is clicked', async () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+    renderWithProviders(<SidebarIssuesSection />)
+    await expandSection()
+    await userEvent.click(screen.getByText(/#1 Fix bug/))
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://github.com/t/r/issues/1',
+      '_blank',
+      'noopener,noreferrer'
+    )
+    openSpy.mockRestore()
+  })
+
+  it('virtualizes long issue lists', async () => {
+    vi.mocked(useGitHubIssues).mockReturnValue({
+      data: Array.from({ length: 55 }, (_, index) => ({
+        number: index + 1,
+        title: `Issue ${index + 1}`,
+        state: 'open',
+        htmlUrl: `https://github.com/t/r/issues/${index + 1}`,
+        user: 'test',
+        body: '',
+        labels: []
+      })),
+      isLoading: false,
+      error: null
+    } as unknown as ReturnType<typeof useGitHubIssues>)
+    renderWithProviders(<SidebarIssuesSection />)
+    await expandSection()
+    expect(screen.getByText(/#1 Issue 1/)).toBeInTheDocument()
+    expect(screen.getByText(/#55 Issue 55/)).toBeInTheDocument()
   })
 })

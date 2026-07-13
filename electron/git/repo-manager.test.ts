@@ -165,5 +165,22 @@ describe('RepoManager', () => {
       const notes = await manager.invoke(tmpDir, 'notes.list', undefined)
       expect(Array.isArray(notes)).toBe(true)
     })
+
+    it('uses setConfig git binary when dispatching', async () => {
+      manager.setConfig({ gitBinaryPath: 'git' })
+      await manager.connect(tmpDir)
+      const status = await manager.invoke(tmpDir, 'repo.status')
+      expect(status.branch).toBe('main')
+    })
+
+    it('throws when invoking for a path that is not connected', async () => {
+      await manager.connect(tmpDir)
+      const other = mkdtempSync(join(tmpdir(), 'gitfreddo-other-'))
+      try {
+        await expect(manager.invoke(other, 'repo.status')).rejects.toThrow(/no repository connected/i)
+      } finally {
+        rmSync(other, { recursive: true, force: true })
+      }
+    })
   })
 })

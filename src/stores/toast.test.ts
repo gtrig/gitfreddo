@@ -44,4 +44,13 @@ describe('useToastStore', () => {
     expect(entry?.message).toBe('Failed to push changes.')
     expect(entry?.details).toBeUndefined()
   })
+
+  it('auto-dismisses the toast after the default delay', () => {
+    useToastStore.getState().show('Saved', 'success')
+    expect(useToastStore.getState().message).toBe('Saved')
+
+    vi.advanceTimersByTime(5_000)
+
+    expect(useToastStore.getState().message).toBeNull()
+  })
 })

@@ -340,6 +340,7 @@ describe('parseExplainCommitResponse', () => {
 
   it('rejects invalid JSON', () => {
     expect(() => parseExplainCommitResponse('not json', commits)).toThrow(/valid JSON/)
+    expect(() => parseExplainCommitResponse(JSON.stringify('nope'), commits)).toThrow(/JSON object/)
   })
 
   it('requires at least one commit explanation', () => {
@@ -378,6 +379,23 @@ describe('parseExplainCommitResponse', () => {
         [{ hash: 'abc123def456', shortHash: 'abc123d' }]
       )
     ).toThrow(/no usable commit explanations/)
+  })
+
+  it('skips invalid commit entries but keeps valid ones', () => {
+    const result = parseExplainCommitResponse(
+      JSON.stringify({
+        summary: 'Partial',
+        commits: [
+          null,
+          { shortHash: 'abc123d', summary: 'Valid entry', keyChanges: '- change', rationale: '' },
+          { shortHash: '', summary: 'Missing hash' }
+        ]
+      }),
+      commits
+    )
+
+    expect(result.commits).toHaveLength(1)
+    expect(result.commits[0]?.summary).toBe('Valid entry')
   })
 })
 
@@ -895,6 +913,13 @@ describe('parseRefinePullRequestAnalysisResponse', () => {
     expect(() =>
       parseRefinePullRequestAnalysisResponse(JSON.stringify({ message: 'Updated' }))
     ).toThrow(/no updated pull request analysis/)
+  })
+
+  it('throws when response is not valid JSON or not an object', () => {
+    expect(() => parseRefinePullRequestAnalysisResponse('not json')).toThrow(/valid JSON/)
+    expect(() => parseRefinePullRequestAnalysisResponse(JSON.stringify('nope'))).toThrow(
+      /JSON object/
+    )
   })
 })
 

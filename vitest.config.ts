@@ -41,18 +41,18 @@ export default defineConfig({
       include: coverageInclude,
       exclude: coverageExclude,
       thresholds: {
-        lines: 90,
+        lines: 95,
         branches: 80,
         functions: 70,
         statements: 85,
         'src/lib/**': {
-          lines: 90,
+          lines: 95,
           branches: 70,
           functions: 75,
           statements: 85
         },
         'shared/**': {
-          lines: 90,
+          lines: 95,
           branches: 65,
           functions: 85,
           statements: 80

@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-13 — Coverage expansion batch 5 (95% lines)
+
+- **Why:** Close the gap to 95% line coverage after batches 1–4 and flaky-test fixes.
+- **What:** Expanded tests for `MergeBranchDialog`, `AddRemoteModal`, `MultiCommitSelectionBar`, `BitbucketIntegrationCard`, `AnalyzeChangesWithAi`, `SidebarIssuesSection`, `useTimelineDragSelect`, `repo-manager`, `ExplainCommitWithAi`, and `LocalBranchesSection` (virtualized branches, PR success toast). Raised Vitest line thresholds to **95%** (global, `src/lib/**`, `shared/**`; `electron/**` remains 90%). **2,121 tests pass**; **95.0% line coverage**.
+
 ### 2026-07-13 — Stabilize OAuth and virtual list tests
 
 - **Why:** Full-suite runs intermittently failed on Bitbucket OAuth port binding and post-teardown virtualizer timers.

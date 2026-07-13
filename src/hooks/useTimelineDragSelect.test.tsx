@@ -248,6 +248,22 @@ describe('useTimelineDragSelect', () => {
     expect(actions.selectTimelineNode).toHaveBeenCalledWith('commit', expect.any(String))
   })
 
+  it('extends selection when shift-dragging', async () => {
+    const user = userEvent.setup()
+    const { overlay, actions, commits } = renderDragHarness()
+
+    await user.keyboard('{Shift>}')
+    await user.pointer([
+      { keys: '[MouseLeft>]', target: overlay, coords: { clientY: 110 } },
+      { coords: { clientY: 138 } },
+      { keys: '[/MouseLeft]' }
+    ])
+    await user.keyboard('{/Shift}')
+
+    expect(actions.selectTimelineNode).not.toHaveBeenCalled()
+    expect(actions.selectCommitRange).toHaveBeenCalledWith(commits[1]!.hash, commits)
+  })
+
   it('starts auto-scroll when dragging near the scroll container edge', async () => {
     const user = userEvent.setup()
     const { overlay } = renderDragHarness()

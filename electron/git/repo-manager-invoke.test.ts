@@ -32,7 +32,8 @@ afterEach(() => {
   rmSync(tmpDir, { recursive: true, force: true })
 })
 
-describe('RepoManager invoke coverage', () => {
+// Many real git subprocesses per test; allow headroom when the unit pool is busy.
+describe('RepoManager invoke coverage', { timeout: 30_000 }, () => {
   it('dispatches read/query IPC methods', async () => {
     const queries: Array<[GitIpcMethod, unknown]> = [
       ['repo.status', undefined],

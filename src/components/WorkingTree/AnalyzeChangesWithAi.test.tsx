@@ -224,4 +224,42 @@ describe('AnalyzeChangesWithAi', () => {
       expect(showToast).toHaveBeenCalledWith('model unavailable', 'error')
     })
   })
+
+  it('creates multiple selected commits in order', async () => {
+    const user = await openAnalysisModal()
+    await user.click(screen.getByRole('button', { name: /create 2 commit/i }))
+
+    await waitFor(() => {
+      expect(window.gitfreddo.invoke).toHaveBeenCalledWith('commit.create', {
+        message: 'Add feature A\n\nImplements A.'
+      })
+      expect(window.gitfreddo.invoke).toHaveBeenCalledWith('commit.create', {
+        message: 'Add feature B\n\nImplements B.'
+      })
+    })
+  })
+
+  it('requires a summary on every selected commit before creating', async () => {
+    const showToast = vi.fn()
+    useToastStore.setState({ message: null, tone: 'info', show: showToast, clear: vi.fn() })
+    const user = await openAnalysisModal()
+
+    const summaryInputs = screen.getAllByDisplayValue('Add feature A')
+    await user.clear(summaryInputs[0]!)
+    await user.click(screen.getByRole('button', { name: /create 2 commit/i }))
+
+    expect(showToast).toHaveBeenCalledWith(expect.stringMatching(/summary/i), 'error')
+  })
+
+  it('re-runs analysis from the modal', async () => {
+    const user = await openAnalysisModal()
+    const aiFill = vi.mocked(window.gitfreddo.aiFill)
+    aiFill.mockClear()
+
+    await user.click(screen.getByRole('button', { name: /analyze again/i }))
+
+    await waitFor(() => {
+      expect(aiFill).toHaveBeenCalledWith(expect.objectContaining({ purpose: 'analyze_changes' }))
+    })
+  })
 })
