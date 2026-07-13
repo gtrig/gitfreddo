@@ -123,14 +123,21 @@ export async function runGit(
   })
 }
 
+function formatGitCommandError(result: GitResult): string {
+  const raw = result.stderr.trim() || result.stdout.trim()
+  const detail = stripGitTraceLines(raw)
+  if (detail) return detail
+  if (raw) return raw
+  return `git exited with code ${result.code}`
+}
+
 export async function runGitOrThrow(
   args: string[],
   options: RunGitOptions
 ): Promise<string> {
   const result = await runGit(args, options)
   if (result.code !== 0) {
-    const detail = result.stderr.trim() || result.stdout.trim() || `git exited with code ${result.code}`
-    throw new Error(detail)
+    throw new Error(formatGitCommandError(result))
   }
   return result.stdout
 }
@@ -159,8 +166,7 @@ export async function runCommandOrThrow<T>(
   const result = await runCommand(descriptor, params, options)
   const accept = descriptor.acceptExitCodes ?? [0]
   if (!accept.includes(result.code)) {
-    const detail = result.stderr.trim() || result.stdout.trim() || `git exited with code ${result.code}`
-    throw new Error(detail)
+    throw new Error(formatGitCommandError(result))
   }
   return result.stdout
 }

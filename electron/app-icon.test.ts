@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { join } from 'path'
 
 const mockCreateFromPath = vi.fn()
 const mockGetAppPath = vi.fn(() => '/app/path')
@@ -29,7 +30,7 @@ describe('loadAppIcon', () => {
     mockCreateFromPath.mockReturnValue(image)
 
     expect(loadAppIcon()).toBe(image)
-    expect(mockCreateFromPath).toHaveBeenCalledWith(expect.stringContaining('assets/logo.png'))
+    expect(mockCreateFromPath).toHaveBeenCalledWith(expect.stringMatching(/assets[\\/]logo\.png$/))
   })
 
   it('returns undefined when the image file is empty', () => {
@@ -44,6 +45,6 @@ describe('loadAppIcon', () => {
     loadAppIcon()
 
     expect(mockGetAppPath).toHaveBeenCalled()
-    expect(mockCreateFromPath).toHaveBeenCalledWith('/app/path/assets/logo.png')
+    expect(mockCreateFromPath).toHaveBeenCalledWith(join('/app/path', 'assets', 'logo.png'))
   })
 })

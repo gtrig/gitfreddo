@@ -1,15 +1,21 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { dirname, join } from 'path'
+
+const mockKeyDir = dirname(join('/tmp', 'gitfreddo-key', 'id_ed25519'))
 
 vi.mock('./api/http', () => ({
   githubJson: vi.fn()
 }))
 
-vi.mock('../forge/ssh-key-pair', () => ({
-  generateSshKeyPair: vi.fn(() => ({
-    publicKey: 'ssh-ed25519 AAAA test',
-    privateKeyPath: '/tmp/gitfreddo-key/id_ed25519'
-  }))
-}))
+vi.mock('../forge/ssh-key-pair', () => {
+  const { join } = require('path') as typeof import('path')
+  return {
+    generateSshKeyPair: vi.fn(() => ({
+      publicKey: 'ssh-ed25519 AAAA test',
+      privateKeyPath: join('/tmp', 'gitfreddo-key', 'id_ed25519')
+    }))
+  }
+})
 
 vi.mock('fs', () => ({
   rmSync: vi.fn()
@@ -76,7 +82,7 @@ describe('github ssh keys', () => {
       publicKey: 'ssh-ed25519 AAAA test'
     })
 
-    expect(rmSync).toHaveBeenCalledWith('/tmp/gitfreddo-key', { recursive: true, force: true })
+    expect(rmSync).toHaveBeenCalledWith(mockKeyDir, { recursive: true, force: true })
   })
 
   it('cleans up temp keys even when upload fails', async () => {

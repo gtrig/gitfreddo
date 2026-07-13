@@ -20,6 +20,7 @@ import {
   revParseHeadParent,
   revParseParent
 } from '../../../shared/git/commands'
+import { buildGitNodeEditorCommand } from '../editor-env'
 import { resolveGitRef, runCommand, runGitOrThrow } from '../git-runner'
 import { workingStatus } from './status'
 import { continueGitOperation } from './commit-message'
@@ -33,13 +34,12 @@ function gitRebaseEditorEnv(
   sequenceEditorPath: string,
   messageEditorPath?: string
 ): NodeJS.ProcessEnv {
-  const nodeBin = process.execPath
   const env: NodeJS.ProcessEnv = {
     ...electronNodeEnv(),
-    GIT_SEQUENCE_EDITOR: `${nodeBin} ${sequenceEditorPath}`,
+    GIT_SEQUENCE_EDITOR: buildGitNodeEditorCommand(sequenceEditorPath),
     GIT_TERMINAL_PROMPT: '0'
   }
-  env.GIT_EDITOR = messageEditorPath ? `${nodeBin} ${messageEditorPath}` : 'true'
+  env.GIT_EDITOR = messageEditorPath ? buildGitNodeEditorCommand(messageEditorPath) : 'true'
   return env
 }
 

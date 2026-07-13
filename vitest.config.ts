@@ -73,6 +73,7 @@ export default defineConfig({
           name: { label: 'unit', color: 'green' },
           environment: 'node',
           pool: 'threads',
+          testTimeout: process.env.CI ? 30_000 : 5_000,
           include: [
             'electron/**/*.test.ts',
             'shared/**/*.test.ts',

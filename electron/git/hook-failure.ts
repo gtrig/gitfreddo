@@ -18,7 +18,7 @@ interface GitCommandResult {
   code: number
 }
 
-const GIT_TRACE_LINE_RE = /^\d{2}:\d{2}:\d{2}\.\d+ (?:git\.c:|run-command\.c:)/
+const GIT_TRACE_LINE_RE = /^\d{2}:\d{2}:\d{2}\.\d+ \S+\s+trace:/
 
 const HOOK_COMMANDS = new Set([
   'commit',

@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-13 — Windows release CI test fixes
+
+- **Why:** `test:coverage` on `windows-latest` failed with path-sensitive assertions, git trace noise in rebase errors, and 5s timeouts on slow git integration tests.
+- **What:** Platform-aware path assertions in `loadAppIcon` and GitHub SSH-key tests; `buildGitNodeEditorCommand` quotes/normalizes sequence-editor paths for Git for Windows; broader `stripGitTraceLines` + use in `runGitOrThrow`; CI unit `testTimeout` raised to 30s.
+
 ## [0.4.0] - 2026-07-13
 
 ### 2026-07-13 — GitLab integration (OAuth/PAT, MRs, issues, SSH keys)

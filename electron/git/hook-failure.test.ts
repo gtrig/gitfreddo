@@ -16,6 +16,7 @@ describe('hook-failure', () => {
   it('strips git trace lines from stderr', () => {
     const stderr = `07:44:43.607402 git.c:463               trace: built-in: git push origin main
 07:44:43.609992 run-command.c:659       trace: run_command: .git/hooks/pre-push origin /tmp/hook-bare
+09:00:12.007393 exec-cmd.c:266          trace: resolved executable dir: C:/Program Files/Git/mingw64/bin
 HOOK FAILED MESSAGE
 error: failed to push some refs to '/tmp/hook-bare'`
 
