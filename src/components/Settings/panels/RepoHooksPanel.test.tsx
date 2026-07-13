@@ -147,4 +147,64 @@ describe('RepoHooksPanel', () => {
     renderWithProviders(<RepoHooksPanel />)
     expect(screen.getByText(/Open a repository to manage git hooks/i)).toBeInTheDocument()
   })
+
+  it('disables an enabled hook', async () => {
+    vi.mocked(window.gitfreddo.invoke).mockImplementation(async (method: string) => {
+      if (method === 'hooks.list') {
+        return {
+          hooks: [{ name: 'pre-commit', filename: 'pre-commit', enabled: true, executable: true }],
+          hooksDir: '/tmp/repo/.git/hooks'
+        }
+      }
+      if (method === 'hooks.read') return '#!/bin/sh\n'
+      if (method === 'hooks.disable') return undefined
+      return undefined
+    })
+
+    renderWithProviders(<RepoHooksPanel />)
+    await screen.findByRole('textbox')
+    await userEvent.click(screen.getByRole('button', { name: 'Disable' }))
+    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('hooks.disable', { name: 'pre-commit' })
+  })
+
+  it('deletes a hook after confirmation', async () => {
+    vi.mocked(window.gitfreddo.invoke).mockImplementation(async (method: string) => {
+      if (method === 'hooks.list') {
+        return {
+          hooks: [{ name: 'pre-commit', filename: 'pre-commit', enabled: true, executable: true }],
+          hooksDir: '/tmp/repo/.git/hooks'
+        }
+      }
+      if (method === 'hooks.read') return '#!/bin/sh\n'
+      if (method === 'hooks.delete') return undefined
+      return undefined
+    })
+
+    renderWithProviders(<RepoHooksPanel />)
+    await screen.findByRole('textbox')
+    await userEvent.click(screen.getByRole('button', { name: 'Delete' }))
+
+    expect(window.confirm).toHaveBeenCalled()
+    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('hooks.delete', { name: 'pre-commit' })
+  })
+
+  it('skips delete when confirmation is declined', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    vi.mocked(window.gitfreddo.invoke).mockImplementation(async (method: string) => {
+      if (method === 'hooks.list') {
+        return {
+          hooks: [{ name: 'pre-commit', filename: 'pre-commit', enabled: true, executable: true }],
+          hooksDir: '/tmp/repo/.git/hooks'
+        }
+      }
+      if (method === 'hooks.read') return '#!/bin/sh\n'
+      return undefined
+    })
+
+    renderWithProviders(<RepoHooksPanel />)
+    await screen.findByRole('textbox')
+    await userEvent.click(screen.getByRole('button', { name: 'Delete' }))
+
+    expect(window.gitfreddo.invoke).not.toHaveBeenCalledWith('hooks.delete', expect.anything())
+  })
 })

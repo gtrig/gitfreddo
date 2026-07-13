@@ -7,6 +7,26 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-13 — Stabilize OAuth and virtual list tests
+
+- **Why:** Full-suite runs intermittently failed on Bitbucket OAuth port binding and post-teardown virtualizer timers.
+- **What:** Bitbucket OAuth callback server now binds directly with port retry and OS-assigned fallback (no probe/listen race); tests track active flows and use ephemeral ports. `FixedHeightVirtualList` tests flush fake timers before cleanup.
+
+### 2026-07-13 — Coverage expansion batch 4 (~94.5% lines)
+
+- **Why:** Continue toward 95% line coverage with another reviewable 10-file batch.
+- **What:** Expanded tests for `RebaseSequenceModal`, `CleanUntrackedModal`, `WorkspaceTabs`, `AddWorktreeModal`, `GithubIntegrationCard`, `RepoHooksPanel`, `RowResizeHandle`, `status` (clean preview + conflict classification), `shared/ai` conflict parser skips, and `repo-manager-invoke` multi-hash cherry-pick. Fixed Bitbucket OAuth port selection to read `GITFREDDO_OAUTH_PORT` at runtime and hardened OAuth tests (monotonic ports, longer timeouts). **2,067 tests pass**; **94.47% line coverage**.
+
+### 2026-07-13 — Coverage expansion batch (22 test files, ~94% lines)
+
+- **Why:** Push line coverage toward 95% with reliable, reviewable increments.
+- **What:** Added/expanded tests in three batches (10+10+2 files): GitHub/Bitbucket SSH keys, forge key-pair, open-in-editor, branchVisibility/layout stores, useAiFill and forge status hooks, usePushRemote/useAppUpdate, AddSubmoduleModal, ContextMenu, ColumnResizeHandle, SquashMergeIntoModal, PickaxeSearchModal, CreatePrModal MergePrButton, settings normalization, workspace restore edge cases, GitHub pulls list/create, shared AI parser errors. Hardened Bitbucket OAuth tests (`describe.sequential`, per-process port offset, server cleanup). **2,038 tests pass** (full suite green).
+
+### 2026-07-13 — Vitest projects and AI-friendly test scripts
+
+- **Why:** AI agents run tests frequently during TDD; a monolithic Vitest config forced the full ~45s suite even when only node or renderer code changed.
+- **What:** Split Vitest into **`unit`** (node: `electron/`, `shared/`, `src/lib/`, `src/locales/`) and **`renderer`** (jsdom: components, hooks, stores) projects with a minimal `src/test/setup.node.ts` so node tests skip jsdom/jest-dom overhead. Added `npm run test:unit`, `test:renderer`, `test:changed`, and `test:quick`. Improved failure output (`outputDiffLines`, `outputDiffMaxSize`). Fixed unhandled rejection in `git-runner.test.ts` timeout test. Updated `AGENTS.md`, `.cursor/rules/gitfreddo.mdc`, and `docs/contributing/testing.md`.
+
 ### 2026-07-12 — Test coverage to 90% and CI fixes
 
 - **Why:** Raise project line coverage to 90% and fix test regressions blocking CI.

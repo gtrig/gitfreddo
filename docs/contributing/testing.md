@@ -7,8 +7,15 @@ GitFreddo uses Vitest for unit and component tests, and Playwright for one Elect
 Logic and git output parsers live alongside source as `*.test.ts` files.
 
 ```bash
-npm run test
+npm run test          # full suite (unit + renderer projects)
+npm run test:unit     # electron/, shared/, src/lib/, src/locales/ only (~16s)
+npm run test:renderer # components, hooks, stores (~26s)
+npm run test:changed  # git-aware: tests affected by uncommitted changes
+npm run test:quick    # bail on first failure
+vitest run path/to/module.test.ts   # single file during TDD (~1s)
 ```
+
+Vitest uses two **projects** (`unit` = node, `renderer` = jsdom) so agents can run the smaller slice that matches the code under edit. Per-file `@vitest-environment` pragmas still override the project default when needed.
 
 Coverage report (HTML output in `coverage/`):
 
@@ -45,11 +52,12 @@ npm run test
 
 Setup:
 
-- `src/test/setup.ts` — jest-dom matchers, global mocks
+- `src/test/setup.node.ts` — empty (node/unit project; no jsdom overhead)
+- `src/test/setup.ts` — jest-dom matchers, global mocks (renderer project)
 - `src/test/mocks/gitfreddo.ts` — IPC stub
 - `src/test/render.tsx` — `renderWithProviders()` wrapper
 
-Environment: **jsdom** (matched by `vitest.config.ts` glob).
+Environment: **jsdom** (renderer project; `src/components`, `src/hooks`, `src/stores`).
 
 ## E2E smoke test
 

@@ -76,4 +76,28 @@ describe('useLayoutStore', () => {
     useLayoutStore.getState().adjustCommitPanelHeight(40)
     expect(useLayoutStore.getState().commitPanelHeight).toBe(COMMIT_PANEL_DEFAULT + 40)
   })
+
+  it('loads persisted layout values on module init', async () => {
+    vi.resetModules()
+    localStorage.setItem(
+      'gitfreddo:sidebar-layout',
+      JSON.stringify({ leftWidth: 350, rightWidth: 400, commitPanelHeight: 220 })
+    )
+
+    const { useLayoutStore: reloadedStore } = await import('@/stores/layout')
+    expect(reloadedStore.getState().leftWidth).toBe(350)
+    expect(reloadedStore.getState().rightWidth).toBe(400)
+    expect(reloadedStore.getState().commitPanelHeight).toBe(220)
+  })
+
+  it('falls back to defaults when persisted layout is corrupt', async () => {
+    vi.resetModules()
+    localStorage.setItem('gitfreddo:sidebar-layout', '{bad json')
+
+    const { useLayoutStore: reloadedStore, LEFT_DEFAULT, RIGHT_DEFAULT, COMMIT_PANEL_DEFAULT } =
+      await import('@/stores/layout')
+    expect(reloadedStore.getState().leftWidth).toBe(LEFT_DEFAULT)
+    expect(reloadedStore.getState().rightWidth).toBe(RIGHT_DEFAULT)
+    expect(reloadedStore.getState().commitPanelHeight).toBe(COMMIT_PANEL_DEFAULT)
+  })
 })

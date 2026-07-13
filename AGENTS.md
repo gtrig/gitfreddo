@@ -93,7 +93,11 @@ npm run smoke
 | Change scope | Extra command |
 |--------------|---------------|
 | App startup, IPC, preload, main window, repo connect, timeline/sidebar load | `npm run test:e2e` (after `build`) |
-| Only pure logic with co-located unit tests | `vitest run path/to/module.test.ts` during TDD; full suite before finish |
+| `electron/`, `shared/`, or `src/lib/` only | `npm run test:unit` during TDD |
+| Renderer hooks/components/stores only | `npm run test:renderer` during TDD |
+| Single file under active edit | `vitest run path/to/module.test.ts` |
+| Few touched files (git-aware) | `npm run test:changed` |
+| First failure only | `npm run test:quick` |
 
 **Fix any failure before finishing.** If a check cannot run locally, state which CI step may still fail.
 
@@ -132,6 +136,10 @@ After substantive work, update **both** logs before ending the turn (skip for pu
 | `npm run build` | Production build to `out/` |
 | `npm run typecheck` | TypeScript check (web + node) |
 | `npm run test` | Unit + component tests |
+| `npm run test:unit` | Node tests only (`electron/`, `shared/`, `src/lib/`, `src/locales/`) |
+| `npm run test:renderer` | jsdom tests (`src/components`, `src/hooks`, `src/stores`) |
+| `npm run test:changed` | Git-aware: tests affected by uncommitted changes |
+| `npm run test:quick` | Full suite, bail on first failure |
 | `npm run test:coverage` | Coverage report (thresholds enforced) |
 | `npm run test:e2e` | Electron smoke test (Playwright) |
 | `npm run smoke` | Git backend shell smoke test |

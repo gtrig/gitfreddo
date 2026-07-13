@@ -782,6 +782,37 @@ describe('parseConflictResolveResponse', () => {
       parseConflictResolveResponse(JSON.stringify({ resolutions: [] }), 1)
     ).toThrow(/no usable conflict resolutions/)
   })
+
+  it('skips invalid resolution entries but keeps valid ones', () => {
+    const result = parseConflictResolveResponse(
+      JSON.stringify({
+        resolutions: [
+          { hunkId: 'bad', text: 'nope' },
+          null,
+          { hunkId: 0, text: 'ok', analysis: 'fine', confidence: 80 }
+        ]
+      }),
+      1
+    )
+    expect(result).toHaveLength(1)
+    expect(result[0]?.text).toBe('ok')
+  })
+
+  it('throws when every resolution entry is invalid', () => {
+    expect(() =>
+      parseConflictResolveResponse(
+        JSON.stringify({
+          resolutions: [{ hunkId: 'bad', text: 'nope' }, null, { hunkId: 1 }]
+        }),
+        1
+      )
+    ).toThrow(/no usable conflict resolutions/)
+  })
+
+  it('throws when response is not valid JSON or not an object', () => {
+    expect(() => parseConflictResolveResponse('not json', 1)).toThrow(/valid JSON/)
+    expect(() => parseConflictResolveResponse(JSON.stringify('nope'), 1)).toThrow(/JSON object/)
+  })
 })
 
 describe('parseAnalyzePullRequestResponse', () => {
@@ -921,5 +952,47 @@ describe('buildAiMessages analyze_pull_request', () => {
     expect(user).toContain('Auth updates')
     expect(user).toContain('logout path')
     expect(user).toContain('Add more detail on risks')
+  })
+})
+
+describe('parsePullRequestResponse edge cases', () => {
+  it('accepts fenced JSON and empty body', () => {
+    const result = parsePullRequestResponse('```json\n{"title":"Feature","body":""}\n```')
+    expect(result).toEqual({ title: 'Feature', body: '' })
+  })
+
+  it('throws when title is missing', () => {
+    expect(() => parsePullRequestResponse(JSON.stringify({ body: 'Only body' }))).toThrow(
+      /no PR title/
+    )
+  })
+})
+
+describe('parseComposeCommitsResponse edge cases', () => {
+  it('resolves staged paths with leading ./ prefixes', () => {
+    const result = parseComposeCommitsResponse(
+      JSON.stringify([{ message: 'feat: auth', files: ['./src/auth.ts'] }]),
+      ['src/auth.ts']
+    )
+    expect(result[0]?.files).toEqual(['src/auth.ts'])
+  })
+
+  it('throws when the response is empty', () => {
+    expect(() => parseComposeCommitsResponse(JSON.stringify([]), ['src/auth.ts'])).toThrow(
+      /no commit proposals/
+    )
+  })
+})
+
+describe('parseAnalyzePullRequestResponse edge cases', () => {
+  it('accepts array-shaped analysis sections', () => {
+    const result = parseAnalyzePullRequestResponse(
+      JSON.stringify({
+        summary: ['Line one', 'Line two'],
+        keyChanges: ['Change A']
+      })
+    )
+    expect(result.summary).toBe('Line one\nLine two')
+    expect(result.keyChanges).toBe('Change A')
   })
 })

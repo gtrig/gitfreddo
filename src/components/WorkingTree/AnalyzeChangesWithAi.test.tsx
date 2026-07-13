@@ -6,6 +6,7 @@ import { cleanup, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AnalyzeChangesWithAi } from './AnalyzeChangesWithAi'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { useToastStore } from '@/stores/toast'
 import { renderWithProviders } from '@/test/render'
 import { createGitFreddoMock, defaultMockSettings } from '@/test/mocks/gitfreddo'
 
@@ -174,5 +175,53 @@ describe('AnalyzeChangesWithAi', () => {
 
     expect(screen.getByDisplayValue('Add features A and B')).toBeInTheDocument()
     expect(screen.queryByDisplayValue('Add feature B')).not.toBeInTheDocument()
+  })
+
+  it('renders nothing when AI is disabled', async () => {
+    window.gitfreddo = createGitFreddoMock({
+      getSettings: vi.fn(async () => ({
+        ...defaultMockSettings,
+        aiEnabled: false
+      }))
+    })
+
+    renderWithProviders(
+      <AnalyzeChangesWithAi branch="main" stagedPaths={['src/a.ts']} unstagedPaths={[]} />
+    )
+
+    expect(screen.queryByRole('button', { name: /^analyze$/i })).not.toBeInTheDocument()
+  })
+
+  it('renders nothing when there are no changed files', () => {
+    renderWithProviders(
+      <AnalyzeChangesWithAi branch="main" stagedPaths={[]} unstagedPaths={[]} />
+    )
+    expect(screen.queryByRole('button', { name: /^analyze$/i })).not.toBeInTheDocument()
+  })
+
+  it('shows an error toast when analysis fails', async () => {
+    const showToast = vi.fn()
+    useToastStore.setState({ message: null, tone: 'info', show: showToast, clear: vi.fn() })
+
+    window.gitfreddo = createGitFreddoMock({
+      getSettings: vi.fn(async () => ({
+        ...defaultMockSettings,
+        aiEnabled: true,
+        aiBaseUrl: 'http://localhost:1234'
+      })),
+      aiFill: vi.fn(async () => {
+        throw new Error('model unavailable')
+      })
+    })
+
+    const user = userEvent.setup()
+    renderWithProviders(
+      <AnalyzeChangesWithAi branch="main" stagedPaths={['src/a.ts']} unstagedPaths={[]} />
+    )
+    await user.click(await screen.findByRole('button', { name: /^analyze$/i }))
+
+    await waitFor(() => {
+      expect(showToast).toHaveBeenCalledWith('model unavailable', 'error')
+    })
   })
 })

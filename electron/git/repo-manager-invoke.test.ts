@@ -318,6 +318,21 @@ describe('RepoManager invoke coverage', () => {
     }
   })
 
+  it('cherry-picks multiple commits via hashes array', async () => {
+    await manager.invoke(tmpDir, 'branch.create', { name: 'pick-branch', startPoint: commitHash })
+    await manager.invoke(tmpDir, 'branch.checkout', { name: 'pick-branch' })
+    writeFileSync(join(tmpDir, 'pick-a.txt'), 'a\n')
+    execSync('git add pick-a.txt && git commit -m "pick a"', { cwd: tmpDir, stdio: 'ignore' })
+    writeFileSync(join(tmpDir, 'pick-b.txt'), 'b\n')
+    execSync('git add pick-b.txt && git commit -m "pick b"', { cwd: tmpDir, stdio: 'ignore' })
+    const pickGraph = await manager.invoke(tmpDir, 'log.graph', { maxCount: 5 })
+    const newerHash = pickGraph.commits[0]!.hash
+    const olderHash = pickGraph.commits[1]!.hash
+
+    await manager.invoke(tmpDir, 'branch.checkout', { name: 'main' })
+    await manager.invoke(tmpDir, 'cherry-pick', { hashes: [olderHash, newerHash], noCommit: true })
+  })
+
   it('serializes non-JSON params for debug logging', async () => {
     const circular: { self?: unknown } = {}
     circular.self = circular

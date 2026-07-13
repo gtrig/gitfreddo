@@ -7,6 +7,7 @@ import {
   classifyPorcelainV2Line,
   parseCleanPreviewOutput,
   parsePorcelainV2Line,
+  workingCleanPreview,
   workingStatus
 } from './status'
 
@@ -130,6 +131,17 @@ describe('classifyPorcelainV2Line', () => {
       conflicted: null
     })
   })
+
+  it('classifies conflicted porcelain lines', () => {
+    const conflictLine =
+      'u UU N... 100644 100644 100644 abc def 100644 100644 100644 100644 conflict.ts'
+    const parsed = parsePorcelainV2Line(conflictLine)
+    expect(classifyPorcelainV2Line(conflictLine)).toEqual({
+      staged: null,
+      unstaged: null,
+      conflicted: parsed
+    })
+  })
 })
 
 describe('workingStatus integration', () => {
@@ -149,5 +161,20 @@ describe('workingStatus integration', () => {
 
     expect(status.staged).toEqual([{ path: 'foo.txt', status: 'modified' }])
     expect(status.unstaged).toEqual([{ path: 'foo.txt', status: 'modified' }])
+  })
+})
+
+describe('workingCleanPreview integration', () => {
+  it('lists untracked files from git clean dry-run', async () => {
+    const repo = mkdtempSync(join(tmpdir(), 'gf-clean-preview-'))
+    execSync('git init', { cwd: repo, stdio: 'ignore' })
+    execSync('git config user.email "t@e.com"', { cwd: repo, stdio: 'ignore' })
+    execSync('git config user.name "T"', { cwd: repo, stdio: 'ignore' })
+    writeFileSync(join(repo, 'README.md'), 'hello\n')
+    execSync('git add README.md && git commit -m init', { cwd: repo, stdio: 'ignore' })
+    writeFileSync(join(repo, 'tmp.txt'), 'temp\n')
+
+    const preview = await workingCleanPreview(repo, 'git', false)
+    expect(preview).toEqual(['tmp.txt'])
   })
 })

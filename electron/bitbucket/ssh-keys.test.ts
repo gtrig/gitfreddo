@@ -16,7 +16,7 @@ vi.mock('fs', () => ({
 }))
 
 import { bitbucketJson } from './api/http'
-import { findGitFreddoSshKeyTitle, listSshKeys, uploadSshKey } from './ssh-keys'
+import { findGitFreddoSshKeyTitle, listSshKeys, uploadSshKey, generateAndUploadSshKey } from './ssh-keys'
 
 describe('bitbucket ssh keys', () => {
   beforeEach(() => {
@@ -57,5 +57,16 @@ describe('bitbucket ssh keys', () => {
       undefined,
       undefined
     )
+  })
+
+  it('generates, uploads, and cleans up the temp key directory', async () => {
+    vi.mocked(bitbucketJson).mockResolvedValue(undefined)
+
+    await expect(
+      generateAndUploadSshKey('alice', 'GitFreddo generated')
+    ).resolves.toEqual({
+      title: 'GitFreddo generated',
+      publicKey: 'ssh-ed25519 AAAA test'
+    })
   })
 })

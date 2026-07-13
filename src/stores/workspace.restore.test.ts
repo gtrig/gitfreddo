@@ -85,4 +85,52 @@ describe('useWorkspaceStore restoreWorkspaceSession', () => {
     expect(state.tabs.map((tab) => tab.path)).toEqual(['/repo/good'])
     expect(state.activePath).toBe('/repo/good')
   })
+
+  it('skips invalid saved tab paths and clears session when none remain', async () => {
+    vi.mocked(window.gitfreddo.getSettings).mockResolvedValue({
+      ...defaultMockSettings,
+      openRepoTabs: ['/repo/missing'],
+      activeRepoTab: '/repo/missing'
+    })
+    vi.mocked(window.gitfreddo.normalizeRepoPath).mockRejectedValue(new Error('invalid'))
+
+    const useWorkspaceStore = await loadStore()
+    await useWorkspaceStore.getState().restoreWorkspaceSession()
+
+    expect(useWorkspaceStore.getState().tabs).toEqual([])
+    expect(window.gitfreddo.setSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ openRepoTabs: [], activeRepoTab: null })
+    )
+  })
+
+  it('continues restore when activating the active tab fails', async () => {
+    vi.mocked(window.gitfreddo.getSettings).mockResolvedValue({
+      ...defaultMockSettings,
+      openRepoTabs: ['/repo/a'],
+      activeRepoTab: '/repo/a'
+    })
+    vi.mocked(window.gitfreddo.connect).mockResolvedValue('/repo/a')
+    let normalizeCalls = 0
+    vi.mocked(window.gitfreddo.normalizeRepoPath).mockImplementation(async (path) => {
+      normalizeCalls += 1
+      if (normalizeCalls >= 3) {
+        throw new Error('switch failed')
+      }
+      return path
+    })
+
+    const useWorkspaceStore = await loadStore()
+    await useWorkspaceStore.getState().restoreWorkspaceSession()
+
+    expect(useWorkspaceStore.getState().tabs[0]?.connected).toBe(true)
+    expect(normalizeCalls).toBeGreaterThanOrEqual(3)
+  })
+
+  it('opens a workspace when setWorkspacePath receives a path', async () => {
+    vi.mocked(window.gitfreddo.connect).mockResolvedValue('/repo/new')
+    const useWorkspaceStore = await loadStore()
+    useWorkspaceStore.getState().setWorkspacePath('/repo/new')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(window.gitfreddo.connect).toHaveBeenCalledWith('/repo/new')
+  })
 })

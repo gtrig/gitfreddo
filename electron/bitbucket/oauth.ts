@@ -6,7 +6,6 @@ import { getAuthenticatedUser } from './client'
 
 const AUTHORIZE_URL = 'https://bitbucket.org/site/oauth2/authorize'
 const ACCESS_TOKEN_URL = 'https://bitbucket.org/site/oauth2/access_token'
-const DEFAULT_REDIRECT_PORT = 8765
 const OAUTH_SCOPES = [
   'account',
   'repository',
@@ -81,13 +80,15 @@ export async function exchangeAuthorizationCode(
 const OAUTH_TIMEOUT_MS = 5 * 60 * 1000 // 5 minutes
 
 function waitForAuthorizationCode(
-  port: number,
+  requestedPort: number,
   expectedState: string
 ): {
+  port: number
   listening: Promise<void>
   waitForCode: Promise<{ code: string; redirectUri: string }>
 } {
   let settled = false
+  let boundPort = requestedPort
   let listenResolve!: () => void
   let listenReject!: (error: Error) => void
   const listening = new Promise<void>((resolve, reject) => {
@@ -126,7 +127,7 @@ function waitForAuthorizationCode(
         res,
         '<h1>Authorization successful</h1><p>You can return to GitFreddo and close this window.</p>'
       )
-      finish(() => resolve({ code, redirectUri: getRedirectUri(port) }))
+      finish(() => resolve({ code, redirectUri: getRedirectUri(boundPort) }))
     })
 
     const finish = (action: () => void) => {
@@ -138,8 +139,9 @@ function waitForAuthorizationCode(
     }
 
     server.on('error', (error) => {
-      listenReject(error instanceof Error ? error : new Error(String(error)))
-      finish(() => reject(error))
+      const normalized = error instanceof Error ? error : new Error(String(error))
+      listenReject(normalized)
+      finish(() => reject(normalized))
     })
 
     const timer = setTimeout(() => {
@@ -148,34 +150,47 @@ function waitForAuthorizationCode(
       )
     }, OAUTH_TIMEOUT_MS)
 
-    server.listen(port, '127.0.0.1', () => listenResolve())
+    server.listen(requestedPort, '127.0.0.1', () => {
+      const address = server.address()
+      if (address && typeof address === 'object') {
+        boundPort = address.port
+      }
+      listenResolve()
+    })
   })
 
-  return { listening, waitForCode }
+  return {
+    get port() {
+      return boundPort
+    },
+    listening,
+    waitForCode
+  }
+}
+
+function getDefaultRedirectPort(): number {
+  return Number(process.env.GITFREDDO_OAUTH_PORT) || 8765
 }
 
 async function startCallbackServer(expectedState: string): Promise<{
   port: number
-  waitForCode: () => ReturnType<typeof waitForAuthorizationCode>
+  session: ReturnType<typeof waitForAuthorizationCode>
 }> {
   let lastError: unknown
-  for (let port = DEFAULT_REDIRECT_PORT; port < DEFAULT_REDIRECT_PORT + 10; port++) {
+  const defaultPort = getDefaultRedirectPort()
+  const ports = [...Array.from({ length: 20 }, (_, index) => defaultPort + index), 0]
+
+  for (const port of ports) {
+    const session = waitForAuthorizationCode(port, expectedState)
     try {
-      await new Promise<void>((resolve, reject) => {
-        const probe = createServer()
-        probe.once('error', reject)
-        probe.listen(port, '127.0.0.1', () => {
-          probe.close(() => resolve())
-        })
-      })
-      return {
-        port,
-        waitForCode: () => waitForAuthorizationCode(port, expectedState)
-      }
+      await session.listening
+      return { port: session.port, session }
     } catch (error) {
       lastError = error
+      await session.waitForCode.catch(() => undefined)
     }
   }
+
   throw lastError instanceof Error
     ? lastError
     : new Error('Could not start Bitbucket OAuth callback server')
@@ -193,7 +208,7 @@ export async function runBitbucketOAuthFlow(
   }
 
   const state = randomBytes(16).toString('hex')
-  const { port, waitForCode } = await startCallbackServer(state)
+  const { port, session } = await startCallbackServer(state)
   const redirectUri = getRedirectUri(port)
   const authorizationUri = `${AUTHORIZE_URL}?${new URLSearchParams({
     client_id: clientId,
@@ -203,13 +218,10 @@ export async function runBitbucketOAuthFlow(
     scope: OAUTH_SCOPES
   })}`
 
-  const { listening, waitForCode: callbackPromise } = waitForCode()
-  await listening
-
   onProgress?.({ status: 'waiting', authorizationUri })
   await shell.openExternal(authorizationUri)
 
-  const { code } = await callbackPromise
+  const { code } = await session.waitForCode
   onProgress?.({ status: 'exchanging' })
 
   const token = await exchangeAuthorizationCode(clientId, clientSecret, code, redirectUri)

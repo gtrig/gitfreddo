@@ -91,4 +91,87 @@ describe('Bitbucket RepoPicker', () => {
       cloneUrl: 'https://bitbucket.org/ws/alpha.git'
     })
   })
+
+  it('shows loading state', () => {
+    vi.mocked(useBitbucketRepos).mockReturnValue({
+      data: [],
+      isLoading: true,
+      error: null
+    } as never)
+    renderWithProviders(<RepoPicker selectedFullName={null} onSelect={vi.fn()} />)
+    expect(screen.getByText(/loading repositories/i)).toBeInTheDocument()
+  })
+
+  it('shows error state', () => {
+    vi.mocked(useBitbucketRepos).mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: new Error('API failed')
+    } as never)
+    renderWithProviders(<RepoPicker selectedFullName={null} onSelect={vi.fn()} />)
+    expect(screen.getByText('API failed')).toBeInTheDocument()
+  })
+
+  it('shows empty state', () => {
+    vi.mocked(useBitbucketRepos).mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: null
+    } as never)
+    renderWithProviders(<RepoPicker selectedFullName={null} onSelect={vi.fn()} />)
+    expect(screen.getByText(/No repositories found/i)).toBeInTheDocument()
+  })
+
+  it('highlights the selected repository and shows metadata', async () => {
+    vi.mocked(useBitbucketRepos).mockReturnValue({
+      data: [
+        {
+          uuid: 'repo-1',
+          fullName: 'ws/alpha',
+          name: 'alpha',
+          slug: 'alpha',
+          workspace: 'ws',
+          cloneUrl: 'https://bitbucket.org/ws/alpha.git',
+          cloneUrlHttps: 'https://bitbucket.org/ws/alpha.git',
+          cloneUrlSsh: 'git@bitbucket.org:ws/alpha.git',
+          isPrivate: true,
+          description: 'Primary app',
+          private: true
+        }
+      ],
+      isLoading: false,
+      error: null
+    } as never)
+
+    renderWithProviders(
+      <RepoPicker selectedFullName="ws/alpha" onSelect={vi.fn()} compact />
+    )
+
+    expect(screen.getByText('Primary app')).toBeInTheDocument()
+    expect(screen.getByText(/private/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /ws\/alpha/i })).toHaveClass('bg-gf-accent/10')
+  })
+
+  it('virtualizes long repository lists', () => {
+    vi.mocked(useBitbucketRepos).mockReturnValue({
+      data: Array.from({ length: 55 }, (_, index) => ({
+        uuid: `repo-${index}`,
+        fullName: `ws/repo-${index}`,
+        name: `repo-${index}`,
+        slug: `repo-${index}`,
+        workspace: 'ws',
+        cloneUrl: `https://bitbucket.org/ws/repo-${index}.git`,
+        cloneUrlHttps: `https://bitbucket.org/ws/repo-${index}.git`,
+        cloneUrlSsh: `git@bitbucket.org:ws/repo-${index}.git`,
+        isPrivate: false,
+        private: false
+      })),
+      isLoading: false,
+      error: null
+    } as never)
+
+    renderWithProviders(<RepoPicker selectedFullName={null} onSelect={vi.fn()} />)
+    expect(screen.getByText('ws/repo-0')).toBeInTheDocument()
+    expect(screen.getByText('ws/repo-54')).toBeInTheDocument()
+  })
 })

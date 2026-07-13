@@ -830,4 +830,76 @@ describe('GitHub Pull Request API', () => {
       )
     })
   })
+
+  describe('listPullRequests', () => {
+    it('maps open pull requests from the API', async () => {
+      vi.mocked(http.githubJson).mockResolvedValue([
+        {
+          number: 7,
+          title: 'Add feature',
+          state: 'open',
+          html_url: 'https://github.com/owner/repo/pull/7',
+          user: { login: 'dev' },
+          head: { ref: 'feature', sha: 'abc' },
+          base: { ref: 'main', sha: 'def' },
+          body: 'Summary',
+          draft: false,
+          mergeable: true
+        }
+      ])
+
+      const pulls = await pullApis.listPullRequests(owner, repo)
+
+      expect(pulls[0]).toMatchObject({
+        number: 7,
+        title: 'Add feature',
+        user: 'dev',
+        head: { ref: 'feature', sha: 'abc' },
+        base: { ref: 'main', sha: 'def' }
+      })
+      expect(http.githubJson).toHaveBeenCalledWith(
+        `/repos/${owner}/${repo}/pulls?state=open&per_page=100`
+      )
+    })
+  })
+
+  describe('createPullRequest', () => {
+    it('creates a pull request with optional draft flag', async () => {
+      vi.mocked(http.githubJson).mockResolvedValue({
+        number: 8,
+        title: 'Draft PR',
+        state: 'open',
+        html_url: 'https://github.com/owner/repo/pull/8',
+        user: { login: 'dev' },
+        head: { ref: 'feature', sha: 'abc' },
+        base: { ref: 'main', sha: 'def' },
+        body: 'Body',
+        draft: true,
+        mergeable: null
+      })
+
+      const pull = await pullApis.createPullRequest(owner, repo, {
+        title: 'Draft PR',
+        head: 'feature',
+        base: 'main',
+        body: 'Body',
+        draft: true
+      })
+
+      expect(pull.number).toBe(8)
+      expect(http.githubJson).toHaveBeenCalledWith(
+        `/repos/${owner}/${repo}/pulls`,
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({
+            title: 'Draft PR',
+            head: 'feature',
+            base: 'main',
+            body: 'Body',
+            draft: true
+          })
+        })
+      )
+    })
+  })
 })

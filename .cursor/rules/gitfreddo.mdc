@@ -74,6 +74,9 @@ npm run smoke
 | Change scope | Extra command |
 |--------------|---------------|
 | App startup, IPC, preload, main window, repo connect, timeline/sidebar load | `npm run test:e2e` (after `build`) |
-| Only pure logic with co-located unit tests | `vitest run path/to/module.test.ts` during TDD; full suite before finish |
+| Only pure logic with co-located unit tests | `npm run test:unit` or `vitest run path/to/module.test.ts` during TDD; full suite before finish |
+| Renderer hooks/components/stores only | `npm run test:renderer` |
+| After editing a few files | `npm run test:changed` (git-aware) |
+| First failure only (fast debug) | `npm run test:quick` |
 
 Fix any failure before finishing. If a check cannot be run locally, say so and which CI step may still fail.

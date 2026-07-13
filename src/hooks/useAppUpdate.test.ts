@@ -74,4 +74,57 @@ describe('useAppUpdate', () => {
       'error'
     )
   })
+
+  it('shows auth and network errors from manual update checks', async () => {
+    const show = vi.fn()
+    useToastStore.setState({ message: null, tone: 'info', show, clear: vi.fn() })
+    let listener: ((event: UpdateEvent) => void) | undefined
+    vi.mocked(window.gitfreddo.onUpdateEvent).mockImplementation((callback) => {
+      listener = callback
+      return () => undefined
+    })
+
+    const { result } = renderHook(() => useAppUpdate())
+    await act(async () => {
+      await result.current.checkForUpdates(true)
+    })
+
+    await act(async () => {
+      listener?.({ type: 'error', message: '401 Unauthorized token invalid' })
+    })
+    expect(show).toHaveBeenCalledWith('update.authFailed', 'error')
+
+    await act(async () => {
+      await result.current.checkForUpdates(true)
+    })
+    await act(async () => {
+      listener?.({ type: 'error', message: 'ENOTFOUND github.com' })
+    })
+    expect(show).toHaveBeenCalledWith('update.networkFailed', 'error')
+  })
+
+  it('shows download errors and up-to-date toast', async () => {
+    const show = vi.fn()
+    useToastStore.setState({ message: null, tone: 'info', show, clear: vi.fn() })
+    let listener: ((event: UpdateEvent) => void) | undefined
+    vi.mocked(window.gitfreddo.onUpdateEvent).mockImplementation((callback) => {
+      listener = callback
+      return () => undefined
+    })
+    vi.mocked(window.gitfreddo.downloadUpdate).mockRejectedValue(new Error('download failed'))
+
+    const { result } = renderHook(() => useAppUpdate())
+    await act(async () => {
+      await result.current.downloadUpdate()
+    })
+    expect(show).toHaveBeenCalledWith('download failed', 'error')
+
+    await act(async () => {
+      await result.current.checkForUpdates(true)
+    })
+    await act(async () => {
+      listener?.({ type: 'not-available', version: '0.3.9' })
+    })
+    expect(show).toHaveBeenCalledWith('update.upToDate:{"version":"0.3.9"}', 'success')
+  })
 })

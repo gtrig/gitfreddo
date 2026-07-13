@@ -1,36 +1,45 @@
 import { defineConfig } from 'vitest/config'
 import { resolve } from 'path'
 
+const alias = {
+  '@': resolve('src'),
+  '@shared': resolve('shared')
+}
+
+const coverageInclude = ['src/**/*.{ts,tsx}', 'shared/**/*.ts', 'electron/**/*.ts']
+const coverageExclude = [
+  '**/*.test.{ts,tsx}',
+  'src/test/**',
+  'e2e/**',
+  'test/**',
+  '**/*.d.ts',
+  'src/locales/**',
+  // Electron/renderer bootstrap — covered by E2E smoke, not unit-testable in isolation
+  'electron/main/**',
+  'electron/preload/**',
+  'src/main.tsx',
+  'src/theme-boot.ts',
+  'src/App.tsx',
+  // Heavy conflict UI — covered by dedicated lib/conflicts tests and E2E
+  'src/components/DiffViewer/ConflictMergeOverlay.tsx'
+]
+
 export default defineConfig({
+  resolve: { alias },
   test: {
-    environment: 'node',
-    environmentMatchGlobs: [
-      ['src/**/*.test.tsx', 'jsdom'],
-      ['src/components/**/*.test.tsx', 'jsdom']
-    ],
-    setupFiles: ['src/test/setup.ts'],
-    include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'shared/**/*.test.ts', 'electron/**/*.test.ts'],
+    // Root-level options (reporters, coverage) apply to all projects.
+    reporters: process.env.CI
+      ? 'default'
+      : [['default', { summary: false }]],
+    outputDiffLines: 25,
+    outputDiffMaxSize: 20_000,
+    slowTestThreshold: 5_000,
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'text-summary', 'html'],
+      reporter: ['text', 'text-summary', 'json-summary', 'html'],
       reportsDirectory: 'coverage',
-      include: ['src/**/*.{ts,tsx}', 'shared/**/*.ts', 'electron/**/*.ts'],
-      exclude: [
-        '**/*.test.{ts,tsx}',
-        'src/test/**',
-        'e2e/**',
-        'test/**',
-        '**/*.d.ts',
-        'src/locales/**',
-        // Electron/renderer bootstrap — covered by E2E smoke, not unit-testable in isolation
-        'electron/main/**',
-        'electron/preload/**',
-        'src/main.tsx',
-        'src/theme-boot.ts',
-        'src/App.tsx',
-        // Heavy conflict UI — covered by dedicated lib/conflicts tests and E2E
-        'src/components/DiffViewer/ConflictMergeOverlay.tsx'
-      ],
+      include: coverageInclude,
+      exclude: coverageExclude,
       thresholds: {
         lines: 90,
         branches: 80,
@@ -55,12 +64,39 @@ export default defineConfig({
           statements: 45
         }
       }
-    }
-  },
-  resolve: {
-    alias: {
-      '@': resolve('src'),
-      '@shared': resolve('shared')
-    }
+    },
+    projects: [
+      {
+        extends: true,
+        resolve: { alias },
+        test: {
+          name: { label: 'unit', color: 'green' },
+          environment: 'node',
+          pool: 'threads',
+          include: [
+            'electron/**/*.test.ts',
+            'shared/**/*.test.ts',
+            'src/lib/**/*.test.ts',
+            'src/locales/**/*.test.ts'
+          ],
+          setupFiles: ['src/test/setup.node.ts']
+        }
+      },
+      {
+        extends: true,
+        resolve: { alias },
+        test: {
+          name: { label: 'renderer', color: 'cyan' },
+          environment: 'jsdom',
+          pool: 'threads',
+          include: [
+            'src/components/**/*.test.{ts,tsx}',
+            'src/hooks/**/*.test.{ts,tsx}',
+            'src/stores/**/*.test.{ts,tsx}'
+          ],
+          setupFiles: ['src/test/setup.ts']
+        }
+      }
+    ]
   }
 })

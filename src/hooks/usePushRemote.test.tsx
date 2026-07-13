@@ -52,4 +52,70 @@ describe('usePushRemote', () => {
     })
     expect(window.gitfreddo.invoke).toHaveBeenCalledWith('push', { remote: 'origin' })
   })
+
+  it('opens force-push confirmation on non-fast-forward errors', async () => {
+    vi.mocked(window.gitfreddo.invoke).mockRejectedValue(
+      new Error('! [rejected] main -> main (non-fast-forward)')
+    )
+
+    const { result } = renderHook(() => usePushRemote(), { wrapper })
+    await act(async () => {
+      result.current.pushRemote({ remote: 'origin', branch: 'main' })
+    })
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(result.current.forceConfirm).toEqual({ remote: 'origin', branch: 'main' })
+  })
+
+  it('confirms force push and clears the confirmation state on success', async () => {
+    vi.mocked(window.gitfreddo.invoke)
+      .mockRejectedValueOnce(
+        new Error('! [rejected] main -> main (non-fast-forward)')
+      )
+      .mockResolvedValueOnce(undefined)
+
+    const { result } = renderHook(() => usePushRemote(), { wrapper })
+    await act(async () => {
+      result.current.pushRemote({ remote: 'origin' })
+    })
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    await act(async () => {
+      result.current.confirmForcePush()
+    })
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(window.gitfreddo.invoke).toHaveBeenLastCalledWith('push', {
+      remote: 'origin',
+      force: true
+    })
+    expect(result.current.forceConfirm).toBeNull()
+  })
+
+  it('cancels force-push confirmation', async () => {
+    vi.mocked(window.gitfreddo.invoke).mockRejectedValue(
+      new Error('! [rejected] main -> main (non-fast-forward)')
+    )
+
+    const { result } = renderHook(() => usePushRemote(), { wrapper })
+    await act(async () => {
+      result.current.pushRemote({ remote: 'origin' })
+    })
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    act(() => {
+      result.current.cancelForcePush()
+    })
+
+    expect(result.current.forceConfirm).toBeNull()
+  })
 })

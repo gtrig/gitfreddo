@@ -85,6 +85,42 @@ describe('settings persistence', () => {
     expect(settings.recentRepos).toEqual([])
     expect(emitLog).not.toHaveBeenCalled()
   })
+
+  it('normalizes legacy and partial settings fields', async () => {
+    await writeFile(
+      join(settingsDir, 'settings.json'),
+      JSON.stringify({
+        aiProvider: 'api',
+        aiBaseUrl: 'http://localhost:9999',
+        bitbucketAuthType: 'invalid',
+        submoduleRecursion: 'bogus',
+        pushSubmoduleRecursion: 'no',
+        diffViewMode: 'split',
+        locale: 'el',
+        uiZoomFactor: 9,
+        updateChannel: 'beta',
+        startupModalHiddenUntil: 'not-a-number',
+        startupModalHiddenForVersion: ' 1.2.3 '
+      }),
+      'utf8'
+    )
+
+    const { loadSettings } = await loadModule()
+    const settings = await loadSettings()
+
+    expect(settings.aiEnabled).toBe(false)
+    expect(settings.aiBaseUrl).toBe('http://localhost:9999')
+    expect(settings.aiProvider).toBe('api')
+    expect(settings.bitbucketAuthType).toBeNull()
+    expect(settings.submoduleRecursion).toBe('on-demand')
+    expect(settings.pushSubmoduleRecursion).toBe('no')
+    expect(settings.diffViewMode).toBe('split')
+    expect(settings.locale).toBe('el')
+    expect(settings.uiZoomFactor).toBe(2)
+    expect(settings.updateChannel).toBe('beta')
+    expect(settings.startupModalHiddenUntil).toBeNull()
+    expect(settings.startupModalHiddenForVersion).toBe('1.2.3')
+  })
 })
 
 describe('nextRecentRepos', () => {

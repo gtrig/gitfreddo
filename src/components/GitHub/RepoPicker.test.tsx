@@ -78,4 +78,58 @@ describe('GitHub RepoPicker', () => {
       cloneUrl: 'https://github.com/org/alpha.git'
     })
   })
+
+  it('shows loading state', () => {
+    vi.mocked(useGitHubRepos).mockReturnValue({
+      data: [],
+      isLoading: true,
+      error: null
+    } as never)
+    renderWithProviders(<RepoPicker selectedFullName={null} onSelect={vi.fn()} />)
+    expect(screen.getByText(/loading repositories/i)).toBeInTheDocument()
+  })
+
+  it('shows error state', () => {
+    vi.mocked(useGitHubRepos).mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: new Error('API failed')
+    } as never)
+    renderWithProviders(<RepoPicker selectedFullName={null} onSelect={vi.fn()} />)
+    expect(screen.getByText('API failed')).toBeInTheDocument()
+  })
+
+  it('shows empty state', () => {
+    vi.mocked(useGitHubRepos).mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: null
+    } as never)
+    renderWithProviders(<RepoPicker selectedFullName={null} onSelect={vi.fn()} />)
+    expect(screen.getByText(/No repositories found/i)).toBeInTheDocument()
+  })
+
+  it('highlights the selected repository and virtualizes long lists', () => {
+    vi.mocked(useGitHubRepos).mockReturnValue({
+      data: Array.from({ length: 55 }, (_, index) => ({
+        id: index,
+        fullName: `org/repo-${index}`,
+        name: `repo-${index}`,
+        cloneUrl: `https://github.com/org/repo-${index}.git`,
+        private: index % 2 === 0,
+        description: index === 0 ? 'Primary app' : undefined
+      })),
+      isLoading: false,
+      error: null
+    } as never)
+
+    renderWithProviders(
+      <RepoPicker selectedFullName="org/repo-0" onSelect={vi.fn()} compact />
+    )
+
+    expect(screen.getByText('Primary app')).toBeInTheDocument()
+    expect(screen.getByText('org/repo-0')).toBeInTheDocument()
+    expect(screen.getByText('org/repo-54')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /org\/repo-0/i })).toHaveClass('bg-gf-accent/10')
+  })
 })

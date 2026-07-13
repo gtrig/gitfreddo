@@ -4,7 +4,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { cleanup, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { CreatePrModal } from './CreatePrModal'
+import { CreatePrModal, MergePrButton } from './CreatePrModal'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { renderWithProviders } from '@/test/render'
 import { createGitFreddoMock, defaultMockSettings } from '@/test/mocks/gitfreddo'
@@ -160,5 +160,23 @@ describe('CreatePrModal', () => {
         base: 'feature'
       })
     })
+  })
+})
+
+describe('MergePrButton', () => {
+  afterEach(() => cleanup())
+
+  it('calls onMerge with the selected merge method', async () => {
+    const onMerge = vi.fn(async () => undefined)
+    const user = userEvent.setup()
+    renderWithProviders(<MergePrButton onMerge={onMerge} />)
+
+    await user.click(screen.getByRole('button', { name: /^merge$/i }))
+    await user.click(screen.getByRole('button', { name: /squash/i }))
+    await user.click(screen.getByRole('button', { name: /rebase/i }))
+
+    expect(onMerge).toHaveBeenNthCalledWith(1, 'merge')
+    expect(onMerge).toHaveBeenNthCalledWith(2, 'squash')
+    expect(onMerge).toHaveBeenNthCalledWith(3, 'rebase')
   })
 })

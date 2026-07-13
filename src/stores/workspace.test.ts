@@ -329,3 +329,58 @@ describe('useWorkspaceStore reorderWorkspaceTabs', () => {
     ])
   })
 })
+
+describe('useWorkspaceStore PR detail and connection helpers', () => {
+  beforeEach(() => resetWorkspaceStore())
+
+  it('opens and closes pull request detail state', () => {
+    useWorkspaceStore.getState().openPrDetail({
+      number: 42,
+      repository: { owner: 'acme', repo: 'app' }
+    })
+    expect(useWorkspaceStore.getState().prDetailNumber).toBe(42)
+    expect(useWorkspaceStore.getState().prDetailRepository).toEqual({ owner: 'acme', repo: 'app' })
+
+    useWorkspaceStore.getState().closePrDetail()
+    expect(useWorkspaceStore.getState().prDetailNumber).toBeNull()
+    expect(useWorkspaceStore.getState().prDetailRepository).toBeNull()
+  })
+
+  it('clears workspace path when set to null', () => {
+    useWorkspaceStore.setState({
+      tabs: [tab('/repo')],
+      activePath: '/repo',
+      workspacePath: '/repo',
+      connected: true
+    })
+
+    useWorkspaceStore.getState().setWorkspacePath(null)
+    expect(useWorkspaceStore.getState().activePath).toBeNull()
+    expect(useWorkspaceStore.getState().connected).toBe(false)
+  })
+
+  it('updates connected state for the active tab', () => {
+    useWorkspaceStore.setState({
+      tabs: [tab('/repo', true)],
+      activePath: '/repo',
+      workspacePath: '/repo',
+      connected: true
+    })
+
+    useWorkspaceStore.getState().setConnected(false)
+    expect(useWorkspaceStore.getState().connected).toBe(false)
+    expect(useWorkspaceStore.getState().tabs[0]?.connected).toBe(false)
+  })
+
+  it('ignores setConnected when there is no active path', () => {
+    useWorkspaceStore.setState({
+      tabs: [],
+      activePath: null,
+      workspacePath: null,
+      connected: false
+    })
+
+    useWorkspaceStore.getState().setConnected(true)
+    expect(useWorkspaceStore.getState().connected).toBe(false)
+  })
+})

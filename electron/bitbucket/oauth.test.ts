@@ -34,19 +34,46 @@ function callbackBase(progress: Array<{ authorizationUri?: string }>): string {
   return `http://127.0.0.1:${port || '8765'}`
 }
 
-describe('bitbucket oauth helpers', () => {
+async function waitForAuthorizationUri(
+  progress: Array<{ authorizationUri?: string }>,
+  flowPromise: Promise<unknown>
+): Promise<string> {
+  const deadline = Date.now() + 10_000
+  while (Date.now() < deadline) {
+    if (progress[0]?.authorizationUri) {
+      return progress[0].authorizationUri
+    }
+    if (await Promise.race([flowPromise.then(() => 'settled'), Promise.resolve('pending')]) === 'settled') {
+      break
+    }
+    await new Promise((resolve) => setTimeout(resolve, 25))
+  }
+  throw new Error('Bitbucket OAuth flow did not publish an authorization URI')
+}
+
+// OAuth flow tests bind a local HTTP port — run sequentially to avoid EADDRINUSE.
+describe.sequential('bitbucket oauth helpers', () => {
   const originalEnv = { ...process.env }
+  const activeFlows: Promise<unknown>[] = []
 
   beforeEach(() => {
     process.env = { ...originalEnv }
+    delete process.env.GITFREDDO_OAUTH_PORT
   })
 
   afterEach(async () => {
+    await Promise.allSettled(activeFlows.splice(0))
     process.env = originalEnv
     vi.clearAllMocks()
     vi.unstubAllGlobals()
     await new Promise((resolve) => setTimeout(resolve, 100))
   })
+
+  function startFlow(progress: Array<{ authorizationUri?: string }>) {
+    const flowPromise = runBitbucketOAuthFlow((value) => progress.push(value))
+    activeFlows.push(flowPromise)
+    return flowPromise
+  }
 
   it('reads client credentials from env', () => {
     process.env.BITBUCKET_CLIENT_ID = 'client-id'
@@ -116,10 +143,9 @@ describe('bitbucket oauth helpers', () => {
     process.env.BITBUCKET_CLIENT_SECRET = 'client-secret'
 
     const progress: Array<{ authorizationUri?: string }> = []
-    const flowPromise = runBitbucketOAuthFlow((value) => progress.push(value))
-
-    await vi.waitFor(() => expect(progress[0]?.authorizationUri).toBeDefined())
-    const state = new URL(progress[0]!.authorizationUri!).searchParams.get('state')!
+    const flowPromise = startFlow(progress)
+    const authorizationUri = await waitForAuthorizationUri(progress, flowPromise)
+    const state = new URL(authorizationUri).searchParams.get('state')!
 
     const rejection = expect(flowPromise).rejects.toThrow(/authorization failed/i)
     const status = await requestCallback(
@@ -127,7 +153,6 @@ describe('bitbucket oauth helpers', () => {
     )
     expect(status).toBe(400)
     await rejection
-    await new Promise((resolve) => setTimeout(resolve, 50))
   })
 
   it('rejects invalid callback state', async () => {
@@ -135,16 +160,14 @@ describe('bitbucket oauth helpers', () => {
     process.env.BITBUCKET_CLIENT_SECRET = 'client-secret'
 
     const progress: Array<{ authorizationUri?: string }> = []
-    const flowPromise = runBitbucketOAuthFlow((value) => progress.push(value))
-
-    await vi.waitFor(() => expect(progress[0]?.authorizationUri).toBeDefined())
+    const flowPromise = startFlow(progress)
+    await waitForAuthorizationUri(progress, flowPromise)
     const base = callbackBase(progress)
 
     const rejection = expect(flowPromise).rejects.toThrow(/invalid/i)
     const invalidState = await requestCallback(`${base}/callback?code=auth-code&state=wrong`)
     expect(invalidState).toBe(400)
     await rejection
-    await new Promise((resolve) => setTimeout(resolve, 50))
   })
 
   it('rejects callback when authorization code is missing', async () => {
@@ -152,15 +175,13 @@ describe('bitbucket oauth helpers', () => {
     process.env.BITBUCKET_CLIENT_SECRET = 'client-secret'
 
     const progress: Array<{ authorizationUri?: string }> = []
-    const flowPromise = runBitbucketOAuthFlow((value) => progress.push(value))
-
-    await vi.waitFor(() => expect(progress[0]?.authorizationUri).toBeDefined())
-    const state = new URL(progress[0]!.authorizationUri!).searchParams.get('state')!
+    const flowPromise = startFlow(progress)
+    const authorizationUri = await waitForAuthorizationUri(progress, flowPromise)
+    const state = new URL(authorizationUri).searchParams.get('state')!
     const rejection = expect(flowPromise).rejects.toThrow(/invalid/i)
     const missingCode = await requestCallback(`${callbackBase(progress)}/callback?state=${state}`)
     expect(missingCode).toBe(400)
     await rejection
-    await new Promise((resolve) => setTimeout(resolve, 50))
   })
 
   it('returns 404 for non-callback paths', async () => {
@@ -168,11 +189,17 @@ describe('bitbucket oauth helpers', () => {
     process.env.BITBUCKET_CLIENT_SECRET = 'client-secret'
 
     const progress: Array<{ authorizationUri?: string }> = []
-    void runBitbucketOAuthFlow((value) => progress.push(value)).catch(() => undefined)
+    const flowPromise = startFlow(progress)
+    const authorizationUri = await waitForAuthorizationUri(progress, flowPromise)
+    const base = callbackBase(progress)
+    const state = new URL(authorizationUri).searchParams.get('state')!
 
-    await vi.waitFor(() => expect(progress[0]?.authorizationUri).toBeDefined())
-    const status = await requestCallback(`${callbackBase(progress)}/other`)
+    const status = await requestCallback(`${base}/other`)
     expect(status).toBe(404)
+
+    const rejection = expect(flowPromise).rejects.toThrow(/authorization failed/i)
+    await requestCallback(`${base}/callback?error=access_denied&state=${state}`)
+    await rejection
   })
 
   it('completes the oauth flow when the callback arrives', async () => {
@@ -187,10 +214,8 @@ describe('bitbucket oauth helpers', () => {
     vi.mocked(getAuthenticatedUser).mockResolvedValue({ login: 'bb-user' } as never)
 
     const progress: Array<{ status: string; authorizationUri?: string }> = []
-    const flowPromise = runBitbucketOAuthFlow((value) => progress.push(value))
-
-    await vi.waitFor(() => expect(progress[0]?.authorizationUri).toBeDefined())
-    const authorizationUri = progress[0]!.authorizationUri!
+    const flowPromise = startFlow(progress)
+    const authorizationUri = await waitForAuthorizationUri(progress, flowPromise)
     const state = new URL(authorizationUri).searchParams.get('state')!
 
     const callbackResponse = await requestCallback(
