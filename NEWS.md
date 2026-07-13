@@ -5,7 +5,10 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
-## [0.4.0]
+- Bitbucket pull requests load again (API page size fix).
+- Bitbucket repository browsing works again after Atlassian retired the old cross-workspace list API.
+- Add remote can browse or create repositories on any connected integration (GitHub, Bitbucket, or GitLab).
+
 
 - Connect GitLab — including self-managed instances — with OAuth or a personal access token to browse repositories, open merge requests, track issues, and manage SSH keys.
 

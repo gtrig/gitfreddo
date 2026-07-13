@@ -141,3 +141,30 @@ export function normalizeBitbucketIssueState(state: string): string {
   if (upper === 'CLOSED' || upper === 'RESOLVED') return 'closed'
   return state.toLowerCase()
 }
+
+export type BitbucketIssuesUnavailableReason = 'not_enabled' | 'retired'
+
+const BITBUCKET_ISSUES_UNAVAILABLE_PREFIX = 'BITBUCKET_ISSUES_UNAVAILABLE:'
+
+export function bitbucketIssuesUnavailableMessage(
+  reason: BitbucketIssuesUnavailableReason
+): string {
+  return `${BITBUCKET_ISSUES_UNAVAILABLE_PREFIX}${reason}`
+}
+
+export function parseBitbucketIssuesUnavailable(
+  error: unknown
+): BitbucketIssuesUnavailableReason | null {
+  const message = error instanceof Error ? error.message : String(error)
+  const coded = message.match(/BITBUCKET_ISSUES_UNAVAILABLE:(not_enabled|retired)/)
+  if (coded) {
+    return coded[1] as BitbucketIssuesUnavailableReason
+  }
+  if (/issue tracker is not enabled/i.test(message)) {
+    return 'not_enabled'
+  }
+  if (/no longer available/i.test(message)) {
+    return 'retired'
+  }
+  return null
+}

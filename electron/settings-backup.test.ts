@@ -121,6 +121,12 @@ describe('settings backup service', () => {
     expect(backup.secrets).toEqual({ githubToken: 'gho_test', gitlabToken: 'gl_test' })
   })
 
+  it('includes bitbucket tokens in backup secrets when present', async () => {
+    vi.mocked(loadBitbucketToken).mockResolvedValue('bb_test')
+    const backup = await buildSettingsBackup(sampleSettings, '1.0.0')
+    expect(backup.secrets).toEqual({ githubToken: 'gho_test', bitbucketToken: 'bb_test' })
+  })
+
   it('exports a backup file when the save dialog succeeds', async () => {
     const exportPath = join(settingsDir, 'backup.json')
     vi.mocked(dialog.showSaveDialog).mockResolvedValue({

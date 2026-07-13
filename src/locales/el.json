@@ -586,9 +586,9 @@
       "title": "Προσθήκη remote",
       "name": "Όνομα",
       "url": "URL",
-      "browseGitHub": "Περιήγηση GitHub",
-      "createOnGitHub": "Δημιουργία στο GitHub",
-      "browseTitle": "Περιήγηση αποθετηρίων GitHub",
+      "browseRepositories": "Περιήγηση αποθετηρίων",
+      "createOn": "Δημιουργία στο {{provider}}",
+      "browseTitle": "Περιήγηση αποθετηρίων",
       "createNewRepo": "Δημιουργία νέου αποθετηρίου",
       "createAndAdd": "Δημιουργία & προσθήκη remote",
       "added": "Προστέθηκε remote \"{{name}}\""
@@ -1398,7 +1398,9 @@
       "updated": "Το issue ενημερώθηκε.",
       "close": "Κλείσιμο issue",
       "reopen": "Επανάνοιγμα issue",
-      "edit": "Επεξεργασία issue…"
+      "edit": "Επεξεργασία issue…",
+      "unavailableNotEnabled": "Ο tracker issues δεν είναι ενεργοποιημένος για αυτό το αποθετήριο Bitbucket.",
+      "unavailableRetired": "Τα εγγενή issues του Bitbucket δεν είναι πλέον διαθέσιμα για αυτό το αποθετήριο. Η Atlassian καταργεί τον ενσωματωμένο tracker — χρησιμοποιήστε Jira ή εξαγάγετε τα υπάρχοντα issues από το Bitbucket."
     },
     "pr": {
       "createTitle": "Δημιουργία pull request",

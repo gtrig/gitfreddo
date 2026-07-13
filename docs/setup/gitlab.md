@@ -73,6 +73,10 @@ With GitLab connected, the left sidebar shows:
 - **Clone a repository** — pick from your GitLab projects
 - **Create on GitLab** — create a new project and clone it locally
 
+### Add remote
+
+With GitLab connected, **Remotes → Add remote** can browse your projects or create a new project and add it as a remote in one step.
+
 ## Troubleshooting
 
 | Problem | Solution |

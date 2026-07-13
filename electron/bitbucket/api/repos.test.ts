@@ -41,8 +41,25 @@ describe('Bitbucket repos API', () => {
     vi.useRealTimers()
   })
 
-  it('maps and caches user repositories', async () => {
-    vi.mocked(http.bitbucketJsonAllPages).mockResolvedValue([rawRepo])
+  function mockWorkspaceScopedRepos(
+    workspaces: Array<{ slug: string; repos: typeof rawRepo[] }>
+  ) {
+    vi.mocked(http.bitbucketJsonAllPages).mockImplementation(async (path) => {
+      if (path.startsWith('/user/workspaces')) {
+        return workspaces.map(({ slug }) => ({ workspace: { slug } }))
+      }
+      for (const workspace of workspaces) {
+        const prefix = `/repositories/${encodeURIComponent(workspace.slug)}?`
+        if (path.startsWith(prefix)) {
+          return workspace.repos
+        }
+      }
+      return []
+    })
+  }
+
+  it('maps and caches user repositories from workspace-scoped endpoints', async () => {
+    mockWorkspaceScopedRepos([{ slug: 'workspace', repos: [rawRepo] }])
 
     const first = await repos.listUserRepos({}, settings)
     const second = await repos.listUserRepos({}, settings)
@@ -61,18 +78,63 @@ describe('Bitbucket repos API', () => {
       }
     ])
     expect(second).toEqual(first)
-    expect(http.bitbucketJsonAllPages).toHaveBeenCalledTimes(1)
+    expect(http.bitbucketJsonAllPages).toHaveBeenCalledWith(
+      '/user/workspaces?pagelen=100',
+      settings
+    )
+    expect(http.bitbucketJsonAllPages).toHaveBeenCalledWith(
+      '/repositories/workspace?role=member&pagelen=100&sort=-updated_on',
+      settings
+    )
+    expect(http.bitbucketJsonAllPages).toHaveBeenCalledTimes(2)
+  })
+
+  it('aggregates repositories across all accessible workspaces', async () => {
+    mockWorkspaceScopedRepos([
+      { slug: 'alpha', repos: [rawRepo] },
+      {
+        slug: 'beta',
+        repos: [
+          {
+            ...rawRepo,
+            uuid: '{repo-uuid-2}',
+            full_name: 'beta/other',
+            name: 'other',
+            slug: 'other',
+            workspace: { slug: 'beta' }
+          }
+        ]
+      }
+    ])
+
+    const listed = await repos.listUserRepos({}, settings)
+
+    expect(listed.map((repo) => repo.fullName)).toEqual(['workspace/demo', 'beta/other'])
+    expect(http.bitbucketJsonAllPages).toHaveBeenCalledWith(
+      '/repositories/alpha?role=member&pagelen=100&sort=-updated_on',
+      settings
+    )
+    expect(http.bitbucketJsonAllPages).toHaveBeenCalledWith(
+      '/repositories/beta?role=member&pagelen=100&sort=-updated_on',
+      settings
+    )
   })
 
   it('filters repositories by search term', async () => {
-    vi.mocked(http.bitbucketJsonAllPages).mockResolvedValue([
-      rawRepo,
+    mockWorkspaceScopedRepos([
       {
-        ...rawRepo,
-        full_name: 'workspace/other',
-        name: 'other',
-        slug: 'other',
-        description: 'Unrelated project'
+        slug: 'workspace',
+        repos: [
+          rawRepo,
+          {
+            ...rawRepo,
+            uuid: '{repo-uuid-2}',
+            full_name: 'workspace/other',
+            name: 'other',
+            slug: 'other',
+            description: 'Unrelated project'
+          }
+        ]
       }
     ])
 
@@ -82,18 +144,19 @@ describe('Bitbucket repos API', () => {
     expect(filtered[0]?.fullName).toBe('workspace/demo')
   })
 
-  it('lists unique sorted workspace slugs', async () => {
+  it('lists unique sorted workspace slugs from user workspaces', async () => {
     vi.mocked(http.bitbucketJsonAllPages).mockResolvedValue([
-      { slug: 'beta' },
-      { slug: 'alpha' },
-      { slug: 'beta' }
+      { workspace: { slug: 'beta' } },
+      { workspace: { slug: 'alpha' } },
+      { workspace: { slug: 'beta' } }
     ])
 
     await expect(repos.listWorkspaces(settings)).resolves.toEqual(['alpha', 'beta'])
+    expect(http.bitbucketJsonAllPages).toHaveBeenCalledWith('/user/workspaces?pagelen=100', settings)
   })
 
   it('creates a repository and clears the cache', async () => {
-    vi.mocked(http.bitbucketJsonAllPages).mockResolvedValue([rawRepo])
+    mockWorkspaceScopedRepos([{ slug: 'workspace', repos: [rawRepo] }])
     vi.mocked(http.bitbucketJson).mockResolvedValue({
       ...rawRepo,
       full_name: 'workspace/new-repo',
@@ -130,7 +193,7 @@ describe('Bitbucket repos API', () => {
   })
 
   it('forks a repository and clears the cache', async () => {
-    vi.mocked(http.bitbucketJsonAllPages).mockResolvedValue([rawRepo])
+    mockWorkspaceScopedRepos([{ slug: 'workspace', repos: [rawRepo] }])
     vi.mocked(http.bitbucketJson).mockResolvedValue({
       ...rawRepo,
       full_name: 'workspace/demo-fork'

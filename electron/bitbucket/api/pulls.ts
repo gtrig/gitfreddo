@@ -8,7 +8,7 @@ import {
   normalizeBitbucketPrState
 } from '../../../shared/bitbucket'
 import type { BitbucketAuthSettings } from '../../../shared/ipc'
-import { bitbucketJson } from './http'
+import { bitbucketJson, bitbucketJsonAllPages } from './http'
 
 interface BitbucketApiPull {
   id: number
@@ -49,13 +49,11 @@ export async function listPullRequests(
   repo: string,
   settings?: BitbucketAuthSettings
 ): Promise<BitbucketPullRequest[]> {
-  const raw = await bitbucketJson<{ values?: BitbucketApiPull[] }>(
-    `/repositories/${encodeURIComponent(workspace)}/${encodeURIComponent(repo)}/pullrequests?state=OPEN&pagelen=100`,
-    {},
-    undefined,
+  const raw = await bitbucketJsonAllPages<BitbucketApiPull>(
+    `/repositories/${encodeURIComponent(workspace)}/${encodeURIComponent(repo)}/pullrequests?state=OPEN&pagelen=50`,
     settings
   )
-  return (raw.values ?? []).map(mapPull)
+  return raw.map(mapPull)
 }
 
 export async function createPullRequest(

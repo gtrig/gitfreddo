@@ -51,4 +51,21 @@ describe('useBitbucketIssues', () => {
     result.current('/tmp/repo')
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['bitbucket-issues', '/tmp/repo'] })
   })
+
+  it('treats retired issue trackers as unavailable instead of an error', async () => {
+    vi.mocked(window.gitfreddo.bitbucketListIssues).mockRejectedValue(
+      new Error(
+        "Error invoking remote method 'gitfreddo:bitbucket-list-issues': Error: BITBUCKET_ISSUES_UNAVAILABLE:retired"
+      )
+    )
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const { result } = renderHook(() => useBitbucketIssues('/tmp/repo'), {
+      wrapper: createWrapper(queryClient)
+    })
+
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    expect(result.current.unavailableReason).toBe('retired')
+    expect(result.current.error).toBeNull()
+  })
 })

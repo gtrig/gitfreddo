@@ -14,6 +14,8 @@ GitFreddo is a desktop Git client with a visual commit graph. Use the guides bel
 | Guide | Description |
 |-------|-------------|
 | [GitHub integration](setup/github.md) | OAuth, PAT, SSH keys, PRs and issues |
+| [Bitbucket integration](setup/bitbucket.md) | OAuth, app password, SSH keys, PRs and issues |
+| [GitLab integration](setup/gitlab.md) | OAuth, PAT, self-managed host, MRs and issues |
 | [AI assistant](setup/ai-assistant.md) | Local LLM or cloud API for commits and conflicts |
 | [Git and credentials](setup/git-and-credentials.md) | Git binary, GPG, editor, pull rebase |
 | [Interface and themes](setup/interface-and-themes.md) | Themes, poll interval, diff defaults, language |

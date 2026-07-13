@@ -1,5 +1,8 @@
 import type { BitbucketIssue } from '../../../shared/bitbucket'
-import { normalizeBitbucketIssueState } from '../../../shared/bitbucket'
+import {
+  bitbucketIssuesUnavailableMessage,
+  normalizeBitbucketIssueState
+} from '../../../shared/bitbucket'
 import type { BitbucketAuthSettings } from '../../../shared/ipc'
 import { bitbucketJson } from './http'
 
@@ -25,6 +28,17 @@ function mapIssue(raw: BitbucketApiIssue): BitbucketIssue {
   }
 }
 
+function rethrowBitbucketIssueError(error: unknown): never {
+  const message = error instanceof Error ? error.message : String(error)
+  if (message.includes('(404)')) {
+    throw new Error(bitbucketIssuesUnavailableMessage('not_enabled'))
+  }
+  if (message.includes('(410)')) {
+    throw new Error(bitbucketIssuesUnavailableMessage('retired'))
+  }
+  throw error
+}
+
 export async function listIssues(
   workspace: string,
   repo: string,
@@ -48,11 +62,7 @@ export async function listIssues(
     )
     return (raw.values ?? []).map(mapIssue)
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    if (message.includes('(404)')) {
-      throw new Error('Issue tracker is not enabled for this Bitbucket repository.')
-    }
-    throw error
+    rethrowBitbucketIssueError(error)
   }
 }
 
@@ -62,21 +72,25 @@ export async function createIssue(
   params: { title: string; body?: string; labels?: string[] },
   settings?: BitbucketAuthSettings
 ): Promise<BitbucketIssue> {
-  const raw = await bitbucketJson<BitbucketApiIssue>(
-    `/repositories/${encodeURIComponent(workspace)}/${encodeURIComponent(repo)}/issues`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: params.title,
-        content: { raw: params.body ?? '' },
-        kind: params.labels?.[0] ?? 'bug'
-      })
-    },
-    undefined,
-    settings
-  )
-  return mapIssue(raw)
+  try {
+    const raw = await bitbucketJson<BitbucketApiIssue>(
+      `/repositories/${encodeURIComponent(workspace)}/${encodeURIComponent(repo)}/issues`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: params.title,
+          content: { raw: params.body ?? '' },
+          kind: params.labels?.[0] ?? 'bug'
+        })
+      },
+      undefined,
+      settings
+    )
+    return mapIssue(raw)
+  } catch (error) {
+    rethrowBitbucketIssueError(error)
+  }
 }
 
 export async function updateIssue(
@@ -93,15 +107,19 @@ export async function updateIssue(
     payload.state = params.state === 'closed' ? 'resolved' : 'open'
   }
 
-  const raw = await bitbucketJson<BitbucketApiIssue>(
-    `/repositories/${encodeURIComponent(workspace)}/${encodeURIComponent(repo)}/issues/${number}`,
-    {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    },
-    undefined,
-    settings
-  )
-  return mapIssue(raw)
+  try {
+    const raw = await bitbucketJson<BitbucketApiIssue>(
+      `/repositories/${encodeURIComponent(workspace)}/${encodeURIComponent(repo)}/issues/${number}`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      },
+      undefined,
+      settings
+    )
+    return mapIssue(raw)
+  } catch (error) {
+    rethrowBitbucketIssueError(error)
+  }
 }

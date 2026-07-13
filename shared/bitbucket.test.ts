@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  bitbucketIssuesUnavailableMessage,
   bitbucketMergeMethodToApi,
   normalizeBitbucketIssueState,
   normalizeBitbucketPrState,
+  parseBitbucketIssuesUnavailable,
   parseBitbucketRemote,
   slugifyIssueBranch
 } from './bitbucket'
@@ -62,5 +64,41 @@ describe('normalizeBitbucketIssueState', () => {
     expect(normalizeBitbucketIssueState('RESOLVED')).toBe('closed')
     expect(normalizeBitbucketIssueState('NEW')).toBe('open')
     expect(normalizeBitbucketIssueState('custom')).toBe('custom')
+  })
+})
+
+describe('parseBitbucketIssuesUnavailable', () => {
+  it('parses coded unavailable reasons', () => {
+    expect(
+      parseBitbucketIssuesUnavailable(
+        new Error(bitbucketIssuesUnavailableMessage('retired'))
+      )
+    ).toBe('retired')
+    expect(
+      parseBitbucketIssuesUnavailable(
+        new Error(
+          "Error invoking remote method 'gitfreddo:bitbucket-list-issues': Error: BITBUCKET_ISSUES_UNAVAILABLE:not_enabled"
+        )
+      )
+    ).toBe('not_enabled')
+  })
+
+  it('parses legacy friendly messages', () => {
+    expect(
+      parseBitbucketIssuesUnavailable(
+        new Error('Issue tracker is not enabled for this Bitbucket repository.')
+      )
+    ).toBe('not_enabled')
+    expect(
+      parseBitbucketIssuesUnavailable(
+        new Error(
+          'Bitbucket native issues are no longer available for this repository. Atlassian is retiring the built-in issue tracker — use Jira or export existing issues from Bitbucket.'
+        )
+      )
+    ).toBe('retired')
+  })
+
+  it('returns null for unrelated errors', () => {
+    expect(parseBitbucketIssuesUnavailable(new Error('Network down'))).toBeNull()
   })
 })

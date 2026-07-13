@@ -353,6 +353,26 @@ describe('SidebarIssuesSection', () => {
     })
   })
 
+  it('shows unavailable info instead of an error when Bitbucket issues are retired', async () => {
+    vi.mocked(useForgeContext).mockReturnValue({
+      provider: 'bitbucket',
+      expectedProvider: 'bitbucket',
+      connected: true,
+      login: 'bb-user'
+    } as ReturnType<typeof useForgeContext>)
+    vi.mocked(useBitbucketIssues).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: null,
+      unavailableReason: 'retired'
+    } as unknown as ReturnType<typeof useBitbucketIssues>)
+
+    renderWithProviders(<SidebarIssuesSection />)
+    await expandSection()
+    expect(screen.getByText(/no longer available/i)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /create issue/i })).not.toBeInTheDocument()
+  })
+
   it('opens the issue in the browser when a row is clicked', async () => {
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
     renderWithProviders(<SidebarIssuesSection />)

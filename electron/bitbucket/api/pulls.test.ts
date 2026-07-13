@@ -1,39 +1,43 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 
 vi.mock('./http', () => ({
-  bitbucketJson: vi.fn()
+  bitbucketJson: vi.fn(),
+  bitbucketJsonAllPages: vi.fn()
 }))
 
-import { bitbucketJson } from './http'
+import { bitbucketJson, bitbucketJsonAllPages } from './http'
 import { createPullRequest, listPullRequests, mergePullRequest } from './pulls'
 
 describe('bitbucket pulls api', () => {
   beforeEach(() => {
     vi.mocked(bitbucketJson).mockReset()
+    vi.mocked(bitbucketJsonAllPages).mockReset()
   })
 
   afterEach(() => {
     vi.restoreAllMocks()
   })
 
-  it('lists open pull requests', async () => {
-    vi.mocked(bitbucketJson).mockResolvedValue({
-      values: [
-        {
-          id: 42,
-          title: 'Add auth',
-          state: 'OPEN',
-          links: { html: { href: 'https://bitbucket.org/ws/repo/pull-requests/42' } },
-          author: { nickname: 'dev' },
-          source: { branch: { name: 'feature' }, commit: { hash: 'abc' } },
-          destination: { branch: { name: 'main' }, commit: { hash: 'def' } },
-          summary: { raw: 'Summary text' },
-          draft: false
-        }
-      ]
-    })
+  it('lists open pull requests with pagelen capped at 50', async () => {
+    vi.mocked(bitbucketJsonAllPages).mockResolvedValue([
+      {
+        id: 42,
+        title: 'Add auth',
+        state: 'OPEN',
+        links: { html: { href: 'https://bitbucket.org/ws/repo/pull-requests/42' } },
+        author: { nickname: 'dev' },
+        source: { branch: { name: 'feature' }, commit: { hash: 'abc' } },
+        destination: { branch: { name: 'main' }, commit: { hash: 'def' } },
+        summary: { raw: 'Summary text' },
+        draft: false
+      }
+    ])
 
     const pulls = await listPullRequests('ws', 'repo')
+    expect(bitbucketJsonAllPages).toHaveBeenCalledWith(
+      '/repositories/ws/repo/pullrequests?state=OPEN&pagelen=50',
+      undefined
+    )
     expect(pulls).toHaveLength(1)
     expect(pulls[0]).toMatchObject({
       number: 42,

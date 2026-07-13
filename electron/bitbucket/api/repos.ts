@@ -18,8 +18,9 @@ interface BitbucketApiRepo {
   mainbranch?: { name?: string }
 }
 
-interface BitbucketApiWorkspace {
-  slug: string
+
+interface BitbucketApiUserWorkspace {
+  workspace: { slug: string }
 }
 
 let cachedRepos: BitbucketRepo[] | null = null
@@ -48,6 +49,48 @@ export function clearRepoCache(): void {
   cacheExpiresAt = 0
 }
 
+async function listWorkspaceSlugs(settings?: BitbucketAuthSettings): Promise<string[]> {
+  const workspaces = await bitbucketJsonAllPages<BitbucketApiUserWorkspace>(
+    '/user/workspaces?pagelen=100',
+    settings
+  )
+  return [...new Set(workspaces.map((entry) => entry.workspace.slug))].sort()
+}
+
+function dedupeRepos(raw: BitbucketApiRepo[]): BitbucketApiRepo[] {
+  const seen = new Set<string>()
+  return raw.filter((repo) => {
+    if (seen.has(repo.uuid)) return false
+    seen.add(repo.uuid)
+    return true
+  })
+}
+
+async function listReposForWorkspaces(
+  workspaceSlugs: string[],
+  settings?: BitbucketAuthSettings
+): Promise<BitbucketApiRepo[]> {
+  if (!workspaceSlugs.length) return []
+
+  const query = new URLSearchParams({
+    role: 'member',
+    pagelen: '100',
+    sort: '-updated_on'
+  })
+  const queryString = query.toString()
+
+  const pages = await Promise.all(
+    workspaceSlugs.map((workspace) =>
+      bitbucketJsonAllPages<BitbucketApiRepo>(
+        `/repositories/${encodeURIComponent(workspace)}?${queryString}`,
+        settings
+      )
+    )
+  )
+
+  return dedupeRepos(pages.flat())
+}
+
 export async function listUserRepos(
   params: BitbucketListReposParams = {},
   settings?: BitbucketAuthSettings
@@ -59,17 +102,8 @@ export async function listUserRepos(
     return cachedRepos
   }
 
-  const query = new URLSearchParams({
-    role: 'member',
-    pagelen: '100',
-    page: String(page),
-    sort: '-updated_on'
-  })
-
-  const raw = await bitbucketJsonAllPages<BitbucketApiRepo>(
-    `/repositories?${query}`,
-    settings
-  )
+  const workspaceSlugs = await listWorkspaceSlugs(settings)
+  const raw = await listReposForWorkspaces(workspaceSlugs, settings)
   let repos = raw.map(mapRepo)
 
   if (search) {
@@ -93,11 +127,7 @@ export async function listUserRepos(
 export async function listWorkspaces(
   settings?: BitbucketAuthSettings
 ): Promise<string[]> {
-  const workspaces = await bitbucketJsonAllPages<BitbucketApiWorkspace>(
-    '/workspaces?pagelen=100',
-    settings
-  )
-  return [...new Set(workspaces.map((workspace) => workspace.slug))].sort()
+  return listWorkspaceSlugs(settings)
 }
 
 export async function createRepo(

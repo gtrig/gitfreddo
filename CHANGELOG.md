@@ -7,9 +7,22 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
-### 2026-07-13 — Windows release CI test fixes
+### 2026-07-13 — Bitbucket PR list and retired issues API
 
-- **Why:** `test:coverage` on `windows-latest` failed with path-sensitive assertions, git trace noise in rebase errors, and 5s timeouts on slow git integration tests.
+- **Why:** Pull request listing failed with `Invalid pagelen` (Bitbucket caps PR pages at 50, not 100); issue listing failed with HTTP 410 as Atlassian retires native Bitbucket Issues.
+- **What:** `listPullRequests` uses `pagelen=50` with full pagination via `bitbucketJsonAllPages`; issue API maps 404/410 to coded unavailable reasons; sidebar shows a muted notice (not a red error) and hides create/filter when Bitbucket issues are unavailable. Added i18n strings and tests.
+
+### 2026-07-13 — Bitbucket repo listing API migration (CHANGE-2770)
+
+- **Why:** Bitbucket removed the cross-workspace `GET /2.0/repositories` endpoint; browse/create flows returned HTTP 410.
+- **What:** `listUserRepos` now discovers workspaces via `GET /2.0/user/workspaces` and lists repositories per workspace with `GET /2.0/repositories/{workspace}`; `listWorkspaces` uses the same user-workspaces endpoint. Added aggregation/dedup tests; updated setup docs and troubleshooting.
+
+### 2026-07-13 — Add remote from active integrations
+
+- **Why:** Add remote only offered GitHub browse/create even when Bitbucket or GitLab were connected.
+- **What:** `AddRemoteModal` now lists browse/create actions for each connected forge (GitHub, Bitbucket, GitLab) with tabbed repository picker when multiple integrations are active; added `getConnectedForges` / `useConnectedForges` helper. Updated i18n strings and setup docs.
+
+### 2026-07-13 — CI stability on Windows
 - **What:** Platform-aware path assertions in `loadAppIcon` and GitHub SSH-key tests; `buildGitNodeEditorCommand` quotes/normalizes sequence-editor paths for Git for Windows; broader `stripGitTraceLines` + use in `runGitOrThrow`; CI unit `testTimeout` raised to 30s.
 
 ## [0.4.0] - 2026-07-13

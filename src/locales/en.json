@@ -586,9 +586,9 @@
       "title": "Add remote",
       "name": "Name",
       "url": "URL",
-      "browseGitHub": "Browse GitHub",
-      "createOnGitHub": "Create on GitHub",
-      "browseTitle": "Browse GitHub repositories",
+      "browseRepositories": "Browse repositories",
+      "createOn": "Create on {{provider}}",
+      "browseTitle": "Browse repositories",
       "createNewRepo": "Create new repository",
       "createAndAdd": "Create & add remote",
       "added": "Added remote \"{{name}}\""
@@ -1234,7 +1234,9 @@
       "updated": "Issue updated.",
       "close": "Close issue",
       "reopen": "Reopen issue",
-      "edit": "Edit issue…"
+      "edit": "Edit issue…",
+      "unavailableNotEnabled": "Issue tracker is not enabled for this Bitbucket repository.",
+      "unavailableRetired": "Bitbucket native issues are no longer available for this repository. Atlassian is retiring the built-in issue tracker — use Jira or export existing issues from Bitbucket."
     },
     "pr": {
       "createTitle": "Create pull request",

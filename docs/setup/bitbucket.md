@@ -67,6 +67,10 @@ With Bitbucket connected and a Bitbucket remote configured, the left sidebar sho
 - **Clone a repository** — pick from your Bitbucket repos
 - **Create on Bitbucket** — create a new repo in a workspace and clone it locally
 
+### Add remote
+
+With Bitbucket connected, **Remotes → Add remote** can browse your repositories or create a new repo and add it as a remote in one step.
+
 ## Troubleshooting
 
 | Problem | Solution |
@@ -75,7 +79,9 @@ With Bitbucket connected and a Bitbucket remote configured, the left sidebar sho
 | OAuth env error | Set both `BITBUCKET_CLIENT_ID` and `BITBUCKET_CLIENT_SECRET` |
 | SSH upload 403 / “apppassword” only | Disconnect OAuth; reconnect with **App password** (or API token) |
 | Push/clone still asks for password | Ensure the remote URL uses HTTPS with a connected account, or use SSH |
-| Issues panel empty or error | Enable the issue tracker for the repository in Bitbucket settings |
+| Issues panel empty or error | Enable the issue tracker for the repository in Bitbucket settings, or migrate to Jira if Bitbucket returns “no longer available” (native issues are being retired) |
+| PR list error “Invalid pagelen” | Update GitFreddo — older versions requested too many pull requests per page |
+| Browse repos returns empty or 410 | Update GitFreddo — older versions used a retired Bitbucket list API |
 
 ## Next
 

@@ -31,7 +31,7 @@ When no repository is open, GitFreddo shows the **workspace hub** with four opti
 1. **Open a folder** — browse for a local directory that contains a `.git` folder
 2. **Initialize a new repository** — create a new git repo in an empty or new folder
 3. **Clone a repository** — clone from any git remote URL (GitHub, GitLab, etc.)
-4. **Create on GitHub** — create a new GitHub repository and clone it locally (requires [GitHub integration](setup/github.md))
+4. **Create on GitHub / Bitbucket / GitLab** — create a new repository on a connected forge and clone it locally (see [GitHub](setup/github.md), [Bitbucket](setup/bitbucket.md), or [GitLab](setup/gitlab.md) integration)
 
 ## Multi-tab repositories
 
@@ -54,4 +54,6 @@ Open **Settings** from the menu or header to change themes, git path, AI assist,
 ## Next steps
 
 - [GitHub integration](setup/github.md) — connect your account for PRs, issues, and authenticated git
+- [Bitbucket integration](setup/bitbucket.md) — OAuth or app password for PRs, issues, and HTTPS git
+- [GitLab integration](setup/gitlab.md) — OAuth or PAT for merge requests, issues, and self-managed instances
 - [Everyday Git workflow](workflows/01-everyday.md) — stage, commit, and push your first changes

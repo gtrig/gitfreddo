@@ -40,7 +40,8 @@ export function SidebarIssuesSection() {
     assignee,
     connected && forge.provider === 'github'
   )
-  const { data: bbIssues, isLoading: bbLoading, error: bbError } = useBitbucketIssues(
+  const { data: bbIssues, isLoading: bbLoading, error: bbError, unavailableReason: bbIssuesUnavailable } =
+    useBitbucketIssues(
     repoPath,
     assignee,
     connected && forge.provider === 'bitbucket'
@@ -74,7 +75,9 @@ export function SidebarIssuesSection() {
     forge.provider === 'bitbucket' ? bbLoading : forge.provider === 'gitlab' ? glLoading : ghLoading
   const error =
     forge.provider === 'bitbucket' ? bbError : forge.provider === 'gitlab' ? glError : ghError
-  const count = canUseForge ? issues.length : 0
+  const issuesUnavailable =
+    forge.provider === 'bitbucket' ? bbIssuesUnavailable : null
+  const count = canUseForge && !issuesUnavailable ? issues.length : 0
   const issuesScrollRef = useRef<HTMLDivElement>(null)
   const useVirtualization = shouldVirtualize(issues.length)
 
@@ -135,7 +138,7 @@ export function SidebarIssuesSection() {
         count={count}
         defaultOpen={false}
         footer
-        onAdd={canUseForge ? () => setCreateOpen(true) : undefined}
+        onAdd={canUseForge && !issuesUnavailable ? () => setCreateOpen(true) : undefined}
         addTitle={t('sidebar.createIssue')}
       >
         {!connected && (
@@ -150,7 +153,16 @@ export function SidebarIssuesSection() {
         {connected && forge.connected && !forge.provider && (
           <p className="px-2 text-xs text-gf-fg-subtle">{t(forgeNotLinkedKey(provider))}</p>
         )}
-        {canUseForge && (
+        {canUseForge && issuesUnavailable && (
+          <p className="px-2 text-xs text-gf-fg-subtle">
+            {t(
+              issuesUnavailable === 'retired'
+                ? 'bitbucket.issue.unavailableRetired'
+                : 'bitbucket.issue.unavailableNotEnabled'
+            )}
+          </p>
+        )}
+        {canUseForge && !issuesUnavailable && (
           <>
             <div className="mb-2 flex flex-wrap gap-1 px-2">
               {FILTER_IDS.map((id) => (
@@ -252,7 +264,7 @@ export function SidebarIssuesSection() {
         />
       )}
 
-      {canUseForge && (
+      {canUseForge && !issuesUnavailable && (
         <Modal open={createOpen} title={t('modals.createIssue.title')} onClose={() => setCreateOpen(false)}>
           <div className="space-y-3 p-4">
             <label className="block text-sm">

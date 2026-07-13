@@ -70,7 +70,17 @@ describe('Bitbucket issues API', () => {
     vi.mocked(http.bitbucketJson).mockRejectedValue(new Error('Bitbucket API error (404): missing'))
 
     await expect(issues.listIssues(workspace, repo, undefined, settings)).rejects.toThrow(
-      /issue tracker is not enabled/i
+      /BITBUCKET_ISSUES_UNAVAILABLE:not_enabled/
+    )
+  })
+
+  it('maps retired issue trackers to a friendly error', async () => {
+    vi.mocked(http.bitbucketJson).mockRejectedValue(
+      new Error('Bitbucket API error (410): {"type": "error", "error": {"message": "Gone"}}')
+    )
+
+    await expect(issues.listIssues(workspace, repo, undefined, settings)).rejects.toThrow(
+      /BITBUCKET_ISSUES_UNAVAILABLE:retired/
     )
   })
 
