@@ -23,6 +23,7 @@ export function CommitGraphOverlay({
   workingSelected,
   selectedHash,
   selectedHashes,
+  ancestorHashes,
   dimmedHashes,
   rowHeight = GRAPH_ROW_HEIGHT,
   metrics = DEFAULT_GRAPH_METRICS,
@@ -34,6 +35,7 @@ export function CommitGraphOverlay({
   workingSelected: boolean
   selectedHash: string | null
   selectedHashes?: ReadonlySet<string>
+  ancestorHashes?: ReadonlySet<string> | null
   dimmedHashes?: ReadonlySet<string> | null
   rowHeight?: number
   metrics?: GraphMetrics
@@ -72,6 +74,11 @@ export function CommitGraphOverlay({
     Boolean(dimmedHashes?.has(fromKey) || dimmedHashes?.has(toKey))
 
   const nodeDimmed = (key: string) => Boolean(dimmedHashes?.has(key))
+
+  const nodeIsAncestor = (key: string) => Boolean(ancestorHashes?.has(key))
+
+  const edgeIsAncestor = (fromKey: string, toKey: string) =>
+    Boolean(ancestorHashes?.has(fromKey) && ancestorHashes?.has(toKey))
 
   const graphOpacityClass = (dimmed: boolean, brightClass = 'opacity-100') =>
     `${COMMIT_SEARCH_FADE_CLASS} ${dimmed ? 'opacity-35' : brightClass}`
@@ -131,7 +138,11 @@ export function CommitGraphOverlay({
                 metrics.cornerRadius
               )}
               fill="none"
-              stroke={colors.lane(edge.kind === 'merge' ? edge.toColumn : edge.fromColumn)}
+              stroke={
+                edgeIsAncestor(edge.fromKey, edge.toKey)
+                  ? colors.ancestor
+                  : colors.lane(edge.kind === 'merge' ? edge.toColumn : edge.fromColumn)
+              }
               strokeWidth={2.1}
               strokeLinecap="round"
               className={graphOpacityClass(edgeDimmed(edge.fromKey, edge.toKey), 'opacity-[0.96]')}
@@ -156,6 +167,7 @@ export function CommitGraphOverlay({
         const y = rowCenter(row.rowIndex)
         const isPrimary = selectedHash === row.key
         const isSelected = selectedHashes?.has(row.key) ?? isPrimary
+        const isAncestor = nodeIsAncestor(row.key)
         const dimmed = nodeDimmed(row.key) && !isPrimary && !isSelected
 
         if (row.isStash) {
@@ -192,13 +204,23 @@ export function CommitGraphOverlay({
             cx={x}
             cy={y}
             r={isPrimary ? 4.7 : isSelected ? 4.5 : 4.2}
-            fill={row.isMerge ? colors.merge : row.isHead ? colors.head : colors.lane(row.column)}
+            fill={
+              isAncestor
+                ? colors.ancestor
+                : row.isMerge
+                  ? colors.merge
+                  : row.isHead
+                    ? colors.head
+                    : colors.lane(row.column)
+            }
             stroke={
               isPrimary || isSelected
                 ? colors.selected
-                : row.isHead
-                  ? colors.headStroke
-                  : colors.nodeStroke
+                : isAncestor
+                  ? colors.ancestorStroke
+                  : row.isHead
+                    ? colors.headStroke
+                    : colors.nodeStroke
             }
             strokeWidth={isPrimary ? 2 : isSelected ? 1.75 : 1.5}
             className={graphOpacityClass(dimmed)}
