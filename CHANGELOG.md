@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-14 — `/release` Cursor command
+
+- **Why:** Cutting a release meant remembering the full sequence of CI-equivalent checks plus the local prerelease steps (version bump, changelog/news promotion, tag) by hand.
+- **What:** Added `.cursor/commands/release.md` — a `/release vX.Y.Z` command that runs `typecheck`, `test:coverage`, `build`, `smoke`, and `test:e2e`, then (only if green) runs `release:prepare`, promotes `[Unreleased]` notes in `CHANGELOG.md`/`NEWS.md` into the version section, commits `chore: release`, and creates the tag — stopping before push.
+
 ### 2026-07-14 — Two-way branch merge from the graph context menu
 
 - **Why:** The branch ref context menu only offered a one-way "Merge into current…"; users want to merge in either direction relative to the checked-out branch.
