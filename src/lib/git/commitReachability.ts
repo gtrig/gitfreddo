@@ -62,6 +62,58 @@ export function isBehindHead(
   return isStrictAncestorOf(commitHash, headHash, commits)
 }
 
+/**
+ * Set of `startHash` plus every commit reachable by walking parents from it.
+ * Returns an empty set when `startHash` is falsy. Cycle-safe.
+ */
+export function collectAncestors(startHash: string, commits: GitCommit[]): Set<string> {
+  const ancestors = new Set<string>()
+  if (!startHash) return ancestors
+
+  const byHash = commitByHash(commits)
+  const queue = [startHash]
+
+  while (queue.length > 0) {
+    const current = queue.shift()!
+    if (ancestors.has(current)) continue
+    ancestors.add(current)
+
+    const commit = byHash.get(current)
+    if (!commit) continue
+
+    for (const parent of commit.parents) {
+      if (!ancestors.has(parent)) queue.push(parent)
+    }
+  }
+
+  return ancestors
+}
+
+/**
+ * Set of `startHash` plus every commit on its first-parent chain
+ * (`git log --first-parent`). This stays on the current branch and excludes
+ * side branches that were merged in via a merge commit's second+ parents.
+ * Returns an empty set when `startHash` is falsy. Cycle-safe.
+ */
+export function collectFirstParentAncestors(
+  startHash: string,
+  commits: GitCommit[]
+): Set<string> {
+  const ancestors = new Set<string>()
+  if (!startHash) return ancestors
+
+  const byHash = commitByHash(commits)
+  let current: string | undefined = startHash
+
+  while (current && !ancestors.has(current)) {
+    ancestors.add(current)
+    const commit = byHash.get(current)
+    current = commit?.parents[0]
+  }
+
+  return ancestors
+}
+
 /** Commit is strictly ahead of HEAD on a shared history line. */
 export function isAheadOfHead(
   commitHash: string,
