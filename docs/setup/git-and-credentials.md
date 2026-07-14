@@ -65,9 +65,7 @@ You can:
 
 Hooks run automatically when GitFreddo performs the corresponding git operations (commit, push, etc.).
 
-GitFreddo’s own repository wires up git hooks on `npm install` (`scripts/setup-git-hooks.sh` points `core.hooksPath` at `scripts/hooks/`):
-
-- **pre-push** — runs `npm run typecheck` and `npm run test`, and blocks pushing a `v*` tag when `package.json` version does not match
+Git hooks live in each repository's own hooks directory (`.git/hooks/` by default) and are **not** version-controlled. GitFreddo manages them per workspace from this panel rather than shipping hooks in the repository.
 
 ## Next
 

@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-14 — Stop version-controlling git hooks; manage them per workspace
+
+- **Why:** Git hooks were tracked in the repo (`scripts/hooks/`) and force-installed via `core.hooksPath`, but hooks should live in each repo's own `.git/hooks/` and be managed per workspace by the GitFreddo app — not shipped in version control.
+- **What:** Removed the tracked `scripts/hooks/pre-push` hook, the `scripts/setup-git-hooks.sh` installer, and the `prepare` npm lifecycle that pointed `core.hooksPath` at `scripts/hooks/`. Deleted `scripts/check-release-pre-push.ts` (the hook's release-tag guard) and the now-unused `parseReleaseTagsFromPrePush`/`findReleaseTagVersionMismatches`/`packageVersionMatchesReleaseTag` helpers plus their tests in `shared/release-version.ts` (kept `normalizeReleaseTag`, still used by `release:prepare`). Updated docs (`docs/setup/git-and-credentials.md`, `docs/workflows/updates.md`, `.cursor/commands/release.md`) to note there is no pre-push hook and CI enforces `typecheck`/`test` on push. The app's per-workspace hook manager (`electron/git/operations/hooks.ts`, Settings → Repo hooks) is unchanged.
+
 ## [0.4.1] - 2026-07-14
 
 ### 2026-07-14 — Fix Windows CI failure in forge token-store test

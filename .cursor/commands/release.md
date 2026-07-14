@@ -71,4 +71,4 @@ Summarize:
 git push origin HEAD && git push origin $ARGUMENTS
 ```
 
-The `pre-push` hook re-runs `typecheck`/`test` and blocks the tag push unless `package.json` already matches the tag, which the steps above ensure.
+There is no pre-push hook — CI runs `typecheck`/`test` on push, and the steps above ensure `package.json` already matches the tag before you push.

@@ -40,11 +40,7 @@ Tagged releases (`v*`) bump `package.json` to the tag version before building, t
 2. Move `[Unreleased]` notes in `CHANGELOG.md` and `NEWS.md` into `## [X.Y.Z]`.
 3. Commit, create the tag, and push branch + tag.
 
-The repo installs git hooks (via `npm install` → `prepare`):
-
-- **pre-push** — runs `typecheck` and `test`, and blocks pushing a `v*` tag unless `package.json` already matches that semver
-
-Use `--no-verify` only when you know what you are doing.
+Before pushing a `v*` tag, make sure `package.json` matches the tag (step 1 handles this) and that `npm run typecheck` and `npm run test` pass locally — CI enforces both on push.
 
 Forge OAuth for installed apps is baked at build time from Actions secrets:
 
