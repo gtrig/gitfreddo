@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-14 — Fix commit graph lane break on linear history
+
+- **Why:** When HEAD was behind the newest commit on a linear branch, the commit graph spine detoured out to a side lane and back for one commit, making the vertical path look broken/kinked.
+- **What:** `buildGitGraphLayout` no longer displaces a column-0 commit when it is HEAD's own first-parent child; only genuinely divergent branches are pushed aside, so linear chains stay on one lane. Added a regression test in `src/lib/graph/gitGraphLayout.test.ts`.
+
 ### 2026-07-14 — Structural forge/ops deduplication pass
 
 - **Why:** Parallel GitHub/GitLab/Bitbucket stacks and repeated git/modal/hook patterns ballooned the codebase without behavior differences worth keeping.
