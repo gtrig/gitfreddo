@@ -41,7 +41,7 @@ describe('StartupModal', () => {
     // falls back to the newest release section (capped at 5).
     expect(
       screen.getByText(
-        'Syntax-highlighted code editor for git hooks, repository files (.gitignore and friends), merge conflict resolution, and the interactive rebase todo.'
+        'The commit graph highlights your current branch\'s line in green. Select any commit to trace its history instead.'
       )
     ).toBeInTheDocument()
   })
