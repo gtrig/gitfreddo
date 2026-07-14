@@ -21,15 +21,9 @@ import {
   isFeaturePartiallySelected,
   toggleFeatureCommitSelection
 } from '@/lib/ai/analyzeFeatures'
+import { buildCommitMessage } from '@/lib/workspace/fileTree'
 
 const SUBJECT_MAX = 72
-
-function buildCommitMessage(summary: string, description: string): string {
-  const subject = summary.trim()
-  const body = description.trim()
-  if (!body) return subject
-  return `${subject}\n\n${body}`
-}
 
 interface AnalyzeChangesWithAiProps {
   branch: string

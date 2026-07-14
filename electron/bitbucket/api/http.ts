@@ -1,4 +1,5 @@
 import type { BitbucketAuthSettings } from '../../../shared/ipc'
+import { readForgeJson, requireForgeToken } from '../../forge/http'
 import { resolveBitbucketAuthLogin } from '../auth'
 import { loadBitbucketToken } from '../token-store'
 
@@ -9,11 +10,7 @@ export function getBitbucketApiBase(): string {
 }
 
 export async function getBitbucketTokenOrThrow(): Promise<string> {
-  const token = await loadBitbucketToken()
-  if (!token?.trim()) {
-    throw new Error('Bitbucket is not connected. Connect in Settings → Integrations.')
-  }
-  return token.trim()
+  return requireForgeToken(loadBitbucketToken, 'Bitbucket')
 }
 
 function basicAuthHeader(username: string, password: string): string {
@@ -63,14 +60,7 @@ export async function bitbucketJson<T>(
   settings?: BitbucketAuthSettings
 ): Promise<T> {
   const response = await bitbucketFetch(path, init, token, settings)
-  if (!response.ok) {
-    const detail = await response.text()
-    throw new Error(`Bitbucket API error (${response.status}): ${detail}`)
-  }
-  if (response.status === 204) {
-    return undefined as T
-  }
-  return response.json() as Promise<T>
+  return readForgeJson<T>(response, 'Bitbucket', { allowEmpty: true })
 }
 
 interface PaginatedResponse<T> {

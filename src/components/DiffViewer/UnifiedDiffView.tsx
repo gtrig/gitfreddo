@@ -12,12 +12,9 @@ import {
   type DiffVirtualItem
 } from '@/lib/ui/buildDiffVirtualItems'
 import { CODE_LINE_HEIGHT, VIRTUAL_OVERSCAN } from '@/lib/ui/virtualList'
+import { formatLineNo } from '@/lib/format/formatLineNo'
 
 export type { DiffLineCommentTarget }
-
-function formatLineNo(value: number | null): string {
-  return value == null ? '' : String(value)
-}
 
 function unifiedRowClass(kind: DiffRow['kind']): string {
   switch (kind) {

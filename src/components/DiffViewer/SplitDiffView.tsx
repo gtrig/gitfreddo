@@ -8,16 +8,13 @@ import { DiffLineCommentBlocks } from '@/components/DiffViewer/DiffLineCommentBl
 import type { GitHubPullRequestRepository, GitHubPullRequestReviewThread } from '@shared/github'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { CODE_LINE_HEIGHT, VIRTUAL_OVERSCAN } from '@/lib/ui/virtualList'
+import { formatLineNo } from '@/lib/format/formatLineNo'
 
 export interface DiffReviewThreadContext {
   byTarget: Map<string, GitHubPullRequestReviewThread[]>
   prNumber: number
   repository: GitHubPullRequestRepository
   onUpdated?: () => void
-}
-
-function formatLineNo(value: number | null): string {
-  return value == null ? '' : String(value)
 }
 
 function cellClass(kind: 'add' | 'remove' | 'context' | null): string {

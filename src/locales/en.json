@@ -1414,6 +1414,7 @@
       "showInGraph": "Show in graph",
       "copyBranchName": "Copy branch name",
       "mergeIntoCurrent": "Merge into current…",
+      "mergeBranchIntoBranch": "Merge {{source}} into {{target}}…",
       "squashMergeInto": "Squash and merge into…",
       "createPullRequest": "Create pull request…",
       "rename": "Rename…",

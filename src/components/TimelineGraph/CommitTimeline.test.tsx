@@ -73,8 +73,16 @@ vi.mock('@/hooks/useAppSettings', async (importOriginal) => {
 })
 
 vi.mock('@/components/Branches/MergeBranchDialog', () => ({
-  MergeBranchDialog: ({ sourceBranch }: { sourceBranch: string }) => (
-    <div data-testid="merge-branch-dialog">{sourceBranch}</div>
+  MergeBranchDialog: ({
+    sourceBranch,
+    targetBranch
+  }: {
+    sourceBranch: string
+    targetBranch?: string
+  }) => (
+    <div data-testid="merge-branch-dialog">
+      {targetBranch ? `${sourceBranch}->${targetBranch}` : sourceBranch}
+    </div>
   )
 }))
 vi.mock('@/components/Forge/ForgeCreatePrModal', () => ({
@@ -1023,8 +1031,18 @@ describe('CommitTimeline', () => {
     renderWithProviders(<CommitTimeline />)
 
     fireEvent.contextMenu(screen.getByText('feature'))
-    await userEvent.click(screen.getByRole('menuitem', { name: /merge into current/i }))
+    await userEvent.click(screen.getByRole('menuitem', { name: /merge feature into/i }))
     expect(screen.getByTestId('merge-branch-dialog')).toHaveTextContent('feature')
+  })
+
+  it('opens the reverse merge dialog (current into branch) from the ref context menu', async () => {
+    await setupFeatureBranchTimeline()
+    renderWithProviders(<CommitTimeline />)
+
+    fireEvent.contextMenu(screen.getByText('feature'))
+    await userEvent.click(screen.getByRole('menuitem', { name: /into feature/i }))
+    // Reverse direction merges the current branch into feature (source->target).
+    expect(screen.getByTestId('merge-branch-dialog').textContent).toMatch(/->feature$/)
   })
 
   it('opens create pull request modal from the ref context menu', async () => {

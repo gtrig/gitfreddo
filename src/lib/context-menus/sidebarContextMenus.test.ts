@@ -63,6 +63,57 @@ describe('localBranchContextMenuItems', () => {
     )
   })
 
+  it('falls back to "Merge into current" when the current branch name is unknown', () => {
+    const items = localBranchContextMenuItems(branch(), {
+      onCheckout: noop,
+      onSelectCommit: noop,
+      onMerge: noop,
+      onRename: noop,
+      onDelete: noop
+    })
+
+    expect(items.find((item) => item.id === 'merge')?.label).toBe('Merge into current…')
+    expect(items.some((item) => item.id === 'merge-current-into')).toBe(false)
+  })
+
+  it('offers both merge directions when the current branch and reverse handler are provided', () => {
+    const onMerge = vi.fn()
+    const onMergeCurrentInto = vi.fn()
+    const items = localBranchContextMenuItems(branch({ name: 'feature/login' }), {
+      onCheckout: noop,
+      onSelectCommit: noop,
+      onMerge,
+      onMergeCurrentInto,
+      currentBranch: 'main',
+      onRename: noop,
+      onDelete: noop
+    })
+
+    const merge = items.find((item) => item.id === 'merge')
+    const reverse = items.find((item) => item.id === 'merge-current-into')
+    expect(merge?.label).toBe('Merge feature/login into main…')
+    expect(reverse?.label).toBe('Merge main into feature/login…')
+
+    merge?.onClick?.()
+    reverse?.onClick?.()
+    expect(onMerge).toHaveBeenCalledWith('feature/login')
+    expect(onMergeCurrentInto).toHaveBeenCalledWith('feature/login')
+  })
+
+  it('omits the reverse merge direction when no reverse handler is provided', () => {
+    const items = localBranchContextMenuItems(branch(), {
+      onCheckout: noop,
+      onSelectCommit: noop,
+      onMerge: noop,
+      currentBranch: 'main',
+      onRename: noop,
+      onDelete: noop
+    })
+
+    expect(items.find((item) => item.id === 'merge')?.label).toBe('Merge feature/login into main…')
+    expect(items.some((item) => item.id === 'merge-current-into')).toBe(false)
+  })
+
   it('offers create PR when ahead and handler is provided', () => {
     const items = localBranchContextMenuItems(branch({ ahead: 3 }), {
       onCheckout: noop,

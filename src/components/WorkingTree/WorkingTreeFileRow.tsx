@@ -124,7 +124,7 @@ export function fileNameFromPath(path: string): string {
 // Chevron + FolderCounts
 // ---------------------------------------------------------------------------
 
-export function Chevron({ open }: { open: boolean }) {
+function Chevron({ open }: { open: boolean }) {
   return <SidebarIconChevron open={open} className="h-3 w-3 shrink-0 text-gf-fg-subtle" />
 }
 

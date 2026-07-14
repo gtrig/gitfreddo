@@ -2,17 +2,7 @@ import type { TFunction } from 'i18next'
 import type { ContextMenuItem } from '@/components/Ui/ContextMenu'
 import { copyToClipboard } from '@/lib/clipboard'
 import type { FileChangeStatus } from '@/lib/types'
-
-function separator(id: string): ContextMenuItem {
-  return { id, label: '', separator: true, onClick: () => {} }
-}
-
-function toggleLabel(t: TFunction | undefined, open: boolean): string {
-  if (open) {
-    return t ? t('contextMenu.detailPanel.collapse') : 'Collapse'
-  }
-  return t ? t('contextMenu.detailPanel.expand') : 'Expand'
-}
+import { separator, toggleLabel } from '@/lib/context-menus/builders'
 
 export function workingTreeFolderContextMenuItems(
   path: string,
@@ -29,7 +19,10 @@ export function workingTreeFolderContextMenuItems(
   const items: ContextMenuItem[] = [
     {
       id: 'toggle',
-      label: toggleLabel(t, open),
+      label: toggleLabel(t, open, {
+        collapseKey: 'contextMenu.detailPanel.collapse',
+        expandKey: 'contextMenu.detailPanel.expand'
+      }),
       onClick: handlers.onToggle
     },
     {
@@ -230,7 +223,10 @@ export function commitFolderContextMenuItems(
   return [
     {
       id: 'toggle',
-      label: toggleLabel(t, open),
+      label: toggleLabel(t, open, {
+        collapseKey: 'contextMenu.detailPanel.collapse',
+        expandKey: 'contextMenu.detailPanel.expand'
+      }),
       onClick: onToggle
     },
     {

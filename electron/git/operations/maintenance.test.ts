@@ -5,6 +5,8 @@ import {
   formatRefLabel,
   listStaleLocalBranches,
   listUnreachableCommits,
+  normalizeStaleBranchHashes,
+  normalizeStaleRefsFromParams,
   parseFsckUnreachable,
   pruneStaleObjects,
   removeStaleRefs,
@@ -21,6 +23,26 @@ vi.mock('./branch', () => ({
 }))
 
 import { runCommand, runGitOrThrow } from '../git-runner'
+
+describe('normalizeStaleBranchHashes', () => {
+  it('prefers hashes array and falls back to single hash', () => {
+    expect(normalizeStaleBranchHashes({ hashes: ['a', 'b'] })).toEqual(['a', 'b'])
+    expect(normalizeStaleBranchHashes({ hash: 'abc' })).toEqual(['abc'])
+    expect(normalizeStaleBranchHashes({})).toEqual([])
+  })
+})
+
+describe('normalizeStaleRefsFromParams', () => {
+  it('prefers refs and prefixes branch names', () => {
+    expect(normalizeStaleRefsFromParams({ refs: ['refs/heads/main'] })).toEqual([
+      'refs/heads/main'
+    ])
+    expect(normalizeStaleRefsFromParams({ branchNames: ['feature', 'refs/tags/v1'] })).toEqual([
+      'refs/heads/feature',
+      'refs/tags/v1'
+    ])
+  })
+})
 
 describe('parseFsckUnreachable', () => {
   it('parses unreachable commits, blobs, and trees', () => {

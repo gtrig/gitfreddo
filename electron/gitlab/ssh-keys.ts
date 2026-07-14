@@ -1,13 +1,8 @@
-import { rmSync } from 'fs'
-import { join } from 'path'
 import { gitlabJson } from './api/http'
 import { findGitFreddoSshKeyLabel } from '../../shared/forge-ssh'
-import { generateSshKeyPair } from '../forge/ssh-key-pair'
+import { withGeneratedSshKey, type SshKeyResult } from '../forge/ssh-key-upload'
 
-export interface SshKeyResult {
-  title: string
-  publicKey: string
-}
+export type { SshKeyResult }
 
 interface GitlabApiSshKey {
   title?: string
@@ -24,8 +19,6 @@ export async function findGitFreddoSshKeyTitle(
   const titles = await listSshKeys(settingsHost)
   return findGitFreddoSshKeyLabel(titles)
 }
-
-export { generateSshKeyPair } from '../forge/ssh-key-pair'
 
 export async function uploadSshKey(
   publicKey: string,
@@ -49,15 +42,5 @@ export async function generateAndUploadSshKey(
   title: string,
   settingsHost?: string | null
 ): Promise<SshKeyResult> {
-  const { publicKey, privateKeyPath } = generateSshKeyPair()
-  const keyDir = join(privateKeyPath, '..')
-  try {
-    return await uploadSshKey(publicKey, title, settingsHost)
-  } finally {
-    try {
-      rmSync(keyDir, { recursive: true, force: true })
-    } catch {
-      // Best-effort cleanup — don't shadow the upload error.
-    }
-  }
+  return withGeneratedSshKey((publicKey) => uploadSshKey(publicKey, title, settingsHost))
 }

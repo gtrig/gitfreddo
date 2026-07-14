@@ -131,6 +131,7 @@ export function CommitTimeline() {
   const currentBranch = isDetached ? '' : (repoStatus?.branch ?? workingStatus?.branch ?? '')
   const selectedHashSet = useMemo(() => new Set(selectedCommitHashes), [selectedCommitHashes])
   const primaryHash = selection?.kind === 'commit' ? selection.id : null
+  const [mergeCurrentIntoTarget, setMergeCurrentIntoTarget] = useState<string | null>(null)
 
   const handleTimelineKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
@@ -252,7 +253,8 @@ export function CommitTimeline() {
     remotes,
     currentBranch,
     onSelectCommit: (hash) => selectTimelineNode('commit', hash),
-    onMerge: setMergeSource
+    onMerge: setMergeSource,
+    onMergeCurrentInto: setMergeCurrentIntoTarget
   })
 
   const onRefContextMenu =
@@ -993,6 +995,14 @@ export function CommitTimeline() {
 
       {mergeSource && (
         <MergeBranchDialog sourceBranch={mergeSource} onClose={() => setMergeSource(null)} />
+      )}
+
+      {mergeCurrentIntoTarget && currentBranch && (
+        <MergeBranchDialog
+          sourceBranch={currentBranch}
+          targetBranch={mergeCurrentIntoTarget}
+          onClose={() => setMergeCurrentIntoTarget(null)}
+        />
       )}
 
       {worktreeFromCommit && (

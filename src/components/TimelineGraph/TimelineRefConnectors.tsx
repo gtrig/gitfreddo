@@ -7,22 +7,17 @@ import {
   type GitGraphLayout
 } from '@/lib/graph/gitGraphLayout'
 import { columnCenterX, graphWidth, type GraphMetrics } from '@/lib/graph/graphMetrics'
-import { timelineRefs } from '@/lib/timeline/timelineRefs'
+import {
+  buildConnectorSpecs,
+  type TimelineRefConnectorSpec
+} from '@/lib/timeline/refConnectors'
 import { useGraphColors } from '@/hooks/useGraphColors'
 import {
   TimelineRefConnectorRegisterContext,
   useConnectorAnchorRegistry
 } from './TimelineRefConnectorContext'
 
-export interface TimelineRefConnectorSpec {
-  anchorId: string
-  targetColumn: number
-  targetRowIndex: number
-  stroke: string
-  dashed?: boolean
-  prominent?: boolean
-  dimKey: string
-}
+export type { TimelineRefConnectorSpec }
 
 interface TimelineRefConnectorLine {
   id: string
@@ -34,67 +29,6 @@ interface TimelineRefConnectorLine {
   dashed?: boolean
   prominent?: boolean
   dimmed: boolean
-}
-
-function buildConnectorSpecs({
-  commits,
-  layout,
-  head,
-  currentBranch,
-  isDetached,
-  tagNames,
-  remoteNames,
-  colors
-}: {
-  commits: Array<{ hash: string; refs: string[] }>
-  layout: GitGraphLayout
-  head: string
-  currentBranch: string
-  isDetached: boolean
-  tagNames: ReadonlySet<string>
-  remoteNames: ReadonlySet<string>
-  colors: ReturnType<typeof useGraphColors>
-}): TimelineRefConnectorSpec[] {
-  const rowByKey = new Map(layout.rows.map((row) => [row.key, row]))
-  const specs: TimelineRefConnectorSpec[] = []
-
-  for (const commit of commits) {
-    const row = rowByKey.get(commit.hash)
-    if (!row) continue
-
-    if (row.isStash) {
-      specs.push({
-        anchorId: `stash:${commit.hash}`,
-        targetColumn: row.column,
-        targetRowIndex: row.rowIndex,
-        stroke: colors.stash,
-        dashed: true,
-        dimKey: commit.hash
-      })
-      continue
-    }
-
-    const refs = timelineRefs(commit.refs, tagNames, remoteNames)
-    const showDetachedHead = commit.hash === head && isDetached
-    if (refs.length === 0 && !showDetachedHead) continue
-
-    const isCurrent =
-      commit.hash === head &&
-      !isDetached &&
-      Boolean(currentBranch) &&
-      refs.some((ref) => ref.kind === 'branch' && ref.label === currentBranch)
-
-    specs.push({
-      anchorId: `ref:${commit.hash}`,
-      targetColumn: row.column,
-      targetRowIndex: row.rowIndex,
-      stroke: isCurrent ? colors.head : colors.lane(row.column),
-      prominent: isCurrent,
-      dimKey: commit.hash
-    })
-  }
-
-  return specs
 }
 
 function measureConnectorLines({

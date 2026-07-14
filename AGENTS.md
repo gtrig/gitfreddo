@@ -46,7 +46,7 @@ e2e/                      Playwright specs
 | **Pure logic** | Keep in `src/lib/` or `electron/git/operations/` — not in components |
 | **New IPC** | 1. Add types in `shared/ipc.ts` 2. Handler in main 3. Expose via preload 4. Wrap in hook |
 | **Data flow** | Renderer → IPC → Main → Repo Manager → Git Operations → Shared Types |
-| **Naming** | PascalCase for component folders, kebab-case for files, camelCase for functions |
+| **Naming** | PascalCase for component folders and `.tsx` component files; camelCase for `src/lib` modules and functions; kebab-case for main-process files |
 
 ## TDD Workflow (Strict Red-Green-Refactor)
 

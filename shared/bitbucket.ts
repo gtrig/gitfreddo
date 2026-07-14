@@ -1,58 +1,30 @@
-export interface BitbucketRepo {
+import type {
+  ForgeChangeRequest,
+  ForgeCreateChangeRequestParams,
+  ForgeIssue,
+  ForgeListReposParams,
+  ForgeMergeMethod,
+  ForgeRepoBase
+} from './forge'
+
+export type { ForgeMergeMethod as BitbucketMergeMethod }
+export type { ForgeCreateChangeRequestParams as BitbucketCreatePullRequestParams }
+export type { ForgeIssue as BitbucketIssue }
+export type { ForgeListReposParams as BitbucketListReposParams }
+export { slugifyIssueBranch } from './forge'
+
+export interface BitbucketRepo extends ForgeRepoBase {
   uuid: string
-  fullName: string
-  name: string
   workspace: string
-  owner: string
-  private: boolean
-  cloneUrl: string
-  description: string | null
-  defaultBranch: string
 }
 
-export interface BitbucketPullRequest {
-  number: number
-  title: string
-  state: string
-  htmlUrl: string
-  user: string
-  head: { ref: string; sha: string }
-  base: { ref: string; sha: string }
-  body: string
-  draft: boolean
-  mergeable: boolean | null
-}
-
-export type BitbucketMergeMethod = 'merge' | 'squash' | 'rebase'
-
-export interface BitbucketCreatePullRequestParams {
-  title: string
-  head: string
-  base: string
-  body?: string
-  draft?: boolean
-}
-
-export interface BitbucketIssue {
-  number: number
-  title: string
-  state: string
-  htmlUrl: string
-  user: string
-  body: string
-  labels: string[]
-}
+export type BitbucketPullRequest = ForgeChangeRequest
 
 export type BitbucketConnectStatus = 'waiting' | 'exchanging' | 'done'
 
 export interface BitbucketConnectProgress {
   status: BitbucketConnectStatus
   authorizationUri?: string
-}
-
-export interface BitbucketListReposParams {
-  search?: string
-  page?: number
 }
 
 export interface BitbucketCreateRepoParams {
@@ -109,15 +81,7 @@ export function parseBitbucketRemote(url: string): BitbucketRepoContext | null {
   }
 }
 
-export function slugifyIssueBranch(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 40)
-}
-
-export function bitbucketMergeMethodToApi(method: BitbucketMergeMethod): string {
+export function bitbucketMergeMethodToApi(method: ForgeMergeMethod): string {
   switch (method) {
     case 'squash':
       return 'squash'

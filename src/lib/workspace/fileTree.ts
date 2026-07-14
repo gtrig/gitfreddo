@@ -184,9 +184,7 @@ export function commitMessageBody(message: string, subject: string): string {
   return withoutSubject
 }
 
-export function buildCommitMessage(summary: string, description: string): string {
-  const subject = summary.trim()
-  const body = description.trim()
-  if (!body) return subject
-  return `${subject}\n\n${body}`
-}
+export {
+  buildCommitMessage,
+  parseCommitMessage
+} from '../../../shared/git/commitMessage'

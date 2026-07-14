@@ -3,16 +3,10 @@ import { useTranslation } from 'react-i18next'
 import { ActionButton, FieldLabel, Modal, TextArea, TextInput } from '@/components/Ui/Modal'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useToastStore } from '@/stores/toast'
+import { buildCommitMessage } from '@/lib/workspace/fileTree'
 import type { AiComposeCommitProposal } from '@shared/ai'
 
 const SUBJECT_MAX = 72
-
-function buildCommitMessage(summary: string, description: string): string {
-  const subject = summary.trim()
-  const body = description.trim()
-  if (!body) return subject
-  return `${subject}\n\n${body}`
-}
 
 interface ComposeCommitsModalProps {
   open: boolean

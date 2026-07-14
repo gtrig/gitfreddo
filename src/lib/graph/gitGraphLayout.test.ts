@@ -31,6 +31,37 @@ describe('buildGitGraphLayout', () => {
     expect(layout.edges).toHaveLength(1)
   })
 
+  it('keeps a linear chain on one lane when HEAD is behind the newest commit', () => {
+    const layout = buildGitGraphLayout(
+      [
+        commit('tip', ['mid']),
+        commit('mid', ['head']),
+        commit('head', ['root']),
+        commit('root', [])
+      ],
+      'head'
+    )
+
+    expect(layout.rows.every((row) => row.column === 0)).toBe(true)
+    expect(layout.laneCount).toBe(1)
+  })
+
+  it('keeps a straight lane when HEAD trails the tip by several commits', () => {
+    const layout = buildGitGraphLayout(
+      [
+        commit('tip', ['ahead-2']),
+        commit('ahead-2', ['ahead-1']),
+        commit('ahead-1', ['head']),
+        commit('head', ['behind-1']),
+        commit('behind-1', [])
+      ],
+      'head'
+    )
+
+    expect(layout.rows.every((row) => row.column === 0)).toBe(true)
+    expect(layout.laneCount).toBe(1)
+  })
+
   it('keeps the main line straight and puts merged branches on their own lane', () => {
     const layout = buildGitGraphLayout(
       [

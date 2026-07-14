@@ -3,18 +3,16 @@ import {
   buildNotesListArgs,
   buildNotesShowArgs
 } from '../../../shared/git/commands'
+import type { GitNoteEntry } from '../../../shared/git/ipc/results'
 import { runGitOrThrow } from '../git-runner'
 
-export interface GitNote {
-  hash: string
-  note: string
-}
+export type GitNote = GitNoteEntry
 
 export async function notesList(
   cwd: string,
   gitBinaryPath: string,
   commitHash?: string
-): Promise<GitNote[]> {
+): Promise<GitNoteEntry[]> {
   if (commitHash?.trim()) {
     try {
       const note = await runGitOrThrow(buildNotesShowArgs(commitHash.trim()), {
@@ -28,7 +26,7 @@ export async function notesList(
   }
 
   const stdout = await runGitOrThrow(buildNotesListArgs(), { cwd, gitBinaryPath })
-  const notes: GitNote[] = []
+  const notes: GitNoteEntry[] = []
   for (const line of stdout.split('\n')) {
     const trimmed = line.trim()
     if (!trimmed) continue

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseGitHubRemote, parseGitHubPullHtmlUrl, slugifyIssueBranch } from './github'
+import { parseGitHubRemote, parseGitHubPullHtmlUrl } from './github'
 
 describe('parseGitHubRemote', () => {
   it('parses https github urls', () => {
@@ -37,11 +37,5 @@ describe('parseGitHubPullHtmlUrl', () => {
       owner: 'ArctosWebLabs',
       repo: 'GitFreddo'
     })
-  })
-})
-
-describe('slugifyIssueBranch', () => {
-  it('slugifies issue titles', () => {
-    expect(slugifyIssueBranch('Fix: Login Bug!')).toBe('fix-login-bug')
   })
 })

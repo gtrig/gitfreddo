@@ -186,7 +186,15 @@ export function buildGitGraphLayout(commits: GitCommit[], head: string): GitGrap
       column = replaceColumn
       const displaced = branches[column]
       branches[column] = commitSha
-      if (commitSha === head && displaced && displaced !== commitSha) {
+      // Only push a displaced commit aside when it belongs to a divergent branch.
+      // If it is HEAD's own first-parent child, the chain continues straight down
+      // this lane, so relocating it would fracture an otherwise-linear history.
+      if (
+        commitSha === head &&
+        displaced &&
+        displaced !== commitSha &&
+        !branchChildren.includes(displaced)
+      ) {
         const newColumn = insertActiveBranch(branches, column, displaced, forbiddenIndices)
         columnByHash.set(displaced, newColumn)
       }

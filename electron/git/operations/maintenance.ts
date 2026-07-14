@@ -364,6 +364,33 @@ export async function removeStaleBranches(
   return removeStaleRefs(cwd, gitBinaryPath, refs)
 }
 
+/** Normalize IPC params for maintenance.staleBranches (hashes[] or legacy hash). */
+export function normalizeStaleBranchHashes(params: {
+  hashes?: unknown
+  hash?: unknown
+}): string[] {
+  if (Array.isArray(params.hashes)) {
+    return params.hashes as string[]
+  }
+  if (typeof params.hash === 'string' && params.hash) {
+    return [params.hash]
+  }
+  return []
+}
+
+/** Normalize IPC params for maintenance.removeStaleBranches (refs[] or branchNames[]). */
+export function normalizeStaleRefsFromParams(params: {
+  refs?: unknown
+  branchNames?: unknown
+}): string[] {
+  if (Array.isArray(params.refs) && params.refs.length > 0) {
+    return params.refs as string[]
+  }
+  return ((params.branchNames as string[]) ?? []).map((name) =>
+    name.startsWith('refs/') ? name : `refs/heads/${name}`
+  )
+}
+
 export async function removeStaleRefs(
   cwd: string,
   gitBinaryPath: string,

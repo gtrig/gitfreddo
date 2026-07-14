@@ -7,6 +7,7 @@ import { useInvalidateGit } from '@/hooks/useInvalidateGit'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
 import { shouldVirtualize, VIRTUAL_OVERSCAN } from '@/lib/ui/virtualList'
+import { parseHashInput } from '@/lib/git/parseHashInput'
 import type { RemoveStaleBranchesResult, StaleBranchSummary } from '@/lib/types'
 
 interface RemoveStaleBranchesModalProps {
@@ -14,13 +15,6 @@ interface RemoveStaleBranchesModalProps {
   onClose: () => void
   seedHash?: string
   seedHashes?: string[]
-}
-
-function parseHashInput(value: string): string[] {
-  return value
-    .split(/[\s,]+/)
-    .map((part) => part.trim().toLowerCase())
-    .filter((part) => /^[0-9a-f]{7,40}$/.test(part))
 }
 
 export function RemoveStaleBranchesModal({

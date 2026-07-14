@@ -10,17 +10,7 @@ import { copyToClipboard } from '@/lib/clipboard'
 import { detachedRefCheckoutParams, localBranchCheckoutParams } from '@/lib/git/branchCheckout'
 import { remoteBranchShortName } from '@/lib/workspace/branchTree'
 import { localTagName, tagCheckoutRef } from '@/lib/format/tagNames'
-
-function separator(id: string): ContextMenuItem {
-  return { id, label: '', separator: true, onClick: () => {} }
-}
-
-function toggleLabel(t: TFunction | undefined, open: boolean): string {
-  if (open) {
-    return t ? t('contextMenu.sidebar.collapse') : 'Collapse'
-  }
-  return t ? t('contextMenu.sidebar.expand') : 'Expand'
-}
+import { menuLabel, separator, toggleLabel } from '@/lib/context-menus/builders'
 
 export function folderContextMenuItems(
   name: string,
@@ -36,7 +26,7 @@ export function folderContextMenuItems(
     },
     {
       id: 'copy',
-      label: t ? t('contextMenu.sidebar.copyName') : 'Copy name',
+      label: menuLabel(t, 'contextMenu.sidebar.copyName', 'Copy name'),
       onClick: () => void copyToClipboard(name)
     }
   ]
@@ -48,6 +38,8 @@ export function localBranchContextMenuItems(
     onCheckout: (params: BranchCheckoutParams) => void
     onSelectCommit: (hash: string) => void
     onMerge: (name: string) => void
+    onMergeCurrentInto?: (name: string) => void
+    currentBranch?: string
     onSquashMergeInto?: (name: string) => void
     onRename: (name: string) => void
     onDelete: (name: string) => void
@@ -107,11 +99,33 @@ export function localBranchContextMenuItems(
 
   if (!branch.isCurrent) {
     items.push(separator('sep-actions'))
+    const currentBranch = handlers.currentBranch
     items.push({
       id: 'merge',
-      label: t ? t('contextMenu.sidebar.mergeIntoCurrent') : 'Merge into current…',
+      label: currentBranch
+        ? t
+          ? t('contextMenu.sidebar.mergeBranchIntoBranch', {
+              source: branch.name,
+              target: currentBranch
+            })
+          : `Merge ${branch.name} into ${currentBranch}…`
+        : t
+          ? t('contextMenu.sidebar.mergeIntoCurrent')
+          : 'Merge into current…',
       onClick: () => handlers.onMerge(branch.name)
     })
+    if (handlers.onMergeCurrentInto && currentBranch) {
+      items.push({
+        id: 'merge-current-into',
+        label: t
+          ? t('contextMenu.sidebar.mergeBranchIntoBranch', {
+              source: currentBranch,
+              target: branch.name
+            })
+          : `Merge ${currentBranch} into ${branch.name}…`,
+        onClick: () => handlers.onMergeCurrentInto!(branch.name)
+      })
+    }
     if (handlers.onCreatePr && branch.ahead > 0) {
       items.push({
         id: 'create-pr',

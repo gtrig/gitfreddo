@@ -2,10 +2,7 @@ import type { TFunction } from 'i18next'
 import type { ContextMenuItem } from '@/components/Ui/ContextMenu'
 import { copyToClipboard } from '@/lib/clipboard'
 import type { GitSubmoduleEntry } from '@/lib/types'
-
-function separator(id: string): ContextMenuItem {
-  return { id, label: '', separator: true, onClick: () => {} }
-}
+import { separator } from '@/lib/context-menus/builders'
 
 export function submoduleContextMenuItems(
   entry: GitSubmoduleEntry,

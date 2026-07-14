@@ -5,8 +5,7 @@ import {
   normalizeBitbucketIssueState,
   normalizeBitbucketPrState,
   parseBitbucketIssuesUnavailable,
-  parseBitbucketRemote,
-  slugifyIssueBranch
+  parseBitbucketRemote
 } from './bitbucket'
 
 describe('parseBitbucketRemote', () => {
@@ -32,12 +31,6 @@ describe('parseBitbucketRemote', () => {
     expect(parseBitbucketRemote('https://github.com/org/repo.git')).toBeNull()
     expect(parseBitbucketRemote('')).toBeNull()
     expect(parseBitbucketRemote('not-a-url')).toBeNull()
-  })
-})
-
-describe('slugifyIssueBranch', () => {
-  it('slugifies issue titles', () => {
-    expect(slugifyIssueBranch('Fix: Login Bug!')).toBe('fix-login-bug')
   })
 })
 

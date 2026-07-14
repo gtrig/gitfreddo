@@ -11,7 +11,7 @@ Desktop git client (Electron + React). Full map: `docs/codebase-map.md`.
 
 | Layer | Path | Responsibility |
 |-------|------|----------------|
-| Renderer UI | `src/components/<Feature>/` | React components (PascalCase folders) |
+| Renderer UI | `src/components/<Feature>/` | React components (PascalCase folders and `.tsx` files) |
 | IPC hooks | `src/hooks/` | TanStack Query read (`useGit.ts`) / write (`useGitMutations.ts`) |
 | Pure logic | `src/lib/<domain>/` | graph, timeline, diff, conflicts, context-menus, workspace, git, format |
 | Client state | `src/stores/` | Zustand (selection, workspace, layout, …) |

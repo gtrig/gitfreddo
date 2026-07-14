@@ -10,6 +10,7 @@ import {
 } from '@/lib/git/commitReachability'
 import { selectedCommitsInTimeline } from '@/lib/git/commitSelection'
 import { buildMultiCommitContextMenuItems, type MultiCommitContextMenuActions } from '@/lib/context-menus/multiCommitContextMenu'
+import { branchLabelText, inProgressMenuGroup } from '@/lib/context-menus/builders'
 import { isStashCommit } from '@/lib/git/stashCommit'
 import { timelineRefs } from '@/lib/timeline/timelineRefs'
 import type { GitCommit, GitWorkingStatus } from '@/lib/types'
@@ -63,13 +64,6 @@ function localBranchRefs(commit: GitCommit): string[] {
   return timelineRefs(commit.refs)
     .filter((ref) => ref.kind === 'branch')
     .map((ref) => ref.label)
-}
-
-function branchLabelText(t: TFunction | undefined, isDetached: boolean, branch: string): string {
-  if (isDetached) {
-    return t ? t('contextMenu.detachedHead') : 'detached HEAD'
-  }
-  return branch || (t ? t('contextMenu.currentBranch') : 'current branch')
 }
 
 function resetTargetLabel(
@@ -134,62 +128,42 @@ export function buildCommitContextMenuItems({
 
   if (working?.rebaseInProgress) {
     items.push(
-      {
-        id: 'rebase-continue',
-        label: t ? t('contextMenu.continueRebase') : 'Continue rebase',
-        onClick: actions.rebaseContinue
-      },
-      {
-        id: 'rebase-skip',
-        label: t ? t('contextMenu.skipCommit') : 'Skip commit',
-        onClick: actions.rebaseSkip
-      },
-      {
-        id: 'rebase-abort',
-        label: t ? t('contextMenu.abortRebase') : 'Abort rebase',
-        danger: true,
-        onClick: actions.rebaseAbort
-      },
-      { id: 'sep-rebase', label: '', separator: true, onClick: () => {} }
+      ...inProgressMenuGroup(
+        'rebase',
+        {
+          continue: actions.rebaseContinue,
+          abort: actions.rebaseAbort,
+          skip: actions.rebaseSkip
+        },
+        t
+      )
     )
   }
 
   if (working?.cherryPickInProgress) {
     items.push(
-      {
-        id: 'cherry-pick-continue',
-        label: t ? t('contextMenu.continueCherryPick') : 'Continue cherry-pick',
-        onClick: actions.cherryPickContinue
-      },
-      {
-        id: 'cherry-pick-skip',
-        label: t ? t('contextMenu.skipCommit') : 'Skip commit',
-        onClick: actions.cherryPickSkip
-      },
-      {
-        id: 'cherry-pick-abort',
-        label: t ? t('contextMenu.abortCherryPick') : 'Abort cherry-pick',
-        danger: true,
-        onClick: actions.cherryPickAbort
-      },
-      { id: 'sep-cherry-pick', label: '', separator: true, onClick: () => {} }
+      ...inProgressMenuGroup(
+        'cherry-pick',
+        {
+          continue: actions.cherryPickContinue,
+          abort: actions.cherryPickAbort,
+          skip: actions.cherryPickSkip
+        },
+        t
+      )
     )
   }
 
   if (working?.mergeInProgress) {
     items.push(
-      {
-        id: 'merge-continue',
-        label: t ? t('contextMenu.continueMerge') : 'Continue merge',
-        onClick: actions.mergeContinue
-      },
-      {
-        id: 'merge-abort',
-        label: t ? t('contextMenu.abortMerge') : 'Abort merge',
-        danger: true,
-        onClick: actions.mergeAbort
-      },
-      { id: 'sep-merge', label: '', separator: true, onClick: () => {} }
+      ...inProgressMenuGroup(
+        'merge',
+        {
+          continue: actions.mergeContinue,
+          abort: actions.mergeAbort
+        },
+        t
+      )
     )
   }
 

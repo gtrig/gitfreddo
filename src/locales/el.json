@@ -1262,6 +1262,7 @@
       "showInGraph": "Εμφάνιση στο γράφημα",
       "copyBranchName": "Αντιγραφή ονόματος κλάδου",
       "mergeIntoCurrent": "Συγχώνευση στον τρέχοντα…",
+      "mergeBranchIntoBranch": "Συγχώνευση {{source}} σε {{target}}…",
       "squashMergeInto": "Squash and merge σε…",
       "createPullRequest": "Δημιουργία pull request…",
       "rename": "Μετονομασία…",

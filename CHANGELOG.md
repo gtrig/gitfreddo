@@ -7,6 +7,31 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-14 — `/release` Cursor command
+
+- **Why:** Cutting a release meant remembering the full sequence of CI-equivalent checks plus the local prerelease steps (version bump, changelog/news promotion, tag) by hand.
+- **What:** Added `.cursor/commands/release.md` — a `/release vX.Y.Z` command that runs `typecheck`, `test:coverage`, `build`, `smoke`, and `test:e2e`, then (only if green) runs `release:prepare`, promotes `[Unreleased]` notes in `CHANGELOG.md`/`NEWS.md` into the version section, commits `chore: release`, and creates the tag — stopping before push.
+
+### 2026-07-14 — Two-way branch merge from the graph context menu
+
+- **Why:** The branch ref context menu only offered a one-way "Merge into current…"; users want to merge in either direction relative to the checked-out branch.
+- **What:** Added a `merge.into` git operation (checks out the target branch, then merges the source, leaving HEAD on the target) with IPC wiring (`shared/git/ipc`, `repo-manager`, `useGitMutations.mergeInto`). `localBranchContextMenuItems` now shows directional labels — "Merge A into <current>" and "Merge <current> into A" (new) — gated on a known current branch and an `onMergeCurrentInto` handler; wired through `timelineRefContextMenu`, `useTimelineRefContextMenu`, and `CommitTimeline`. `MergeBranchDialog` accepts an explicit `targetBranch` and routes the reverse direction to `mergeInto`. Added i18n key `contextMenu.sidebar.mergeBranchIntoBranch` (en/el) and co-located tests.
+
+### 2026-07-14 — Fix commit graph lane break on linear history
+
+- **Why:** When HEAD was behind the newest commit on a linear branch, the commit graph spine detoured out to a side lane and back for one commit, making the vertical path look broken/kinked.
+- **What:** `buildGitGraphLayout` no longer displaces a column-0 commit when it is HEAD's own first-parent child; only genuinely divergent branches are pushed aside, so linear chains stay on one lane. Added a regression test in `src/lib/graph/gitGraphLayout.test.ts`.
+
+### 2026-07-14 — Structural forge/ops deduplication pass
+
+- **Why:** Parallel GitHub/GitLab/Bitbucket stacks and repeated git/modal/hook patterns ballooned the codebase without behavior differences worth keeping.
+- **What:** Shared `shared/forge.ts` types; `electron/forge/` token-store/OAuth-callback/HTTP/connection/repo-cache/repo-context helpers; generic forge UI (`CreateChangeRequestModal`, `ForgeRepoPicker`, `ForgeEditIssueModal`) with thin provider wrappers; `useRepoQuery`; context-menu builders; `RenameEntityModal`; commit-message / connector / format helpers; dead virtual-list code removed; docs naming aligned to PascalCase `.tsx`; unused-i18n soft gate. See `docs/refactor-plan.md`.
+
+### 2026-07-14 — Deduplicate forge SSH key helpers
+
+- **Why:** GitHub, GitLab, and Bitbucket each copied generate-and-upload cleanup, SSH title normalization, and stored-vs-discovered title resolution.
+- **What:** Shared `withGeneratedSshKey` / `SshKeyResult` in `electron/forge/ssh-key-upload.ts`; `resolveStoredOrDiscoveredSshKeyTitle` in `electron/forge/resolve-ssh-key-title.ts`; `sshKeyTitleFromSettings` in `shared/forge-ssh.ts`; forge `ssh-keys` modules and services now use those helpers.
+
 ### 2026-07-13 — Bitbucket PR list and retired issues API
 
 - **Why:** Pull request listing failed with `Invalid pagelen` (Bitbucket caps PR pages at 50, not 100); issue listing failed with HTTP 410 as Atlassian retires native Bitbucket Issues.

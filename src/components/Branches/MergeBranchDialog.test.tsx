@@ -11,10 +11,12 @@ import { renderWithProviders } from '@/test/render'
 import { MergeBranchDialog } from './MergeBranchDialog'
 
 const mergeMutate = vi.fn()
+const mergeIntoMutate = vi.fn()
 
 vi.mock('@/hooks/useGitMutations', () => ({
   useGitMutations: () => ({
-    merge: { mutateAsync: mergeMutate, isPending: false }
+    merge: { mutateAsync: mergeMutate, isPending: false },
+    mergeInto: { mutateAsync: mergeIntoMutate, isPending: false }
   })
 }))
 
@@ -29,6 +31,7 @@ describe('MergeBranchDialog', () => {
 
   beforeEach(() => {
     mergeMutate.mockReset()
+    mergeIntoMutate.mockReset()
     useWorkspaceStore.setState({
       tabs: [{ path: '/tmp/repo', connected: true, connecting: false }],
       activePath: '/tmp/repo',
@@ -62,6 +65,28 @@ describe('MergeBranchDialog', () => {
     await waitFor(() => {
       expect(mergeMutate).toHaveBeenCalledWith({ branch: 'feature', noFf: true, squash: true })
     })
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('merges the current branch into the target via mergeInto when a target is given', async () => {
+    mergeIntoMutate.mockResolvedValue({ status: 'completed' })
+    const onClose = vi.fn()
+    // current branch is "main"; merging main into feature is the reverse direction.
+    renderWithProviders(
+      <MergeBranchDialog sourceBranch="main" targetBranch="feature" onClose={onClose} />
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: /^merge$/i }))
+
+    await waitFor(() => {
+      expect(mergeIntoMutate).toHaveBeenCalledWith({
+        sourceBranch: 'main',
+        targetBranch: 'feature',
+        noFf: false,
+        squash: false
+      })
+    })
+    expect(mergeMutate).not.toHaveBeenCalled()
     expect(onClose).toHaveBeenCalled()
   })
 

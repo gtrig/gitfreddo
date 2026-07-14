@@ -9,7 +9,7 @@ import type {
 } from '../../shared/github'
 import type { AppSettings, GitHubStatus } from '../../shared/ipc'
 import { saveSettings } from '../settings'
-import { isForgeAuthFailure } from '../../shared/forge-auth'
+import { finalizeForgeConnection, runForgeStatusCheck } from '../forge/connection'
 import { getAuthenticatedUser } from './client'
 import { listIssues, createIssue, updateIssue } from './api/issues'
 import { createPullRequest, findPendingPullRequestReviewId, getPullRequest, listPullRequestCommits, listPullRequestConversationComments, listPullRequestFiles, listPullRequestReviewComments, listPullRequestReviews, listPullRequests, mergePullRequest, postPullRequestConversationComment, postPullRequestReviewComment, reopenPullRequest } from './api/pulls'
@@ -23,13 +23,10 @@ import { getGitHubTokenOrThrow } from './api/http'
 import { clearRepoCache, createRepo, forkRepo, listUserRepos } from './api/repos'
 import { runGitHubDeviceFlow, type DeviceFlowProgress } from './oauth'
 import { listGitHubRepoContexts, resolveGitHubRepoContext } from './repo-context'
+import { sshKeyTitleFromSettings } from '../../shared/forge-ssh'
+import { resolveStoredOrDiscoveredSshKeyTitle } from '../forge/resolve-ssh-key-title'
 import { generateAndUploadSshKey, findGitFreddoSshKeyTitle } from './ssh-keys'
 import { clearGitHubToken, hasGitHubToken, loadGitHubToken, saveGitHubToken } from './token-store'
-
-function sshKeyTitleFromSettings(title: string | undefined | null): string | null {
-  const trimmed = title?.trim() ?? ''
-  return trimmed || null
-}
 
 function toStatus(login: string, avatarUrl: string, sshKeyTitle: string): GitHubStatus {
   return {
@@ -100,62 +97,43 @@ async function resolveGitHubSshKeyTitle(
   settings: AppSettings,
   token: string
 ): Promise<{ settings: AppSettings; sshKeyTitle: string }> {
-  const stored = settings.githubSshKeyTitle?.trim()
-  if (stored) {
-    return { settings, sshKeyTitle: stored }
-  }
-
-  try {
-    const discovered = await findGitFreddoSshKeyTitle(token)
-    if (!discovered) {
-      return { settings, sshKeyTitle: '' }
-    }
-
-    const next = await saveSettings({ githubSshKeyTitle: discovered })
-    return { settings: next, sshKeyTitle: discovered }
-  } catch {
-    // Listing keys can fail for valid tokens that lack admin:public_key.
-    // Keep the authenticated connection and leave SSH status unknown.
-    return { settings, sshKeyTitle: '' }
-  }
+  return resolveStoredOrDiscoveredSshKeyTitle({
+    settings,
+    stored: settings.githubSshKeyTitle,
+    discover: () => findGitFreddoSshKeyTitle(token),
+    persist: (title) => saveSettings({ githubSshKeyTitle: title })
+  })
 }
 
 export async function getGitHubStatus(
   settings: AppSettings
 ): Promise<{ settings: AppSettings; status: GitHubStatus }> {
-  const tokenPresent = await hasGitHubToken()
-  if (!tokenPresent) {
-    return { settings, status: disconnectedStatus() }
-  }
-
-  try {
-    const token = await loadGitHubToken()
-    if (!token) {
-      return { settings, status: disconnectedStatus() }
-    }
-    const user = await getAuthenticatedUser(token)
-    let nextSettings = settings
-    if (user.login !== settings.githubLogin) {
-      nextSettings = await saveSettings({
-        githubLogin: user.login,
-        githubConnectedAt: settings.githubConnectedAt ?? Date.now()
-      })
-    }
-    const sshKey = await resolveGitHubSshKeyTitle(nextSettings, token)
-    return {
-      settings: sshKey.settings,
-      status: toStatus(user.login, user.avatar_url, sshKey.sshKeyTitle)
-    }
-  } catch (error) {
-    if (!isForgeAuthFailure(error) && settings.githubLogin?.trim()) {
+  return runForgeStatusCheck({
+    settings,
+    hasToken: hasGitHubToken,
+    loadToken: loadGitHubToken,
+    disconnectedStatus,
+    offlineFallbackStatus: () =>
+      settings.githubLogin?.trim()
+        ? toStatus(settings.githubLogin, '', settings.githubSshKeyTitle)
+        : null,
+    clearConnection: clearGitHubConnection,
+    fetchConnectedStatus: async (token, current) => {
+      const user = await getAuthenticatedUser(token)
+      let nextSettings = current
+      if (user.login !== current.githubLogin) {
+        nextSettings = await saveSettings({
+          githubLogin: user.login,
+          githubConnectedAt: current.githubConnectedAt ?? Date.now()
+        })
+      }
+      const sshKey = await resolveGitHubSshKeyTitle(nextSettings, token)
       return {
-        settings,
-        status: toStatus(settings.githubLogin, '', settings.githubSshKeyTitle)
+        settings: sshKey.settings,
+        status: toStatus(user.login, user.avatar_url, sshKey.sshKeyTitle)
       }
     }
-    const cleared = await clearGitHubConnection(settings)
-    return { settings: cleared, status: disconnectedStatus() }
-  }
+  })
 }
 
 export async function connectGitHub(
@@ -187,19 +165,19 @@ async function finalizeGitHubConnection(
   login: string,
   avatarUrl?: string
 ): Promise<{ settings: AppSettings; status: GitHubStatus }> {
-  await saveGitHubToken(token)
-  clearRepoCache()
-
-  const user = avatarUrl ? { login, avatar_url: avatarUrl } : await getAuthenticatedUser(token)
-  const next = await saveSettings({
-    githubLogin: user.login,
-    githubConnectedAt: Date.now()
+  return finalizeForgeConnection({
+    token,
+    saveToken: saveGitHubToken,
+    clearRepoCache,
+    resolveUser: async () =>
+      avatarUrl ? { login, avatar_url: avatarUrl } : getAuthenticatedUser(token),
+    persistConnection: async (user) =>
+      saveSettings({
+        githubLogin: user.login,
+        githubConnectedAt: Date.now()
+      }),
+    toStatus: (next, user) => toStatus(user.login, user.avatar_url, next.githubSshKeyTitle)
   })
-
-  return {
-    settings: next,
-    status: toStatus(user.login, user.avatar_url, next.githubSshKeyTitle)
-  }
 }
 
 export async function disconnectGitHub(settings: AppSettings): Promise<AppSettings> {
