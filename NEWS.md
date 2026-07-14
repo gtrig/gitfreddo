@@ -5,6 +5,8 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+## [0.4.3]
+
 - The commit graph highlights your current branch's line in green. Select any commit to trace its history instead.
 
 ## [0.4.2]

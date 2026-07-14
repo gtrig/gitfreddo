@@ -7,6 +7,8 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-07-14
+
 ### 2026-07-14 — Highlight the current branch line in green on the commit graph
 
 - **Why:** It was hard to see at a glance which commits belong to the active branch vs. side branches that were merged in.
@@ -450,6 +452,7 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 - Git config editor and `.gitignore` / `.gitattributes` editor
 - Linux (AppImage, deb) and Windows (NSIS) installers via GitHub Actions
 
+[0.4.3]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.3
 [0.4.2]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.2
 [0.4.1]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.1
 [0.4.0]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.0
