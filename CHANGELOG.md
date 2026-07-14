@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-14 — Highlight the current branch line in green on the commit graph
+
+- **Why:** It was hard to see at a glance which commits belong to the active branch vs. side branches that were merged in.
+- **What:** The commit graph now paints the first-parent line green. When a commit is selected it highlights that commit's first-parent ancestry; with nothing selected it highlights HEAD's first-parent line (the active branch). First-parent traversal keeps merged-in side branches out of the highlight. Added `collectAncestors` / `collectFirstParentAncestors` (`src/lib/git/commitReachability.ts`), `ancestor`/`ancestorStroke` colors with `--gf-graph-ancestor(-stroke)` CSS vars across all themes (`useGraphColors`), and an `ancestorHashes` prop on `CommitGraphOverlay` used by `CommitTimeline`. Added co-located tests for the helpers and the overlay.
+
 ## [0.4.2] - 2026-07-14
 
 ### 2026-07-14 — CodeMirror editor for code-bearing textboxes

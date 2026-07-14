@@ -5,6 +5,8 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+- The commit graph highlights your current branch's line in green. Select any commit to trace its history instead.
+
 ## [0.4.2]
 
 - Syntax-highlighted code editor for git hooks, repository files (.gitignore and friends), merge conflict resolution, and the interactive rebase todo.
