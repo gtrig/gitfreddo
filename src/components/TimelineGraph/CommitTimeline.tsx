@@ -13,6 +13,7 @@ import { useTimelineRefContextMenu } from '@/hooks/useTimelineRefContextMenu'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { buildGitGraphLayout } from '@/lib/graph/gitGraphLayout'
+import { collectFirstParentAncestors } from '@/lib/git/commitReachability'
 import { commitRowHighlightClass } from '@/lib/git/commitSelection'
 import { countWorkingChanges } from '@/lib/workspace/workingChanges'
 import { commitSearchDimmedHashes, commitSearchRowDimClass } from '@/lib/git/commitSearch'
@@ -330,6 +331,13 @@ export function CommitTimeline() {
   const showBranchTagResize = showBranchTag && showGraph
   const showGraphResize = showGraph && hasVisibleColumnAfter(visibility, 'graph')
   const selectedHash = primaryHash
+  // Highlight the first-parent line of the selected commit; fall back to the
+  // active branch (HEAD's first-parent line) when nothing is selected. Using
+  // first-parent keeps merged-in side branches out of the highlight.
+  const ancestorHashes = useMemo(
+    () => collectFirstParentAncestors(selectedHash ?? head, commits),
+    [selectedHash, head, commits]
+  )
   const relativeNow = useRelativeNow()
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -517,6 +525,7 @@ export function CommitTimeline() {
               workingSelected={selection?.kind === 'working'}
               selectedHash={selectedHash}
               selectedHashes={selectedHashSet}
+              ancestorHashes={ancestorHashes}
               dimmedHashes={searchDimmedHashes}
               rowHeight={TIMELINE_ROW_HEIGHT}
               metrics={metrics}
