@@ -37,10 +37,11 @@ describe('StartupModal', () => {
       />
     )
 
-    // getStartupNewsItems prefers [Unreleased] when it has bullets (capped at 5).
+    // getStartupNewsItems prefers [Unreleased] when it has bullets, otherwise
+    // falls back to the newest release section (capped at 5).
     expect(
       screen.getByText(
-        'Connect GitLab — including self-managed instances — with OAuth or a personal access token to browse repositories, open merge requests, track issues, and manage SSH keys.'
+        'Right-click a branch in the commit graph to merge in either direction: merge it into your current branch, or merge your current branch into it.'
       )
     ).toBeInTheDocument()
   })

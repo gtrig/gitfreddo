@@ -5,12 +5,15 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+## [0.4.1]
+
 - Right-click a branch in the commit graph to merge in either direction: merge it into your current branch, or merge your current branch into it.
 - Commit graph no longer kinks: linear history stays on a single straight lane even when the checked-out branch isn't the newest commit.
 - Bitbucket pull requests load again (API page size fix).
 - Bitbucket repository browsing works again after Atlassian retired the old cross-workspace list API.
 - Add remote can browse or create repositories on any connected integration (GitHub, Bitbucket, or GitLab).
 
+## [0.4.0]
 
 - Connect GitLab — including self-managed instances — with OAuth or a personal access token to browse repositories, open merge requests, track issues, and manage SSH keys.
 

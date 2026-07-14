@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { join } from 'path'
 
 const encryptString = vi.fn((value: string) => Buffer.from(`enc:${value}`))
 const decryptString = vi.fn((buffer: Buffer) => buffer.toString().replace(/^enc:/, ''))
@@ -53,7 +54,7 @@ describe('createForgeTokenStore', () => {
     expect(mkdir).toHaveBeenCalledWith('/tmp/gitfreddo-test-data', { recursive: true })
     expect(encryptString).toHaveBeenCalledWith('secret')
     expect(writeFile).toHaveBeenCalledWith(
-      '/tmp/gitfreddo-test-data/forge-token.enc',
+      join('/tmp/gitfreddo-test-data', 'forge-token.enc'),
       Buffer.from('enc:secret')
     )
   })

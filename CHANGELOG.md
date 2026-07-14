@@ -7,6 +7,13 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-07-14
+
+### 2026-07-14 — Fix Windows CI failure in forge token-store test
+
+- **Why:** `electron/forge/token-store.test.ts` hard-coded a POSIX token path, so it failed on Windows where `path.join` produces backslash-separated paths (`\tmp\...\forge-token.enc`).
+- **What:** The `writeFile` assertion now builds the expected path with `join('/tmp/gitfreddo-test-data', 'forge-token.enc')` so it matches the implementation on every OS. The sibling GitHub/Bitbucket/GitLab token-store tests already used `toHaveBeenCalled()` and were unaffected.
+
 ### 2026-07-14 — `/release` Cursor command
 
 - **Why:** Cutting a release meant remembering the full sequence of CI-equivalent checks plus the local prerelease steps (version bump, changelog/news promotion, tag) by hand.
@@ -426,5 +433,7 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 - Git config editor and `.gitignore` / `.gitattributes` editor
 - Linux (AppImage, deb) and Windows (NSIS) installers via GitHub Actions
 
+[0.4.1]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.1
+[0.4.0]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.0
 [0.3.4]: https://github.com/gtrig/gitfreddo/releases/tag/v0.3.4
 [0.2.0]: https://github.com/gtrig/gitfreddo/releases/tag/v0.2.0
