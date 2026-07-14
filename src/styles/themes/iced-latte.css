@@ -28,6 +28,8 @@
   --gf-graph-merge: #059669;
   --gf-graph-head: #059669;
   --gf-graph-head-stroke: #34d399;
+  --gf-graph-ancestor: #16a34a;
+  --gf-graph-ancestor-stroke: #22c55e;
   --gf-graph-selected: #0284c7;
   --gf-graph-wip: #d97706;
   --gf-graph-wip-stroke: #f59e0b;

@@ -26,5 +26,7 @@ describe('useGraphColors', () => {
     await waitFor(() => expect(result.current.stash).toBe('#38bdf8'))
     expect(typeof result.current.lane).toBe('function')
     expect(result.current.stashStroke).toBe('#7dd3fc')
+    expect(result.current.ancestor).toBe('#22c55e')
+    expect(result.current.ancestorStroke).toBe('#4ade80')
   })
 })

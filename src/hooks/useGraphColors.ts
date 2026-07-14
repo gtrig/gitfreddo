@@ -8,6 +8,8 @@ export interface GraphColors {
   merge: string
   head: string
   headStroke: string
+  ancestor: string
+  ancestorStroke: string
   selected: string
   wip: string
   wipStroke: string
@@ -27,6 +29,8 @@ export function useGraphColors(): GraphColors {
       merge: cssVar('--gf-graph-merge'),
       head: cssVar('--gf-graph-head'),
       headStroke: cssVar('--gf-graph-head-stroke'),
+      ancestor: cssVar('--gf-graph-ancestor') || '#22c55e',
+      ancestorStroke: cssVar('--gf-graph-ancestor-stroke') || '#4ade80',
       selected: cssVar('--gf-graph-selected'),
       wip: cssVar('--gf-graph-wip'),
       wipStroke: cssVar('--gf-graph-wip-stroke'),
