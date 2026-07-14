@@ -23,13 +23,10 @@ import { getGitHubTokenOrThrow } from './api/http'
 import { clearRepoCache, createRepo, forkRepo, listUserRepos } from './api/repos'
 import { runGitHubDeviceFlow, type DeviceFlowProgress } from './oauth'
 import { listGitHubRepoContexts, resolveGitHubRepoContext } from './repo-context'
+import { sshKeyTitleFromSettings } from '../../shared/forge-ssh'
+import { resolveStoredOrDiscoveredSshKeyTitle } from '../forge/resolve-ssh-key-title'
 import { generateAndUploadSshKey, findGitFreddoSshKeyTitle } from './ssh-keys'
 import { clearGitHubToken, hasGitHubToken, loadGitHubToken, saveGitHubToken } from './token-store'
-
-function sshKeyTitleFromSettings(title: string | undefined | null): string | null {
-  const trimmed = title?.trim() ?? ''
-  return trimmed || null
-}
 
 function toStatus(login: string, avatarUrl: string, sshKeyTitle: string): GitHubStatus {
   return {
@@ -100,24 +97,12 @@ async function resolveGitHubSshKeyTitle(
   settings: AppSettings,
   token: string
 ): Promise<{ settings: AppSettings; sshKeyTitle: string }> {
-  const stored = settings.githubSshKeyTitle?.trim()
-  if (stored) {
-    return { settings, sshKeyTitle: stored }
-  }
-
-  try {
-    const discovered = await findGitFreddoSshKeyTitle(token)
-    if (!discovered) {
-      return { settings, sshKeyTitle: '' }
-    }
-
-    const next = await saveSettings({ githubSshKeyTitle: discovered })
-    return { settings: next, sshKeyTitle: discovered }
-  } catch {
-    // Listing keys can fail for valid tokens that lack admin:public_key.
-    // Keep the authenticated connection and leave SSH status unknown.
-    return { settings, sshKeyTitle: '' }
-  }
+  return resolveStoredOrDiscoveredSshKeyTitle({
+    settings,
+    stored: settings.githubSshKeyTitle,
+    discover: () => findGitFreddoSshKeyTitle(token),
+    persist: (title) => saveSettings({ githubSshKeyTitle: title })
+  })
 }
 
 export async function getGitHubStatus(

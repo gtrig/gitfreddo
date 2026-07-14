@@ -21,6 +21,8 @@ import {
 } from './api/repos'
 import { runGitlabOAuthFlow, type OAuthFlowProgress } from './oauth'
 import { resolveGitlabRepoContext } from './repo-context'
+import { sshKeyTitleFromSettings } from '../../shared/forge-ssh'
+import { resolveStoredOrDiscoveredSshKeyTitle } from '../forge/resolve-ssh-key-title'
 import { generateAndUploadSshKey, findGitFreddoSshKeyTitle } from './ssh-keys'
 import {
   clearGitlabToken,
@@ -31,11 +33,6 @@ import {
 
 function settingsHost(settings: AppSettings): string | null {
   return settings.gitlabHost?.trim() || null
-}
-
-function sshKeyTitleFromSettings(title: string | undefined | null): string | null {
-  const trimmed = title?.trim() ?? ''
-  return trimmed || null
 }
 
 function toStatus(
@@ -69,22 +66,12 @@ function disconnectedStatus(host = ''): GitlabStatus {
 async function resolveGitlabSshKeyTitle(
   settings: AppSettings
 ): Promise<{ settings: AppSettings; sshKeyTitle: string }> {
-  const stored = settings.gitlabSshKeyTitle?.trim()
-  if (stored) {
-    return { settings, sshKeyTitle: stored }
-  }
-
-  try {
-    const discovered = await findGitFreddoSshKeyTitle(settingsHost(settings))
-    if (!discovered) {
-      return { settings, sshKeyTitle: '' }
-    }
-
-    const next = await saveSettings({ gitlabSshKeyTitle: discovered })
-    return { settings: next, sshKeyTitle: discovered }
-  } catch {
-    return { settings, sshKeyTitle: '' }
-  }
+  return resolveStoredOrDiscoveredSshKeyTitle({
+    settings,
+    stored: settings.gitlabSshKeyTitle,
+    discover: () => findGitFreddoSshKeyTitle(settingsHost(settings)),
+    persist: (title) => saveSettings({ gitlabSshKeyTitle: title })
+  })
 }
 
 async function buildConnectedGitlabStatus(

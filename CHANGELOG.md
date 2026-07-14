@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-14 — Deduplicate forge SSH key helpers
+
+- **Why:** GitHub, GitLab, and Bitbucket each copied generate-and-upload cleanup, SSH title normalization, and stored-vs-discovered title resolution.
+- **What:** Shared `withGeneratedSshKey` / `SshKeyResult` in `electron/forge/ssh-key-upload.ts`; `resolveStoredOrDiscoveredSshKeyTitle` in `electron/forge/resolve-ssh-key-title.ts`; `sshKeyTitleFromSettings` in `shared/forge-ssh.ts`; forge `ssh-keys` modules and services now use those helpers.
+
 ### 2026-07-13 — Bitbucket PR list and retired issues API
 
 - **Why:** Pull request listing failed with `Invalid pagelen` (Bitbucket caps PR pages at 50, not 100); issue listing failed with HTTP 410 as Atlassian retires native Bitbucket Issues.
