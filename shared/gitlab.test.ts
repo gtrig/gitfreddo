@@ -6,8 +6,7 @@ import {
   isGitlabHost,
   normalizeGitlabIssueState,
   normalizeGitlabMrState,
-  parseGitlabRemote,
-  slugifyIssueBranch
+  parseGitlabRemote
 } from './gitlab'
 
 describe('getDefaultGitlabHost', () => {
@@ -67,12 +66,6 @@ describe('parseGitlabRemote', () => {
     expect(parseGitlabRemote('https://github.com/org/repo.git')).toBeNull()
     expect(parseGitlabRemote('')).toBeNull()
     expect(parseGitlabRemote('not-a-url')).toBeNull()
-  })
-})
-
-describe('slugifyIssueBranch', () => {
-  it('slugifies issue titles', () => {
-    expect(slugifyIssueBranch('Fix: Login Bug!')).toBe('fix-login-bug')
   })
 })
 

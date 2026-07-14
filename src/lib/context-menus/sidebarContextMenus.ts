@@ -10,17 +10,7 @@ import { copyToClipboard } from '@/lib/clipboard'
 import { detachedRefCheckoutParams, localBranchCheckoutParams } from '@/lib/git/branchCheckout'
 import { remoteBranchShortName } from '@/lib/workspace/branchTree'
 import { localTagName, tagCheckoutRef } from '@/lib/format/tagNames'
-
-function separator(id: string): ContextMenuItem {
-  return { id, label: '', separator: true, onClick: () => {} }
-}
-
-function toggleLabel(t: TFunction | undefined, open: boolean): string {
-  if (open) {
-    return t ? t('contextMenu.sidebar.collapse') : 'Collapse'
-  }
-  return t ? t('contextMenu.sidebar.expand') : 'Expand'
-}
+import { menuLabel, separator, toggleLabel } from '@/lib/context-menus/builders'
 
 export function folderContextMenuItems(
   name: string,
@@ -36,7 +26,7 @@ export function folderContextMenuItems(
     },
     {
       id: 'copy',
-      label: t ? t('contextMenu.sidebar.copyName') : 'Copy name',
+      label: menuLabel(t, 'contextMenu.sidebar.copyName', 'Copy name'),
       onClick: () => void copyToClipboard(name)
     }
   ]

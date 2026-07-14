@@ -13,7 +13,7 @@ import { RewordCommitModal } from '@/components/DetailPanel/RewordCommitModal'
 import { ExplainCommitButton } from '@/components/DetailPanel/ExplainCommitWithAi'
 import { CommitDescriptionPreview } from '@/components/DetailPanel/CommitDescriptionPreview'
 import { CommitFileList } from '@/components/DetailPanel/CommitFileList'
-import { commitMessageBody, countCommitFiles } from '@/lib/workspace/fileTree'
+import { commitMessageBody, countCommitFiles, parseCommitMessage } from '@/lib/workspace/fileTree'
 import { useCommitDisplayFiles } from '@/hooks/useCommitDisplayFiles'
 import type { GitCommit } from '@/lib/types'
 
@@ -81,14 +81,6 @@ function FileChangeBadges({
 
   if (items.length === 0) return null
   return <span className="inline-flex flex-wrap items-center gap-3 text-xs">{items}</span>
-}
-
-function parseCommitMessage(text: string): { summary: string; description: string } {
-  const trimmed = text.trim()
-  const split = trimmed.split(/\n\n/)
-  const summary = split[0]?.trim() ?? ''
-  const description = split.slice(1).join('\n\n').trim()
-  return { summary, description }
 }
 
 function CommitAiButton({

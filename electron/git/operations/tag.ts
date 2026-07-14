@@ -7,6 +7,7 @@ import {
   buildTagRenameArgs
 } from '../../../shared/git/commands'
 import { runGitOrThrow } from '../git-runner'
+import { parseLines } from './helpers'
 import { resolveRemoteName } from './remote'
 import type { GitTag } from '../types'
 
@@ -56,12 +57,7 @@ export function parseTagLine(line: string): GitTag | null {
 export async function tagList(cwd: string, gitBinaryPath: string): Promise<GitTag[]> {
   const stdout = await runGitOrThrow(buildTagListArgs(), { cwd, gitBinaryPath })
 
-  if (!stdout.trim()) return []
-
-  const tags = stdout
-    .split('\n')
-    .map(parseTagLine)
-    .filter((tag): tag is GitTag => tag !== null)
+  const tags = parseLines(stdout, parseTagLine)
 
   const seen = new Set<string>()
   return tags.filter((tag) => {

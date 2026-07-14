@@ -14,8 +14,7 @@ import {
   fileNameFromPath,
   FolderCounts,
   FileRow,
-  TreeNode,
-  Chevron
+  TreeNode
 } from './WorkingTreeFileRow'
 import type { GitFileChange } from '@/lib/types'
 
@@ -124,15 +123,6 @@ describe('FileRow', () => {
 
     await user.click(screen.getByText('src/a.txt'))
     expect(onSelect).toHaveBeenCalled()
-  })
-})
-
-describe('Chevron', () => {
-  it('renders open and closed states', () => {
-    const { rerender } = render(<Chevron open={false} />)
-    expect(document.querySelector('svg')).toBeInTheDocument()
-    rerender(<Chevron open />)
-    expect(document.querySelector('svg')).toBeInTheDocument()
   })
 })
 

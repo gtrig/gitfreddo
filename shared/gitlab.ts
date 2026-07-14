@@ -1,58 +1,30 @@
-export interface GitlabRepo {
+import type {
+  ForgeChangeRequest,
+  ForgeCreateChangeRequestParams,
+  ForgeIssue,
+  ForgeListReposParams,
+  ForgeMergeMethod,
+  ForgeRepoBase
+} from './forge'
+
+export type { ForgeMergeMethod as GitlabMergeMethod }
+export type { ForgeCreateChangeRequestParams as GitlabCreateMergeRequestParams }
+export type { ForgeIssue as GitlabIssue }
+export type { ForgeListReposParams as GitlabListReposParams }
+export { slugifyIssueBranch } from './forge'
+
+export interface GitlabRepo extends ForgeRepoBase {
   id: number
-  fullName: string
-  name: string
   namespace: string
-  owner: string
-  private: boolean
-  cloneUrl: string
-  description: string | null
-  defaultBranch: string
 }
 
-export interface GitlabMergeRequest {
-  number: number
-  title: string
-  state: string
-  htmlUrl: string
-  user: string
-  head: { ref: string; sha: string }
-  base: { ref: string; sha: string }
-  body: string
-  draft: boolean
-  mergeable: boolean | null
-}
-
-export type GitlabMergeMethod = 'merge' | 'squash' | 'rebase'
-
-export interface GitlabCreateMergeRequestParams {
-  title: string
-  head: string
-  base: string
-  body?: string
-  draft?: boolean
-}
-
-export interface GitlabIssue {
-  number: number
-  title: string
-  state: string
-  htmlUrl: string
-  user: string
-  body: string
-  labels: string[]
-}
+export type GitlabMergeRequest = ForgeChangeRequest
 
 export type GitlabConnectStatus = 'waiting' | 'exchanging' | 'done'
 
 export interface GitlabConnectProgress {
   status: GitlabConnectStatus
   authorizationUri?: string
-}
-
-export interface GitlabListReposParams {
-  search?: string
-  page?: number
 }
 
 export interface GitlabCreateRepoParams {
@@ -130,15 +102,7 @@ export function parseGitlabRemote(
   }
 }
 
-export function slugifyIssueBranch(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 40)
-}
-
-export function gitlabMergeMethodToApi(method: GitlabMergeMethod): {
+export function gitlabMergeMethodToApi(method: ForgeMergeMethod): {
   mergeCommitMessage?: string
   squashCommitMessage?: string
   squash?: boolean

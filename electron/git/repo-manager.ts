@@ -315,22 +315,17 @@ function buildHandlerRegistry(): Record<GitIpcMethod, InvokeHandler> {
     'reset.head': (cwd, git, p) =>
       rebaseOps.resetToParent(cwd, git, p.mode as 'soft' | 'mixed' | 'hard'),
     'maintenance.unreachable': (cwd, git) => maintenanceOps.listUnreachableCommits(cwd, git),
-    'maintenance.staleBranches': (cwd, git, p) => {
-      const hashes = Array.isArray(p.hashes)
-        ? (p.hashes as string[])
-        : typeof p.hash === 'string' && p.hash
-          ? [p.hash]
-          : []
-      return maintenanceOps.listStaleLocalBranches(cwd, git, hashes)
-    },
+    'maintenance.staleBranches': (cwd, git, p) =>
+      maintenanceOps.listStaleLocalBranches(
+        cwd,
+        git,
+        maintenanceOps.normalizeStaleBranchHashes(p)
+      ),
     'maintenance.removeStaleBranches': (cwd, git, p) =>
       maintenanceOps.removeStaleRefs(
-        cwd, git,
-        Array.isArray(p.refs) && p.refs.length > 0
-          ? (p.refs as string[])
-          : ((p.branchNames as string[]) ?? []).map((name) =>
-              name.startsWith('refs/') ? name : `refs/heads/${name}`
-            )
+        cwd,
+        git,
+        maintenanceOps.normalizeStaleRefsFromParams(p)
       ),
     'maintenance.prune': (cwd, git) => maintenanceOps.pruneStaleObjects(cwd, git)
   }

@@ -1,12 +1,20 @@
-export interface GitHubRepo {
+import type {
+  ForgeChangeRequest,
+  ForgeCreateChangeRequestParams,
+  ForgeIssue,
+  ForgeListReposParams,
+  ForgeMergeMethod,
+  ForgeRepoBase
+} from './forge'
+
+export type { ForgeMergeMethod as GitHubMergeMethod }
+export type { ForgeCreateChangeRequestParams as GitHubCreatePullRequestParams }
+export type { ForgeIssue as GitHubIssue }
+export type { ForgeListReposParams as GitHubListReposParams }
+export { slugifyIssueBranch } from './forge'
+
+export interface GitHubRepo extends ForgeRepoBase {
   id: number
-  fullName: string
-  name: string
-  owner: string
-  private: boolean
-  cloneUrl: string
-  description: string | null
-  defaultBranch: string
 }
 
 export interface GitHubPullRequestRepository {
@@ -14,18 +22,8 @@ export interface GitHubPullRequestRepository {
   repo: string
 }
 
-export interface GitHubPullRequest {
-  number: number
-  title: string
-  state: string
-  htmlUrl: string
+export interface GitHubPullRequest extends ForgeChangeRequest {
   repository: GitHubPullRequestRepository
-  user: string
-  head: { ref: string; sha: string }
-  base: { ref: string; sha: string }
-  body: string
-  draft: boolean
-  mergeable: boolean | null
 }
 
 export type GitHubPullRequestFileStatus =
@@ -125,34 +123,9 @@ export interface GitHubPullRequestTimelineItem {
   reviewState?: string
 }
 
-export type GitHubMergeMethod = 'merge' | 'squash' | 'rebase'
-
-export interface GitHubCreatePullRequestParams {
-  title: string
-  head: string
-  base: string
-  body?: string
-  draft?: boolean
-}
-
-export interface GitHubIssue {
-  number: number
-  title: string
-  state: string
-  htmlUrl: string
-  user: string
-  body: string
-  labels: string[]
-}
-
 export interface GitHubConnectProgress {
   userCode: string
   verificationUri: string
-}
-
-export interface GitHubListReposParams {
-  search?: string
-  page?: number
 }
 
 export interface GitHubCreateRepoParams {
@@ -212,12 +185,4 @@ export function parseGitHubPullHtmlUrl(htmlUrl: string): GitHubPullRequestReposi
   const match = htmlUrl.trim().match(/github\.com\/([^/]+)\/([^/]+)\/pull\/\d+/i)
   if (!match) return null
   return { owner: match[1], repo: match[2] }
-}
-
-export function slugifyIssueBranch(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 40)
 }

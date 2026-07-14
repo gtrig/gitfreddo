@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-14 — Structural forge/ops deduplication pass
+
+- **Why:** Parallel GitHub/GitLab/Bitbucket stacks and repeated git/modal/hook patterns ballooned the codebase without behavior differences worth keeping.
+- **What:** Shared `shared/forge.ts` types; `electron/forge/` token-store/OAuth-callback/HTTP/connection/repo-cache/repo-context helpers; generic forge UI (`CreateChangeRequestModal`, `ForgeRepoPicker`, `ForgeEditIssueModal`) with thin provider wrappers; `useRepoQuery`; context-menu builders; `RenameEntityModal`; commit-message / connector / format helpers; dead virtual-list code removed; docs naming aligned to PascalCase `.tsx`; unused-i18n soft gate. See `docs/refactor-plan.md`.
+
 ### 2026-07-14 — Deduplicate forge SSH key helpers
 
 - **Why:** GitHub, GitLab, and Bitbucket each copied generate-and-upload cleanup, SSH title normalization, and stored-vs-discovered title resolution.

@@ -1,5 +1,6 @@
 import { getDefaultGitlabHost } from '../../../shared/gitlab'
 import { getResolvedForgeOAuthEnv } from '../../forge-oauth-env'
+import { readForgeJson, requireForgeToken } from '../../forge/http'
 import { loadGitlabToken } from '../token-store'
 
 export function resolveGitlabHost(settingsHost?: string | null): string {
@@ -25,11 +26,7 @@ export function getGitlabWebBase(settingsHost?: string | null): string {
 }
 
 export async function getGitlabTokenOrThrow(): Promise<string> {
-  const token = await loadGitlabToken()
-  if (!token?.trim()) {
-    throw new Error('GitLab is not connected. Connect in Settings → Integrations.')
-  }
-  return token.trim()
+  return requireForgeToken(loadGitlabToken, 'GitLab')
 }
 
 export async function gitlabFetch(
@@ -56,14 +53,7 @@ export async function gitlabJson<T>(
   settingsHost?: string | null
 ): Promise<T> {
   const response = await gitlabFetch(path, init, token, settingsHost)
-  if (!response.ok) {
-    const detail = await response.text()
-    throw new Error(`GitLab API error (${response.status}): ${detail}`)
-  }
-  if (response.status === 204) {
-    return undefined as T
-  }
-  return response.json() as Promise<T>
+  return readForgeJson<T>(response, 'GitLab', { allowEmpty: true })
 }
 
 function parseLinkHeader(linkHeader: string | null): Record<string, string> {

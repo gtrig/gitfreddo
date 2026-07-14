@@ -1,6 +1,4 @@
-import { CreatePrModal as BitbucketCreatePrModal } from '@/components/Bitbucket/CreatePrModal'
-import { CreatePrModal as GitHubCreatePrModal } from '@/components/GitHub/CreatePrModal'
-import { CreatePrModal as GitlabCreatePrModal } from '@/components/GitLab/CreatePrModal'
+import { CreateChangeRequestModal } from '@/components/Forge/CreateChangeRequestModal'
 import type { ForgeProvider } from '@/lib/forge/detect'
 
 interface ForgeCreatePrModalProps {
@@ -12,12 +10,12 @@ interface ForgeCreatePrModalProps {
   onSubmit: (params: { title: string; body: string; head: string; base: string }) => Promise<void>
 }
 
+const I18N_PREFIX: Record<ForgeProvider, string> = {
+  github: 'github',
+  gitlab: 'gitlab',
+  bitbucket: 'bitbucket'
+}
+
 export function ForgeCreatePrModal({ provider, ...props }: ForgeCreatePrModalProps) {
-  if (provider === 'bitbucket') {
-    return <BitbucketCreatePrModal {...props} />
-  }
-  if (provider === 'gitlab') {
-    return <GitlabCreatePrModal {...props} />
-  }
-  return <GitHubCreatePrModal {...props} />
+  return <CreateChangeRequestModal {...props} i18nPrefix={I18N_PREFIX[provider]} />
 }

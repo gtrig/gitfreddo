@@ -53,6 +53,10 @@ Workspace helpers: `connect`, `switchWorkspace`, `cloneRepository`, `openWorkspa
 
 No third-party git libraries; output is parsed from porcelain/plumbing commands.
 
+## Forge integrations
+
+GitHub, GitLab, and Bitbucket share infrastructure under `electron/forge/` (encrypted token store factory, OAuth callback server for auth-code flows, HTTP JSON helpers, connection status lifecycle, repo TTL cache, repo-context resolver, SSH key helpers). Provider folders keep API mappers and auth quirks (GitHub device flow + PR review threads, Bitbucket app passwords, GitLab self-hosted host). Shared domain types live in `shared/forge.ts`; renderer forge UI shells live in `src/components/Forge/` with thin per-provider re-exports.
+
 ## Command catalog (`shared/git/commands/`)
 
 Single source of truth for every `git` argv the app runs.

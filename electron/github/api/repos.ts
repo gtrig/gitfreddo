@@ -1,4 +1,5 @@
 import type { GitHubCreateRepoParams, GitHubListReposParams, GitHubRepo } from '../../../shared/github'
+import { createTtlCache } from '../../forge/repo-cache'
 import { githubJson } from './http'
 
 interface GitHubApiRepo {
@@ -12,9 +13,7 @@ interface GitHubApiRepo {
   default_branch: string
 }
 
-let cachedRepos: GitHubRepo[] | null = null
-let cacheExpiresAt = 0
-const CACHE_TTL_MS = 5 * 60 * 1000
+const repoCache = createTtlCache<GitHubRepo[]>(5 * 60 * 1000)
 
 function mapRepo(raw: GitHubApiRepo): GitHubRepo {
   return {
@@ -30,16 +29,16 @@ function mapRepo(raw: GitHubApiRepo): GitHubRepo {
 }
 
 export function clearRepoCache(): void {
-  cachedRepos = null
-  cacheExpiresAt = 0
+  repoCache.clear()
 }
 
 export async function listUserRepos(params: GitHubListReposParams = {}): Promise<GitHubRepo[]> {
   const page = params.page ?? 1
   const search = params.search?.trim().toLowerCase()
 
-  if (!search && page === 1 && cachedRepos && Date.now() < cacheExpiresAt) {
-    return cachedRepos
+  if (!search && page === 1) {
+    const cached = repoCache.get()
+    if (cached) return cached
   }
 
   const query = new URLSearchParams({
@@ -62,8 +61,7 @@ export async function listUserRepos(params: GitHubListReposParams = {}): Promise
   }
 
   if (!search && page === 1) {
-    cachedRepos = repos
-    cacheExpiresAt = Date.now() + CACHE_TTL_MS
+    repoCache.set(repos)
   }
 
   return repos

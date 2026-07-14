@@ -47,9 +47,10 @@ flowchart TB
 | Detail panel | `src/components/DetailPanel/` | Commit/stash preview, reword/delete |
 | Working tree | `src/components/WorkingTree/` | Stage/commit UI |
 | Merge conflicts | `src/components/MergeConflicts/` | Full-screen conflict flow |
-| GitHub UI | `src/components/GitHub/` | PR creation, repo picker |
-| GitLab UI | `src/components/GitLab/` | MR creation, repo picker |
-| Bitbucket UI | `src/components/Bitbucket/` | PR creation, repo picker |
+| GitHub UI | `src/components/GitHub/` | Thin providers over shared Forge UI (PR creation, repo picker) |
+| GitLab UI | `src/components/GitLab/` | Thin providers over shared Forge UI (MR creation, repo picker) |
+| Bitbucket UI | `src/components/Bitbucket/` | Thin providers over shared Forge UI (PR creation, repo picker) |
+| Forge UI | `src/components/Forge/` | Shared CreateChangeRequestModal, RepoPicker, EditIssueModal |
 | In-app help | `src/components/Help/` | Docs modal, markdown viewer |
 | Settings | `src/components/Settings/` | Settings modal and panels |
 | UI primitives | `src/components/Ui/` | Modal, Spinner, overlays |
@@ -102,6 +103,7 @@ Root-level: `types.ts`, `themes.ts`, `clipboard.ts`.
 | GitHub | `electron/github/` | OAuth, API client, token store |
 | GitLab | `electron/gitlab/` | OAuth, API client, token store |
 | Bitbucket | `electron/bitbucket/` | OAuth, API client, token store |
+| Forge shared | `electron/forge/` | Token store factory, OAuth callback, HTTP helpers, connection status, SSH key helpers, repo cache/context |
 | LLM | `electron/llm/` | AI fill and conflict assist |
 | Settings | `electron/settings.ts` | App settings persistence |
 
@@ -130,14 +132,26 @@ Root-level: `types.ts`, `themes.ts`, `clipboard.ts`.
 |------|---------|
 | `ipc.ts` | IPC method types, app settings, menu actions |
 | `git.ts` | URL parsing helpers |
-| `github.ts` | GitHub API types |
-| `gitlab.ts` | GitLab API types |
-| `bitbucket.ts` | Bitbucket API types |
+| `github.ts` | GitHub API types (extends shared forge types) |
+| `gitlab.ts` | GitLab API types (extends shared forge types) |
+| `bitbucket.ts` | Bitbucket API types (extends shared forge types) |
+| `forge.ts` | Cross-forge base types (change request, issue, merge method, slugify) |
+| `forge-ssh.ts` / `forge-auth.ts` | Shared SSH title + auth-failure helpers |
 | `gitLog.ts` | Log/graph shared types |
 | `ai.ts` | AI fill and conflict proposal types |
 | `themes/` | Theme definitions and colors |
 
 Import from renderer via `@shared/...`.
+
+## Naming
+
+| Kind | Convention |
+|------|------------|
+| Component folders | PascalCase (`src/components/TimelineGraph/`) |
+| React component files | PascalCase (`CommitPanel.tsx`) — matches established codebase practice |
+| Non-component modules | camelCase (`fileTree.ts`, `formatTimeSince.ts`) |
+| Main-process modules | kebab-case (`repo-manager.ts`, `git-runner.ts`) |
+| Functions | camelCase |
 
 ## Tests
 
@@ -149,6 +163,4 @@ Import from renderer via `@shared/...`.
 | `e2e/` | Playwright smoke specs |
 | `shared/*.test.ts`, `electron/**/*.test.ts` | Main-process and shared unit tests |
 
-## Legacy note
-
-Older monolithic sidebar components (`BranchSidebar`, `StashSidebar`, `RemotePanel`, `IssuesPanel`, `PullRequestsPanel`) were replaced by `Layout/RepoSidebar` and `Layout/sidebar/*Section`. Conflict UI moved from `ConflictDiffView` to `DiffViewer/ConflictMergeOverlay`.
+See also [refactor-plan.md](refactor-plan.md) for structural optimization phases.

@@ -8,7 +8,7 @@ import type {
 } from '../../shared/gitlab'
 import type { AppSettings, GitlabStatus } from '../../shared/ipc'
 import { saveSettings } from '../settings'
-import { isForgeAuthFailure } from '../../shared/forge-auth'
+import { finalizeForgeConnection, runForgeStatusCheck } from '../forge/connection'
 import { getAuthenticatedUser } from './client'
 import { listIssues, createIssue, updateIssue } from './api/issues'
 import { createMergeRequest, listMergeRequests, mergeMergeRequest } from './api/pulls'
@@ -102,42 +102,35 @@ export async function getGitlabStatus(
   settings: AppSettings
 ): Promise<{ settings: AppSettings; status: GitlabStatus }> {
   const host = settingsHost(settings) ?? 'gitlab.com'
-  const tokenPresent = await hasGitlabToken()
-  if (!tokenPresent) {
-    return { settings, status: disconnectedStatus(host) }
-  }
-
-  try {
-    const token = await loadGitlabToken()
-    if (!token) {
-      return { settings, status: disconnectedStatus(host) }
-    }
-    const authType = settings.gitlabAuthType ?? 'oauth'
-    const user = await getAuthenticatedUser(token, settingsHost(settings))
-    if (user.login !== settings.gitlabLogin) {
-      const updated = await saveSettings({
-        gitlabLogin: user.login,
-        gitlabConnectedAt: settings.gitlabConnectedAt ?? Date.now()
-      })
-      return buildConnectedGitlabStatus(updated, authType, user)
-    }
-    return buildConnectedGitlabStatus(settings, authType, user)
-  } catch (error) {
-    if (!isForgeAuthFailure(error) && settings.gitlabLogin?.trim()) {
-      return {
-        settings,
-        status: toStatus(
-          settings.gitlabLogin,
-          '',
-          settings.gitlabAuthType ?? 'oauth',
-          settings.gitlabSshKeyTitle,
-          host
-        )
+  return runForgeStatusCheck({
+    settings,
+    hasToken: hasGitlabToken,
+    loadToken: loadGitlabToken,
+    disconnectedStatus: () => disconnectedStatus(host),
+    offlineFallbackStatus: () =>
+      settings.gitlabLogin?.trim()
+        ? toStatus(
+            settings.gitlabLogin,
+            '',
+            settings.gitlabAuthType ?? 'oauth',
+            settings.gitlabSshKeyTitle,
+            host
+          )
+        : null,
+    clearConnection: clearGitlabConnection,
+    fetchConnectedStatus: async (token, current) => {
+      const authType = current.gitlabAuthType ?? 'oauth'
+      const user = await getAuthenticatedUser(token, settingsHost(current))
+      if (user.login !== current.gitlabLogin) {
+        const updated = await saveSettings({
+          gitlabLogin: user.login,
+          gitlabConnectedAt: current.gitlabConnectedAt ?? Date.now()
+        })
+        return buildConnectedGitlabStatus(updated, authType, user)
       }
+      return buildConnectedGitlabStatus(current, authType, user)
     }
-    const cleared = await clearGitlabConnection(settings)
-    return { settings: cleared, status: disconnectedStatus(host) }
-  }
+  })
 }
 
 export async function connectGitlab(
@@ -175,29 +168,28 @@ async function finalizeGitlabConnection(
   host: string | null,
   avatarUrl?: string
 ): Promise<{ settings: AppSettings; status: GitlabStatus }> {
-  await saveGitlabToken(token)
-  clearRepoCache()
-
-  const user = avatarUrl
-    ? { login, avatar_url: avatarUrl }
-    : await getAuthenticatedUser(token, host)
-  const next = await saveSettings({
-    gitlabLogin: user.login,
-    gitlabConnectedAt: Date.now(),
-    gitlabAuthType: authType,
-    gitlabHost: host ?? ''
+  return finalizeForgeConnection({
+    token,
+    saveToken: saveGitlabToken,
+    clearRepoCache,
+    resolveUser: async () =>
+      avatarUrl ? { login, avatar_url: avatarUrl } : getAuthenticatedUser(token, host),
+    persistConnection: async (user) =>
+      saveSettings({
+        gitlabLogin: user.login,
+        gitlabConnectedAt: Date.now(),
+        gitlabAuthType: authType,
+        gitlabHost: host ?? ''
+      }),
+    toStatus: (next, user) =>
+      toStatus(
+        user.login,
+        user.avatar_url,
+        authType,
+        next.gitlabSshKeyTitle,
+        host ?? 'gitlab.com'
+      )
   })
-
-  return {
-    settings: next,
-    status: toStatus(
-      user.login,
-      user.avatar_url,
-      authType,
-      next.gitlabSshKeyTitle,
-      host ?? 'gitlab.com'
-    )
-  }
 }
 
 export async function disconnectGitlab(settings: AppSettings): Promise<AppSettings> {

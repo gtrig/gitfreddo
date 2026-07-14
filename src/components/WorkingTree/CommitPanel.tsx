@@ -13,7 +13,7 @@ import { useLogGraph } from '@/hooks/useGit'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useLayoutStore } from '@/stores/layout'
 import { useToastStore } from '@/stores/toast'
-import { commitMessageBody } from '@/lib/workspace/fileTree'
+import { commitMessageBody, buildCommitMessage, parseCommitMessage } from '@/lib/workspace/fileTree'
 import type { GitWorkingStatus } from '@/lib/types'
 import { Spinner } from '@/components/Ui/Spinner'
 import { RowResizeHandle } from '@/components/Ui/RowResizeHandle'
@@ -27,21 +27,6 @@ const SUBJECT_MAX = 72
 
 function Chevron({ open }: { open: boolean }) {
   return <SidebarIconChevron open={open} className="h-3 w-3 shrink-0 text-gf-fg-subtle" />
-}
-
-function buildCommitMessage(summary: string, description: string): string {
-  const subject = summary.trim()
-  const body = description.trim()
-  if (!body) return subject
-  return `${subject}\n\n${body}`
-}
-
-function parseCommitMessage(text: string): { summary: string; description: string } {
-  const trimmed = text.trim()
-  const split = trimmed.split(/\n\n/)
-  const summary = split[0]?.trim() ?? ''
-  const description = split.slice(1).join('\n\n').trim()
-  return { summary, description }
 }
 
 interface CommitPanelProps {

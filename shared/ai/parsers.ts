@@ -12,6 +12,7 @@ import type {
   AiAnalyzeFeatureGroup,
   AiConflictResolutionProposal
 } from './types'
+import { parseCommitMessage } from '../git/commitMessage'
 
 function stripJsonFences(text: string): string {
   return text
@@ -19,27 +20,6 @@ function stripJsonFences(text: string): string {
     .replace(/^```(?:json)?\s*/i, '')
     .replace(/\s*```$/, '')
     .trim()
-}
-
-function parseCommitMessageText(message: string): { summary: string; description: string } {
-  const trimmed = message.trim()
-  const paragraphs = trimmed.split(/\n\n/)
-  if (paragraphs.length > 1) {
-    return {
-      summary: paragraphs[0]?.trim() ?? '',
-      description: paragraphs.slice(1).join('\n\n').trim()
-    }
-  }
-
-  const lines = trimmed.split('\n')
-  if (lines.length > 1) {
-    return {
-      summary: lines[0]?.trim() ?? '',
-      description: lines.slice(1).join('\n').trim()
-    }
-  }
-
-  return { summary: trimmed, description: '' }
 }
 
 function resolveStagedPath(candidate: string, stagedPaths: string[]): string | undefined {
@@ -93,7 +73,7 @@ function parseCommitProposalEntries(
       summary = raw.summary.trim()
       description = typeof raw.description === 'string' ? raw.description.trim() : ''
     } else if (typeof raw.message === 'string' && raw.message.trim()) {
-      const parts = parseCommitMessageText(raw.message)
+      const parts = parseCommitMessage(raw.message)
       summary = parts.summary
       description = parts.description
     }

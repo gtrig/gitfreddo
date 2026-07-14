@@ -1,4 +1,5 @@
 import { loadGitHubToken } from '../token-store'
+import { readForgeJson, requireForgeToken } from '../../forge/http'
 
 const DEFAULT_API_BASE = 'https://api.github.com'
 
@@ -12,11 +13,7 @@ export function getGitHubApiBase(): string {
 }
 
 export async function getGitHubTokenOrThrow(): Promise<string> {
-  const token = await loadGitHubToken()
-  if (!token?.trim()) {
-    throw new Error('GitHub is not connected. Connect in Settings → Integrations.')
-  }
-  return token.trim()
+  return requireForgeToken(loadGitHubToken, 'GitHub')
 }
 
 export async function githubFetch(
@@ -38,9 +35,5 @@ export async function githubFetch(
 
 export async function githubJson<T>(path: string, init?: RequestInit, token?: string): Promise<T> {
   const response = await githubFetch(path, init, token)
-  if (!response.ok) {
-    const detail = await response.text()
-    throw new Error(`GitHub API error (${response.status}): ${detail}`)
-  }
-  return response.json() as Promise<T>
+  return readForgeJson<T>(response, 'GitHub')
 }
