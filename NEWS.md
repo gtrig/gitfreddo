@@ -5,6 +5,8 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+- Syntax-highlighted code editor for git hooks, repository files (.gitignore and friends), merge conflict resolution, and the interactive rebase todo.
+
 ## [0.4.1]
 
 - Right-click a branch in the commit graph to merge in either direction: merge it into your current branch, or merge your current branch into it.

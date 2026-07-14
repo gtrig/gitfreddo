@@ -471,6 +471,7 @@ export function ConflictMergeOverlay({ path, onClose }: ConflictMergeOverlayProp
                 resolvedText={activeResolvedText}
                 previewLines={previewLines}
                 editMode={activeEditMode}
+                filePath={path}
                 onResolvedTextChange={updateActiveResolvedText}
                 onTakeOurs={() => activeHunk && setActiveHunkResolvedText(activeHunk.ours, 'checkbox')}
                 onTakeTheirs={() =>

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ActionButton, FieldLabel, TextArea } from '@/components/Ui/Modal'
+import { ActionButton, FieldLabel } from '@/components/Ui/Modal'
+import { CodeEditor } from '@/components/Ui/CodeEditor'
 import { LoadingRow } from '@/components/Ui/Spinner'
 import type { GitHook, GitHooksListResult } from '@/lib/types'
 import { useWorkspaceStore } from '@/stores/workspace'
@@ -221,11 +222,13 @@ export function RepoHooksPanel() {
             <>
               <div>
                 <FieldLabel>{selected}</FieldLabel>
-                <TextArea
+                <CodeEditor
                   rows={14}
+                  language="shell"
                   value={draft}
-                  onChange={(event) => setDraft(event.target.value)}
+                  onChange={setDraft}
                   className="font-mono text-xs"
+                  aria-label={selected}
                 />
               </div>
               <div className="flex flex-wrap justify-end gap-2">

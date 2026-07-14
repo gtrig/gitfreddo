@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Modal, ActionButton, FieldLabel, TextArea, Select } from '@/components/Ui/Modal'
+import { Modal, ActionButton, FieldLabel, Select } from '@/components/Ui/Modal'
+import { CodeEditor } from '@/components/Ui/CodeEditor'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useToastStore } from '@/stores/toast'
 import type { GitCommit } from '@/lib/types'
@@ -66,11 +67,13 @@ export function RebaseSequenceModal({ open, commits, onClose }: RebaseSequenceMo
 
         <div>
           <FieldLabel>{t('modals.rebaseSequence.todoLines')}</FieldLabel>
-          <TextArea
+          <CodeEditor
             rows={Math.min(12, Math.max(4, lines.length + 1))}
+            language="plaintext"
             value={lines.join('\n')}
-            onChange={(event) => setLines(event.target.value.split('\n'))}
+            onChange={(next) => setLines(next.split('\n'))}
             className="font-mono text-xs"
+            aria-label={t('modals.rebaseSequence.todoLines')}
           />
         </div>
 

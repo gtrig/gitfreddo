@@ -1,5 +1,31 @@
 import '@testing-library/jest-dom/vitest'
+import { createElement } from 'react'
+import { vi } from 'vitest'
 import { createGitFreddoMock } from './mocks/gitfreddo'
+
+// CodeMirror does not measure under jsdom; keep existing textarea-based assertions.
+vi.mock('@/components/Ui/CodeEditor', () => ({
+  CodeEditor: ({
+    value,
+    onChange,
+    className,
+    rows,
+    'aria-label': ariaLabel
+  }: {
+    value: string
+    onChange: (value: string) => void
+    className?: string
+    rows?: number
+    'aria-label'?: string
+  }) =>
+    createElement('textarea', {
+      value,
+      rows,
+      className,
+      'aria-label': ariaLabel ?? 'Code editor',
+      onChange: (event: { target: { value: string } }) => onChange(event.target.value)
+    })
+}))
 
 if (typeof window !== 'undefined') {
   window.gitfreddo = createGitFreddoMock()

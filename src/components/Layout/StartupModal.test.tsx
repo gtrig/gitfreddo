@@ -41,7 +41,7 @@ describe('StartupModal', () => {
     // falls back to the newest release section (capped at 5).
     expect(
       screen.getByText(
-        'Right-click a branch in the commit graph to merge in either direction: merge it into your current branch, or merge your current branch into it.'
+        'Syntax-highlighted code editor for git hooks, repository files (.gitignore and friends), merge conflict resolution, and the interactive rebase todo.'
       )
     ).toBeInTheDocument()
   })

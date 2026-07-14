@@ -1,7 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import type { ConflictHunk } from '@/lib/conflicts/conflictMarkers'
 import type { PreviewLine } from '@/lib/conflicts/conflictResolution'
+import { detectLanguage } from '@/lib/editor/detectLanguage'
 import { ActionButton } from '@/components/Ui/Modal'
+import { CodeEditor } from '@/components/Ui/CodeEditor'
 
 const ROW_GRID = 'grid-cols-[44px_minmax(0,1fr)]'
 
@@ -21,6 +23,7 @@ interface ConflictOutputEditorProps {
   resolvedText: string
   previewLines: PreviewLine[]
   editMode: 'checkbox' | 'manual'
+  filePath?: string
   onResolvedTextChange: (text: string) => void
   onTakeOurs: () => void
   onTakeTheirs: () => void
@@ -33,6 +36,7 @@ export function ConflictOutputEditor({
   resolvedText,
   previewLines,
   editMode,
+  filePath,
   onResolvedTextChange,
   onTakeOurs,
   onTakeTheirs,
@@ -62,12 +66,13 @@ export function ConflictOutputEditor({
       <label className="mb-1 block text-[10px] uppercase text-gf-fg-subtle">
         {t('diff.resolvedTextFor', { number: activeHunk.id + 1 })}
       </label>
-      <textarea
+      <CodeEditor
         value={resolvedText}
-        onChange={(event) => onResolvedTextChange(event.target.value)}
+        onChange={onResolvedTextChange}
+        language={detectLanguage(filePath)}
         rows={6}
-        className="mb-3 max-h-40 w-full resize-y overflow-auto rounded border border-gf-border-strong bg-gf-bg px-2 py-1.5 font-mono text-[12px] leading-5 text-gf-fg"
-        spellCheck={false}
+        className="mb-3 max-h-40 w-full"
+        aria-label={t('diff.resolvedTextFor', { number: activeHunk.id + 1 })}
       />
 
       <div className="border-t border-gf-border pt-2">

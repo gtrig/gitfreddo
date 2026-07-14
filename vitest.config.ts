@@ -21,7 +21,9 @@ const coverageExclude = [
   'src/theme-boot.ts',
   'src/App.tsx',
   // Heavy conflict UI — covered by dedicated lib/conflicts tests and E2E
-  'src/components/DiffViewer/ConflictMergeOverlay.tsx'
+  'src/components/DiffViewer/ConflictMergeOverlay.tsx',
+  // CodeMirror editor host — not measurable under jsdom; covered by E2E / manual UI
+  'src/components/Ui/CodeEditor.tsx'
 ]
 
 export default defineConfig({

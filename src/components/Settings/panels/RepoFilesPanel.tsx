@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import type { WorkingReadResult } from '@shared/working'
-import { ActionButton, FieldLabel, TextArea } from '@/components/Ui/Modal'
+import { ActionButton, FieldLabel } from '@/components/Ui/Modal'
+import { CodeEditor } from '@/components/Ui/CodeEditor'
 import { LoadingRow } from '@/components/Ui/Spinner'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
@@ -101,11 +102,13 @@ export function RepoFilesPanel() {
         <>
           <div>
             <FieldLabel>{selected}</FieldLabel>
-            <TextArea
+            <CodeEditor
               rows={14}
+              language="plaintext"
               value={draft}
-              onChange={(event) => setDraft(event.target.value)}
+              onChange={setDraft}
               className="font-mono text-xs"
+              aria-label={selected}
             />
           </div>
           <div className="flex justify-end">

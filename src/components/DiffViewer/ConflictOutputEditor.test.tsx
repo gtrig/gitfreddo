@@ -53,6 +53,7 @@ describe('ConflictOutputEditor', () => {
           { kind: 'hunk', text: 'other hunk' }
         ]}
         editMode="checkbox"
+        filePath="src/app.ts"
         onResolvedTextChange={onResolvedTextChange}
         onTakeOurs={onTakeOurs}
         onTakeTheirs={onTakeTheirs}

@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-14 — CodeMirror editor for code-bearing textboxes
+
+- **Why:** Git hooks, repo config files, conflict resolution text, and the interactive rebase todo were plain monospace textareas — hard to edit without line numbers or syntax highlighting.
+- **What:** Added a shared CodeMirror 6 `CodeEditor` (`src/components/Ui/CodeEditor.tsx`) themed with GitFreddo CSS variables, plus `detectLanguage` (`src/lib/editor/detectLanguage.ts`) for filename-based highlighting. Wired it into `RepoHooksPanel` (shell), `RepoFilesPanel` (plaintext), `ConflictOutputEditor` (language from file path), and `RebaseSequenceModal` (plaintext). Renderer tests mock `CodeEditor` as a textarea under jsdom; `CodeEditor.tsx` is excluded from coverage like other non-jsdom UI.
+
 ### 2026-07-14 — Stop version-controlling git hooks; manage them per workspace
 
 - **Why:** Git hooks were tracked in the repo (`scripts/hooks/`) and force-installed via `core.hooksPath`, but hooks should live in each repo's own `.git/hooks/` and be managed per workspace by the GitFreddo app — not shipped in version control.
