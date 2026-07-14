@@ -86,6 +86,7 @@ describe('useTimelineRefContextMenu', () => {
   it('opens ref menus and exposes modal setters', () => {
     const onSelectCommit = vi.fn()
     const onMerge = vi.fn()
+    const onMergeCurrentInto = vi.fn()
     const { result } = renderHook(
       () =>
         useTimelineRefContextMenu({
@@ -95,7 +96,8 @@ describe('useTimelineRefContextMenu', () => {
           remotes,
           currentBranch: 'main',
           onSelectCommit,
-          onMerge
+          onMerge,
+          onMergeCurrentInto
         }),
       { wrapper }
     )

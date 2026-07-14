@@ -19,6 +19,7 @@ export interface TimelineRefContextMenuOptions {
   currentBranch: string
   onSelectCommit: (hash: string) => void
   onMerge: (branchName: string) => void
+  onMergeCurrentInto: (branchName: string) => void
 }
 
 export function useTimelineRefContextMenu({
@@ -28,7 +29,8 @@ export function useTimelineRefContextMenu({
   remotes,
   currentBranch,
   onSelectCommit,
-  onMerge
+  onMerge,
+  onMergeCurrentInto
 }: TimelineRefContextMenuOptions) {
   const { t } = useTranslation()
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
@@ -66,6 +68,7 @@ export function useTimelineRefContextMenu({
       onSelectCommit,
       onCheckout: (params: BranchCheckoutParams) => void checkout.mutateAsync(params),
       onMerge,
+      onMergeCurrentInto,
       onRenameBranch: setRenameBranch,
       onDeleteBranch: setPendingDeleteBranch,
       onCreatePr: canCreatePr ? setPrBranch : undefined,
@@ -91,6 +94,7 @@ export function useTimelineRefContextMenu({
       defaultRemote,
       isBranchHidden,
       onMerge,
+      onMergeCurrentInto,
       onSelectCommit,
       pushTag,
       toggleBranchVisibility,

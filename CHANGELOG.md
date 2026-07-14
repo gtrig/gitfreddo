@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-14 — Two-way branch merge from the graph context menu
+
+- **Why:** The branch ref context menu only offered a one-way "Merge into current…"; users want to merge in either direction relative to the checked-out branch.
+- **What:** Added a `merge.into` git operation (checks out the target branch, then merges the source, leaving HEAD on the target) with IPC wiring (`shared/git/ipc`, `repo-manager`, `useGitMutations.mergeInto`). `localBranchContextMenuItems` now shows directional labels — "Merge A into <current>" and "Merge <current> into A" (new) — gated on a known current branch and an `onMergeCurrentInto` handler; wired through `timelineRefContextMenu`, `useTimelineRefContextMenu`, and `CommitTimeline`. `MergeBranchDialog` accepts an explicit `targetBranch` and routes the reverse direction to `mergeInto`. Added i18n key `contextMenu.sidebar.mergeBranchIntoBranch` (en/el) and co-located tests.
+
 ### 2026-07-14 — Fix commit graph lane break on linear history
 
 - **Why:** When HEAD was behind the newest commit on a linear branch, the commit graph spine detoured out to a side lane and back for one commit, making the vertical path look broken/kinked.

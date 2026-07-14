@@ -164,6 +164,31 @@ export async function mergeStart(
   throw new Error(detail)
 }
 
+export async function mergeInto(
+  cwd: string,
+  gitBinaryPath: string,
+  params: { sourceBranch: string; targetBranch: string; noFf?: boolean; squash?: boolean }
+): Promise<GitMergeStartResult> {
+  const sourceBranch = params.sourceBranch.trim()
+  const targetBranch = params.targetBranch.trim()
+  if (!sourceBranch || !targetBranch) {
+    throw new Error('Source and target branch are required.')
+  }
+  if (sourceBranch === targetBranch) {
+    throw new Error('Source and target branch must differ.')
+  }
+
+  const status = await workingStatus(cwd, gitBinaryPath)
+  if (status.branch !== targetBranch) {
+    await branchCheckout(cwd, gitBinaryPath, targetBranch)
+  }
+
+  return mergeStart(cwd, gitBinaryPath, sourceBranch, {
+    noFf: params.noFf,
+    squash: params.squash
+  })
+}
+
 export async function mergeSquashInto(
   cwd: string,
   gitBinaryPath: string,

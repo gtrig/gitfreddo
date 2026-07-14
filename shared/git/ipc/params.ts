@@ -360,6 +360,13 @@ export interface MergeStartParams {
   squash?: boolean
 }
 
+export interface MergeIntoParams {
+  sourceBranch: string
+  targetBranch: string
+  noFf?: boolean
+  squash?: boolean
+}
+
 export interface MergeSquashIntoParams {
   sourceBranch: string
   targetBranch: string

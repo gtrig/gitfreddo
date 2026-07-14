@@ -38,6 +38,8 @@ export function localBranchContextMenuItems(
     onCheckout: (params: BranchCheckoutParams) => void
     onSelectCommit: (hash: string) => void
     onMerge: (name: string) => void
+    onMergeCurrentInto?: (name: string) => void
+    currentBranch?: string
     onSquashMergeInto?: (name: string) => void
     onRename: (name: string) => void
     onDelete: (name: string) => void
@@ -97,11 +99,33 @@ export function localBranchContextMenuItems(
 
   if (!branch.isCurrent) {
     items.push(separator('sep-actions'))
+    const currentBranch = handlers.currentBranch
     items.push({
       id: 'merge',
-      label: t ? t('contextMenu.sidebar.mergeIntoCurrent') : 'Merge into current…',
+      label: currentBranch
+        ? t
+          ? t('contextMenu.sidebar.mergeBranchIntoBranch', {
+              source: branch.name,
+              target: currentBranch
+            })
+          : `Merge ${branch.name} into ${currentBranch}…`
+        : t
+          ? t('contextMenu.sidebar.mergeIntoCurrent')
+          : 'Merge into current…',
       onClick: () => handlers.onMerge(branch.name)
     })
+    if (handlers.onMergeCurrentInto && currentBranch) {
+      items.push({
+        id: 'merge-current-into',
+        label: t
+          ? t('contextMenu.sidebar.mergeBranchIntoBranch', {
+              source: currentBranch,
+              target: branch.name
+            })
+          : `Merge ${currentBranch} into ${branch.name}…`,
+        onClick: () => handlers.onMergeCurrentInto!(branch.name)
+      })
+    }
     if (handlers.onCreatePr && branch.ahead > 0) {
       items.push({
         id: 'create-pr',
