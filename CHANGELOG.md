@@ -7,6 +7,8 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-07-14
+
 ### 2026-07-14 — CodeMirror editor for code-bearing textboxes
 
 - **Why:** Git hooks, repo config files, conflict resolution text, and the interactive rebase todo were plain monospace textareas — hard to edit without line numbers or syntax highlighting.
@@ -443,6 +445,7 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 - Git config editor and `.gitignore` / `.gitattributes` editor
 - Linux (AppImage, deb) and Windows (NSIS) installers via GitHub Actions
 
+[0.4.2]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.2
 [0.4.1]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.1
 [0.4.0]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.0
 [0.3.4]: https://github.com/gtrig/gitfreddo/releases/tag/v0.3.4
