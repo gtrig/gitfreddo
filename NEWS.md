@@ -5,6 +5,8 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+## [0.4.4]
+
 - The current-branch checkmark stays visible in the sidebar and commit graph after you commit.
 
 ## [0.4.3]

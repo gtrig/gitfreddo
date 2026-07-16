@@ -7,6 +7,8 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-07-16
+
 ### 2026-07-16 — Keep current-branch checkmark after commit
 
 - **Why:** After creating a commit, the green checkmark on the checked-out branch disappeared in the sidebar and commit graph until a manual refresh.
@@ -457,6 +459,7 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 - Git config editor and `.gitignore` / `.gitattributes` editor
 - Linux (AppImage, deb) and Windows (NSIS) installers via GitHub Actions
 
+[0.4.4]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.4
 [0.4.3]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.3
 [0.4.2]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.2
 [0.4.1]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.1
