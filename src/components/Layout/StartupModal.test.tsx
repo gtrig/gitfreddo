@@ -41,7 +41,7 @@ describe('StartupModal', () => {
     // falls back to the newest release section (capped at 5).
     expect(
       screen.getByText(
-        'The commit graph highlights your current branch\'s line in green. Select any commit to trace its history instead.'
+        'The current-branch checkmark stays visible in the sidebar and commit graph after you commit.'
       )
     ).toBeInTheDocument()
   })
