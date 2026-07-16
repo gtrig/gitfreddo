@@ -9,7 +9,7 @@ export interface RepoChangeEvent {
 
 /** Query suffixes refreshed when `.git` metadata changes (commits, refs, merges). */
 export const REPO_CHANGE_REFS_QUERY_SUFFIXES = [
-  'status',
+  'repo.status',
   'working.status',
   'branch.list',
   'log.graph',

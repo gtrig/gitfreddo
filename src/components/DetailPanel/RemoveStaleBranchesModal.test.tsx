@@ -248,7 +248,7 @@ describe('RemoveStaleBranchesModal', () => {
     await screen.findByText('old-feature')
     await user.click(screen.getByRole('button', { name: /delete 1 reference/i }))
     await waitFor(() => {
-      expect(invalidate).toHaveBeenCalledWith('branch.list', 'log.graph', 'status', 'working.status')
+      expect(invalidate).toHaveBeenCalledWith('branch.list', 'log.graph', 'repo.status', 'working.status')
     })
   })
 

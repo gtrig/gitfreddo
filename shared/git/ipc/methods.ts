@@ -62,7 +62,7 @@ export const GIT_IPC_METHODS = {
     stateSource: 'git'
   },
   'branch.checkout': {
-    invalidates: ['branch.list', 'working.status', 'log.graph', 'status'],
+    invalidates: ['branch.list', 'working.status', 'log.graph', 'repo.status'],
     commands: ['switch.checkout'],
     stateSource: 'git'
   },
@@ -82,7 +82,7 @@ export const GIT_IPC_METHODS = {
     stateSource: 'git'
   },
   'branch.checkoutRemote': {
-    invalidates: ['branch.list', 'working.status', 'log.graph', 'status'],
+    invalidates: ['branch.list', 'working.status', 'log.graph', 'repo.status'],
     commands: ['switch.checkout', 'switch.create-tracking'],
     stateSource: 'git'
   },
@@ -189,17 +189,17 @@ export const GIT_IPC_METHODS = {
     stateSource: 'git'
   },
   'commit.create': {
-    invalidates: ['working.status', 'log.graph', 'status'],
+    invalidates: ['working.status', 'log.graph', 'repo.status', 'branch.list'],
     commands: ['commit'],
     stateSource: 'git'
   },
   'commit.reword': {
-    invalidates: ['working.status', 'log.graph', 'status'],
+    invalidates: ['working.status', 'log.graph', 'repo.status', 'branch.list'],
     commands: ['rebase'],
     stateSource: 'git'
   },
   'commit.revert': {
-    invalidates: ['working.status', 'log.graph', 'status', 'branch.list'],
+    invalidates: ['working.status', 'log.graph', 'repo.status', 'branch.list'],
     commands: ['revert'],
     stateSource: 'git'
   },
@@ -258,7 +258,7 @@ export const GIT_IPC_METHODS = {
     stateSource: 'git'
   },
   'undo.last': {
-    invalidates: ['working.status', 'log.graph', 'status', 'branch.list'],
+    invalidates: ['working.status', 'log.graph', 'repo.status', 'branch.list'],
     commands: ['reset.mode'],
     stateSource: 'git'
   },
@@ -524,7 +524,7 @@ export const GIT_IPC_METHODS = {
     stateSource: 'git'
   },
   'rebase.interactive': {
-    invalidates: ['working.status', 'log.graph', 'status', 'branch.list'],
+    invalidates: ['working.status', 'log.graph', 'repo.status', 'branch.list'],
     commands: ['rebase'],
     stateSource: 'git'
   },
@@ -564,22 +564,22 @@ export const GIT_IPC_METHODS = {
     stateSource: 'git'
   },
   'rebase.squash': {
-    invalidates: ['working.status', 'log.graph', 'status'],
+    invalidates: ['working.status', 'log.graph', 'repo.status'],
     commands: ['rebase'],
     stateSource: 'git'
   },
   'rebase.drop': {
-    invalidates: ['working.status', 'log.graph', 'status', 'branch.list'],
+    invalidates: ['working.status', 'log.graph', 'repo.status', 'branch.list'],
     commands: ['rebase'],
     stateSource: 'git'
   },
   reset: {
-    invalidates: ['working.status', 'log.graph', 'status'],
+    invalidates: ['working.status', 'log.graph', 'repo.status'],
     commands: ['reset.mode'],
     stateSource: 'git'
   },
   'reset.head': {
-    invalidates: ['working.status', 'log.graph', 'status', 'branch.list'],
+    invalidates: ['working.status', 'log.graph', 'repo.status', 'branch.list'],
     commands: ['reset.head-parent'],
     stateSource: 'git'
   },

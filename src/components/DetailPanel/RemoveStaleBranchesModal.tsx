@@ -111,7 +111,7 @@ export function RemoveStaleBranchesModal({
         }),
         'success'
       )
-      invalidate('branch.list', 'log.graph', 'status', 'working.status')
+      invalidate('branch.list', 'log.graph', 'repo.status', 'working.status')
       onClose()
     } catch (error) {
       showToast(error instanceof Error ? error.message : String(error), 'error')

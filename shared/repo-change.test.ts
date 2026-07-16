@@ -10,7 +10,9 @@ describe('repo-change', () => {
   it('lists ref-scoped query suffixes for graph and branch state', () => {
     expect(REPO_CHANGE_REFS_QUERY_SUFFIXES).toContain('log.graph')
     expect(REPO_CHANGE_REFS_QUERY_SUFFIXES).toContain('branch.list')
+    expect(REPO_CHANGE_REFS_QUERY_SUFFIXES).toContain('repo.status')
     expect(REPO_CHANGE_REFS_QUERY_SUFFIXES).toContain('working.status')
+    expect(REPO_CHANGE_REFS_QUERY_SUFFIXES).not.toContain('status')
   })
 
   it('lists working-tree query suffixes', () => {

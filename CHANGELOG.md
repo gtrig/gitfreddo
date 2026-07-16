@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-16 — Keep current-branch checkmark after commit
+
+- **Why:** After creating a commit, the green checkmark on the checked-out branch disappeared in the sidebar and commit graph until a manual refresh.
+- **What:** Fixed stale query invalidation: IPC mutations and repo-change refresh now target `repo.status` (not the unused `status` suffix). `commit.create` and `commit.reword` also refresh `branch.list` so branch head and current markers stay in sync with the graph.
+
 ## [0.4.3] - 2026-07-14
 
 ### 2026-07-14 — Highlight the current branch line in green on the commit graph
