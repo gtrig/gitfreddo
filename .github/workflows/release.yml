@@ -24,7 +24,11 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
-    # Actions forbids secrets named GITHUB_*; map GITFREDDO_GITHUB_CLIENT_ID → GITHUB_CLIENT_ID for the bake step.
+    # Forge OAuth credentials live in the `release_secrets` Environment (not repo secrets).
+    # Without this, ${{ secrets.* }} for those names is empty and installers bake blank clients.
+    environment: release_secrets
+
+    # Actions forbids secrets named GITHUB_*; map GITFREDDO_GITHUB_CLIENT_ID → GITHUB_CLIENT_ID.
     # electron.vite defines these into the main bundle so OAuth works in installed apps.
     env:
       GITHUB_CLIENT_ID: ${{ secrets.GITFREDDO_GITHUB_CLIENT_ID }}

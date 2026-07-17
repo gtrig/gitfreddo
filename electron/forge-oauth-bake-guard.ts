@@ -23,10 +23,10 @@ export function formatMissingForgeOAuthBakeEnvError(missing: readonly string[]):
   return [
     'Forge OAuth bake env is incomplete; release installers would ship without credentials.',
     `Missing or empty: ${missing.join(', ')}.`,
-    'Set repository Actions secrets (exact names):',
+    'Set Actions secrets on the `release_secrets` Environment (exact names):',
     '  GITFREDDO_GITHUB_CLIENT_ID → GITHUB_CLIENT_ID',
     '  BITBUCKET_CLIENT_ID, BITBUCKET_CLIENT_SECRET',
     '  GITLAB_CLIENT_ID, GITLAB_CLIENT_SECRET',
-    'Secrets must be repository secrets (not an unused Environment). Then re-run the Release workflow.'
+    'The Release workflow job must use `environment: release_secrets`. Then re-run the workflow.'
   ].join('\n')
 }

@@ -13,6 +13,10 @@ describe('release workflow forge OAuth bake', () => {
     'utf8'
   )
 
+  it('uses the release_secrets environment so Environment secrets are visible', () => {
+    expect(workflow).toMatch(/environment:\s*release_secrets/)
+  })
+
   it('maps GitHub, Bitbucket, and GitLab client credentials into the build env', () => {
     expect(workflow).toMatch(/GITHUB_CLIENT_ID:\s*\$\{\{\s*secrets\.GITFREDDO_GITHUB_CLIENT_ID\s*\}\}/)
     expect(workflow).toMatch(/BITBUCKET_CLIENT_ID:\s*\$\{\{\s*secrets\.BITBUCKET_CLIENT_ID\s*\}\}/)

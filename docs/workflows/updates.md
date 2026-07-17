@@ -42,14 +42,14 @@ Tagged releases (`v*`) bump `package.json` to the tag version before building, t
 
 Before pushing a `v*` tag, make sure `package.json` matches the tag (step 1 handles this) and that `npm run typecheck` and `npm run test` pass locally — CI enforces both on push.
 
-Forge OAuth for installed apps is baked at build time from Actions secrets:
+Forge OAuth for installed apps is baked at build time from the **`release_secrets`** GitHub Environment (the Release workflow sets `environment: release_secrets`):
 
-| Secret | Maps to build env |
-|--------|-------------------|
+| Environment secret | Maps to build env |
+|--------------------|-------------------|
 | `GITFREDDO_GITHUB_CLIENT_ID` | `GITHUB_CLIENT_ID` (Actions forbids secrets named `GITHUB_*`) |
 | `BITBUCKET_CLIENT_ID` | `BITBUCKET_CLIENT_ID` |
 | `BITBUCKET_CLIENT_SECRET` | `BITBUCKET_CLIENT_SECRET` |
 | `GITLAB_CLIENT_ID` | `GITLAB_CLIENT_ID` |
 | `GITLAB_CLIENT_SECRET` | `GITLAB_CLIENT_SECRET` |
 
-These must be **repository** secrets (Settings → Secrets and variables → Actions), not Environment secrets unless the workflow also sets `environment:`. Exact names matter; a missing secret becomes an empty string and would previously bake blank credentials. The release job runs `scripts/check-forge-oauth-bake-env.sh` before building so empty bake env fails CI instead of shipping a broken installer.
+Exact names matter. Secrets stored only on an Environment are invisible to jobs that omit `environment:` (they resolve to empty strings). The release job runs `scripts/check-forge-oauth-bake-env.sh` before building so empty bake env fails CI instead of shipping a broken installer. Avoid required reviewers on `release_secrets` if tagged releases should stay fully automated.
