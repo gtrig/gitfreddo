@@ -7,6 +7,7 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [0.4.6]
 
+- GitLab OAuth connect works in release installers (credentials load from the release_secrets GitHub Environment).
 - Push from the app now matches a normal terminal git push by default (submodule recursion is off unless you enable it in Settings → Git).
 
 ## [0.4.5]

@@ -7,12 +7,12 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+## [0.4.6] - 2026-07-17
+
 ### 2026-07-17 — Bind Release bake to the release_secrets Environment
 
 - **Why:** Forge OAuth secrets (including GitLab) live on the GitHub Environment `release_secrets`, but the Release job never set `environment:`, so `${{ secrets.GITLAB_* }}` was empty. That matches the IDE “Context access might be invalid” warning and the failed v0.4.6 bake-env check.
 - **What:** Set `environment: release_secrets` on the Release build job; keep secret names aligned with the Environment (`GITLAB_CLIENT_ID` / `GITLAB_CLIENT_SECRET`); update docs and bake-guard messaging.
-
-## [0.4.6] - 2026-07-17
 
 ### 2026-07-17 — Match terminal push behavior (submodule recursion default)
 
