@@ -7,6 +7,8 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+## [0.4.6] - 2026-07-17
+
 ### 2026-07-17 — Match terminal push behavior (submodule recursion default)
 
 - **Why:** App push failed with a misleading “remote has changes / pull first” toast while `git push` in the terminal succeeded. The app defaulted to `--recurse-submodules=check` (unlike git’s default `no`), and any `failed to push some refs` was humanized as a non-fast-forward.
@@ -476,6 +478,7 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 - Git config editor and `.gitignore` / `.gitattributes` editor
 - Linux (AppImage, deb) and Windows (NSIS) installers via GitHub Actions
 
+[0.4.6]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.6
 [0.4.5]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.5
 [0.4.4]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.4
 [0.4.3]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.3
