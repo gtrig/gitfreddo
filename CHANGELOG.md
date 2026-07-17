@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-17 — Fail release builds when forge OAuth bake env is empty
+
+- **Why:** v0.4.5 shipped with empty GitLab OAuth credentials even though the workflow mapped `GITLAB_CLIENT_ID`/`GITLAB_CLIENT_SECRET` — missing or misnamed Actions secrets become blank strings and bake silently. GitHub/Bitbucket were present in the same artifact; only GitLab was empty.
+- **What:** Added `electron/forge-oauth-bake-guard.ts` + `scripts/check-forge-oauth-bake-env.sh`, wired as a Release workflow step before build/dist; docs note repository-secret naming; regression tests cover the guard and workflow step.
+
 ## [0.4.5] - 2026-07-17
 
 ### 2026-07-17 — Bake GitLab OAuth credentials into release builds

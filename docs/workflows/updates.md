@@ -51,3 +51,5 @@ Forge OAuth for installed apps is baked at build time from Actions secrets:
 | `BITBUCKET_CLIENT_SECRET` | `BITBUCKET_CLIENT_SECRET` |
 | `GITLAB_CLIENT_ID` | `GITLAB_CLIENT_ID` |
 | `GITLAB_CLIENT_SECRET` | `GITLAB_CLIENT_SECRET` |
+
+These must be **repository** secrets (Settings → Secrets and variables → Actions), not Environment secrets unless the workflow also sets `environment:`. Exact names matter; a missing secret becomes an empty string and would previously bake blank credentials. The release job runs `scripts/check-forge-oauth-bake-env.sh` before building so empty bake env fails CI instead of shipping a broken installer.

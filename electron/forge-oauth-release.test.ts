@@ -24,4 +24,8 @@ describe('release workflow forge OAuth bake', () => {
       /GITLAB_CLIENT_SECRET:\s*\$\{\{\s*secrets\.GITLAB_CLIENT_SECRET\s*\}\}/
     )
   })
+
+  it('fails the release job when bake env is incomplete', () => {
+    expect(workflow).toMatch(/bash scripts\/check-forge-oauth-bake-env\.sh/)
+  })
 })

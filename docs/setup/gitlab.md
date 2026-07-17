@@ -35,7 +35,7 @@ GITLAB_CLIENT_ID=your_application_id
 GITLAB_CLIENT_SECRET=your_application_secret
 ```
 
-Release builds bake the same values from GitHub Actions secrets (`GITLAB_CLIENT_ID`, `GITLAB_CLIENT_SECRET`) into the main bundle.
+Release builds bake the same values from GitHub Actions **repository** secrets (`GITLAB_CLIENT_ID`, `GITLAB_CLIENT_SECRET`) into the main bundle. Names must match exactly; Environment secrets are not used unless the workflow sets `environment:`. The release job fails if these are missing so installers cannot ship blank credentials.
 
 ### Self-managed GitLab
 

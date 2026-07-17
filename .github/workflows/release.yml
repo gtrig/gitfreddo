@@ -79,6 +79,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Verify forge OAuth bake env
+        run: bash scripts/check-forge-oauth-bake-env.sh
+
       - name: Set version from tag
         if: startsWith(github.ref, 'refs/tags/')
         run: npm run release:set-version -- ${{ github.ref_name }}
