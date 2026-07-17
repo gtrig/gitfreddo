@@ -110,7 +110,7 @@ let settings: AppSettings = {
   gitlabHost: '',
   pullRebase: false,
   submoduleRecursion: 'on-demand',
-  pushSubmoduleRecursion: 'check',
+  pushSubmoduleRecursion: 'no',
   diffViewMode: 'unified',
   uiZoomFactor: 1,
   updateChannel: 'stable',

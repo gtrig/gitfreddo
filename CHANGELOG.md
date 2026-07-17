@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-17 — Match terminal push behavior (submodule recursion default)
+
+- **Why:** App push failed with a misleading “remote has changes / pull first” toast while `git push` in the terminal succeeded. The app defaulted to `--recurse-submodules=check` (unlike git’s default `no`), and any `failed to push some refs` was humanized as a non-fast-forward.
+- **What:** Default `pushSubmoduleRecursion` is now `no`; settings mode `no` emits `--recurse-submodules=no` so it overrides repo config. Error humanization distinguishes submodule-check, protected-branch, and hook failures from real non-fast-forward rejections.
+
 ### 2026-07-17 — Fail release builds when forge OAuth bake env is empty
 
 - **Why:** v0.4.5 shipped with empty GitLab OAuth credentials even though the workflow mapped `GITLAB_CLIENT_ID`/`GITLAB_CLIENT_SECRET` — missing or misnamed Actions secrets become blank strings and bake silently. GitHub/Bitbucket were present in the same artifact; only GitLab was empty.

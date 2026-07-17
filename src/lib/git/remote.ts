@@ -5,7 +5,9 @@ export function remoteNameFromUpstream(upstream: string): string {
 
 export function isNonFastForwardPushError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error)
-  return /non-fast-forward|\(rejected\)/i.test(message)
+  return /non-fast-forward|updates were rejected because the tip of your current branch is behind|updates were rejected because the remote contains work/i.test(
+    message
+  )
 }
 
 export function resolveDefaultRemote(

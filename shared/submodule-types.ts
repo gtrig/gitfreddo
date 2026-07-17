@@ -35,7 +35,8 @@ export function submoduleRecursionFetchArgs(mode: SubmoduleRecursion): string[] 
 export function pushSubmoduleRecursionArgs(mode: PushSubmoduleRecursion): string[] {
   if (mode === 'check') return ['--recurse-submodules=check']
   if (mode === 'on-demand') return ['--recurse-submodules=on-demand']
-  return []
+  // Explicit `no` overrides repo/global `push.recurseSubmodules` (git's default is no).
+  return ['--recurse-submodules=no']
 }
 
 export interface ParsedSubmoduleConfig {

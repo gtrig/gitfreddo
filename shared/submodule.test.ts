@@ -64,5 +64,8 @@ describe('recursion args', () => {
     expect(submoduleRecursionCloneArgs('always')).toEqual(['--recurse-submodules', '--jobs', '8'])
     expect(submoduleRecursionFetchArgs('on-demand')).toEqual(['--recurse-submodules=on-demand'])
     expect(pushSubmoduleRecursionArgs('check')).toEqual(['--recurse-submodules=check'])
+    expect(pushSubmoduleRecursionArgs('on-demand')).toEqual(['--recurse-submodules=on-demand'])
+    // Explicit no overrides repo-level push.recurseSubmodules (matches plain `git push`).
+    expect(pushSubmoduleRecursionArgs('no')).toEqual(['--recurse-submodules=no'])
   })
 })

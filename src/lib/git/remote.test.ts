@@ -16,6 +16,16 @@ describe('isNonFastForwardPushError', () => {
 
   it('ignores other push errors', () => {
     expect(isNonFastForwardPushError(new Error('authentication failed'))).toBe(false)
+    expect(
+      isNonFastForwardPushError(
+        new Error('! [remote rejected] main -> main (protected branch hook declined)')
+      )
+    ).toBe(false)
+    expect(
+      isNonFastForwardPushError(
+        new Error('The following submodule paths contain changes that can not be found on any remote')
+      )
+    ).toBe(false)
   })
 })
 

@@ -85,7 +85,7 @@ export function seedWorkspaceSettings(settingsDir: string, repoPath: string, ove
         diffViewMode: 'unified',
         pullRebase: false,
         submoduleRecursion: 'on-demand',
-        pushSubmoduleRecursion: 'check',
+        pushSubmoduleRecursion: 'no',
         updateChannel: 'stable',
         autoDownloadUpdates: false,
         checkForUpdatesOnStartup: false,

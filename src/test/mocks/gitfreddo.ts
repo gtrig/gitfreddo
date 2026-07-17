@@ -35,7 +35,7 @@ export const defaultMockSettings: AppSettings = {
   gitlabHost: 'gitlab.com',
   pullRebase: false,
   submoduleRecursion: 'on-demand',
-  pushSubmoduleRecursion: 'check',
+  pushSubmoduleRecursion: 'no',
   diffViewMode: 'unified',
   locale: 'en',
   uiZoomFactor: 1,

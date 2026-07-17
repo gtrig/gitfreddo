@@ -41,7 +41,7 @@ describe('StartupModal', () => {
     // falls back to the newest release section (capped at 5).
     expect(
       screen.getByText(
-        'GitLab OAuth connect works in release installers again (credentials are now included from CI).'
+        'Push from the app now matches a normal terminal git push by default (submodule recursion is off unless you enable it in Settings → Git).'
       )
     ).toBeInTheDocument()
   })

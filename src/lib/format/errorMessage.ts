@@ -35,8 +35,25 @@ const ERROR_RULES: ErrorRule[] = [
     friendly: 'Authentication failed. Check your saved credentials or SSH key, then try again.'
   },
   {
-    test: /failed to push some refs|non-fast-forward|\[rejected\]|updates were rejected because the remote contains work/i,
-    friendly: "Push was rejected because the remote has changes you don't have locally. Pull or fetch first, then try again."
+    test: /submodule paths contain changes|recurse into submodule|not be found on any remote/i,
+    friendly:
+      "Push blocked by a submodule check: a submodule commit isn't on its remote yet. Push the submodule first, or set Settings → Git → Push recursion to No."
+  },
+  {
+    test: /protected branch|pre-receive hook declined|\[remote rejected\]/i,
+    friendly:
+      'The remote rejected the push (branch protection or a server-side hook). Check your permissions and branch rules.'
+  },
+  {
+    test: /pre-push hook|husky -|husky\.sh|hook declined by/i,
+    friendly: 'A local git hook blocked the push. Open the Logs drawer for the hook output.'
+  },
+  {
+    // Require an actual non-fast-forward / behind signal — bare "failed to push some refs"
+    // also appears for hooks, submodule checks, and protected branches.
+    test: /non-fast-forward|updates were rejected because the tip of your current branch is behind|updates were rejected because the remote contains work/i,
+    friendly:
+      "Push was rejected because the remote has changes you don't have locally. Pull or fetch first, then try again."
   },
   {
     test: /automatic merge failed|fix conflicts and then commit|you have unmerged files/i,

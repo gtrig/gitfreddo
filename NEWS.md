@@ -5,6 +5,8 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+- Push from the app now matches a normal terminal git push by default (submodule recursion is off unless you enable it in Settings → Git).
+
 ## [0.4.5]
 
 - GitLab OAuth connect works in release installers again (credentials are now included from CI).

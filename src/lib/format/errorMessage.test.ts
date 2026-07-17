@@ -38,6 +38,28 @@ describe('humanizeErrorMessage', () => {
     )
   })
 
+  it('does not treat submodule check failures as non-fast-forward', () => {
+    const raw = [
+      'The following submodule paths contain changes that can',
+      'not be found on any remote:',
+      '  vendor/lib',
+      'Please try',
+      '\tgit push --recurse-submodules=on-demand',
+      'fatal: Aborting.',
+      "error: failed to push some refs to 'https://github.com/foo/bar.git'"
+    ].join('\n')
+    expect(humanizeErrorMessage(raw)).toMatch(/submodule/i)
+    expect(humanizeErrorMessage(raw)).not.toMatch(/Pull or fetch first/i)
+  })
+
+  it('recognizes remote protected-branch rejections', () => {
+    const raw = [
+      '! [remote rejected] main -> main (protected branch hook declined)',
+      "error: failed to push some refs to 'https://gitlab.com/foo/bar.git'"
+    ].join('\n')
+    expect(humanizeErrorMessage(raw)).toMatch(/rejected the push/i)
+  })
+
   it('recognizes merge conflicts', () => {
     expect(
       humanizeErrorMessage('Automatic merge failed; fix conflicts and then commit the result.')

@@ -44,7 +44,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   gitlabHost: 'gitlab.com',
   pullRebase: false,
   submoduleRecursion: 'on-demand',
-  pushSubmoduleRecursion: 'check',
+  pushSubmoduleRecursion: 'no',
   diffViewMode: 'unified',
   uiZoomFactor: 1,
   updateChannel: 'stable',
@@ -103,9 +103,9 @@ function normalizeSettings(parsed: AppSettings): AppSettings {
         ? parsed.submoduleRecursion
         : 'on-demand',
     pushSubmoduleRecursion:
-      parsed.pushSubmoduleRecursion === 'no' || parsed.pushSubmoduleRecursion === 'on-demand'
+      parsed.pushSubmoduleRecursion === 'check' || parsed.pushSubmoduleRecursion === 'on-demand'
         ? parsed.pushSubmoduleRecursion
-        : 'check',
+        : 'no',
     diffViewMode:
       parsed.diffViewMode === 'split' || parsed.diffViewMode === 'word'
         ? parsed.diffViewMode
