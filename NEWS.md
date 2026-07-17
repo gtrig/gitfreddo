@@ -5,6 +5,8 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+## [0.4.5]
+
 - GitLab OAuth connect works in release installers again (credentials are now included from CI).
 
 ## [0.4.4]

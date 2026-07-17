@@ -7,6 +7,8 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+## [0.4.5] - 2026-07-17
+
 ### 2026-07-17 — Bake GitLab OAuth credentials into release builds
 
 - **Why:** GitLab OAuth worked in development (project `.env`) but failed in release installers because CI never injected `GITLAB_CLIENT_ID` / `GITLAB_CLIENT_SECRET` into the bake step (unlike GitHub and Bitbucket).
@@ -464,6 +466,7 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 - Git config editor and `.gitignore` / `.gitattributes` editor
 - Linux (AppImage, deb) and Windows (NSIS) installers via GitHub Actions
 
+[0.4.5]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.5
 [0.4.4]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.4
 [0.4.3]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.3
 [0.4.2]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.2
