@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-17 — Bake GitLab OAuth credentials into release builds
+
+- **Why:** GitLab OAuth worked in development (project `.env`) but failed in release installers because CI never injected `GITLAB_CLIENT_ID` / `GITLAB_CLIENT_SECRET` into the bake step (unlike GitHub and Bitbucket).
+- **What:** Mapped `GITLAB_CLIENT_ID` and `GITLAB_CLIENT_SECRET` Actions secrets into `.github/workflows/release.yml` build env; updated setup/docs/`.env.example`; added a regression test that asserts the release workflow wires all forge OAuth secrets.
+
 ## [0.4.4] - 2026-07-16
 
 ### 2026-07-16 — Keep current-branch checkmark after commit

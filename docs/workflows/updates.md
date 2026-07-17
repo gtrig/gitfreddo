@@ -49,3 +49,5 @@ Forge OAuth for installed apps is baked at build time from Actions secrets:
 | `GITFREDDO_GITHUB_CLIENT_ID` | `GITHUB_CLIENT_ID` (Actions forbids secrets named `GITHUB_*`) |
 | `BITBUCKET_CLIENT_ID` | `BITBUCKET_CLIENT_ID` |
 | `BITBUCKET_CLIENT_SECRET` | `BITBUCKET_CLIENT_SECRET` |
+| `GITLAB_CLIENT_ID` | `GITLAB_CLIENT_ID` |
+| `GITLAB_CLIENT_SECRET` | `GITLAB_CLIENT_SECRET` |

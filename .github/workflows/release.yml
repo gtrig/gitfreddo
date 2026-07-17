@@ -30,6 +30,8 @@ jobs:
       GITHUB_CLIENT_ID: ${{ secrets.GITFREDDO_GITHUB_CLIENT_ID }}
       BITBUCKET_CLIENT_ID: ${{ secrets.BITBUCKET_CLIENT_ID }}
       BITBUCKET_CLIENT_SECRET: ${{ secrets.BITBUCKET_CLIENT_SECRET }}
+      GITLAB_CLIENT_ID: ${{ secrets.GITLAB_CLIENT_ID }}
+      GITLAB_CLIENT_SECRET: ${{ secrets.GITLAB_CLIENT_SECRET }}
 
     steps:
       - uses: actions/checkout@v5

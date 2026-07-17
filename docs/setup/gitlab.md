@@ -22,7 +22,7 @@ Open **Settings → Integrations** to configure.
 
 ### Custom OAuth app
 
-By default GitFreddo uses a bundled OAuth client ID and secret. For your own app:
+By default GitFreddo uses a bundled OAuth client ID and secret (baked into release builds from CI secrets). For your own app:
 
 1. Register an OAuth application under **User Settings → Applications** on your GitLab instance
 2. Set redirect URI to `http://127.0.0.1:8785/callback` (GitFreddo scans nearby ports if 8785 is busy)
@@ -34,6 +34,8 @@ GitFreddo requests `api` and `read_user` scopes during authorization.
 GITLAB_CLIENT_ID=your_application_id
 GITLAB_CLIENT_SECRET=your_application_secret
 ```
+
+Release builds bake the same values from GitHub Actions secrets (`GITLAB_CLIENT_ID`, `GITLAB_CLIENT_SECRET`) into the main bundle.
 
 ### Self-managed GitLab
 

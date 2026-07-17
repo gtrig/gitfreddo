@@ -41,7 +41,7 @@ describe('StartupModal', () => {
     // falls back to the newest release section (capped at 5).
     expect(
       screen.getByText(
-        'The current-branch checkmark stays visible in the sidebar and commit graph after you commit.'
+        'GitLab OAuth connect works in release installers again (credentials are now included from CI).'
       )
     ).toBeInTheDocument()
   })
