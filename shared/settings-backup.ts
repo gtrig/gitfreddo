@@ -6,6 +6,7 @@ export interface SettingsBackupSecrets {
   githubToken?: string
   bitbucketToken?: string
   gitlabToken?: string
+  aiApiKey?: string
 }
 
 export interface SettingsBackupFile {
@@ -49,6 +50,9 @@ function normalizeSecrets(value: unknown): SettingsBackupSecrets | undefined {
   }
   if (typeof value.gitlabToken === 'string' && value.gitlabToken.trim()) {
     secrets.gitlabToken = value.gitlabToken
+  }
+  if (typeof value.aiApiKey === 'string' && value.aiApiKey.trim()) {
+    secrets.aiApiKey = value.aiApiKey
   }
 
   return Object.keys(secrets).length > 0 ? secrets : undefined
