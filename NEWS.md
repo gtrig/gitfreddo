@@ -5,6 +5,8 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+- Branch and tag badges show a local computer icon and a GitHub, GitLab, or Bitbucket icon when the branch tracks a remote; the current-branch checkmark sits inside the badge.
+
 ## [0.4.7]
 
 - Latest News on startup lists highlights from recent versions (pulled from NEWS.md).

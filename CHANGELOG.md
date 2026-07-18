@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-18 — Branch/tag location icons in the timeline
+
+- **Why:** Branch/tag pills should show at a glance whether a ref is local, pushed, and which forge hosts it — with the current-branch checkmark inside the pill.
+- **What:** Checkmark moved inside the badge (left). Local branches show a computer icon on the right; upstream/remote refs show GitHub, GitLab, Bitbucket, or a generic remote icon. Wired via `timelineRefLocation` from branch upstreams + remote URLs.
+
 ## [0.4.7] - 2026-07-18
 
 ### 2026-07-18 — Startup modal shows recent NEWS.md versions

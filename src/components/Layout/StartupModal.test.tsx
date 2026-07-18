@@ -39,9 +39,12 @@ describe('StartupModal', () => {
 
     // getStartupNewsUpdates returns the newest non-empty NEWS.md sections
     // (version labels + bullets, English from the file — not i18n).
+    expect(screen.getByText('Unreleased')).toBeInTheDocument()
     expect(screen.getByText('0.4.7')).toBeInTheDocument()
     expect(screen.getByText('0.4.6')).toBeInTheDocument()
-    expect(screen.getByText('0.4.5')).toBeInTheDocument()
+    expect(
+      screen.getByText(/Branch and tag badges show a local computer icon/)
+    ).toBeInTheDocument()
     expect(
       screen.getByText(
         /Forge credentials no longer leak to unknown remotes or git hooks/
