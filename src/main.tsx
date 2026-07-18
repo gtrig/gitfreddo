@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { I18nextProvider } from 'react-i18next'
 import App from './App'
+import { AppErrorBoundary } from './components/Layout/AppErrorBoundary'
 import { ThemeProvider } from './components/ThemeProvider'
 import i18n from './i18n'
 import './styles/index.css'
@@ -21,7 +22,9 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <I18nextProvider i18n={i18n}>
         <ThemeProvider>
-          <App />
+          <AppErrorBoundary>
+            <App />
+          </AppErrorBoundary>
         </ThemeProvider>
       </I18nextProvider>
     </QueryClientProvider>

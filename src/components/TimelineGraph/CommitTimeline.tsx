@@ -90,9 +90,7 @@ export function CommitTimeline() {
   const tagNames = useMemo(() => new Set((tags ?? []).map((tag) => tag.name)), [tags])
   const remoteNames = useMemo(() => new Set((remotes ?? []).map((remote) => remote.name)), [remotes])
   const showWorkingRow = workingStatus ? !workingStatus.isClean : false
-  const showMergeRow = Boolean(
-    mergeStatus?.inProgress && (mergeStatus.conflictedPaths.length ?? 0) > 0
-  )
+  const showMergeRow = Boolean(mergeStatus?.inProgress)
   const timelinePrefixRows = (showMergeRow ? 1 : 0) + (showWorkingRow ? 1 : 0)
   const timelinePrefixHeight = timelinePrefixRows * TIMELINE_ROW_HEIGHT
   const changeCounts = useMemo(

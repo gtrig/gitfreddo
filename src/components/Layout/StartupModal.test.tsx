@@ -41,9 +41,10 @@ describe('StartupModal', () => {
     // falls back to the newest release section (capped at 5).
     expect(
       screen.getByText(
-        'GitLab OAuth connect works in release installers (credentials load from the release_secrets GitHub Environment).'
+        /Forge credentials no longer leak to unknown remotes or git hooks/
       )
     ).toBeInTheDocument()
+    expect(screen.getByText(/Tag rename works correctly/)).toBeInTheDocument()
   })
 
   it('calls onClose when user dismisses the modal', async () => {

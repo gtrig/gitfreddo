@@ -8,6 +8,7 @@ import { openInEditor } from '../open-in-editor'
 import { normalizeRepoPath } from '../git/repo-path'
 import { loadSettings, nextRecentRepos, saveSettings } from '../settings'
 import { preserveIntegrationSettings } from '../../shared/integration-settings'
+import { normalizeAiApiKeyPatch, settingsForRenderer } from '../../shared/settings-secrets'
 import { hasBitbucketToken } from '../bitbucket/token-store'
 import { hasGitHubToken } from '../github/token-store'
 import { hasGitlabToken } from '../gitlab/token-store'
@@ -305,18 +306,19 @@ function registerIpc(): void {
     }
   )
 
-  ipcMain.handle('gitfreddo:get-settings', async () => settings)
+  ipcMain.handle('gitfreddo:get-settings', async () => settingsForRenderer(settings))
 
   ipcMain.handle('gitfreddo:set-settings', async (_event, patch: Partial<AppSettings>) => {
     const previous = settings
-    const safePatch = preserveIntegrationSettings(settings, patch, {
+    const keyNormalized = normalizeAiApiKeyPatch(settings, patch)
+    const safePatch = preserveIntegrationSettings(settings, keyNormalized, {
       hasBitbucketToken: await hasBitbucketToken(),
       hasGitHubToken: await hasGitHubToken(),
       hasGitlabToken: await hasGitlabToken()
     })
     settings = await saveSettings(safePatch)
     applySettingsSideEffects(previous, settings)
-    return settings
+    return settingsForRenderer(settings)
   })
 
   ipcMain.handle('gitfreddo:export-settings-backup', async () => {
@@ -331,7 +333,7 @@ function registerIpc(): void {
     }
     settings = restored
     applySettingsSideEffects(previous, settings)
-    return settings
+    return settingsForRenderer(settings)
   })
 
   ipcMain.handle('gitfreddo:ai-fill', async (_event, params: AiFillParams, repoPath?: string) => {
@@ -377,12 +379,18 @@ function registerIpc(): void {
   ipcMain.handle('gitfreddo:delete-workspace-file', async (_event, relativePath: string, repoPath?: string) => {
     const repo = repoPath ?? repoManager.getRepoPath()
     if (!repo) throw new Error('No repository connected')
+    if (!repoManager.isConnected(repo)) {
+      throw new Error('No repository connected')
+    }
     await deleteRepoFile(repo, relativePath)
   })
 
   ipcMain.handle('gitfreddo:open-in-editor', async (_event, relativePath: string, repoPath?: string) => {
     const repo = repoPath ?? repoManager.getRepoPath()
     if (!repo) throw new Error('No repository connected')
+    if (!repoManager.isConnected(repo)) {
+      throw new Error('No repository connected')
+    }
     const fullPath = resolveRepoFile(repo, relativePath)
     await openInEditor(settings.editorCommand, fullPath)
   })

@@ -478,6 +478,17 @@ describe('CommitTimeline', () => {
     })
   })
 
+  it('keeps the merge row visible after all conflicts are staged', async () => {
+    const { useMergeStatus } = await import('@/hooks/useGit')
+    vi.mocked(useMergeStatus).mockReturnValue({
+      data: { inProgress: true, kind: 'merge', conflictedPaths: [] }
+    } as unknown as ReturnType<typeof useMergeStatus>)
+
+    renderWithProviders(<CommitTimeline />)
+    expect(screen.getByText('Merge conflicts detected')).toBeInTheDocument()
+    expect(screen.getByText('Resolve')).toBeInTheDocument()
+  })
+
   it('opens the header column visibility menu', async () => {
     renderWithProviders(<CommitTimeline />)
     const header = screen.getByText('Branch / Tag').closest('div.sticky')
