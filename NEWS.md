@@ -5,6 +5,9 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+- Forge credentials no longer leak to unknown remotes or git hooks; AI API keys stay encrypted and out of normal settings responses.
+- Tag rename works correctly; merge/rebase Continue stays reachable after the last conflict is staged.
+
 ## [0.4.6]
 
 - GitLab OAuth connect works in release installers (credentials load from the release_secrets GitHub Environment).

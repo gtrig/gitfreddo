@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-18 — Architecture review remediations (security, bugs, state)
+
+- **Why:** Architecture audit found credential exfiltration risks, a broken tag rename, conflict Continue UX gaps, weak IPC path sandboxing, plaintext AI keys, workspace state leaks, and unsynchronized mutating git ops.
+- **What:** Fail-closed forge askpass (no unknown-host token fallback); forge tokens kept out of git/hook env via askpass secrets file; fixed `tag.rename` (create+delete) with integration test; merge row stays visible while in-progress and `stage.add`/`stage.reset` invalidate `merge.status`; connected-repo checks for delete/open-in-editor; symlink-aware `resolveRepoFile`; allowlisted local `config.set`; `--end-of-options` on remote/merge/tag/worktree/notes argv; AI API key in OS encryption + redacted in get-settings; backup warns and puts AI key in secrets; selection snapshots include AI proposals; clear PR detail/commit search on tab switch; AppErrorBoundary; per-repo mutation queue in RepoManager.
+
 ## [0.4.6] - 2026-07-17
 
 ### 2026-07-17 — Bind Release bake to the release_secrets Environment
