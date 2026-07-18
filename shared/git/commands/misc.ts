@@ -1,5 +1,5 @@
 import { defineCommand } from './_types'
-import { withPaths } from './_common'
+import { endOfOptionsArg, withPaths } from './_common'
 import type { SubmoduleRecursion } from '../../submodule-types'
 import { submoduleRecursionCloneArgs } from '../../submodule-types'
 
@@ -105,7 +105,7 @@ export interface NotesAddParams {
 export function buildNotesAddArgs({ hash, message, force }: NotesAddParams): string[] {
   const args = ['notes', 'add']
   if (force) args.push('-f')
-  args.push('-m', message, hash)
+  args.push('-m', message, ...endOfOptionsArg(hash))
   return args
 }
 

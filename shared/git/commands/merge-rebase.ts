@@ -1,4 +1,5 @@
 import { defineCommand } from './_types'
+import { endOfOptionsArg } from './_common'
 
 export interface MergeStartParams {
   branch: string
@@ -10,7 +11,7 @@ export function buildMergeStartArgs({ branch, noFf, squash }: MergeStartParams):
   const args = ['merge']
   if (noFf) args.push('--no-ff')
   if (squash) args.push('--squash')
-  args.push(branch)
+  args.push(...endOfOptionsArg(branch))
   return args
 }
 
@@ -29,9 +30,9 @@ export interface RebaseStartParams {
 
 export function buildRebaseStartArgs({ onto, from }: RebaseStartParams): string[] {
   if (from?.trim()) {
-    return ['rebase', '--onto', onto, from.trim()]
+    return ['rebase', '--onto', ...endOfOptionsArg(onto), from.trim()]
   }
-  return ['rebase', onto]
+  return ['rebase', ...endOfOptionsArg(onto)]
 }
 
 export function buildRebaseAbortArgs(): string[] {
@@ -66,7 +67,7 @@ export function buildCherryPickArgs({ hash, noCommit, mainline }: CherryPickPara
   const args = ['cherry-pick']
   if (noCommit) args.push('-n')
   if (typeof mainline === 'number') args.push('-m', String(mainline))
-  args.push(hash)
+  args.push(...endOfOptionsArg(hash))
   return args
 }
 

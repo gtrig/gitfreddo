@@ -25,4 +25,19 @@ describe('GIT_IPC_METHODS', () => {
       expect(gitIpcInvalidates(method), `${method} invalidates`).not.toContain('status')
     }
   })
+
+  it('refreshes merge status after staging so conflict Continue stays accurate', () => {
+    expect(gitIpcInvalidates('stage.add')).toEqual(
+      expect.arrayContaining(['working.status', 'merge.status'])
+    )
+    expect(gitIpcInvalidates('stage.reset')).toEqual(
+      expect.arrayContaining(['working.status', 'merge.status'])
+    )
+  })
+
+  it('classifies mutating methods by non-empty invalidates', async () => {
+    const { gitIpcIsMutation } = await import('./methods')
+    expect(gitIpcIsMutation('stage.add')).toBe(true)
+    expect(gitIpcIsMutation('log.graph')).toBe(false)
+  })
 })

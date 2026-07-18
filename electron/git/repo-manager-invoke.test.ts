@@ -110,7 +110,7 @@ describe('RepoManager invoke coverage', { timeout: 30_000 }, () => {
     await manager.invoke(tmpDir, 'tag.delete', { name: 'v0.0.1' })
 
     await manager.invoke(tmpDir, 'notes.add', { hash: commitHash, message: 'note body' })
-    await manager.invoke(tmpDir, 'config.set', { key: 'gitfreddo.test', value: '1', scope: 'local' })
+    await manager.invoke(tmpDir, 'config.set', { key: 'user.name', value: 'Invoke Test', scope: 'local' })
 
     writeFileSync(join(tmpDir, 'README.md'), 'stash me\n')
     await manager.invoke(tmpDir, 'stash.push', { message: 'wip' })

@@ -10,7 +10,8 @@ export type {
 export {
   GIT_IPC_METHODS,
   ALL_GIT_IPC_METHODS,
-  gitIpcInvalidates
+  gitIpcInvalidates,
+  gitIpcIsMutation
 } from './methods'
 export * from './params'
 export * from './results'

@@ -3,6 +3,7 @@ import {
   pushSubmoduleRecursionArgs,
   submoduleRecursionFetchArgs
 } from '../../submodule-types'
+import { endOfOptionsArg } from './_common'
 import { defineCommand } from './_types'
 
 export function buildRemoteListArgs(): string[] {
@@ -15,11 +16,11 @@ export interface RemoteAddParams {
 }
 
 export function buildRemoteAddArgs({ name, url }: RemoteAddParams): string[] {
-  return ['remote', 'add', name, url]
+  return ['remote', 'add', ...endOfOptionsArg(name), url]
 }
 
 export function buildRemoteRemoveArgs(name: string): string[] {
-  return ['remote', 'remove', name]
+  return ['remote', 'remove', ...endOfOptionsArg(name)]
 }
 
 export interface RemoteRenameParams {
@@ -28,7 +29,7 @@ export interface RemoteRenameParams {
 }
 
 export function buildRemoteRenameArgs({ oldName, newName }: RemoteRenameParams): string[] {
-  return ['remote', 'rename', oldName, newName]
+  return ['remote', 'rename', ...endOfOptionsArg(oldName), newName]
 }
 
 export interface RemoteSetUrlParams {
@@ -40,12 +41,12 @@ export interface RemoteSetUrlParams {
 export function buildRemoteSetUrlArgs({ name, url, push }: RemoteSetUrlParams): string[] {
   const args = ['remote', 'set-url']
   if (push) args.push('--push')
-  args.push(name, url)
+  args.push(...endOfOptionsArg(name), url)
   return args
 }
 
 export function buildRemoteGetUrlArgs(name: string): string[] {
-  return ['remote', 'get-url', name]
+  return ['remote', 'get-url', ...endOfOptionsArg(name)]
 }
 
 export interface FetchParams {
@@ -58,13 +59,13 @@ export interface FetchParams {
 
 export function buildFetchArgs(params: FetchParams): string[] {
   if (params.tagsOnly) {
-    return ['fetch', '--tags', params.remote]
+    return ['fetch', '--tags', ...endOfOptionsArg(params.remote)]
   }
 
   const args = ['fetch', '--prune']
   if (params.tags) args.push('--tags')
   args.push(...submoduleRecursionFetchArgs(params.submoduleRecursion ?? 'none'))
-  args.push(params.remote)
+  args.push(...endOfOptionsArg(params.remote))
   if (params.refspec?.trim()) args.push(params.refspec.trim())
   return args
 }
@@ -84,12 +85,12 @@ export function buildPushArgs(params: PushParams): string[] {
   args.push(...pushSubmoduleRecursionArgs(params.pushSubmoduleRecursion ?? 'no'))
 
   if (params.pushAll) {
-    args.push('--all', params.remote)
+    args.push('--all', ...endOfOptionsArg(params.remote))
     return args
   }
 
   if (params.setUpstream) args.push('-u')
-  args.push(params.remote)
+  args.push(...endOfOptionsArg(params.remote))
   if (params.branch) args.push(params.branch)
   return args
 }
@@ -100,7 +101,7 @@ export interface PushDeleteBranchParams {
 }
 
 export function buildPushDeleteBranchArgs({ remote, branch }: PushDeleteBranchParams): string[] {
-  return ['push', remote, `:refs/heads/${branch}`]
+  return ['push', ...endOfOptionsArg(remote), `:refs/heads/${branch}`]
 }
 
 export interface PushTagParams {
@@ -110,8 +111,8 @@ export interface PushTagParams {
 }
 
 export function buildPushTagArgs({ remote, tag, allTags }: PushTagParams): string[] {
-  if (allTags) return ['push', remote, '--tags']
-  return ['push', remote, tag!]
+  if (allTags) return ['push', '--tags', ...endOfOptionsArg(remote)]
+  return ['push', ...endOfOptionsArg(remote), tag!]
 }
 
 export interface PushDeleteTagParams {
@@ -120,7 +121,7 @@ export interface PushDeleteTagParams {
 }
 
 export function buildPushDeleteTagArgs({ remote, tag }: PushDeleteTagParams): string[] {
-  return ['push', remote, `:refs/tags/${tag}`]
+  return ['push', ...endOfOptionsArg(remote), `:refs/tags/${tag}`]
 }
 
 export interface PullParams {
@@ -134,7 +135,7 @@ export function buildPullArgs(params: PullParams): string[] {
   const args = ['pull']
   if (params.rebase) args.push('--rebase')
   args.push(...submoduleRecursionFetchArgs(params.submoduleRecursion ?? 'none'))
-  args.push(params.remote)
+  args.push(...endOfOptionsArg(params.remote))
   if (params.branch?.trim()) args.push(params.branch.trim())
   return args
 }

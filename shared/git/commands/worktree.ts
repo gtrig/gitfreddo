@@ -1,4 +1,5 @@
 import { defineCommand } from './_types'
+import { endOfOptionsArg } from './_common'
 
 export function buildWorktreeListArgs(): string[] {
   return ['worktree', 'list', '--porcelain']
@@ -16,7 +17,7 @@ export function buildWorktreeAddArgs(params: WorktreeAddParams): string[] {
   const args = ['worktree', 'add']
   if (params.detach) args.push('--detach')
   if (params.newBranch) args.push('-b', params.newBranch)
-  args.push(params.path)
+  args.push(...endOfOptionsArg(params.path))
   if (params.branch) {
     args.push(params.branch)
   } else if (params.commit) {
@@ -33,7 +34,7 @@ export interface WorktreeRemoveParams {
 export function buildWorktreeRemoveArgs({ path, force }: WorktreeRemoveParams): string[] {
   const args = ['worktree', 'remove']
   if (force) args.push('--force')
-  args.push(path)
+  args.push(...endOfOptionsArg(path))
   return args
 }
 

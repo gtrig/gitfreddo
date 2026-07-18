@@ -123,7 +123,7 @@ export const GIT_IPC_METHODS = {
   },
   'tag.rename': {
     invalidates: ['tag.list', 'log.graph'],
-    commands: ['tag.rename'],
+    commands: ['tag.rename-create', 'tag.rename-delete'],
     stateSource: 'git'
   },
   'working.status': {
@@ -174,12 +174,12 @@ export const GIT_IPC_METHODS = {
     stateSource: 'filesystem'
   },
   'stage.add': {
-    invalidates: ['working.status'],
+    invalidates: ['working.status', 'merge.status'],
     commands: ['add'],
     stateSource: 'git'
   },
   'stage.reset': {
-    invalidates: ['working.status'],
+    invalidates: ['working.status', 'merge.status'],
     commands: ['reset.head-paths'],
     stateSource: 'git'
   },
@@ -851,6 +851,11 @@ export type GitIpcResult<M extends GitIpcMethod> = GitIpcResultMap[M]
 
 export function gitIpcInvalidates(method: GitIpcMethod): readonly string[] {
   return GIT_IPC_METHODS[method].invalidates
+}
+
+/** True when the method mutates repo state (has cache invalidation side effects). */
+export function gitIpcIsMutation(method: GitIpcMethod): boolean {
+  return GIT_IPC_METHODS[method].invalidates.length > 0
 }
 
 export const ALL_GIT_IPC_METHODS = Object.keys(GIT_IPC_METHODS) as GitIpcMethod[]
