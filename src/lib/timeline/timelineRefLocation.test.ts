@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { ForgeProvider } from '@/lib/forge/detect'
 import type { TimelineRef } from '@/lib/timeline/timelineRefs'
 import {
-  buildBranchUpstreams,
+  buildBranchTracking,
   buildRemoteProviders,
   remoteNameFromRefLabel,
   timelineRefLocation
@@ -39,14 +39,14 @@ describe('remoteNameFromRefLabel', () => {
   })
 })
 
-describe('buildBranchUpstreams', () => {
-  it('maps local branch names to upstreams and ignores remotes', () => {
-    const map = buildBranchUpstreams([
+describe('buildBranchTracking', () => {
+  it('maps local branch names to upstream and ahead, ignoring remotes', () => {
+    const map = buildBranchTracking([
       {
         name: 'main',
         head: 'a',
         upstream: 'origin/main',
-        ahead: 0,
+        ahead: 2,
         behind: 0,
         isCurrent: true,
         isRemote: false
@@ -69,8 +69,8 @@ describe('buildBranchUpstreams', () => {
       }
     ])
 
-    expect(map.get('main')).toBe('origin/main')
-    expect(map.get('feature')).toBeUndefined()
+    expect(map.get('main')).toEqual({ upstream: 'origin/main', ahead: 2 })
+    expect(map.get('feature')).toEqual({ upstream: undefined, ahead: 0 })
     expect(map.has('origin/main')).toBe(false)
   })
 })
@@ -102,32 +102,50 @@ describe('timelineRefLocation', () => {
   it('shows local icon for local branches without upstream', () => {
     expect(
       timelineRefLocation(branch('feature'), {
-        branchUpstreams: new Map(),
+        branchTracking: new Map(),
         remoteProviders: providers
       })
     ).toEqual({ showLocal: true, remoteProvider: null })
   })
 
-  it('shows forge remote icon when local branch has a github upstream', () => {
+  it('shows forge remote icon when local tip is not ahead of upstream', () => {
     expect(
       timelineRefLocation(branch('main'), {
-        branchUpstreams: new Map([['main', 'origin/main']]),
+        branchTracking: new Map([['main', { upstream: 'origin/main', ahead: 0 }]]),
         remoteProviders: providers
       })
     ).toEqual({ showLocal: true, remoteProvider: 'github' })
   })
 
+  it('hides forge remote icon when local branch is ahead of upstream', () => {
+    expect(
+      timelineRefLocation(branch('main'), {
+        branchTracking: new Map([['main', { upstream: 'gitfreddo/main', ahead: 1 }]]),
+        remoteProviders: new Map([['gitfreddo', 'github']])
+      })
+    ).toEqual({ showLocal: true, remoteProvider: null })
+  })
+
+  it('still shows forge icon when behind but not ahead', () => {
+    expect(
+      timelineRefLocation(branch('main'), {
+        branchTracking: new Map([['main', { upstream: 'origin/main', ahead: 0 }]]),
+        remoteProviders: providers
+      }).remoteProvider
+    ).toBe('github')
+  })
+
   it('shows gitlab and bitbucket providers from upstream remote name', () => {
     expect(
       timelineRefLocation(branch('a'), {
-        branchUpstreams: new Map([['a', 'gitlab/a']]),
+        branchTracking: new Map([['a', { upstream: 'gitlab/a', ahead: 0 }]]),
         remoteProviders: providers
       }).remoteProvider
     ).toBe('gitlab')
 
     expect(
       timelineRefLocation(branch('b'), {
-        branchUpstreams: new Map([['b', 'bb/b']]),
+        branchTracking: new Map([['b', { upstream: 'bb/b', ahead: 0 }]]),
         remoteProviders: providers
       }).remoteProvider
     ).toBe('bitbucket')
@@ -136,7 +154,7 @@ describe('timelineRefLocation', () => {
   it('uses unknown for tracked remotes that are not a known forge', () => {
     expect(
       timelineRefLocation(branch('main'), {
-        branchUpstreams: new Map([['main', 'other/main']]),
+        branchTracking: new Map([['main', { upstream: 'other/main', ahead: 0 }]]),
         remoteProviders: providers
       })
     ).toEqual({ showLocal: true, remoteProvider: 'unknown' })
@@ -145,7 +163,7 @@ describe('timelineRefLocation', () => {
   it('shows remote icon for remote-only refs without a local icon', () => {
     expect(
       timelineRefLocation(remote('origin/feature'), {
-        branchUpstreams: new Map(),
+        branchTracking: new Map(),
         remoteProviders: providers
       })
     ).toEqual({ showLocal: false, remoteProvider: 'github' })
@@ -154,7 +172,7 @@ describe('timelineRefLocation', () => {
   it('shows no location icons for tags', () => {
     expect(
       timelineRefLocation(tag('v1.0'), {
-        branchUpstreams: new Map([['v1.0', 'origin/v1.0']]),
+        branchTracking: new Map([['v1.0', { upstream: 'origin/v1.0', ahead: 0 }]]),
         remoteProviders: providers
       })
     ).toEqual({ showLocal: false, remoteProvider: null })

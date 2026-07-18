@@ -6,18 +6,19 @@ import type { GitBranch, GitRemote } from '@/lib/types'
 import type { BranchTreeNode } from '@/lib/workspace/branchTree'
 import {
   buildLocalBranchTree,
-  buildRemoteBranchGroups,
+  buildRemoteBranchTrees,
   countBranchTreeNodes,
   filterBranchTree,
   matchesFilter,
   parseRemoteBranchName,
   remoteBranchShortName
 } from '@/lib/workspace/branchTree'
+import { buildRemoteProviders } from '@/lib/timeline/timelineRefLocation'
+import { TimelineRemoteProviderIcon } from '@/components/Ui/ForgeIcons'
 import { SidebarSection } from '@/components/Layout/sidebar/SidebarSection'
 import {
   SidebarIconBranch,
   SidebarIconLocal,
-  SidebarIconOrigin,
   SidebarIconRemote
 } from '@/components/Layout/sidebar/SidebarIcons'
 import { SidebarFolderRow, SidebarTreeRow } from '@/components/Layout/sidebar/SidebarTreeRow'
@@ -507,6 +508,110 @@ export function LocalBranchesSection({
   )
 }
 
+function RemoteBranchTree({
+  nodes,
+  depth,
+  filter,
+  folderPrefix,
+  openFolders,
+  toggleFolder,
+  onSelectCommit,
+  onCheckout,
+  onDeleteRemote,
+  isBranchHidden,
+  onToggleGraphVisibility,
+  openMenu
+}: {
+  nodes: BranchTreeNode[]
+  depth: number
+  filter: string
+  folderPrefix: string
+  openFolders: Set<string>
+  toggleFolder: (path: string) => void
+  onSelectCommit: (hash: string) => void
+  onCheckout: (name: string) => void
+  onDeleteRemote: (name: string) => void
+  isBranchHidden: (branchKey: string) => boolean
+  onToggleGraphVisibility: (branchKey: string) => void
+  openMenu: ReturnType<typeof useContextMenu>['openMenu']
+}) {
+  const { t } = useTranslation()
+  return (
+    <>
+      {nodes.map((node) => {
+        if (node.type === 'folder') {
+          const path = `${folderPrefix}/${node.name}`
+          const open = openFolders.has(path) || Boolean(filter.trim())
+          return (
+            <div key={path}>
+              <SidebarFolderRow
+                name={node.name}
+                depth={depth}
+                open={open}
+                onToggle={() => toggleFolder(path)}
+                menuItems={folderContextMenuItems(node.name, open, () => toggleFolder(path), t)}
+                openMenu={openMenu}
+              />
+              {open && node.children && (
+                <RemoteBranchTree
+                  nodes={node.children}
+                  depth={depth + 1}
+                  filter={filter}
+                  folderPrefix={path}
+                  openFolders={openFolders}
+                  toggleFolder={toggleFolder}
+                  onSelectCommit={onSelectCommit}
+                  onCheckout={onCheckout}
+                  onDeleteRemote={onDeleteRemote}
+                  isBranchHidden={isBranchHidden}
+                  onToggleGraphVisibility={onToggleGraphVisibility}
+                  openMenu={openMenu}
+                />
+              )}
+            </div>
+          )
+        }
+
+        const branch = node.branch!
+        const displayName = remoteBranchShortName(branch.name).includes('/')
+          ? node.name
+          : remoteBranchShortName(branch.name)
+        const visibilityKey = branchVisibilityKey(branch)
+        const hiddenInGraph = isBranchHidden(visibilityKey)
+        const remoteBranchMenuItems = remoteBranchContextMenuItems(
+          branch,
+          {
+            onSelectCommit,
+            onCheckout,
+            onDeleteRemote,
+            onToggleGraphVisibility,
+            isHiddenInGraph: hiddenInGraph
+          },
+          t
+        )
+        return (
+          <SidebarTreeRow
+            key={branch.name}
+            label={displayName}
+            depth={depth}
+            title={t('sidebar.clickFocusCommit')}
+            labelClassName={hiddenInGraph ? 'opacity-60' : ''}
+            menuItems={remoteBranchMenuItems}
+            openMenu={openMenu}
+            onClick={() => onSelectCommit(branch.head)}
+            trailingAction={
+              <BranchVisibilityToggle
+                hidden={hiddenInGraph}
+                onToggle={() => onToggleGraphVisibility(visibilityKey)}
+              />
+            }
+          />
+        )
+      })}
+    </>
+  )
+}
+
 interface RemoteBranchesSectionProps {
   branches: GitBranch[] | undefined
   remotes: GitRemote[] | undefined
@@ -536,20 +641,29 @@ export function RemoteBranchesSection({
     [branches, filter]
   )
 
-  const grouped = useMemo(() => {
-    const map = buildRemoteBranchGroups(remoteBranches)
+  const remoteTrees = useMemo(() => {
+    const trees = buildRemoteBranchTrees(remoteBranches)
 
     for (const remote of remotes ?? []) {
-      if (matchesFilter(remote.name, filter) && !map.has(remote.name)) {
-        map.set(remote.name, [])
+      if (matchesFilter(remote.name, filter) && !trees.has(remote.name)) {
+        trees.set(remote.name, [])
       }
     }
 
-    return [...map.entries()].sort(([a], [b]) => a.localeCompare(b))
+    return [...trees.entries()]
+      .map(([remote, tree]) => [remote, filterBranchTree(tree, filter)] as const)
+      .filter(([remote, tree]) => {
+        if (tree.length > 0) return true
+        return matchesFilter(remote, filter) && (remotes ?? []).some((entry) => entry.name === remote)
+      })
+      .sort(([a], [b]) => a.localeCompare(b))
   }, [remoteBranches, remotes, filter])
 
-  const count = grouped.reduce((sum, [, list]) => sum + list.length, 0)
+  const remoteProviders = useMemo(() => buildRemoteProviders(remotes ?? []), [remotes])
+
+  const count = remoteTrees.reduce((sum, [, tree]) => sum + countBranchTreeNodes(tree), 0)
   const [collapsedRemotes, setCollapsedRemotes] = useState<Set<string>>(() => new Set())
+  const [openFolders, setOpenFolders] = useState<Set<string>>(() => new Set())
   const [checkoutRemote, setCheckoutRemote] = useState<string | null>(null)
   const [pendingDeleteRemote, setPendingDeleteRemote] = useState<GitBranch | null>(null)
   const [pendingRemoveRemote, setPendingRemoveRemote] = useState<string | null>(null)
@@ -570,6 +684,15 @@ export function RemoteBranchesSection({
     })
   }
 
+  function toggleFolder(path: string) {
+    setOpenFolders((prev) => {
+      const next = new Set(prev)
+      if (next.has(path)) next.delete(path)
+      else next.add(path)
+      return next
+    })
+  }
+
   function openEditRemote(name: string) {
     const remote = remotes?.find((entry) => entry.name === name)
     if (remote) {
@@ -582,18 +705,19 @@ export function RemoteBranchesSection({
       sectionId="sidebar.remote"
       title={t('sidebar.remote')}
       icon={<SidebarIconRemote className="h-3.5 w-3.5" />}
-      count={count || grouped.length}
+      count={count || remoteTrees.length}
       onAdd={() => setAddRemoteOpen(true)}
       addTitle={t('sidebar.addRemote')}
     >
       {isLoading && <LoadingRow />}
       {error && <p className="px-2 text-xs text-red-400">{error.message}</p>}
-      {!isLoading && grouped.length === 0 && (
+      {!isLoading && remoteTrees.length === 0 && (
         <p className="px-2 py-1 text-xs text-gf-fg-subtle">{t('sidebar.noRemotes')}</p>
       )}
       <div className="space-y-0.5">
-        {grouped.map(([remote, list]) => {
+        {remoteTrees.map(([remote, tree]) => {
           const open = !collapsedRemotes.has(remote) || Boolean(filter.trim())
+          const provider = remoteProviders.get(remote) ?? null
           return (
             <div key={remote}>
               <SidebarFolderRow
@@ -601,6 +725,12 @@ export function RemoteBranchesSection({
                 depth={0}
                 open={open}
                 onToggle={() => toggleRemote(remote)}
+                icon={
+                  <TimelineRemoteProviderIcon
+                    provider={provider ?? 'unknown'}
+                    className="h-3.5 w-3.5"
+                  />
+                }
                 menuItems={remoteFolderContextMenuItems(
                   remote,
                   open,
@@ -615,7 +745,7 @@ export function RemoteBranchesSection({
                 )}
                 openMenu={openMenu}
               />
-              {open && list.length === 0 && (
+              {open && tree.length === 0 && (
                 <p
                   style={{ paddingLeft: '22px' }}
                   className="py-1 pr-2 text-[10px] text-gf-fg-subtle"
@@ -623,44 +753,25 @@ export function RemoteBranchesSection({
                   {t('sidebar.fetchToLoad')}
                 </p>
               )}
-              {open &&
-                list.map((branch) => {
-                  const visibilityKey = branchVisibilityKey(branch)
-                  const hiddenInGraph = isBranchHidden(visibilityKey)
-                  const remoteBranchMenuItems = remoteBranchContextMenuItems(
-                    branch,
-                    {
-                      onSelectCommit,
-                      onCheckout: setCheckoutRemote,
-                      onDeleteRemote: (remoteBranch) => {
-                        const match = remoteBranches.find((item) => item.name === remoteBranch)
-                        if (match) setPendingDeleteRemote(match)
-                      },
-                      onToggleGraphVisibility: toggleBranchVisibility,
-                      isHiddenInGraph: hiddenInGraph
-                    },
-                    t
-                  )
-                  return (
-                    <SidebarTreeRow
-                      key={branch.name}
-                      icon={<SidebarIconOrigin className="h-3.5 w-3.5" />}
-                      label={remoteBranchShortName(branch.name)}
-                      depth={1}
-                      title={t('sidebar.clickFocusCommit')}
-                      labelClassName={hiddenInGraph ? 'opacity-60' : ''}
-                      menuItems={remoteBranchMenuItems}
-                      openMenu={openMenu}
-                      onClick={() => onSelectCommit(branch.head)}
-                      trailingAction={
-                        <BranchVisibilityToggle
-                          hidden={hiddenInGraph}
-                          onToggle={() => toggleBranchVisibility(visibilityKey)}
-                        />
-                      }
-                    />
-                  )
-                })}
+              {open && (
+                <RemoteBranchTree
+                  nodes={tree}
+                  depth={1}
+                  filter={filter}
+                  folderPrefix={remote}
+                  openFolders={openFolders}
+                  toggleFolder={toggleFolder}
+                  onSelectCommit={onSelectCommit}
+                  onCheckout={setCheckoutRemote}
+                  onDeleteRemote={(remoteBranch) => {
+                    const match = remoteBranches.find((item) => item.name === remoteBranch)
+                    if (match) setPendingDeleteRemote(match)
+                  }}
+                  isBranchHidden={isBranchHidden}
+                  onToggleGraphVisibility={toggleBranchVisibility}
+                  openMenu={openMenu}
+                />
+              )}
             </div>
           )
         })}

@@ -1,14 +1,13 @@
 import { type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FolderIcon } from '@heroicons/react/24/outline'
 import { CurrentHeadCheck } from '@/components/Ui/CurrentHeadCheck'
-import { SidebarIconChevron } from '@/components/Layout/sidebar/SidebarIcons'
+import { SidebarIconChevron, SidebarIconFolder } from '@/components/Layout/sidebar/SidebarIcons'
 import { SidebarMenuButton } from '@/components/Layout/sidebar/SidebarMenuButton'
 import type { ContextMenuItem } from '@/components/Ui/ContextMenu'
 import type { OpenContextMenu } from '@/hooks/useContextMenu'
 
 interface SidebarTreeRowProps {
-  icon: ReactNode
+  icon?: ReactNode
   label: string
   depth?: number
   isCurrent?: boolean
@@ -61,10 +60,11 @@ export function SidebarTreeRow({
       style={{ paddingLeft: `${8 + depth * 14}px` }}
     >
       {isCurrent ? <CurrentHeadCheck /> : null}
-      <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center text-gf-fg-subtle">
-        {icon}
-      </span>
-      {hasMenu ? <SidebarMenuButton items={menuItems!} onOpenMenu={openMenu!} /> : null}
+      {icon != null ? (
+        <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center text-gf-fg-subtle">
+          {icon}
+        </span>
+      ) : null}
       <button
         type="button"
         onClick={onClick}
@@ -77,6 +77,7 @@ export function SidebarTreeRow({
       </button>
       {suffix}
       {trailingAction}
+      {hasMenu ? <SidebarMenuButton items={menuItems!} onOpenMenu={openMenu!} /> : null}
     </div>
   )
 }
@@ -86,6 +87,7 @@ interface SidebarFolderRowProps {
   depth?: number
   open: boolean
   onToggle: () => void
+  icon?: ReactNode
   menuItems?: ContextMenuItem[]
   openMenu?: OpenContextMenu
   onContextMenu?: (event: React.MouseEvent<HTMLButtonElement>) => void
@@ -96,6 +98,7 @@ export function SidebarFolderRow({
   depth = 0,
   open,
   onToggle,
+  icon,
   menuItems,
   openMenu,
   onContextMenu
@@ -126,9 +129,8 @@ export function SidebarFolderRow({
         <Chevron open={open} />
       </button>
       <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center text-gf-fg-subtle">
-        <FolderIcon aria-hidden className="h-3.5 w-3.5" />
+        {icon ?? <SidebarIconFolder className="h-3.5 w-3.5" />}
       </span>
-      {hasMenu ? <SidebarMenuButton items={menuItems!} onOpenMenu={openMenu!} /> : null}
       <button
         type="button"
         onClick={onToggle}
@@ -137,6 +139,7 @@ export function SidebarFolderRow({
       >
         {name}
       </button>
+      {hasMenu ? <SidebarMenuButton items={menuItems!} onOpenMenu={openMenu!} /> : null}
     </div>
   )
 }

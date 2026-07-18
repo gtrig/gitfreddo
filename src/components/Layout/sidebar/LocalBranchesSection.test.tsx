@@ -806,6 +806,46 @@ describe('RemoteBranchesSection', () => {
     expect(screen.getByRole('button', { name: /feature/i })).toBeInTheDocument()
   })
 
+  it('nests slash-separated remote branches into folders and shows forge icon on the remote only', async () => {
+    renderWithProviders(
+      <RemoteBranchesSection
+        branches={[
+          {
+            name: 'remotes/origin/main',
+            head: 'abc',
+            isCurrent: false,
+            isRemote: true,
+            ahead: 0,
+            behind: 0
+          },
+          {
+            name: 'remotes/origin/feature/login',
+            head: 'def',
+            isCurrent: false,
+            isRemote: true,
+            ahead: 0,
+            behind: 0
+          }
+        ]}
+        remotes={[
+          { name: 'origin', url: 'https://github.com/acme/repo.git', fetch: '', push: '' }
+        ]}
+        filter=""
+        isLoading={false}
+        error={null}
+        onSelectCommit={vi.fn()}
+      />
+    )
+
+    expect(screen.getByTitle('GitHub')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^feature$/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^login$/i })).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: /^feature$/i }))
+    expect(screen.getByRole('button', { name: /^login$/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^main$/i })).toBeInTheDocument()
+  })
+
   it('shows fetch hint for empty remotes and opens add-remote modal', async () => {
     renderWithProviders(
       <RemoteBranchesSection

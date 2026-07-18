@@ -11,7 +11,8 @@ const providers = new Map<string, ForgeProvider | null>([
   ['origin', 'github'],
   ['gitlab', 'gitlab'],
   ['bb', 'bitbucket'],
-  ['other', null]
+  ['other', null],
+  ['gitfreddo', 'github']
 ])
 
 describe('TimelineRefBadge', () => {
@@ -46,11 +47,11 @@ describe('TimelineRefBadge', () => {
     expect(badge?.contains(screen.getByTitle(/current/i))).toBe(true)
   })
 
-  it('shows a GitHub icon when the local branch has a GitHub upstream', () => {
+  it('shows a GitHub icon when the local tip is not ahead of upstream', () => {
     renderWithProviders(
       <TimelineRefBadge
         timelineRef={{ kind: 'branch', label: 'main', fullRef: 'refs/heads/main', sourceOrder: 0 }}
-        branchUpstreams={new Map([['main', 'origin/main']])}
+        branchTracking={new Map([['main', { upstream: 'origin/main', ahead: 0 }]])}
         remoteProviders={providers}
       />
     )
@@ -58,11 +59,23 @@ describe('TimelineRefBadge', () => {
     expect(screen.getByTitle('Local')).toBeInTheDocument()
   })
 
+  it('hides the GitHub icon when the local branch is ahead of upstream', () => {
+    renderWithProviders(
+      <TimelineRefBadge
+        timelineRef={{ kind: 'branch', label: 'main', fullRef: 'refs/heads/main', sourceOrder: 0 }}
+        branchTracking={new Map([['main', { upstream: 'gitfreddo/main', ahead: 1 }]])}
+        remoteProviders={providers}
+      />
+    )
+    expect(screen.getByTitle('Local')).toBeInTheDocument()
+    expect(screen.queryByTitle('GitHub')).not.toBeInTheDocument()
+  })
+
   it('shows a GitLab icon when the upstream remote is GitLab', () => {
     renderWithProviders(
       <TimelineRefBadge
         timelineRef={{ kind: 'branch', label: 'a', fullRef: 'refs/heads/a', sourceOrder: 0 }}
-        branchUpstreams={new Map([['a', 'gitlab/a']])}
+        branchTracking={new Map([['a', { upstream: 'gitlab/a', ahead: 0 }]])}
         remoteProviders={providers}
       />
     )
@@ -73,7 +86,7 @@ describe('TimelineRefBadge', () => {
     renderWithProviders(
       <TimelineRefBadge
         timelineRef={{ kind: 'branch', label: 'b', fullRef: 'refs/heads/b', sourceOrder: 0 }}
-        branchUpstreams={new Map([['b', 'bb/b']])}
+        branchTracking={new Map([['b', { upstream: 'bb/b', ahead: 0 }]])}
         remoteProviders={providers}
       />
     )
@@ -84,7 +97,7 @@ describe('TimelineRefBadge', () => {
     renderWithProviders(
       <TimelineRefBadge
         timelineRef={{ kind: 'branch', label: 'main', fullRef: 'refs/heads/main', sourceOrder: 0 }}
-        branchUpstreams={new Map([['main', 'other/main']])}
+        branchTracking={new Map([['main', { upstream: 'other/main', ahead: 0 }]])}
         remoteProviders={providers}
       />
     )
@@ -111,7 +124,7 @@ describe('TimelineRefBadge', () => {
     renderWithProviders(
       <TimelineRefBadge
         timelineRef={{ kind: 'tag', label: 'v1.0', fullRef: 'refs/tags/v1.0', sourceOrder: 0 }}
-        branchUpstreams={new Map([['v1.0', 'origin/v1.0']])}
+        branchTracking={new Map([['v1.0', { upstream: 'origin/v1.0', ahead: 0 }]])}
         remoteProviders={providers}
       />
     )

@@ -9,7 +9,10 @@ import { CurrentHeadCheck } from '@/components/Ui/CurrentHeadCheck'
 import { branchColor } from '@/lib/types'
 import type { ForgeProvider } from '@/lib/forge/detect'
 import type { TimelineRef, TimelineRefKind } from '@/lib/timeline/timelineRefs'
-import { timelineRefLocation } from '@/lib/timeline/timelineRefLocation'
+import {
+  timelineRefLocation,
+  type BranchTracking
+} from '@/lib/timeline/timelineRefLocation'
 
 export function TimelineHeadCheck() {
   return <CurrentHeadCheck />
@@ -45,14 +48,14 @@ export function TimelineDetachedHeadBadge() {
 export function TimelineRefBadge({
   timelineRef,
   isCurrent = false,
-  branchUpstreams,
+  branchTracking,
   remoteProviders,
   onContextMenu,
   onDoubleClick
 }: {
   timelineRef: TimelineRef
   isCurrent?: boolean
-  branchUpstreams?: ReadonlyMap<string, string | undefined>
+  branchTracking?: ReadonlyMap<string, BranchTracking>
   remoteProviders?: ReadonlyMap<string, ForgeProvider | null>
   onContextMenu?: (event: React.MouseEvent, timelineRef: TimelineRef) => void
   onDoubleClick?: (event: React.MouseEvent) => void
@@ -60,7 +63,7 @@ export function TimelineRefBadge({
   const { t } = useTranslation()
   const textColor = timelineRef.kind === 'branch' ? branchColor(timelineRef.label) : ''
   const location = timelineRefLocation(timelineRef, {
-    branchUpstreams: branchUpstreams ?? new Map(),
+    branchTracking: branchTracking ?? new Map(),
     remoteProviders: remoteProviders ?? new Map()
   })
 

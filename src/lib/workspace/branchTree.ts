@@ -17,13 +17,17 @@ export function remoteBranchShortName(name: string): string {
   return parseRemoteBranchName(name)?.branch ?? name
 }
 
-export function buildLocalBranchTree(branches: GitBranch[]): BranchTreeNode[] {
+export function buildBranchTree(
+  branches: GitBranch[],
+  getPathName: (branch: GitBranch) => string = (branch) => branch.name
+): BranchTreeNode[] {
   const root: BranchTreeNode[] = []
 
   for (const branch of branches) {
-    const parts = branch.name.split('/')
+    const pathName = getPathName(branch)
+    const parts = pathName.split('/')
     if (parts.length === 1) {
-      root.push({ type: 'branch', name: branch.name, branch })
+      root.push({ type: 'branch', name: pathName, branch })
       continue
     }
 
@@ -43,6 +47,10 @@ export function buildLocalBranchTree(branches: GitBranch[]): BranchTreeNode[] {
   }
 
   return sortBranchTree(root)
+}
+
+export function buildLocalBranchTree(branches: GitBranch[]): BranchTreeNode[] {
+  return buildBranchTree(branches)
 }
 
 export function buildRemoteBranchGroups(branches: GitBranch[]): Map<string, GitBranch[]> {
@@ -66,6 +74,19 @@ export function buildRemoteBranchGroups(branches: GitBranch[]): Map<string, GitB
   }
 
   return new Map([...groups.entries()].sort(([a], [b]) => a.localeCompare(b)))
+}
+
+/** Groups remotes, then nests each remote's branches by slash path (like local). */
+export function buildRemoteBranchTrees(branches: GitBranch[]): Map<string, BranchTreeNode[]> {
+  const groups = buildRemoteBranchGroups(branches)
+  const trees = new Map<string, BranchTreeNode[]>()
+  for (const [remote, list] of groups) {
+    trees.set(
+      remote,
+      buildBranchTree(list, (branch) => remoteBranchShortName(branch.name))
+    )
+  }
+  return trees
 }
 
 function sortBranchTree(nodes: BranchTreeNode[]): BranchTreeNode[] {

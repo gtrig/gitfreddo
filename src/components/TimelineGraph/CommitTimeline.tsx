@@ -46,7 +46,7 @@ import { ColumnResizeHandle } from '@/components/Ui/ColumnResizeHandle'
 import { BranchTagRow, headerCellClass } from './TimelineBranchTagRow'
 import type { TimelineRef } from '@/lib/timeline/timelineRefs'
 import {
-  buildBranchUpstreams,
+  buildBranchTracking,
   buildRemoteProviders
 } from '@/lib/timeline/timelineRefLocation'
 import { REF_STASH_BADGE_STYLE } from './TimelineRefBadge'
@@ -93,7 +93,7 @@ export function CommitTimeline() {
   const { data: remotes } = useRemotes(connected)
   const tagNames = useMemo(() => new Set((tags ?? []).map((tag) => tag.name)), [tags])
   const remoteNames = useMemo(() => new Set((remotes ?? []).map((remote) => remote.name)), [remotes])
-  const branchUpstreams = useMemo(() => buildBranchUpstreams(branches ?? []), [branches])
+  const branchTracking = useMemo(() => buildBranchTracking(branches ?? []), [branches])
   const remoteProviders = useMemo(() => buildRemoteProviders(remotes ?? []), [remotes])
   const showWorkingRow = workingStatus ? !workingStatus.isClean : false
   const showMergeRow = Boolean(mergeStatus?.inProgress)
@@ -494,7 +494,7 @@ export function CommitTimeline() {
                 isDetached={isDetached}
                 tagNames={tagNames}
                 remoteNames={remoteNames}
-                branchUpstreams={branchUpstreams}
+                branchTracking={branchTracking}
                 remoteProviders={remoteProviders}
                 isSelected={isSelected}
                 isPrimary={isPrimary}

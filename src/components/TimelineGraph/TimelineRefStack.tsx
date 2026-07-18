@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type Ref } from 'react'
 import { createPortal } from 'react-dom'
 import { TimelineDetachedHeadBadge, TimelineRefBadge } from './TimelineRefBadge'
 import type { ForgeProvider } from '@/lib/forge/detect'
+import type { BranchTracking } from '@/lib/timeline/timelineRefLocation'
 import { refKey, splitTimelineRefs, type TimelineRef } from '@/lib/timeline/timelineRefs'
 
 function resolveHeadRefs(
@@ -40,7 +41,7 @@ export function TimelineRefStack({
   isHeadCommit = false,
   currentBranch = '',
   isDetached = false,
-  branchUpstreams,
+  branchTracking,
   remoteProviders,
   onRefContextMenu,
   onRefDoubleClick,
@@ -50,7 +51,7 @@ export function TimelineRefStack({
   isHeadCommit?: boolean
   currentBranch?: string
   isDetached?: boolean
-  branchUpstreams?: ReadonlyMap<string, string | undefined>
+  branchTracking?: ReadonlyMap<string, BranchTracking>
   remoteProviders?: ReadonlyMap<string, ForgeProvider | null>
   onRefContextMenu?: (event: React.MouseEvent, timelineRef: TimelineRef) => void
   onRefDoubleClick?: (event: React.MouseEvent, timelineRef: TimelineRef) => void
@@ -112,7 +113,7 @@ export function TimelineRefStack({
           <TimelineRefBadge
             timelineRef={primary}
             isCurrent={primaryIsCurrent}
-            branchUpstreams={branchUpstreams}
+            branchTracking={branchTracking}
             remoteProviders={remoteProviders}
             onContextMenu={onRefContextMenu}
             onDoubleClick={onRefDoubleClick ? handleRefDoubleClick(primary) : undefined}
@@ -127,7 +128,7 @@ export function TimelineRefStack({
             <TimelineRefBadge
               timelineRef={primary}
               isCurrent={primaryIsCurrent}
-              branchUpstreams={branchUpstreams}
+              branchTracking={branchTracking}
               remoteProviders={remoteProviders}
               onContextMenu={onRefContextMenu}
               onDoubleClick={onRefDoubleClick ? handleRefDoubleClick(primary) : undefined}
@@ -172,7 +173,7 @@ export function TimelineRefStack({
                       isHeadCommit,
                       isDetached
                     )}
-                    branchUpstreams={branchUpstreams}
+                    branchTracking={branchTracking}
                     remoteProviders={remoteProviders}
                     onContextMenu={onRefContextMenu}
                     onDoubleClick={

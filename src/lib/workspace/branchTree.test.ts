@@ -3,6 +3,7 @@ import type { GitBranch } from '@/lib/types'
 import {
   buildLocalBranchTree,
   buildRemoteBranchGroups,
+  buildRemoteBranchTrees,
   countBranchTreeNodes,
   filterBranchTree,
   matchesFilter,
@@ -103,5 +104,30 @@ describe('buildRemoteBranchGroups', () => {
     expect(groups.get('origin')?.map((branch) => branch.name)).toEqual([
       'remotes/origin/feature/login'
     ])
+  })
+})
+
+describe('buildRemoteBranchTrees', () => {
+  it('nests slash-separated remote branches into folders per remote', () => {
+    const trees = buildRemoteBranchTrees([
+      branch('remotes/origin/main'),
+      branch('remotes/origin/feature/login'),
+      branch('remotes/origin/feature/oauth'),
+      branch('remotes/upstream/main')
+    ])
+
+    expect([...trees.keys()]).toEqual(['origin', 'upstream'])
+
+    const origin = trees.get('origin')!
+    expect(origin.map((node) => node.name)).toEqual(['feature', 'main'])
+    expect(origin[0]?.type).toBe('folder')
+    expect(origin[0]?.children?.map((node) => node.name)).toEqual(['login', 'oauth'])
+    expect(origin[0]?.children?.[0]?.branch?.name).toBe('remotes/origin/feature/login')
+    expect(origin[1]?.branch?.name).toBe('remotes/origin/main')
+    expect(countBranchTreeNodes(origin)).toBe(3)
+
+    const upstream = trees.get('upstream')!
+    expect(upstream.map((node) => node.name)).toEqual(['main'])
+    expect(upstream[0]?.branch?.name).toBe('remotes/upstream/main')
   })
 })

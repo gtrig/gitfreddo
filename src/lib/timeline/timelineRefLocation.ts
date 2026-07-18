@@ -4,6 +4,11 @@ import type { GitBranch, GitRemote } from '@/lib/types'
 
 export type TimelineRemoteProvider = ForgeProvider | 'unknown'
 
+export interface BranchTracking {
+  upstream?: string
+  ahead: number
+}
+
 export interface TimelineRefLocation {
   showLocal: boolean
   remoteProvider: TimelineRemoteProvider | null
@@ -15,13 +20,13 @@ export function remoteNameFromRefLabel(label: string): string | null {
   return label.slice(0, slash)
 }
 
-export function buildBranchUpstreams(
+export function buildBranchTracking(
   branches: readonly GitBranch[]
-): Map<string, string | undefined> {
-  const map = new Map<string, string | undefined>()
+): Map<string, BranchTracking> {
+  const map = new Map<string, BranchTracking>()
   for (const branch of branches) {
     if (branch.isRemote) continue
-    map.set(branch.name, branch.upstream)
+    map.set(branch.name, { upstream: branch.upstream, ahead: branch.ahead })
   }
   return map
 }
@@ -49,7 +54,7 @@ function resolveRemoteProvider(
 export function timelineRefLocation(
   timelineRef: TimelineRef,
   options: {
-    branchUpstreams: ReadonlyMap<string, string | undefined>
+    branchTracking: ReadonlyMap<string, BranchTracking>
     remoteProviders: ReadonlyMap<string, ForgeProvider | null>
   }
 ): TimelineRefLocation {
@@ -67,10 +72,13 @@ export function timelineRefLocation(
     }
   }
 
-  const upstream = options.branchUpstreams.get(timelineRef.label)
-  const remoteProvider = upstream
-    ? resolveRemoteProvider(remoteNameFromRefLabel(upstream), options.remoteProviders)
-    : null
+  const tracking = options.branchTracking.get(timelineRef.label)
+  const upstream = tracking?.upstream
+  // Only show a forge icon when the tip is already on the remote (not ahead).
+  const remoteProvider =
+    upstream && (tracking?.ahead ?? 0) === 0
+      ? resolveRemoteProvider(remoteNameFromRefLabel(upstream), options.remoteProviders)
+      : null
 
   return { showLocal: true, remoteProvider }
 }

@@ -7,10 +7,15 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-18 — Sidebar remote folders, forge icons, and right-aligned menus
+
+- **Why:** Remotes should mirror local slash-folder grouping; forge icons belong on the remote (repo), not every branch; the ⋮ menu was crowding the left of each row.
+- **What:** Remote branches nest into folders by path (like local). Forge/provider icons show on remote folder rows only. Row ⋮ menus sit last on the right (after the graph eye toggle); `SidebarFolderRow` accepts a custom icon.
+
 ### 2026-07-18 — Branch/tag location icons in the timeline
 
 - **Why:** Branch/tag pills should show at a glance whether a ref is local, pushed, and which forge hosts it — with the current-branch checkmark inside the pill.
-- **What:** Checkmark moved inside the badge (left). Local branches show a computer icon on the right; upstream/remote refs show GitHub, GitLab, Bitbucket, or a generic remote icon. Wired via `timelineRefLocation` from branch upstreams + remote URLs.
+- **What:** Checkmark moved inside the badge (left). Local branches show a computer icon on the right; forge/remote icons (GitHub, GitLab, Bitbucket, or generic) appear only when the tip is not ahead of upstream. Wired via `timelineRefLocation` from branch tracking + remote URLs.
 
 ## [0.4.7] - 2026-07-18
 

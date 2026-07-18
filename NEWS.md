@@ -5,7 +5,8 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
-- Branch and tag badges show a local computer icon and a GitHub, GitLab, or Bitbucket icon when the branch tracks a remote; the current-branch checkmark sits inside the badge.
+- Remote branches in the sidebar group into folders by path (same as local), with GitHub/GitLab/Bitbucket icons on the remote name — not on each branch. The ⋮ menu sits on the right of each row.
+- Branch and tag badges show a local computer icon and a GitHub, GitLab, or Bitbucket icon when the tip is already on that remote; the current-branch checkmark sits inside the badge.
 
 ## [0.4.7]
 
