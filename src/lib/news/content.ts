@@ -1,4 +1,4 @@
-import { parseNewsItems } from '@/lib/news/parseNews'
+import { parseNewsVersionUpdates, type NewsVersionUpdate } from '@/lib/news/parseNews'
 
 const newsModules = import.meta.glob<string>('../../../NEWS.md', {
   query: '?raw',
@@ -12,7 +12,7 @@ export function getNewsMarkdown(): string {
   return newsMarkdown
 }
 
-/** Startup-modal bullets from NEWS.md (prefer Unreleased, else newest release). */
-export function getStartupNewsItems(maxItems = 5): string[] {
-  return parseNewsItems(getNewsMarkdown(), { maxItems })
+/** Startup-modal updates from NEWS.md (newest non-empty version sections). */
+export function getStartupNewsUpdates(maxVersions = 3): NewsVersionUpdate[] {
+  return parseNewsVersionUpdates(getNewsMarkdown(), { maxVersions })
 }

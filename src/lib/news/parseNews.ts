@@ -1,50 +1,37 @@
-export interface ParseNewsOptions {
-  /** Prefer `[Unreleased]` when it has bullets (default true). */
-  preferUnreleased?: boolean
-  /** Max bullets to return (default unlimited). */
-  maxItems?: number
-}
-
-/**
- * Parse startup-modal bullets from NEWS.md (tag sections like CHANGELOG).
- * Newest sections first; prefer Unreleased when it has items.
- */
-export function parseNewsItems(markdown: string, options: ParseNewsOptions = {}): string[] {
-  const preferUnreleased = options.preferUnreleased !== false
-  const sections = splitTagSections(markdown)
-
-  const unreleased = sections.find((s) => s.tag.toLowerCase() === 'unreleased')
-  const releases = sections.filter((s) => s.tag.toLowerCase() !== 'unreleased')
-
-  let items: string[] = []
-  if (preferUnreleased && unreleased && unreleased.items.length > 0) {
-    items = unreleased.items
-  } else if (releases.length > 0) {
-    items = releases[0].items
-  } else if (unreleased) {
-    items = unreleased.items
-  }
-
-  if (options.maxItems != null) {
-    return items.slice(0, options.maxItems)
-  }
-  return items
-}
-
-interface NewsSection {
-  tag: string
+export interface NewsVersionUpdate {
+  /** Tag label from `## [X.Y.Z]` / `## [Unreleased]` (no brackets). */
+  version: string
   items: string[]
 }
 
-function splitTagSections(markdown: string): NewsSection[] {
+export interface ParseNewsOptions {
+  /** Max non-empty version sections to return (default 3). */
+  maxVersions?: number
+}
+
+/**
+ * Parse recent version updates from NEWS.md for the startup modal.
+ * Newest sections first; empty sections are skipped. Content is taken as-is
+ * (no i18n) — edit NEWS.md to change what users see.
+ */
+export function parseNewsVersionUpdates(
+  markdown: string,
+  options: ParseNewsOptions = {}
+): NewsVersionUpdate[] {
+  const maxVersions = options.maxVersions ?? 3
+  const sections = splitTagSections(markdown).filter((s) => s.items.length > 0)
+  return sections.slice(0, maxVersions)
+}
+
+function splitTagSections(markdown: string): NewsVersionUpdate[] {
   const lines = markdown.split(/\r?\n/)
-  const sections: NewsSection[] = []
-  let current: NewsSection | null = null
+  const sections: NewsVersionUpdate[] = []
+  let current: NewsVersionUpdate | null = null
 
   for (const line of lines) {
     const heading = line.match(/^##\s+\[([^\]]+)\]/)
     if (heading) {
-      current = { tag: heading[1].trim(), items: [] }
+      current = { version: heading[1].trim(), items: [] }
       sections.push(current)
       continue
     }

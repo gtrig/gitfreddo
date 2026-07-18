@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getNewsMarkdown, getStartupNewsItems } from '@/lib/news/content'
+import { getNewsMarkdown, getStartupNewsUpdates } from '@/lib/news/content'
 
 describe('news content bundle', () => {
   it('loads NEWS.md from the repo root', () => {
@@ -8,9 +8,14 @@ describe('news content bundle', () => {
     expect(md).toMatch(/## \[/)
   })
 
-  it('exposes startup bullets from the newest non-empty section', () => {
-    const items = getStartupNewsItems()
-    expect(items.length).toBeGreaterThan(0)
-    expect(items.every((item) => item.length > 0)).toBe(true)
+  it('exposes recent version updates from NEWS.md', () => {
+    const updates = getStartupNewsUpdates()
+    expect(updates.length).toBeGreaterThan(0)
+    expect(updates.length).toBeLessThanOrEqual(3)
+    for (const update of updates) {
+      expect(update.version.length).toBeGreaterThan(0)
+      expect(update.items.length).toBeGreaterThan(0)
+      expect(update.items.every((item) => item.length > 0)).toBe(true)
+    }
   })
 })
