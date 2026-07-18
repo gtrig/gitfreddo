@@ -2,11 +2,14 @@ import { TagIcon } from '@heroicons/react/24/outline'
 import { useTranslation } from 'react-i18next'
 import {
   SidebarIconBranch,
-  SidebarIconOrigin
+  SidebarIconLocal
 } from '@/components/Layout/sidebar/SidebarIcons'
+import { TimelineRemoteProviderIcon } from '@/components/Ui/ForgeIcons'
 import { CurrentHeadCheck } from '@/components/Ui/CurrentHeadCheck'
 import { branchColor } from '@/lib/types'
+import type { ForgeProvider } from '@/lib/forge/detect'
 import type { TimelineRef, TimelineRefKind } from '@/lib/timeline/timelineRefs'
+import { timelineRefLocation } from '@/lib/timeline/timelineRefLocation'
 
 export function TimelineHeadCheck() {
   return <CurrentHeadCheck />
@@ -25,22 +28,6 @@ const KIND_STYLES: Record<TimelineRefKind, string> = {
 export const REF_STASH_BADGE_STYLE =
   'border-[var(--gf-ref-stash-border)] bg-[var(--gf-ref-stash-bg)] text-gf-ref-stash-fg'
 
-function RefIcon({ kind }: { kind: TimelineRefKind }) {
-  switch (kind) {
-    case 'tag':
-      return (
-        <TagIcon
-          aria-hidden
-          className="h-3 w-3 shrink-0 stroke-[2] text-gf-ref-tag-fg"
-        />
-      )
-    case 'remote':
-      return <SidebarIconOrigin className="h-2.5 w-2.5 shrink-0 opacity-90" />
-    default:
-      return <SidebarIconBranch className="h-2.5 w-2.5 shrink-0 opacity-90" />
-  }
-}
-
 export function TimelineDetachedHeadBadge() {
   const { t } = useTranslation()
 
@@ -58,34 +45,51 @@ export function TimelineDetachedHeadBadge() {
 export function TimelineRefBadge({
   timelineRef,
   isCurrent = false,
+  branchUpstreams,
+  remoteProviders,
   onContextMenu,
   onDoubleClick
 }: {
   timelineRef: TimelineRef
   isCurrent?: boolean
+  branchUpstreams?: ReadonlyMap<string, string | undefined>
+  remoteProviders?: ReadonlyMap<string, ForgeProvider | null>
   onContextMenu?: (event: React.MouseEvent, timelineRef: TimelineRef) => void
   onDoubleClick?: (event: React.MouseEvent) => void
 }) {
+  const { t } = useTranslation()
   const textColor = timelineRef.kind === 'branch' ? branchColor(timelineRef.label) : ''
+  const location = timelineRefLocation(timelineRef, {
+    branchUpstreams: branchUpstreams ?? new Map(),
+    remoteProviders: remoteProviders ?? new Map()
+  })
 
   return (
-    <span className="inline-flex min-w-0 max-w-full items-center gap-0.5">
+    <span
+      className={`${BADGE_BASE} ${KIND_STYLES[timelineRef.kind]} ${textColor}`}
+      title={timelineRef.fullRef}
+      onContextMenu={
+        onContextMenu
+          ? (event) => {
+              onContextMenu(event, timelineRef)
+            }
+          : undefined
+      }
+      onDoubleClick={onDoubleClick}
+    >
       {isCurrent ? <TimelineHeadCheck /> : null}
-      <span
-        className={`${BADGE_BASE} ${KIND_STYLES[timelineRef.kind]} ${textColor}`}
-        title={timelineRef.fullRef}
-        onContextMenu={
-          onContextMenu
-            ? (event) => {
-                onContextMenu(event, timelineRef)
-              }
-            : undefined
-        }
-        onDoubleClick={onDoubleClick}
-      >
-        <RefIcon kind={timelineRef.kind} />
-        <span className="truncate">{timelineRef.label}</span>
-      </span>
+      {timelineRef.kind === 'tag' ? (
+        <TagIcon aria-hidden className="h-3 w-3 shrink-0 stroke-[2] text-gf-ref-tag-fg" />
+      ) : null}
+      <span className="truncate">{timelineRef.label}</span>
+      {location.showLocal ? (
+        <span className="inline-flex shrink-0" title={t('sidebar.local')}>
+          <SidebarIconLocal className="h-2.5 w-2.5 shrink-0 opacity-90" />
+        </span>
+      ) : null}
+      {location.remoteProvider ? (
+        <TimelineRemoteProviderIcon provider={location.remoteProvider} />
+      ) : null}
     </span>
   )
 }

@@ -7,6 +7,7 @@ import { TimelineRefStack } from './TimelineRefStack'
 import { REF_STASH_BADGE_STYLE } from './TimelineRefBadge'
 import { TIMELINE_ROW_HEIGHT } from './TimelineCommitColumn'
 import { useConnectorAnchor } from './TimelineRefConnectorContext'
+import type { ForgeProvider } from '@/lib/forge/detect'
 import type { GitCommit } from '@/lib/types'
 import type { TimelineRef } from '@/lib/timeline/timelineRefs'
 import type { TimelineColumnId } from '@/lib/timeline/timelineColumnVisibility'
@@ -18,6 +19,8 @@ export interface BranchTagRowProps {
   isDetached: boolean
   tagNames: ReadonlySet<string>
   remoteNames: ReadonlySet<string>
+  branchUpstreams: ReadonlyMap<string, string | undefined>
+  remoteProviders: ReadonlyMap<string, ForgeProvider | null>
   isSelected: boolean
   isPrimary: boolean
   searchDimClass: string
@@ -34,6 +37,8 @@ export function BranchTagRow({
   isDetached,
   tagNames,
   remoteNames,
+  branchUpstreams,
+  remoteProviders,
   isSelected,
   isPrimary,
   searchDimClass,
@@ -70,6 +75,8 @@ export function BranchTagRow({
           isHeadCommit={commit.hash === head}
           currentBranch={currentBranch}
           isDetached={isDetached}
+          branchUpstreams={branchUpstreams}
+          remoteProviders={remoteProviders}
           onRefContextMenu={onRefContextMenu}
           onRefDoubleClick={onRefDoubleClick}
           connectorAnchorRef={refConnectorAnchor}

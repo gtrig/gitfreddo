@@ -45,6 +45,10 @@ import { TimelineRefConnectorProvider } from './TimelineRefConnectors'
 import { ColumnResizeHandle } from '@/components/Ui/ColumnResizeHandle'
 import { BranchTagRow, headerCellClass } from './TimelineBranchTagRow'
 import type { TimelineRef } from '@/lib/timeline/timelineRefs'
+import {
+  buildBranchUpstreams,
+  buildRemoteProviders
+} from '@/lib/timeline/timelineRefLocation'
 import { REF_STASH_BADGE_STYLE } from './TimelineRefBadge'
 import { ContextMenu } from '@/components/Ui/ContextMenu'
 import { LoadingRow } from '@/components/Ui/Spinner'
@@ -89,6 +93,8 @@ export function CommitTimeline() {
   const { data: remotes } = useRemotes(connected)
   const tagNames = useMemo(() => new Set((tags ?? []).map((tag) => tag.name)), [tags])
   const remoteNames = useMemo(() => new Set((remotes ?? []).map((remote) => remote.name)), [remotes])
+  const branchUpstreams = useMemo(() => buildBranchUpstreams(branches ?? []), [branches])
+  const remoteProviders = useMemo(() => buildRemoteProviders(remotes ?? []), [remotes])
   const showWorkingRow = workingStatus ? !workingStatus.isClean : false
   const showMergeRow = Boolean(mergeStatus?.inProgress)
   const timelinePrefixRows = (showMergeRow ? 1 : 0) + (showWorkingRow ? 1 : 0)
@@ -488,6 +494,8 @@ export function CommitTimeline() {
                 isDetached={isDetached}
                 tagNames={tagNames}
                 remoteNames={remoteNames}
+                branchUpstreams={branchUpstreams}
+                remoteProviders={remoteProviders}
                 isSelected={isSelected}
                 isPrimary={isPrimary}
                 searchDimClass={searchDimClass}

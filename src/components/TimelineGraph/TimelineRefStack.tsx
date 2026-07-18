@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type Ref } from 'react'
 import { createPortal } from 'react-dom'
 import { TimelineDetachedHeadBadge, TimelineRefBadge } from './TimelineRefBadge'
+import type { ForgeProvider } from '@/lib/forge/detect'
 import { refKey, splitTimelineRefs, type TimelineRef } from '@/lib/timeline/timelineRefs'
 
 function resolveHeadRefs(
@@ -39,6 +40,8 @@ export function TimelineRefStack({
   isHeadCommit = false,
   currentBranch = '',
   isDetached = false,
+  branchUpstreams,
+  remoteProviders,
   onRefContextMenu,
   onRefDoubleClick,
   connectorAnchorRef
@@ -47,6 +50,8 @@ export function TimelineRefStack({
   isHeadCommit?: boolean
   currentBranch?: string
   isDetached?: boolean
+  branchUpstreams?: ReadonlyMap<string, string | undefined>
+  remoteProviders?: ReadonlyMap<string, ForgeProvider | null>
   onRefContextMenu?: (event: React.MouseEvent, timelineRef: TimelineRef) => void
   onRefDoubleClick?: (event: React.MouseEvent, timelineRef: TimelineRef) => void
   connectorAnchorRef?: Ref<HTMLSpanElement>
@@ -107,6 +112,8 @@ export function TimelineRefStack({
           <TimelineRefBadge
             timelineRef={primary}
             isCurrent={primaryIsCurrent}
+            branchUpstreams={branchUpstreams}
+            remoteProviders={remoteProviders}
             onContextMenu={onRefContextMenu}
             onDoubleClick={onRefDoubleClick ? handleRefDoubleClick(primary) : undefined}
           />
@@ -120,6 +127,8 @@ export function TimelineRefStack({
             <TimelineRefBadge
               timelineRef={primary}
               isCurrent={primaryIsCurrent}
+              branchUpstreams={branchUpstreams}
+              remoteProviders={remoteProviders}
               onContextMenu={onRefContextMenu}
               onDoubleClick={onRefDoubleClick ? handleRefDoubleClick(primary) : undefined}
             />
@@ -163,6 +172,8 @@ export function TimelineRefStack({
                       isHeadCommit,
                       isDetached
                     )}
+                    branchUpstreams={branchUpstreams}
+                    remoteProviders={remoteProviders}
                     onContextMenu={onRefContextMenu}
                     onDoubleClick={
                       onRefDoubleClick ? handleRefDoubleClick(timelineRef) : undefined
