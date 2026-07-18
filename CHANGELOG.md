@@ -7,6 +7,13 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-18 — Fix StartupModal news test after release promote
+
+- **Why:** CI failed because the modal test still expected a non-empty `[Unreleased]` NEWS section after v0.4.8 promoted those bullets.
+- **What:** Drive the modal news assertions from `getStartupNewsUpdates()` so version labels/bullets stay in sync with NEWS.md (no hardcoded versions).
+
+## [0.4.8] - 2026-07-18
+
 ### 2026-07-18 — Sidebar remote folders, forge icons, and right-aligned menus
 
 - **Why:** Remotes should mirror local slash-folder grouping; forge icons belong on the remote (repo), not every branch; the ⋮ menu was crowding the left of each row.
@@ -510,6 +517,7 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 - Git config editor and `.gitignore` / `.gitattributes` editor
 - Linux (AppImage, deb) and Windows (NSIS) installers via GitHub Actions
 
+[0.4.8]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.8
 [0.4.7]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.7
 [0.4.6]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.6
 [0.4.5]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.5

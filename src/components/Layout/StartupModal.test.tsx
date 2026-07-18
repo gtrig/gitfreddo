@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { getStartupNewsUpdates } from '@/lib/news/content'
 import { StartupModal } from './StartupModal'
 import { renderWithProviders } from '@/test/render'
 
@@ -28,6 +29,9 @@ describe('StartupModal', () => {
   })
 
   it('shows recent version updates from NEWS.md', () => {
+    const expectedUpdates = getStartupNewsUpdates()
+    expect(expectedUpdates.length).toBeGreaterThan(0)
+
     renderWithProviders(
       <StartupModal
         open
@@ -37,22 +41,13 @@ describe('StartupModal', () => {
       />
     )
 
-    // getStartupNewsUpdates returns the newest non-empty NEWS.md sections
-    // (version labels + bullets, English from the file — not i18n).
-    expect(screen.getByText('Unreleased')).toBeInTheDocument()
-    expect(screen.getByText('0.4.7')).toBeInTheDocument()
-    expect(screen.getByText('0.4.6')).toBeInTheDocument()
-    expect(
-      screen.getByText(/Branch and tag badges show a local computer icon/)
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText(
-        /Forge credentials no longer leak to unknown remotes or git hooks/
-      )
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText(/GitLab OAuth connect works in release installers \(credentials load/)
-    ).toBeInTheDocument()
+    // Same source as the modal: newest non-empty NEWS.md sections (not i18n).
+    for (const update of expectedUpdates) {
+      expect(screen.getByText(update.version)).toBeInTheDocument()
+      for (const item of update.items) {
+        expect(screen.getByText(item)).toBeInTheDocument()
+      }
+    }
   })
 
   it('calls onClose when user dismisses the modal', async () => {
