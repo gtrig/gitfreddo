@@ -7,7 +7,15 @@ vi.mock('./git/log-bus', () => ({
   emitLog: vi.fn()
 }))
 
+vi.mock('./ai/api-key-store', () => ({
+  loadAiApiKey: vi.fn(async () => null),
+  saveAiApiKey: vi.fn(async () => undefined),
+  clearAiApiKey: vi.fn(async () => undefined),
+  hasAiApiKey: vi.fn(async () => false)
+}))
+
 import { emitLog } from './git/log-bus'
+import { loadAiApiKey, saveAiApiKey } from './ai/api-key-store'
 
 describe('settings persistence', () => {
   let settingsDir = ''
@@ -17,6 +25,8 @@ describe('settings persistence', () => {
     vi.stubEnv('GITFREDDO_SETTINGS_DIR', settingsDir)
     vi.resetModules()
     vi.mocked(emitLog).mockClear()
+    vi.mocked(saveAiApiKey).mockClear()
+    vi.mocked(loadAiApiKey).mockResolvedValue(null)
   })
 
   afterEach(() => {
@@ -120,6 +130,21 @@ describe('settings persistence', () => {
     expect(settings.updateChannel).toBe('beta')
     expect(settings.startupModalHiddenUntil).toBeNull()
     expect(settings.startupModalHiddenForVersion).toBe('1.2.3')
+  })
+
+  it('stores the AI API key outside settings.json', async () => {
+    const { saveSettings, loadSettings } = await loadModule()
+    vi.mocked(loadAiApiKey).mockResolvedValue('sk-from-store')
+    vi.mocked(saveAiApiKey).mockResolvedValue(undefined)
+
+    await saveSettings({ aiApiKey: 'sk-new' })
+    expect(saveAiApiKey).toHaveBeenCalledWith('sk-new')
+
+    const raw = await readFile(join(settingsDir, 'settings.json'), 'utf8')
+    expect(JSON.parse(raw).aiApiKey).toBe('')
+
+    const settings = await loadSettings()
+    expect(settings.aiApiKey).toBe('sk-from-store')
   })
 })
 

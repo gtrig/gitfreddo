@@ -6,7 +6,8 @@ import { tmpdir } from 'os'
 vi.mock('electron', () => ({
   dialog: {
     showSaveDialog: vi.fn(),
-    showOpenDialog: vi.fn()
+    showOpenDialog: vi.fn(),
+    showMessageBox: vi.fn()
   }
 }))
 
@@ -30,11 +31,17 @@ vi.mock('./gitlab/token-store', () => ({
   saveGitlabToken: vi.fn()
 }))
 
+vi.mock('./ai/api-key-store', () => ({
+  loadAiApiKey: vi.fn(),
+  saveAiApiKey: vi.fn()
+}))
+
 import { dialog } from 'electron'
 import { loadSettings, saveSettings } from './settings'
 import { loadGitHubToken, saveGitHubToken } from './github/token-store'
 import { loadBitbucketToken, saveBitbucketToken } from './bitbucket/token-store'
 import { loadGitlabToken, saveGitlabToken } from './gitlab/token-store'
+import { loadAiApiKey, saveAiApiKey } from './ai/api-key-store'
 import {
   buildSettingsBackup,
   exportSettingsBackup,
@@ -98,9 +105,12 @@ describe('settings backup service', () => {
     vi.mocked(loadGitHubToken).mockResolvedValue('gho_test')
     vi.mocked(loadBitbucketToken).mockResolvedValue(null)
     vi.mocked(loadGitlabToken).mockResolvedValue(null)
+    vi.mocked(loadAiApiKey).mockResolvedValue(null)
     vi.mocked(saveGitHubToken).mockResolvedValue(undefined)
     vi.mocked(saveBitbucketToken).mockResolvedValue(undefined)
     vi.mocked(saveGitlabToken).mockResolvedValue(undefined)
+    vi.mocked(saveAiApiKey).mockResolvedValue(undefined)
+    vi.mocked(dialog.showMessageBox).mockResolvedValue({ response: 0 } as Electron.MessageBoxReturnValue)
   })
 
   afterEach(() => {
@@ -127,6 +137,13 @@ describe('settings backup service', () => {
     expect(backup.secrets).toEqual({ githubToken: 'gho_test', bitbucketToken: 'bb_test' })
   })
 
+  it('includes AI API keys in backup secrets and strips them from settings', async () => {
+    const withKey = { ...sampleSettings, aiApiKey: 'sk-secret' }
+    const backup = await buildSettingsBackup(withKey, '1.0.0')
+    expect(backup.settings.aiApiKey).toBe('')
+    expect(backup.secrets).toEqual({ githubToken: 'gho_test', aiApiKey: 'sk-secret' })
+  })
+
   it('exports a backup file when the save dialog succeeds', async () => {
     const exportPath = join(settingsDir, 'backup.json')
     vi.mocked(dialog.showSaveDialog).mockResolvedValue({
@@ -136,10 +153,17 @@ describe('settings backup service', () => {
 
     const result = await exportSettingsBackup(sampleSettings, '1.0.0')
     expect(result).toBe(exportPath)
+    expect(dialog.showMessageBox).toHaveBeenCalled()
 
     const raw = await readFile(exportPath, 'utf8')
     expect(raw).toContain('"githubToken": "gho_test"')
     expect(raw).toContain('"githubLogin": "octocat"')
+  })
+
+  it('returns null when export warning is cancelled', async () => {
+    vi.mocked(dialog.showMessageBox).mockResolvedValue({ response: 1 } as Electron.MessageBoxReturnValue)
+    await expect(exportSettingsBackup(sampleSettings, '1.0.0')).resolves.toBeNull()
+    expect(dialog.showSaveDialog).not.toHaveBeenCalled()
   })
 
   it('returns null when export is cancelled', async () => {

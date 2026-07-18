@@ -2,8 +2,10 @@ import { readFile, writeFile, mkdir, rename } from 'fs/promises'
 import { join } from 'path'
 import type { AppSettings } from '../shared/ipc'
 import { normalizeAppTheme } from '../shared/ipc'
+import { settingsForDisk } from '../shared/settings-secrets'
 import { getAppDataDir } from './paths'
 import { emitLog } from './git/log-bus'
+import { loadAiApiKey, saveAiApiKey } from './ai/api-key-store'
 
 const SETTINGS_DIR = getAppDataDir()
 const SETTINGS_PATH = join(SETTINGS_DIR, 'settings.json')
@@ -153,22 +155,48 @@ async function readSettingsFile(): Promise<AppSettings | null> {
 
 async function writeSettingsFile(settings: AppSettings): Promise<void> {
   await mkdir(SETTINGS_DIR, { recursive: true })
-  const payload = JSON.stringify(settings, null, 2)
+  const payload = JSON.stringify(settingsForDisk(settings), null, 2)
   await writeFile(SETTINGS_TMP_PATH, payload, 'utf8')
   await rename(SETTINGS_TMP_PATH, SETTINGS_PATH)
 }
 
+async function hydrateAiApiKey(settings: AppSettings): Promise<AppSettings> {
+  const stored = await loadAiApiKey()
+  if (stored?.trim()) {
+    return { ...settings, aiApiKey: stored }
+  }
+
+  // Migrate legacy plaintext key from settings.json into the encrypted store.
+  if (settings.aiApiKey.trim()) {
+    try {
+      await saveAiApiKey(settings.aiApiKey)
+      await writeSettingsFile({ ...settings, aiApiKey: '' })
+      return settings
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      emitLog('app', 'warn', 'Failed to migrate AI API key into OS encryption', message)
+      return settings
+    }
+  }
+
+  return { ...settings, aiApiKey: '' }
+}
+
 export async function loadSettings(): Promise<AppSettings> {
   const loaded = await readSettingsFile()
-  return loaded ?? { ...DEFAULT_SETTINGS }
+  return hydrateAiApiKey(loaded ?? { ...DEFAULT_SETTINGS })
 }
 
 export async function saveSettings(patch: Partial<AppSettings>): Promise<AppSettings> {
   const task = writeChain.then(async () => {
-    const current = (await readSettingsFile()) ?? { ...DEFAULT_SETTINGS }
+    const current = await hydrateAiApiKey((await readSettingsFile()) ?? { ...DEFAULT_SETTINGS })
     const next = normalizeSettings({ ...current, ...patch })
+    if ('aiApiKey' in patch) {
+      await saveAiApiKey(next.aiApiKey)
+    }
     await writeSettingsFile(next)
-    return next
+    const stored = await loadAiApiKey()
+    return { ...next, aiApiKey: stored?.trim() || '' }
   })
   writeChain = task.then(
     () => undefined,

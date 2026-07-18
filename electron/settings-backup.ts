@@ -5,11 +5,13 @@ import {
   serializeSettingsBackup,
   type SettingsBackupFile
 } from '../shared/settings-backup'
+import { settingsForDisk } from '../shared/settings-secrets'
 import type { AppSettings } from '../shared/ipc'
 import { loadSettings, saveSettings } from './settings'
 import { loadGitHubToken, saveGitHubToken } from './github/token-store'
 import { loadBitbucketToken, saveBitbucketToken } from './bitbucket/token-store'
 import { loadGitlabToken, saveGitlabToken } from './gitlab/token-store'
+import { loadAiApiKey, saveAiApiKey } from './ai/api-key-store'
 
 function defaultBackupFilename(): string {
   const date = new Date().toISOString().slice(0, 10)
@@ -23,12 +25,14 @@ export async function buildSettingsBackup(
   const githubToken = await loadGitHubToken()
   const bitbucketToken = await loadBitbucketToken()
   const gitlabToken = await loadGitlabToken()
+  const aiApiKey = settings.aiApiKey.trim() || (await loadAiApiKey()) || ''
   const secrets =
-    githubToken || bitbucketToken || gitlabToken
+    githubToken || bitbucketToken || gitlabToken || aiApiKey
       ? {
           ...(githubToken ? { githubToken } : {}),
           ...(bitbucketToken ? { bitbucketToken } : {}),
-          ...(gitlabToken ? { gitlabToken } : {})
+          ...(gitlabToken ? { gitlabToken } : {}),
+          ...(aiApiKey ? { aiApiKey } : {})
         }
       : undefined
 
@@ -36,7 +40,7 @@ export async function buildSettingsBackup(
     formatVersion: 1,
     exportedAt: new Date().toISOString(),
     appVersion,
-    settings,
+    settings: settingsForDisk(settings),
     secrets
   }
 }
@@ -45,6 +49,19 @@ export async function exportSettingsBackup(
   settings: AppSettings,
   appVersion: string
 ): Promise<string | null> {
+  const confirm = await dialog.showMessageBox({
+    type: 'warning',
+    buttons: ['Export', 'Cancel'],
+    defaultId: 0,
+    cancelId: 1,
+    title: 'Export settings backup',
+    message: 'Settings backups include forge tokens and AI API keys in plaintext JSON.',
+    detail: 'Store the file somewhere private. Do not share or sync it to untrusted locations.'
+  })
+  if (confirm.response !== 0) {
+    return null
+  }
+
   const result = await dialog.showSaveDialog({
     title: 'Export GitFreddo settings',
     defaultPath: defaultBackupFilename(),
@@ -76,6 +93,10 @@ async function restoreIntegrationTokens(secrets: SettingsBackupFile['secrets']):
   if (secrets.gitlabToken) {
     await saveGitlabToken(secrets.gitlabToken)
   }
+
+  if (secrets.aiApiKey !== undefined) {
+    await saveAiApiKey(secrets.aiApiKey)
+  }
 }
 
 export async function importSettingsBackupFromFile(filePath: string): Promise<AppSettings> {
@@ -86,7 +107,13 @@ export async function importSettingsBackupFromFile(filePath: string): Promise<Ap
     throw new Error(parsed.error)
   }
 
-  await saveSettings(parsed.backup.settings)
+  const diskSettings = settingsForDisk(parsed.backup.settings)
+  const legacyAiKey = parsed.backup.settings.aiApiKey?.trim() || ''
+  const aiApiKey = parsed.backup.secrets?.aiApiKey ?? legacyAiKey
+  await saveSettings({
+    ...diskSettings,
+    aiApiKey
+  })
   await restoreIntegrationTokens(parsed.backup.secrets)
   return loadSettings()
 }
