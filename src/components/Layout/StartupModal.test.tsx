@@ -27,7 +27,7 @@ describe('StartupModal', () => {
     )
   })
 
-  it('shows news bullets from NEWS.md', () => {
+  it('shows recent version updates from NEWS.md', () => {
     renderWithProviders(
       <StartupModal
         open
@@ -37,14 +37,19 @@ describe('StartupModal', () => {
       />
     )
 
-    // getStartupNewsItems prefers [Unreleased] when it has bullets, otherwise
-    // falls back to the newest release section (capped at 5).
+    // getStartupNewsUpdates returns the newest non-empty NEWS.md sections
+    // (version labels + bullets, English from the file — not i18n).
+    expect(screen.getByText('Unreleased')).toBeInTheDocument()
+    expect(screen.getByText('0.4.6')).toBeInTheDocument()
+    expect(screen.getByText('0.4.5')).toBeInTheDocument()
     expect(
       screen.getByText(
         /Forge credentials no longer leak to unknown remotes or git hooks/
       )
     ).toBeInTheDocument()
-    expect(screen.getByText(/Tag rename works correctly/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/GitLab OAuth connect works in release installers \(credentials load/)
+    ).toBeInTheDocument()
   })
 
   it('calls onClose when user dismisses the modal', async () => {

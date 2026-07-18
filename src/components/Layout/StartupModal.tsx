@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Modal, ActionButton, Checkbox } from '@/components/Ui/Modal'
-import { getStartupNewsItems } from '@/lib/news/content'
+import { getStartupNewsUpdates } from '@/lib/news/content'
 
 interface StartupModalProps {
   open: boolean
@@ -12,7 +12,7 @@ interface StartupModalProps {
 
 export function StartupModal({ open, onClose, onContinue, onCheckForUpdates }: StartupModalProps) {
   const { t } = useTranslation()
-  const newsItems = getStartupNewsItems()
+  const newsUpdates = getStartupNewsUpdates()
   const [hideFor30Days, setHideFor30Days] = useState(false)
 
   useEffect(() => {
@@ -46,12 +46,21 @@ export function StartupModal({ open, onClose, onContinue, onCheckForUpdates }: S
 
         <section className="rounded-lg border border-gf-border bg-gf-bg-deep p-3">
           <h3 className="text-sm font-semibold text-gf-fg">{t('startup.newsTitle')}</h3>
-          {newsItems.length > 0 ? (
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-gf-fg-subtle">
-              {newsItems.map((item) => (
-                <li key={item}>{item}</li>
+          {newsUpdates.length > 0 ? (
+            <div className="mt-2 max-h-56 space-y-3 overflow-y-auto pr-1">
+              {newsUpdates.map((update) => (
+                <div key={update.version}>
+                  <h4 className="text-xs font-semibold uppercase tracking-wide text-gf-fg-muted">
+                    {update.version}
+                  </h4>
+                  <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-gf-fg-subtle">
+                    {update.items.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
               ))}
-            </ul>
+            </div>
           ) : (
             <p className="mt-1 text-sm text-gf-fg-subtle">{t('startup.newsEmpty')}</p>
           )}
