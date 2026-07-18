@@ -145,6 +145,7 @@ export interface AiCustomInstructions {
   commitMessage?: string
   stashMessage?: string
   conflictResolve?: string
+  analyze?: string
 }
 
 export function normalizeBaseUrl(url: string): string {

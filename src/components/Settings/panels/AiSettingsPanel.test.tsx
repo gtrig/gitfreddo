@@ -46,4 +46,15 @@ describe('AiSettingsPanel', () => {
     await user.click(screen.getByLabelText(/enable ai assist/i))
     expect(onChange).toHaveBeenCalledWith({ aiEnabled: true })
   })
+
+  it('shows an analyze instructions field when AI assist is enabled', () => {
+    renderWithProviders(
+      <AiSettingsPanel
+        form={{ ...defaultMockSettings, aiEnabled: true }}
+        onChange={() => undefined}
+      />
+    )
+
+    expect(screen.getByText('Analyze instructions')).toBeInTheDocument()
+  })
 })

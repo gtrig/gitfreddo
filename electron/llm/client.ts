@@ -61,7 +61,8 @@ export function aiConfigFromSettings(settings: AppSettings): AiClientConfig {
       system: settings.aiSystemInstructions ?? '',
       commitMessage: settings.aiCommitInstructions ?? '',
       stashMessage: settings.aiStashInstructions ?? '',
-      conflictResolve: settings.aiConflictInstructions ?? ''
+      conflictResolve: settings.aiConflictInstructions ?? '',
+      analyze: settings.aiAnalyzeInstructions ?? ''
     }
   }
 }

@@ -28,6 +28,7 @@ const base = {
   aiCommitInstructions: '',
   aiStashInstructions: '',
   aiConflictInstructions: '',
+  aiAnalyzeInstructions: '',
   githubLogin: '',
   githubConnectedAt: null,
   githubSshKeyTitle: '',

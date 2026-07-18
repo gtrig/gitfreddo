@@ -146,6 +146,13 @@ export function AiSettingsPanel({ form, onChange }: PanelProps) {
             placeholder={t('settings.ai.conflictInstructionsPlaceholder')}
             onChange={(value) => onChange({ aiConflictInstructions: value })}
           />
+          <InstructionField
+            label={t('settings.ai.analyzeInstructions')}
+            description={t('settings.ai.analyzeInstructionsDesc')}
+            value={form.aiAnalyzeInstructions}
+            placeholder={t('settings.ai.analyzeInstructionsPlaceholder')}
+            onChange={(value) => onChange({ aiAnalyzeInstructions: value })}
+          />
         </div>
       </div>
         </>

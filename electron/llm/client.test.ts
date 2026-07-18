@@ -12,7 +12,8 @@ describe('aiConfigFromSettings', () => {
       aiSystemInstructions: 'system',
       aiCommitInstructions: 'commit',
       aiStashInstructions: 'stash',
-      aiConflictInstructions: 'conflict'
+      aiConflictInstructions: 'conflict',
+      aiAnalyzeInstructions: 'analyze'
     } as AppSettings
 
     expect(aiConfigFromSettings(settings)).toEqual({
@@ -24,7 +25,8 @@ describe('aiConfigFromSettings', () => {
         system: 'system',
         commitMessage: 'commit',
         stashMessage: 'stash',
-        conflictResolve: 'conflict'
+        conflictResolve: 'conflict',
+        analyze: 'analyze'
       }
     })
   })
@@ -48,7 +50,8 @@ describe('aiFill', () => {
       system: '',
       commitMessage: '',
       stashMessage: '',
-      conflictResolve: ''
+      conflictResolve: '',
+      analyze: ''
     }
   }
 

@@ -142,6 +142,56 @@ describe('buildAiMessages', () => {
     expect(user).toContain('commit message instructions below')
   })
 
+  it('appends analyze instructions when analyzing uncommitted changes', () => {
+    const { user } = buildAiMessages(
+      'analyze_changes',
+      {
+        branch: 'feature/auth',
+        filePaths: ['src/auth.ts'],
+        stagedFilePaths: ['src/auth.ts']
+      },
+      { analyze: 'Prefer fewer commits; call out test gaps in risks.' }
+    )
+    expect(user).toContain('Analyze instructions:')
+    expect(user).toContain('Prefer fewer commits; call out test gaps in risks.')
+    expect(user).toContain('analyze instructions below')
+  })
+
+  it('appends analyze instructions when refining a commit plan', () => {
+    const { user } = buildAiMessages(
+      'refine_commit_plan',
+      {
+        filePaths: ['src/a.ts'],
+        commitPlan: [
+          {
+            summary: 'Add feature A',
+            description: 'Implements A.',
+            files: ['src/a.ts'],
+            rationale: 'Self-contained.'
+          }
+        ],
+        userMessage: 'Keep as one commit.'
+      },
+      { analyze: 'Keep related docs with their feature commits.' }
+    )
+    expect(user).toContain('Analyze instructions:')
+    expect(user).toContain('Keep related docs with their feature commits.')
+  })
+
+  it('appends analyze instructions when analyzing a pull request', () => {
+    const { user } = buildAiMessages(
+      'analyze_pull_request',
+      {
+        prNumber: 7,
+        prTitle: 'Add auth',
+        analysisScope: 'full'
+      },
+      { analyze: 'Focus on security and missing tests.' }
+    )
+    expect(user).toContain('Analyze instructions:')
+    expect(user).toContain('Focus on security and missing tests.')
+  })
+
   it('asks for JSON pull request title and body with branch context', () => {
     const { system, user } = buildAiMessages(
       'pull_request',

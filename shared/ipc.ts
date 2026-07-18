@@ -47,6 +47,7 @@ export interface AppSettings {
   aiCommitInstructions: string
   aiStashInstructions: string
   aiConflictInstructions: string
+  aiAnalyzeInstructions: string
   githubLogin: string
   githubConnectedAt: number | null
   githubSshKeyTitle: string

@@ -9,9 +9,14 @@ function appendCustomInstructions(base: string, custom?: string): string {
 }
 
 const COMMIT_MESSAGE_INSTRUCTIONS_LABEL = 'Commit message instructions:'
+const ANALYZE_INSTRUCTIONS_LABEL = 'Analyze instructions:'
 
 function appendCommitMessageInstructions(base: string, custom?: string): string {
   return appendLabeledInstructions(base, COMMIT_MESSAGE_INSTRUCTIONS_LABEL, custom)
+}
+
+function appendAnalyzeInstructions(base: string, custom?: string): string {
+  return appendLabeledInstructions(base, ANALYZE_INSTRUCTIONS_LABEL, custom)
 }
 
 function appendLabeledInstructions(base: string, label: string, custom?: string): string {
@@ -134,46 +139,50 @@ export function buildAiMessages(
       break
     case 'analyze_changes':
       user = appendCommitMessageInstructions(
-        'Analyze the uncommitted working tree changes and propose an ordered commit plan.\n' +
-          (branch ? `Branch: ${branch}\n` : '') +
-          (stagedFiles ? `Staged files:\n${stagedFiles}\n` : '') +
-          (unstagedFiles ? `Unstaged files:\n${unstagedFiles}\n` : '') +
-          (!stagedFiles && !unstagedFiles && files ? `Changed files:\n${files}\n` : '') +
-          diffBlock +
-          'Return ONLY JSON with this shape:\n' +
-          '{\n' +
-          '  "summary": "One short paragraph of what changed overall",\n' +
-          '  "keyChanges": "Bullet-style notes grouped by area or concern",\n' +
-          '  "risks": "Review notes or risks; say briefly if none",\n' +
-          '  "features": [\n' +
-          '    {\n' +
-          '      "title": "Short feature or concern label (2-4 words)",\n' +
-          '      "commits": [1, 2]\n' +
-          '    }\n' +
-          '  ],\n' +
-          '  "commits": [\n' +
-          '    {\n' +
-          '      "summary": "imperative subject line (≤72 chars)",\n' +
-          '      "description": "1-3 sentences explaining what changed and why",\n' +
-          '      "files": ["exact/path/from/changed/list"],\n' +
-          '      "rationale": "Why this commit is self-contained and its place in the sequence"\n' +
-          '    }\n' +
-          '  ]\n' +
-          '}\n' +
-          'Rules:\n' +
-          '- Propose one or more commits split by feature, fix, or concern when that improves history\n' +
-          '- Include a features array that groups proposed commits by feature or concern; use 1-based commit indices from the commits array\n' +
-          '- Each commit should appear in exactly one feature group when multiple commits exist; use one feature when there is only one commit\n' +
-          '- Feature titles should be short labels (2-4 words) such as "Auth", "API layer", or "Docs"\n' +
-          '- Each commit must be self-contained: after each commit in order, the repo should still build and behave correctly\n' +
-          '- Order commits with dependencies first (shared types/utilities before consumers, refactors before features that rely on them)\n' +
-          '- Every changed file must appear in exactly one commit files array\n' +
-          '- Use exact file paths from the changed files lists\n' +
-          '- If all changes belong together, return a single-element commits array\n' +
-          '- Base analysis and commit messages on the diff when provided\n' +
-          '- Every commit must include a non-empty description explaining the change\n' +
-          '- Follow the commit message instructions below for every proposed commit subject and body\n' +
-          '- You may use a single "message" field instead of summary/description if it contains subject, blank line, then body',
+        appendAnalyzeInstructions(
+          'Analyze the uncommitted working tree changes and propose an ordered commit plan.\n' +
+            (branch ? `Branch: ${branch}\n` : '') +
+            (stagedFiles ? `Staged files:\n${stagedFiles}\n` : '') +
+            (unstagedFiles ? `Unstaged files:\n${unstagedFiles}\n` : '') +
+            (!stagedFiles && !unstagedFiles && files ? `Changed files:\n${files}\n` : '') +
+            diffBlock +
+            'Return ONLY JSON with this shape:\n' +
+            '{\n' +
+            '  "summary": "One short paragraph of what changed overall",\n' +
+            '  "keyChanges": "Bullet-style notes grouped by area or concern",\n' +
+            '  "risks": "Review notes or risks; say briefly if none",\n' +
+            '  "features": [\n' +
+            '    {\n' +
+            '      "title": "Short feature or concern label (2-4 words)",\n' +
+            '      "commits": [1, 2]\n' +
+            '    }\n' +
+            '  ],\n' +
+            '  "commits": [\n' +
+            '    {\n' +
+            '      "summary": "imperative subject line (≤72 chars)",\n' +
+            '      "description": "1-3 sentences explaining what changed and why",\n' +
+            '      "files": ["exact/path/from/changed/list"],\n' +
+            '      "rationale": "Why this commit is self-contained and its place in the sequence"\n' +
+            '    }\n' +
+            '  ]\n' +
+            '}\n' +
+            'Rules:\n' +
+            '- Propose one or more commits split by feature, fix, or concern when that improves history\n' +
+            '- Include a features array that groups proposed commits by feature or concern; use 1-based commit indices from the commits array\n' +
+            '- Each commit should appear in exactly one feature group when multiple commits exist; use one feature when there is only one commit\n' +
+            '- Feature titles should be short labels (2-4 words) such as "Auth", "API layer", or "Docs"\n' +
+            '- Each commit must be self-contained: after each commit in order, the repo should still build and behave correctly\n' +
+            '- Order commits with dependencies first (shared types/utilities before consumers, refactors before features that rely on them)\n' +
+            '- Every changed file must appear in exactly one commit files array\n' +
+            '- Use exact file paths from the changed files lists\n' +
+            '- If all changes belong together, return a single-element commits array\n' +
+            '- Base analysis and commit messages on the diff when provided\n' +
+            '- Every commit must include a non-empty description explaining the change\n' +
+            '- Follow the analyze instructions below for summary, risks, features, and how to split commits\n' +
+            '- Follow the commit message instructions below for every proposed commit subject and body\n' +
+            '- You may use a single "message" field instead of summary/description if it contains subject, blank line, then body',
+          instructions.analyze
+        ),
         instructions.commitMessage
       )
       break
@@ -206,43 +215,47 @@ export function buildAiMessages(
           : null
       const request = context.userMessage?.trim()
       user = appendCommitMessageInstructions(
-        'Refine the proposed commit plan based on the user request.\n' +
-          (branch ? `Branch: ${branch}\n` : '') +
-          (files ? `All changed files:\n${files}\n` : '') +
-          (planBlock ? `Current commit plan:\n${planBlock}\n` : '') +
-          (selected ? `Selected commits (1-based indices the user is referring to): ${selected}\n` : '') +
-          (history ? `Previous conversation:\n${history}\n` : '') +
-          (request ? `Latest user request:\n${request}\n` : '') +
-          'Return ONLY JSON with this shape:\n' +
-          '{\n' +
-          '  "message": "Brief reply explaining what you changed",\n' +
-          '  "features": [\n' +
-          '    {\n' +
-          '      "title": "Short feature or concern label (2-4 words)",\n' +
-          '      "commits": [1, 2]\n' +
-          '    }\n' +
-          '  ],\n' +
-          '  "commits": [\n' +
-          '    {\n' +
-          '      "summary": "imperative subject line (≤72 chars)",\n' +
-          '      "description": "1-3 sentences explaining what changed and why",\n' +
-          '      "files": ["exact/path/from/changed/list"],\n' +
-          '      "rationale": "Why this commit is self-contained and its place in the sequence"\n' +
-          '    }\n' +
-          '  ]\n' +
-          '}\n' +
-          'Rules:\n' +
-          '- Apply the user request to the current plan; common requests include merging selected commits, splitting one commit, reordering, or regrouping by concern\n' +
-          '- Include an updated features array grouping commits by feature or concern using 1-based commit indices\n' +
-          '- When merging commits, combine their files into one commit with a unified summary and description\n' +
-          '- When the user selected specific commits, focus changes on those unless the request affects the whole plan\n' +
-          '- Every changed file must appear in exactly one commit files array\n' +
-          '- Use exact file paths from the changed files list\n' +
-          '- Order commits with dependencies first\n' +
-          '- Keep commits self-contained and logically ordered\n' +
-          '- "message" should briefly describe what you did in plain language\n' +
-          '- Follow the commit message instructions below for every proposed commit subject and body\n' +
-          '- You may use a single "message" field per commit instead of summary/description if it contains subject, blank line, then body',
+        appendAnalyzeInstructions(
+          'Refine the proposed commit plan based on the user request.\n' +
+            (branch ? `Branch: ${branch}\n` : '') +
+            (files ? `All changed files:\n${files}\n` : '') +
+            (planBlock ? `Current commit plan:\n${planBlock}\n` : '') +
+            (selected ? `Selected commits (1-based indices the user is referring to): ${selected}\n` : '') +
+            (history ? `Previous conversation:\n${history}\n` : '') +
+            (request ? `Latest user request:\n${request}\n` : '') +
+            'Return ONLY JSON with this shape:\n' +
+            '{\n' +
+            '  "message": "Brief reply explaining what you changed",\n' +
+            '  "features": [\n' +
+            '    {\n' +
+            '      "title": "Short feature or concern label (2-4 words)",\n' +
+            '      "commits": [1, 2]\n' +
+            '    }\n' +
+            '  ],\n' +
+            '  "commits": [\n' +
+            '    {\n' +
+            '      "summary": "imperative subject line (≤72 chars)",\n' +
+            '      "description": "1-3 sentences explaining what changed and why",\n' +
+            '      "files": ["exact/path/from/changed/list"],\n' +
+            '      "rationale": "Why this commit is self-contained and its place in the sequence"\n' +
+            '    }\n' +
+            '  ]\n' +
+            '}\n' +
+            'Rules:\n' +
+            '- Apply the user request to the current plan; common requests include merging selected commits, splitting one commit, reordering, or regrouping by concern\n' +
+            '- Include an updated features array grouping commits by feature or concern using 1-based commit indices\n' +
+            '- When merging commits, combine their files into one commit with a unified summary and description\n' +
+            '- When the user selected specific commits, focus changes on those unless the request affects the whole plan\n' +
+            '- Every changed file must appear in exactly one commit files array\n' +
+            '- Use exact file paths from the changed files list\n' +
+            '- Order commits with dependencies first\n' +
+            '- Keep commits self-contained and logically ordered\n' +
+            '- "message" should briefly describe what you did in plain language\n' +
+            '- Follow the analyze instructions below for summary, risks, features, and how to split commits\n' +
+            '- Follow the commit message instructions below for every proposed commit subject and body\n' +
+            '- You may use a single "message" field per commit instead of summary/description if it contains subject, blank line, then body',
+          instructions.analyze
+        ),
         instructions.commitMessage
       )
       break
@@ -330,32 +343,36 @@ export function buildAiMessages(
               )
               .join('\n')
           : null
-      user = appendCustomInstructions(
-        'Analyze this pull request to help a reviewer understand the change.\n' +
-          (context.prNumber != null ? `Pull request #${context.prNumber}\n` : '') +
-          (prTitle ? `Title: ${prTitle}\n` : '') +
-          (context.headBranch ? `Head branch: ${context.headBranch}\n` : '') +
-          (context.baseBranch ? `Base branch: ${context.baseBranch}\n` : '') +
-          `Analysis scope: ${scope}\n` +
-          (files ? `Files in scope:\n${files}\n` : '') +
-          (fileStats ? `File stats:\n${fileStats}\n` : '') +
-          (commitList ? `Commits:\n${commitList}\n` : '') +
-          (prBody ? `Description:\n${prBody}\n` : '') +
-          diffBlock +
-          'Return ONLY JSON with this shape:\n' +
-          '{\n' +
-          '  "summary": "One short paragraph overview",\n' +
-          '  "keyChanges": "Bullet-style notes grouped by area or concern",\n' +
-          '  "risks": "Review risks, regressions, or missing tests; say briefly if none",\n' +
-          '  "reviewFocus": "What to scrutinize first",\n' +
-          '  "testingNotes": "How to validate the change"\n' +
-          '}\n' +
-          'Rules:\n' +
-          '- Base the analysis on the diff when provided\n' +
-          '- Focus only on files in scope when scope is partial\n' +
-          '- Be concrete and reviewer-oriented\n' +
-          '- Use plain text; markdown lists are fine inside string fields',
-        instructions.system
+      user = appendAnalyzeInstructions(
+        appendCustomInstructions(
+          'Analyze this pull request to help a reviewer understand the change.\n' +
+            (context.prNumber != null ? `Pull request #${context.prNumber}\n` : '') +
+            (prTitle ? `Title: ${prTitle}\n` : '') +
+            (context.headBranch ? `Head branch: ${context.headBranch}\n` : '') +
+            (context.baseBranch ? `Base branch: ${context.baseBranch}\n` : '') +
+            `Analysis scope: ${scope}\n` +
+            (files ? `Files in scope:\n${files}\n` : '') +
+            (fileStats ? `File stats:\n${fileStats}\n` : '') +
+            (commitList ? `Commits:\n${commitList}\n` : '') +
+            (prBody ? `Description:\n${prBody}\n` : '') +
+            diffBlock +
+            'Return ONLY JSON with this shape:\n' +
+            '{\n' +
+            '  "summary": "One short paragraph overview",\n' +
+            '  "keyChanges": "Bullet-style notes grouped by area or concern",\n' +
+            '  "risks": "Review risks, regressions, or missing tests; say briefly if none",\n' +
+            '  "reviewFocus": "What to scrutinize first",\n' +
+            '  "testingNotes": "How to validate the change"\n' +
+            '}\n' +
+            'Rules:\n' +
+            '- Base the analysis on the diff when provided\n' +
+            '- Focus only on files in scope when scope is partial\n' +
+            '- Be concrete and reviewer-oriented\n' +
+            '- Use plain text; markdown lists are fine inside string fields\n' +
+            '- Follow the analyze instructions below',
+          instructions.system
+        ),
+        instructions.analyze
       )
       break
     }
@@ -380,33 +397,37 @@ export function buildAiMessages(
               .join('\n')
           : null
       const request = context.userMessage?.trim()
-      user = appendCustomInstructions(
-        'Refine the pull request review analysis based on the user request.\n' +
-          (context.prNumber != null ? `Pull request #${context.prNumber}\n` : '') +
-          (context.prTitle ? `Title: ${context.prTitle}\n` : '') +
-          `Analysis scope: ${scope}\n` +
-          (files ? `Files in scope:\n${files}\n` : '') +
-          (analysisBlock ? `${analysisBlock}\n` : '') +
-          diffBlock +
-          (history ? `Previous conversation:\n${history}\n` : '') +
-          (request ? `Latest user request:\n${request}\n` : '') +
-          'Return ONLY JSON with this shape:\n' +
-          '{\n' +
-          '  "message": "Brief reply in plain language about what you changed or answered",\n' +
-          '  "analysis": {\n' +
-          '    "summary": "One short paragraph overview",\n' +
-          '    "keyChanges": "Bullet-style notes grouped by area or concern",\n' +
-          '    "risks": "Review risks, regressions, or missing tests; say briefly if none",\n' +
-          '    "reviewFocus": "What to scrutinize first",\n' +
-          '    "testingNotes": "How to validate the change"\n' +
-          '  }\n' +
-          '}\n' +
-          'Rules:\n' +
-          '- Apply the user request to the current analysis\n' +
-          '- Keep analysis aligned with the files in scope unless the user expands scope\n' +
-          '- "message" should answer the user directly and briefly\n' +
-          '- Update only the analysis fields that the request affects when possible',
-        instructions.system
+      user = appendAnalyzeInstructions(
+        appendCustomInstructions(
+          'Refine the pull request review analysis based on the user request.\n' +
+            (context.prNumber != null ? `Pull request #${context.prNumber}\n` : '') +
+            (context.prTitle ? `Title: ${context.prTitle}\n` : '') +
+            `Analysis scope: ${scope}\n` +
+            (files ? `Files in scope:\n${files}\n` : '') +
+            (analysisBlock ? `${analysisBlock}\n` : '') +
+            diffBlock +
+            (history ? `Previous conversation:\n${history}\n` : '') +
+            (request ? `Latest user request:\n${request}\n` : '') +
+            'Return ONLY JSON with this shape:\n' +
+            '{\n' +
+            '  "message": "Brief reply in plain language about what you changed or answered",\n' +
+            '  "analysis": {\n' +
+            '    "summary": "One short paragraph overview",\n' +
+            '    "keyChanges": "Bullet-style notes grouped by area or concern",\n' +
+            '    "risks": "Review risks, regressions, or missing tests; say briefly if none",\n' +
+            '    "reviewFocus": "What to scrutinize first",\n' +
+            '    "testingNotes": "How to validate the change"\n' +
+            '  }\n' +
+            '}\n' +
+            'Rules:\n' +
+            '- Apply the user request to the current analysis\n' +
+            '- Keep analysis aligned with the files in scope unless the user expands scope\n' +
+            '- "message" should answer the user directly and briefly\n' +
+            '- Update only the analysis fields that the request affects when possible\n' +
+            '- Follow the analyze instructions below',
+          instructions.system
+        ),
+        instructions.analyze
       )
       break
     }

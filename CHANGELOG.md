@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-18 — Analyze custom instructions setting
+
+- **Why:** Users could customize commit/stash/conflict AI prompts, but Analyze (working tree and PR review) had no dedicated instruction field.
+- **What:** Added `aiAnalyzeInstructions` across settings types, persistence, AI config mapping, Settings → AI UI (en/el), and prompts for `analyze_changes`, `refine_commit_plan`, `analyze_pull_request`, and `refine_pull_request_analysis` (commit-message style still uses commit instructions).
+
 ### 2026-07-18 — Architecture review remediations (security, bugs, state)
 
 - **Why:** Architecture audit found credential exfiltration risks, a broken tag rename, conflict Continue UX gaps, weak IPC path sandboxing, plaintext AI keys, workspace state leaks, and unsynchronized mutating git ops.

@@ -212,7 +212,10 @@
       "stashInstructionsPlaceholder": "Brief stash summaries…",
       "conflictInstructions": "Conflict instructions",
       "conflictInstructionsDesc": "How to resolve merge conflicts.",
-      "conflictInstructionsPlaceholder": "Prefer minimal, correct merges…"
+      "conflictInstructionsPlaceholder": "Prefer minimal, correct merges…",
+      "analyzeInstructions": "Analyze instructions",
+      "analyzeInstructionsDesc": "How to analyze changes and pull requests (split commits, risks, review focus).",
+      "analyzeInstructionsPlaceholder": "Prefer fewer commits; call out missing tests…"
     },
     "github": {
       "title": "GitHub",

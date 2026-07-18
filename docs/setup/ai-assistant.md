@@ -38,6 +38,7 @@ Customize how the AI responds:
 | Commit instructions | Style and format for commit messages |
 | Stash instructions | Style for stash messages |
 | Conflict instructions | How to resolve merge conflicts |
+| Analyze instructions | How to analyze working-tree changes and pull requests |
 
 Leave blank to use sensible defaults.
 

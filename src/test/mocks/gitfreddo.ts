@@ -20,6 +20,7 @@ export const defaultMockSettings: AppSettings = {
   aiCommitInstructions: '',
   aiStashInstructions: '',
   aiConflictInstructions: '',
+  aiAnalyzeInstructions: '',
   githubLogin: '',
   githubConnectedAt: null,
   githubSshKeyTitle: '',

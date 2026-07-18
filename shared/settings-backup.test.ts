@@ -27,6 +27,7 @@ const sampleSettings: AppSettings = {
   aiCommitInstructions: '',
   aiStashInstructions: '',
   aiConflictInstructions: '',
+  aiAnalyzeInstructions: '',
   githubLogin: 'octocat',
   githubConnectedAt: 1_700_000_000_000,
   githubSshKeyTitle: '',

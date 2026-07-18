@@ -70,6 +70,7 @@ const sampleSettings = {
   aiCommitInstructions: '',
   aiStashInstructions: '',
   aiConflictInstructions: '',
+  aiAnalyzeInstructions: '',
   githubLogin: 'octocat',
   githubConnectedAt: 1,
   githubSshKeyTitle: 'GitFreddo key',

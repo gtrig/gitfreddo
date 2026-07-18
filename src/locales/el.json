@@ -212,7 +212,10 @@
       "stashInstructionsPlaceholder": "Σύντομες περιλήψεις stash…",
       "conflictInstructions": "Οδηγίες συγκρούσεων",
       "conflictInstructionsDesc": "Πώς να επιλύονται συγκρούσεις συγχώνευσης.",
-      "conflictInstructionsPlaceholder": "Προτίμησε ελάχιστες, σωστές συγχωνεύσεις…"
+      "conflictInstructionsPlaceholder": "Προτίμησε ελάχιστες, σωστές συγχωνεύσεις…",
+      "analyzeInstructions": "Οδηγίες ανάλυσης",
+      "analyzeInstructionsDesc": "Πώς να αναλύονται αλλαγές και pull requests (διαίρεση commits, κίνδυνοι, εστίαση review).",
+      "analyzeInstructionsPlaceholder": "Προτίμησε λιγότερα commits· επισήμανε ελλείποντα tests…"
     },
     "github": {
       "title": "GitHub",

@@ -26,6 +26,7 @@ const baseSettings = {
   aiCommitInstructions: '',
   aiStashInstructions: '',
   aiConflictInstructions: '',
+  aiAnalyzeInstructions: '',
   githubLogin: 'octo',
   githubConnectedAt: 1,
   githubSshKeyTitle: '',
