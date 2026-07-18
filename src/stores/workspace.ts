@@ -11,6 +11,7 @@ import {
   clearBranchVisibilitySnapshot,
   migrateBranchVisibilitySnapshot
 } from '@/stores/branchVisibility'
+import { useCommitSearchStore } from '@/stores/commitSearch'
 import { appLog } from '@/stores/logs'
 import {
   orderPathsForRestore,
@@ -203,8 +204,11 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     set({
       tabs: connectedTabs,
       activePath: activeCanonical,
+      prDetailNumber: null,
+      prDetailRepository: null,
       ...syncLegacyFields(connectedTabs, activeCanonical)
     })
+    useCommitSearchStore.setState({ open: false, query: '' })
     appLog('info', 'Switched workspace', activeCanonical)
     restoreSelectionForWorkspace(activeCanonical)
     restoreBranchVisibilityForWorkspace(activeCanonical)

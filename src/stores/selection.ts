@@ -267,6 +267,7 @@ interface SelectionSnapshot {
   commitDetailHash: string | null
   diffMode: SelectionState['diffMode']
   compareCommitRange: SelectionState['compareCommitRange']
+  pendingAiProposals: Record<string, AiConflictResolutionProposal[]>
 }
 
 const EMPTY_SNAPSHOT: SelectionSnapshot = {
@@ -282,7 +283,8 @@ const EMPTY_SNAPSHOT: SelectionSnapshot = {
   fileHistoryPath: null,
   commitDetailHash: null,
   diffMode: null,
-  compareCommitRange: null
+  compareCommitRange: null,
+  pendingAiProposals: {}
 }
 
 const snapshots = new Map<string, SelectionSnapshot>()
@@ -301,7 +303,8 @@ function snapshotFromState(state: SelectionState): SelectionSnapshot {
     fileHistoryPath: state.fileHistoryPath,
     commitDetailHash: state.commitDetailHash,
     diffMode: state.diffMode,
-    compareCommitRange: state.compareCommitRange
+    compareCommitRange: state.compareCommitRange,
+    pendingAiProposals: state.pendingAiProposals
   }
 }
 

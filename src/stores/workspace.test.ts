@@ -110,8 +110,12 @@ describe('useWorkspaceStore switchWorkspace', () => {
       tabs: [tab('/a'), tab('/b', false)],
       activePath: '/a',
       workspacePath: '/a',
-      connected: true
+      connected: true,
+      prDetailNumber: 7,
+      prDetailRepository: { owner: 'acme', repo: 'app' }
     })
+    const { useCommitSearchStore } = await import('@/stores/commitSearch')
+    useCommitSearchStore.setState({ open: true, query: 'old-repo' })
 
     await useWorkspaceStore.getState().switchWorkspace('/b')
 
@@ -119,6 +123,10 @@ describe('useWorkspaceStore switchWorkspace', () => {
     expect(state.activePath).toBe('/b')
     expect(state.connected).toBe(true)
     expect(state.tabs.find((item) => item.path === '/b')?.connected).toBe(true)
+    expect(state.prDetailNumber).toBeNull()
+    expect(state.prDetailRepository).toBeNull()
+    expect(useCommitSearchStore.getState().open).toBe(false)
+    expect(useCommitSearchStore.getState().query).toBe('')
     expect(window.gitfreddo.switchWorkspace).toHaveBeenCalledWith('/b')
   })
 

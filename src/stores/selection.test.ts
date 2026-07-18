@@ -138,11 +138,28 @@ describe('selection workspace snapshots', () => {
   })
 
   it('captures and restores selection per workspace path', () => {
+    useSelectionStore.getState().setPendingAiProposals('conflict.ts', [
+      { hunkId: 0, text: 'resolved', analysis: '', confidence: 80 }
+    ])
     captureSelectionForWorkspace('/a')
-    useSelectionStore.setState({ selectedCommitHashes: [], selectedCommitHash: null, timelineSelection: null })
+    useSelectionStore.setState({
+      selectedCommitHashes: [],
+      selectedCommitHash: null,
+      timelineSelection: null,
+      pendingAiProposals: { other: [] }
+    })
 
     restoreSelectionForWorkspace('/a')
     expect(useSelectionStore.getState().selectedCommitHashes).toEqual(['hash1'])
+    expect(useSelectionStore.getState().pendingAiProposals['conflict.ts']).toHaveLength(1)
+  })
+
+  it('clears AI proposals when restoring a workspace with no snapshot', () => {
+    useSelectionStore.getState().setPendingAiProposals('leak.ts', [
+      { hunkId: 0, text: 'x', analysis: '', confidence: 1 }
+    ])
+    restoreSelectionForWorkspace('/empty')
+    expect(useSelectionStore.getState().pendingAiProposals).toEqual({})
   })
 
   it('migrates snapshots when a tab path changes', () => {
