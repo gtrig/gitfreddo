@@ -122,10 +122,10 @@ After substantive work, update **both** logs before ending the turn (skip for pu
 
 ### NEWS.md (startup modal "Latest News")
 - Same tag sections as changelog: `[Unreleased]` then `## [X.Y.Z]` (newest first)
-- Bullets are **short, user-facing highlights** — not internal commit notes
+- Bullets are **short, user-facing highlights** — not internal commit notes (no i18n; English from this file)
 - When a user-visible feature ships, add a bullet under `[Unreleased]` (or update existing)
 - Skip pure refactors, tests-only, infra unless user would care on startup
-- Mentally cap at ~3–5 bullets; trim or fold older ones when promoting on release
+- Keep each version section short; the modal shows the newest ~3 non-empty sections
 - On release tag: move/promote `[Unreleased]` news into `## [X.Y.Z]`
 
 ## Useful Commands

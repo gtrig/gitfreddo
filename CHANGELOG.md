@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-18 — Startup modal shows recent NEWS.md versions
+
+- **Why:** Latest News only flattened one section; users should see updates from the last few versions without maintaining i18n copies.
+- **What:** `parseNewsVersionUpdates` returns the newest non-empty `NEWS.md` sections; StartupModal lists each version label with its bullets (scrollable). Content stays English from `NEWS.md`.
+
 ### 2026-07-18 — Analyze custom instructions setting
 
 - **Why:** Users could customize commit/stash/conflict AI prompts, but Analyze (working tree and PR review) had no dedicated instruction field.
