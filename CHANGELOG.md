@@ -7,6 +7,8 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+## [0.4.7] - 2026-07-18
+
 ### 2026-07-18 — Startup modal shows recent NEWS.md versions
 
 - **Why:** Latest News only flattened one section; users should see updates from the last few versions without maintaining i18n copies.
@@ -498,6 +500,7 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 - Git config editor and `.gitignore` / `.gitattributes` editor
 - Linux (AppImage, deb) and Windows (NSIS) installers via GitHub Actions
 
+[0.4.7]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.7
 [0.4.6]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.6
 [0.4.5]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.5
 [0.4.4]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.4

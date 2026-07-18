@@ -39,7 +39,7 @@ describe('StartupModal', () => {
 
     // getStartupNewsUpdates returns the newest non-empty NEWS.md sections
     // (version labels + bullets, English from the file — not i18n).
-    expect(screen.getByText('Unreleased')).toBeInTheDocument()
+    expect(screen.getByText('0.4.7')).toBeInTheDocument()
     expect(screen.getByText('0.4.6')).toBeInTheDocument()
     expect(screen.getByText('0.4.5')).toBeInTheDocument()
     expect(

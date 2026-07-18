@@ -5,6 +5,8 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+## [0.4.7]
+
 - Latest News on startup lists highlights from recent versions (pulled from NEWS.md).
 - Customize Analyze with AI via Settings → AI → Analyze instructions (working-tree commit plans and pull request review).
 - Forge credentials no longer leak to unknown remotes or git hooks; AI API keys stay encrypted and out of normal settings responses.
