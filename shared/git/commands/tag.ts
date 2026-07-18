@@ -1,3 +1,4 @@
+import { endOfOptionsArg } from './_common'
 import { defineCommand } from './_types'
 
 const TAG_LIST_FORMAT = [
@@ -31,16 +32,15 @@ export function buildTagCreateArgs({ name, target, message, sign }: TagCreatePar
   if (sign) args.push('-s')
   const trimmedMessage = message?.trim()
   if (trimmedMessage) {
-    args.push('-a', name, '-m', trimmedMessage)
-  } else {
-    args.push(name)
+    args.push('-a', '-m', trimmedMessage)
   }
+  args.push(...endOfOptionsArg(name))
   if (target?.trim()) args.push(target.trim())
   return args
 }
 
 export function buildTagDeleteArgs(name: string): string[] {
-  return ['tag', '-d', name]
+  return ['tag', '-d', ...endOfOptionsArg(name)]
 }
 
 export interface TagRenameParams {
@@ -48,8 +48,14 @@ export interface TagRenameParams {
   newName: string
 }
 
-export function buildTagRenameArgs({ oldName, newName }: TagRenameParams): string[] {
-  return ['tag', oldName, newName]
+/** Create `newName` pointing at the same object as `oldName` (first step of rename). */
+export function buildTagRenameCreateArgs({ oldName, newName }: TagRenameParams): string[] {
+  return ['tag', '--end-of-options', newName, oldName]
+}
+
+/** Delete the old tag name after create (second step of rename). */
+export function buildTagRenameDeleteArgs(oldName: string): string[] {
+  return buildTagDeleteArgs(oldName)
 }
 
 export const tagList = defineCommand({
@@ -70,8 +76,14 @@ export const tagDelete = defineCommand({
   buildArgs: (name: string) => buildTagDeleteArgs(name)
 })
 
-export const tagRename = defineCommand({
-  id: 'tag.rename',
+export const tagRenameCreate = defineCommand({
+  id: 'tag.rename-create',
   subcommand: 'tag',
-  buildArgs: buildTagRenameArgs
+  buildArgs: buildTagRenameCreateArgs
+})
+
+export const tagRenameDelete = defineCommand({
+  id: 'tag.rename-delete',
+  subcommand: 'tag',
+  buildArgs: (oldName: string) => buildTagRenameDeleteArgs(oldName)
 })

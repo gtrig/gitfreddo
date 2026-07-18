@@ -142,7 +142,7 @@ describe('tagCreate', () => {
     const spy = vi.spyOn(gitRunner, 'runGitOrThrow').mockResolvedValue('')
     await tagCreate(repoDir, 'git', 'v-sign-test', 'HEAD', 'Signed release', true)
     expect(spy).toHaveBeenCalledWith(
-      ['tag', '-s', '-a', 'v-sign-test', '-m', 'Signed release', 'HEAD'],
+      ['tag', '-s', '-a', '-m', 'Signed release', '--end-of-options', 'v-sign-test', 'HEAD'],
       expect.objectContaining({ cwd: repoDir })
     )
   })
@@ -157,7 +157,7 @@ describe('tagCreate', () => {
     const spy = vi.spyOn(gitRunner, 'runGitOrThrow').mockResolvedValue('')
     await tagCreate(repoDir, 'git', 'v-light', 'HEAD')
     expect(spy).toHaveBeenCalledWith(
-      ['tag', 'v-light', 'HEAD'],
+      ['tag', '--end-of-options', 'v-light', 'HEAD'],
       expect.objectContaining({ cwd: repoDir })
     )
   })
@@ -225,7 +225,10 @@ describe('tagDelete', () => {
   it('deletes a local tag', async () => {
     const spy = vi.spyOn(gitRunner, 'runGitOrThrow').mockResolvedValue('')
     await tagDelete(repoDir, 'git', 'v1.0.0')
-    expect(spy).toHaveBeenCalledWith(['tag', '-d', 'v1.0.0'], expect.objectContaining({ cwd: repoDir }))
+    expect(spy).toHaveBeenCalledWith(
+      ['tag', '-d', '--end-of-options', 'v1.0.0'],
+      expect.objectContaining({ cwd: repoDir })
+    )
   })
 
   it('deletes a remote tag without deleting the local copy', async () => {
@@ -279,19 +282,24 @@ describe('tagPush and tagRename', () => {
     }
   })
 
-  it('renames a local tag', async () => {
+  it('renames a local tag by creating the new name then deleting the old', async () => {
     const repoDir = mkdtempSync(join(tmpdir(), 'gf-tag-rename-'))
     try {
       initRepo(repoDir)
-      const spy = vi.spyOn(gitRunner, 'runGitOrThrow').mockResolvedValue('')
+      const head = (await runGitOrThrow(['rev-parse', 'HEAD'], { cwd: repoDir })).trim()
+      await runGitOrThrow(['tag', 'v-old', head], { cwd: repoDir })
+
       await tagRename(repoDir, 'git', 'v-old', 'v-new')
-      expect(spy).toHaveBeenCalledWith(
-        ['tag', 'v-old', 'v-new'],
-        expect.objectContaining({ cwd: repoDir })
-      )
+
+      const tags = (await runGitOrThrow(['tag'], { cwd: repoDir })).trim().split('\n')
+      expect(tags).toContain('v-new')
+      expect(tags).not.toContain('v-old')
+      const newTarget = (
+        await runGitOrThrow(['rev-parse', 'refs/tags/v-new'], { cwd: repoDir })
+      ).trim()
+      expect(newTarget).toBe(head)
     } finally {
       rmSync(repoDir, { recursive: true, force: true })
-      vi.restoreAllMocks()
     }
   })
 })

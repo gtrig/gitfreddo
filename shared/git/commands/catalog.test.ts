@@ -85,7 +85,7 @@ import {
   buildTagCreateArgs,
   buildTagDeleteArgs,
   buildTagListArgs,
-  buildTagRenameArgs
+  buildTagRenameCreateArgs
 } from './tag'
 import {
   buildWorktreeAddArgs,
@@ -242,7 +242,8 @@ describe('GIT_COMMAND_REGISTRY', () => {
       'tag.list': v,
       'tag.create': { name: 'v1' },
       'tag.delete': 'v1',
-      'tag.rename': { oldName: 'v1', newName: 'v2' },
+      'tag.rename-create': { oldName: 'v1', newName: 'v2' },
+      'tag.rename-delete': 'v1',
       'worktree.list': v,
       'worktree.add': { path: '/tmp/wt' },
       'worktree.remove': { path: '/tmp/wt' },
@@ -325,7 +326,12 @@ describe('command argv builders', () => {
 
   it('builds remote args', () => {
     expect(buildRemoteListArgs()).toEqual(['remote', '-v'])
-    expect(buildRemoteGetUrlArgs('origin')).toEqual(['remote', 'get-url', 'origin'])
+    expect(buildRemoteGetUrlArgs('origin')).toEqual([
+      'remote',
+      'get-url',
+      '--end-of-options',
+      'origin'
+    ])
     expect(buildRemoteAddArgs({ name: 'origin', url: 'https://example.com' })).toContain('add')
     expect(buildRemoteRemoveArgs('origin')).toContain('remove')
     expect(buildRemoteRenameArgs({ oldName: 'a', newName: 'b' })).toContain('rename')
@@ -364,7 +370,12 @@ describe('command argv builders', () => {
     expect(buildTagListArgs()).toContain('for-each-ref')
     expect(buildTagCreateArgs({ name: 'v1', message: 'release' })).toContain('-a')
     expect(buildTagDeleteArgs('v1')).toContain('-d')
-    expect(buildTagRenameArgs({ oldName: 'v1', newName: 'v2' })).toContain('v1')
+    expect(buildTagRenameCreateArgs({ oldName: 'v1', newName: 'v2' })).toEqual([
+      'tag',
+      '--end-of-options',
+      'v2',
+      'v1'
+    ])
 
     expect(buildWorktreeListArgs()).toContain('--porcelain')
     expect(buildWorktreeAddArgs({ path: '/tmp/wt', newBranch: 'feat' })).toContain('-b')

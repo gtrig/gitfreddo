@@ -4,7 +4,8 @@ import {
   buildTagCreateArgs,
   buildTagDeleteArgs,
   buildTagListArgs,
-  buildTagRenameArgs
+  buildTagRenameCreateArgs,
+  buildTagRenameDeleteArgs
 } from '../../../shared/git/commands'
 import { runGitOrThrow } from '../git-runner'
 import { parseLines } from './helpers'
@@ -163,7 +164,16 @@ export async function tagRename(
   newName: string
 ): Promise<void> {
   const localOld = oldName.includes('/') ? oldName.slice(oldName.indexOf('/') + 1) : oldName
-  await runGitOrThrow(buildTagRenameArgs({ oldName: localOld, newName: newName.trim() }), {
+  const localNew = newName.trim()
+  if (!localNew) {
+    throw new Error('New tag name is required')
+  }
+  // git tag <new> <old> creates a tag named <new> pointing at <old>; then delete <old>.
+  await runGitOrThrow(buildTagRenameCreateArgs({ oldName: localOld, newName: localNew }), {
+    cwd,
+    gitBinaryPath
+  })
+  await runGitOrThrow(buildTagRenameDeleteArgs(localOld), {
     cwd,
     gitBinaryPath
   })
