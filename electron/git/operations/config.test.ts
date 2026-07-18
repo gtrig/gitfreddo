@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { configGet, configList, configSet } from './config'
+import { assertWritableConfigKey, configGet, configList, configSet } from './config'
 
 let tmpDir: string
 
@@ -21,6 +21,19 @@ afterEach(() => {
   rmSync(tmpDir, { recursive: true, force: true })
 })
 
+describe('assertWritableConfigKey', () => {
+  it('allows settings UI keys for local scope', () => {
+    expect(() => assertWritableConfigKey('user.name', 'local')).not.toThrow()
+    expect(() => assertWritableConfigKey('core.hooksPath', 'local')).not.toThrow()
+  })
+
+  it('rejects global writes and unknown keys', () => {
+    expect(() => assertWritableConfigKey('user.name', 'global')).toThrow(/global/i)
+    expect(() => assertWritableConfigKey('core.hooksPath', 'global')).toThrow(/global/i)
+    expect(() => assertWritableConfigKey('alias.evil', 'local')).toThrow(/not allowed/i)
+  })
+})
+
 describe('configGet', () => {
   it('returns a configured value', async () => {
     const name = await configGet(tmpDir, 'git', 'user.name', 'local')
@@ -34,10 +47,16 @@ describe('configGet', () => {
 })
 
 describe('configSet', () => {
-  it('sets a local config value that can be read back', async () => {
-    await configSet(tmpDir, 'git', 'custom.key', 'hello', 'local')
-    const val = await configGet(tmpDir, 'git', 'custom.key', 'local')
-    expect(val).toBe('hello')
+  it('sets a local allowlisted config value that can be read back', async () => {
+    await configSet(tmpDir, 'git', 'init.defaultBranch', 'develop', 'local')
+    const val = await configGet(tmpDir, 'git', 'init.defaultBranch', 'local')
+    expect(val).toBe('develop')
+  })
+
+  it('rejects non-allowlisted keys', async () => {
+    await expect(configSet(tmpDir, 'git', 'arbitrary.secret', 'value', 'local')).rejects.toThrow(
+      /not allowed/i
+    )
   })
 })
 
@@ -49,7 +68,7 @@ describe('configList', () => {
   })
 
   it('does not include arbitrary keys', async () => {
-    await configSet(tmpDir, 'git', 'arbitrary.secret', 'value', 'local')
+    execSync('git config --local arbitrary.secret value', { cwd: tmpDir, stdio: 'ignore' })
     const result = await configList(tmpDir, 'git', 'local')
     expect(result['arbitrary.secret']).toBeUndefined()
   })

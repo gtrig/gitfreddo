@@ -182,5 +182,28 @@ describe('RepoManager', () => {
         rmSync(other, { recursive: true, force: true })
       }
     })
+
+    it('serializes mutating invokes on the same repository', async () => {
+      await manager.connect(tmpDir)
+      writeFileSync(join(tmpDir, 'a.txt'), 'a\n')
+      writeFileSync(join(tmpDir, 'b.txt'), 'b\n')
+
+      const order: string[] = []
+      const original = manager['handlers']['stage.add']
+      manager['handlers']['stage.add'] = async (cwd, git, p, self) => {
+        const path = (p.paths as string[])[0]!
+        order.push(`start:${path}`)
+        await new Promise((resolve) => setTimeout(resolve, 40))
+        order.push(`end:${path}`)
+        return original(cwd, git, p, self)
+      }
+
+      await Promise.all([
+        manager.invoke(tmpDir, 'stage.add', { paths: ['a.txt'] }),
+        manager.invoke(tmpDir, 'stage.add', { paths: ['b.txt'] })
+      ])
+
+      expect(order).toEqual(['start:a.txt', 'end:a.txt', 'start:b.txt', 'end:b.txt'])
+    })
   })
 })

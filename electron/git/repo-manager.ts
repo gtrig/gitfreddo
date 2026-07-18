@@ -25,6 +25,7 @@ import * as submoduleOps from './operations/submodule'
 import * as undoOps from './operations/undo'
 import { loadSettings } from '../settings'
 import type { GitIpcMethod, GitIpcParams, GitIpcResult } from '../../shared/git/ipc'
+import { gitIpcIsMutation } from '../../shared/git/ipc'
 
 const MAX_PARAM_CHARS = 240
 
@@ -343,6 +344,8 @@ export class RepoManager {
   private activePath: string | null = null
   private config: RepoManagerConfig = { gitBinaryPath: 'git' }
   private readonly handlers: Record<GitIpcMethod, InvokeHandler> = buildHandlerRegistry()
+  /** Per-repo chain so mutating git ops never overlap on the same working tree. */
+  private readonly mutationQueues = new Map<string, Promise<unknown>>()
 
   setConfig(patch: Partial<RepoManagerConfig>): void {
     this.config = { ...this.config, ...patch }
@@ -350,6 +353,10 @@ export class RepoManager {
 
   listRepos(): string[] {
     return [...this.repos]
+  }
+
+  isConnected(repoPath: string): boolean {
+    return this.repos.has(normalizeRepoPath(repoPath))
   }
 
   getRepoPath(): string | null {
@@ -379,6 +386,7 @@ export class RepoManager {
   async disconnectRepo(repoPath: string): Promise<void> {
     const normalized = normalizeRepoPath(repoPath)
     this.repos.delete(normalized)
+    this.mutationQueues.delete(normalized)
     if (this.activePath === normalized) {
       const remaining = [...this.repos]
       this.activePath = remaining[0] ?? null
@@ -388,6 +396,20 @@ export class RepoManager {
   async disconnectAll(): Promise<void> {
     this.repos.clear()
     this.activePath = null
+    this.mutationQueues.clear()
+  }
+
+  private enqueueMutation<T>(cwd: string, task: () => Promise<T>): Promise<T> {
+    const previous = this.mutationQueues.get(cwd) ?? Promise.resolve()
+    const next = previous.then(task, task)
+    this.mutationQueues.set(
+      cwd,
+      next.then(
+        () => undefined,
+        () => undefined
+      )
+    )
+    return next
   }
 
   async invoke<M extends GitIpcMethod>(
@@ -395,7 +417,16 @@ export class RepoManager {
     method: M,
     params?: GitIpcParams<M>
   ): Promise<GitIpcResult<M>> {
-    const result = await this.dispatchInvoke(repoPath, method, params)
+    const run = () => this.dispatchInvoke(repoPath, method, params)
+    const cwd = normalizeRepoPath(repoPath ?? this.activePath ?? '')
+    const isKnownMethod = Object.prototype.hasOwnProperty.call(
+      this.handlers,
+      method
+    )
+    if (cwd && this.repos.has(cwd) && isKnownMethod && gitIpcIsMutation(method)) {
+      return (await this.enqueueMutation(cwd, run)) as GitIpcResult<M>
+    }
+    const result = await run()
     return result as GitIpcResult<M>
   }
 
