@@ -7,6 +7,8 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+## [0.4.9] - 2026-07-21
+
 ### 2026-07-21 — Render HTML in PR descriptions
 
 - **Why:** PR bodies (and conversation comments) often include GitHub-allowed HTML such as `<details>` / `<img>`; `react-markdown` was escaping those tags as literal text.
@@ -522,6 +524,7 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 - Git config editor and `.gitignore` / `.gitattributes` editor
 - Linux (AppImage, deb) and Windows (NSIS) installers via GitHub Actions
 
+[0.4.9]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.9
 [0.4.8]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.8
 [0.4.7]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.7
 [0.4.6]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.6

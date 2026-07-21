@@ -5,6 +5,8 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+## [0.4.9]
+
 - Pull request descriptions and comments render embedded HTML safely (alongside markdown).
 
 ## [0.4.8]
