@@ -60,4 +60,44 @@ describe('GitHubMarkdownBody', () => {
     expect(screen.getByText('Done')).toBeInTheDocument()
     expect(screen.getByText('Todo')).toBeInTheDocument()
   })
+
+  it('renders embedded HTML as real elements', () => {
+    renderWithProviders(
+      <GitHubMarkdownBody content="<p>Hello <strong>world</strong></p>" />
+    )
+
+    expect(screen.getByText('world').tagName).toBe('STRONG')
+    expect(screen.queryByText(/<strong>/i)).not.toBeInTheDocument()
+  })
+
+  it('renders mixed markdown and HTML', () => {
+    renderWithProviders(
+      <GitHubMarkdownBody
+        content={[
+          '- markdown item',
+          '',
+          '<details>',
+          '<summary>More info</summary>',
+          '<p>Hidden details</p>',
+          '</details>'
+        ].join('\n')}
+      />
+    )
+
+    expect(screen.getByText('markdown item')).toBeInTheDocument()
+    expect(screen.getByText('More info').closest('summary')).toBeInTheDocument()
+    expect(screen.getByText('Hidden details')).toBeInTheDocument()
+  })
+
+  it('sanitizes dangerous HTML', () => {
+    const { container } = renderWithProviders(
+      <GitHubMarkdownBody
+        content={'<p onclick="alert(1)">Safe text</p><script>alert(2)</script>'}
+      />
+    )
+
+    expect(screen.getByText('Safe text')).toBeInTheDocument()
+    expect(container.querySelector('script')).toBeNull()
+    expect(container.querySelector('[onclick]')).toBeNull()
+  })
 })

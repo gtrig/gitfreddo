@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
 import ReactMarkdown from 'react-markdown'
+import rehypeRaw from 'rehype-raw'
+import rehypeSanitize from 'rehype-sanitize'
 import remarkGfm from 'remark-gfm'
 
 interface GitHubMarkdownBodyProps {
@@ -28,6 +30,7 @@ export function GitHubMarkdownBody({ content, className = '' }: GitHubMarkdownBo
     <div className={`github-markdown text-sm leading-relaxed text-gf-fg-muted ${className}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeRaw, rehypeSanitize]}
         components={{
           h1: ({ children }) => (
             <h1 className="mb-3 border-b border-gf-border pb-2 text-xl font-semibold text-gf-fg">
@@ -85,6 +88,22 @@ export function GitHubMarkdownBody({ content, className = '' }: GitHubMarkdownBo
           a: ({ href, children }) => <ExternalLink href={href}>{children}</ExternalLink>,
           strong: ({ children }) => <strong className="font-semibold text-gf-fg">{children}</strong>,
           del: ({ children }) => <del className="text-gf-fg-subtle">{children}</del>,
+          details: ({ children }) => (
+            <details className="mb-3 rounded-md border border-gf-border bg-gf-bg-deep/40 p-3 last:mb-0">
+              {children}
+            </details>
+          ),
+          summary: ({ children }) => (
+            <summary className="cursor-pointer font-medium text-gf-fg">{children}</summary>
+          ),
+          img: ({ src, alt }) =>
+            src ? (
+              <img
+                src={src}
+                alt={alt ?? ''}
+                className="my-3 max-h-96 max-w-full rounded-md border border-gf-border"
+              />
+            ) : null,
           input: ({ checked, disabled }) => {
             if (disabled) {
               return (
