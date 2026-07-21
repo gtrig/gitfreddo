@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-21 — Render HTML in PR descriptions
+
+- **Why:** PR bodies (and conversation comments) often include GitHub-allowed HTML such as `<details>` / `<img>`; `react-markdown` was escaping those tags as literal text.
+- **What:** `GitHubMarkdownBody` now parses embedded HTML via `rehype-raw` and strips unsafe markup with `rehype-sanitize`; light styles for `details` / `summary` / `img`.
+
 ### 2026-07-18 — Fix StartupModal news test after release promote
 
 - **Why:** CI failed because the modal test still expected a non-empty `[Unreleased]` NEWS section after v0.4.8 promoted those bullets.

@@ -5,6 +5,8 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+- Pull request descriptions and comments render embedded HTML safely (alongside markdown).
+
 ## [0.4.8]
 
 - Remote branches in the sidebar group into folders by path (same as local), with GitHub/GitLab/Bitbucket icons on the remote name — not on each branch. The ⋮ menu sits on the right of each row.
