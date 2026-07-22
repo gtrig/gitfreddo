@@ -7,6 +7,8 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-07-22
+
 ### 2026-07-22 — Fast-forward actions
 
 - **Why:** Users need explicit fast-forward merges, updating other branch tips without checkout, and pull that refuses divergent history.
@@ -529,6 +531,7 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 - Git config editor and `.gitignore` / `.gitattributes` editor
 - Linux (AppImage, deb) and Windows (NSIS) installers via GitHub Actions
 
+[0.5.0]: https://github.com/gtrig/gitfreddo/releases/tag/v0.5.0
 [0.4.9]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.9
 [0.4.8]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.8
 [0.4.7]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.7
