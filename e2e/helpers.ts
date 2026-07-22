@@ -83,7 +83,7 @@ export function seedWorkspaceSettings(settingsDir: string, repoPath: string, ove
         aiApiKey: '',
         aiModel: '',
         diffViewMode: 'unified',
-        pullRebase: false,
+        pullMode: 'merge',
         submoduleRecursion: 'on-demand',
         pushSubmoduleRecursion: 'no',
         updateChannel: 'stable',

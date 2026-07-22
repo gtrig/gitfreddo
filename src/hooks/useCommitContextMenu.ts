@@ -87,6 +87,7 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
     rebaseContinue,
     rebaseAbort,
     rebaseSkip,
+    merge,
     mergeContinue,
     mergeAbort,
     cherryPickContinue,
@@ -242,6 +243,11 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
           closeMenu()
           setMergeSource(branchName)
         },
+        fastForwardBranch: (branchName) =>
+          runMutation(
+            merge.mutateAsync({ branch: branchName, ffOnly: true }),
+            t('contextMenu.sidebar.fastForwardCompleted')
+          ),
         createWorktreeFromCommit: (commit) => {
           closeMenu()
           const branchName = timelineRefs(commit.refs).find((ref) => ref.kind === 'branch')?.label
@@ -327,6 +333,7 @@ export function useCommitContextMenu(connected: boolean, options: CommitContextM
     cherryPick,
     squashCommits,
     reset,
+    merge,
     rebaseContinue,
     rebaseAbort,
     rebaseSkip,

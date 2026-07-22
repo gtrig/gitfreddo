@@ -79,11 +79,15 @@ describe('localBranchContextMenuItems', () => {
   it('offers both merge directions when the current branch and reverse handler are provided', () => {
     const onMerge = vi.fn()
     const onMergeCurrentInto = vi.fn()
+    const onFastForward = vi.fn()
+    const onFastForwardBranch = vi.fn()
     const items = localBranchContextMenuItems(branch({ name: 'feature/login' }), {
       onCheckout: noop,
       onSelectCommit: noop,
       onMerge,
       onMergeCurrentInto,
+      onFastForward,
+      onFastForwardBranch,
       currentBranch: 'main',
       onRename: noop,
       onDelete: noop
@@ -91,13 +95,21 @@ describe('localBranchContextMenuItems', () => {
 
     const merge = items.find((item) => item.id === 'merge')
     const reverse = items.find((item) => item.id === 'merge-current-into')
+    const ffCurrent = items.find((item) => item.id === 'fast-forward')
+    const ffBranch = items.find((item) => item.id === 'fast-forward-branch')
     expect(merge?.label).toBe('Merge feature/login into main…')
     expect(reverse?.label).toBe('Merge main into feature/login…')
+    expect(ffCurrent?.label).toBe('Fast-forward main to feature/login')
+    expect(ffBranch?.label).toBe('Fast-forward feature/login to main')
 
     merge?.onClick?.()
     reverse?.onClick?.()
+    ffCurrent?.onClick?.()
+    ffBranch?.onClick?.()
     expect(onMerge).toHaveBeenCalledWith('feature/login')
     expect(onMergeCurrentInto).toHaveBeenCalledWith('feature/login')
+    expect(onFastForward).toHaveBeenCalledWith('feature/login')
+    expect(onFastForwardBranch).toHaveBeenCalledWith('feature/login')
   })
 
   it('omits the reverse merge direction when no reverse handler is provided', () => {

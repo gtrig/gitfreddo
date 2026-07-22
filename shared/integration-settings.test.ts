@@ -40,7 +40,7 @@ const baseSettings = {
   gitlabAuthType: 'oauth',
   gitlabSshKeyTitle: '',
   gitlabHost: 'gitlab.com',
-  pullRebase: false,
+  pullMode: 'merge',
   submoduleRecursion: 'on-demand',
   pushSubmoduleRecursion: 'check',
   diffViewMode: 'unified',

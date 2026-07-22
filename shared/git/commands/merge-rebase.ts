@@ -5,10 +5,12 @@ export interface MergeStartParams {
   branch: string
   noFf?: boolean
   squash?: boolean
+  ffOnly?: boolean
 }
 
-export function buildMergeStartArgs({ branch, noFf, squash }: MergeStartParams): string[] {
+export function buildMergeStartArgs({ branch, noFf, squash, ffOnly }: MergeStartParams): string[] {
   const args = ['merge']
+  if (ffOnly) args.push('--ff-only')
   if (noFf) args.push('--no-ff')
   if (squash) args.push('--squash')
   args.push(...endOfOptionsArg(branch))

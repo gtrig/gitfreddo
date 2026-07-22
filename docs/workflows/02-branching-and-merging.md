@@ -1,6 +1,6 @@
 # Branching and merging
 
-Create, switch, rename, and delete branches; merge with no-ff or squash; set upstream tracking.
+Create, switch, rename, and delete branches; merge with no-ff, squash, or fast-forward only; set upstream tracking.
 
 ## Branch list
 
@@ -31,6 +31,14 @@ Right-click a local branch:
 3. Choose merge type:
    - **No-ff** — always creates a merge commit
    - **Squash** — squashes all commits into one
+   - **Fast-forward only (--ff-only)** — updates the current branch only when history is linear; otherwise fails with a clear error
+
+### Fast-forward actions
+
+From a non-current local branch (sidebar or timeline ref badge):
+
+- **Fast-forward current to …** — runs `git merge --ff-only` into the checked-out branch immediately (no options dialog)
+- **Fast-forward … to current** — moves the other branch tip to the current tip without checking it out, only when that update is a fast-forward
 
 Or, from the **current** branch:
 

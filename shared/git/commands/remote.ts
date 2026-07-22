@@ -128,12 +128,14 @@ export interface PullParams {
   remote: string
   branch?: string
   rebase?: boolean
+  ffOnly?: boolean
   submoduleRecursion?: SubmoduleRecursion
 }
 
 export function buildPullArgs(params: PullParams): string[] {
   const args = ['pull']
-  if (params.rebase) args.push('--rebase')
+  if (params.ffOnly) args.push('--ff-only')
+  else if (params.rebase) args.push('--rebase')
   args.push(...submoduleRecursionFetchArgs(params.submoduleRecursion ?? 'none'))
   args.push(...endOfOptionsArg(params.remote))
   if (params.branch?.trim()) args.push(params.branch.trim())

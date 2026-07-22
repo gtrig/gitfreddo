@@ -75,6 +75,11 @@ export interface BranchDeleteRemoteParams {
   branch: string
 }
 
+export interface BranchFastForwardParams {
+  branch: string
+  toRef: string
+}
+
 export interface TagCreateParams {
   name: string
   target?: string
@@ -283,6 +288,7 @@ export interface PullParams {
   remote?: string
   branch?: string
   rebase?: boolean
+  ffOnly?: boolean
 }
 
 export interface StashIndexParams {
@@ -358,6 +364,7 @@ export interface MergeStartParams {
   branch: string
   noFf?: boolean
   squash?: boolean
+  ffOnly?: boolean
 }
 
 export interface MergeIntoParams {
@@ -365,6 +372,7 @@ export interface MergeIntoParams {
   targetBranch: string
   noFf?: boolean
   squash?: boolean
+  ffOnly?: boolean
 }
 
 export interface MergeSquashIntoParams {
@@ -426,10 +434,13 @@ export interface MaintenanceRemoveStaleBranchesParams {
   branchNames?: string[]
 }
 
-export type GitIpcSettingsKey = 'submoduleRecursion' | 'pushSubmoduleRecursion' | 'pullRebase'
+export type GitIpcSettingsKey =
+  | 'submoduleRecursion'
+  | 'pushSubmoduleRecursion'
+  | 'pullMode'
 
 export type GitIpcSettings = {
   submoduleRecursion?: SubmoduleRecursion
   pushSubmoduleRecursion?: PushSubmoduleRecursion
-  pullRebase?: boolean
+  pullMode?: 'merge' | 'rebase' | 'ff-only'
 }

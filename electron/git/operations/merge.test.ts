@@ -52,6 +52,16 @@ describe('mergeStart helpers', () => {
     ).toBe('fatal: refusing to merge unrelated histories')
   })
 
+  it('skips git trace lines when formatting failures', () => {
+    const stderr = [
+      '10:10:15.273418 git.c:463               trace: built-in: git merge --ff-only feature',
+      'fatal: Not possible to fast-forward, aborting.'
+    ].join('\n')
+    expect(formatMergeFailureMessage(stderr, '', 128)).toBe(
+      'fatal: Not possible to fast-forward, aborting.'
+    )
+  })
+
   it('falls back to exit code when output is empty', () => {
     expect(formatMergeFailureMessage('', '', 2)).toBe('git merge failed (exit 2)')
   })
@@ -95,6 +105,45 @@ describe('merge operations integration', () => {
 
     const subject = (await run(['log', '-1', '--format=%s'])).trim()
     expect(subject).toBe('feature work')
+  })
+
+  it('ff-only succeeds on a linear branch', async () => {
+    tempDir = mkdtempSync(join(tmpdir(), 'gitfreddo-merge-ff-only-ok-'))
+    const run = await initRepo(tempDir)
+    writeFileSync(join(tempDir, 'file.txt'), 'main\n')
+    await run(['add', 'file.txt'])
+    await run(['commit', '-m', 'initial'])
+    await run(['branch', 'feature'])
+    await run(['switch', 'feature'])
+    writeFileSync(join(tempDir, 'feature.txt'), 'feature\n')
+    await run(['add', 'feature.txt'])
+    await run(['commit', '-m', 'feature work'])
+    await run(['switch', 'main'])
+
+    const result = await mergeStart(tempDir, 'git', 'feature', { ffOnly: true })
+    expect(result.status).toBe('completed')
+    const subject = (await run(['log', '-1', '--format=%s'])).trim()
+    expect(subject).toBe('feature work')
+  })
+
+  it('ff-only fails when histories diverge', async () => {
+    tempDir = mkdtempSync(join(tmpdir(), 'gitfreddo-merge-ff-only-fail-'))
+    const run = await initRepo(tempDir)
+    writeFileSync(join(tempDir, 'shared.txt'), 'base\n')
+    await run(['add', 'shared.txt'])
+    await run(['commit', '-m', 'initial'])
+    await run(['branch', 'feature'])
+    await run(['switch', 'feature'])
+    writeFileSync(join(tempDir, 'shared.txt'), 'feature change\n')
+    await run(['commit', '-am', 'feature edit'])
+    await run(['switch', 'main'])
+    writeFileSync(join(tempDir, 'shared.txt'), 'main change\n')
+    await run(['commit', '-am', 'main edit'])
+
+    await expect(mergeStart(tempDir, 'git', 'feature', { ffOnly: true })).rejects.toThrow(
+      /Not possible to fast-forward|refusing to merge|diverg|fast-forward/i
+    )
+    expect((await mergeStatus(tempDir, 'git')).inProgress).toBe(false)
   })
 
   it('returns conflicts when merge cannot auto-resolve', async () => {

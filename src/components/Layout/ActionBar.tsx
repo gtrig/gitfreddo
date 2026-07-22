@@ -91,7 +91,11 @@ export function ActionBar() {
         <ActionBarButton
           loading={pull.isPending}
           onClick={() =>
-            void pull.mutateAsync({ remote: defaultRemote, rebase: settings?.pullRebase })
+            void pull.mutateAsync({
+              remote: defaultRemote,
+              rebase: settings?.pullMode === 'rebase',
+              ffOnly: settings?.pullMode === 'ff-only'
+            })
           }
           icon={<ArrowDownTrayIcon aria-hidden className={iconClass} />}
         >

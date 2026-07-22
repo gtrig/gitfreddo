@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ActionButton, FieldLabel, TextInput, Checkbox } from '@/components/Ui/Modal'
+import { ActionButton, FieldLabel, TextInput } from '@/components/Ui/Modal'
 import type { AppSettings } from '@/hooks/useAppSettings'
 
 interface PanelProps {
@@ -31,13 +31,20 @@ export function GitSettingsPanel({ form, onChange, onPickGit }: PanelProps) {
             onChange={(e) => onChange({ defaultRemote: e.target.value })}
           />
         </div>
-        <label className="flex items-center gap-2 text-sm text-gf-fg-muted">
-          <Checkbox
-            checked={form.pullRebase}
-            onChange={(e) => onChange({ pullRebase: e.target.checked })}
-          />
-          {t('settings.git.pullRebase')}
-        </label>
+        <div>
+          <FieldLabel>{t('settings.git.pullMode')}</FieldLabel>
+          <select
+            value={form.pullMode}
+            onChange={(e) =>
+              onChange({ pullMode: e.target.value as AppSettings['pullMode'] })
+            }
+            className="w-full rounded border border-gf-border-strong bg-gf-bg px-2 py-1.5 text-sm text-gf-fg"
+          >
+            <option value="merge">{t('settings.git.pullModeMerge')}</option>
+            <option value="rebase">{t('settings.git.pullModeRebase')}</option>
+            <option value="ff-only">{t('settings.git.pullModeFfOnly')}</option>
+          </select>
+        </div>
       </div>
 
       <div className="space-y-3 border-t border-gf-border pt-4">

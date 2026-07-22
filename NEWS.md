@@ -5,6 +5,9 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+- Fast-forward merges: dedicated menu actions, a merge-dialog `--ff-only` option, and update another local branch tip without checking it out.
+- Pull mode in Settings → Git: merge, rebase, or fast-forward only.
+
 ## [0.4.9]
 
 - Pull request descriptions and comments render embedded HTML safely (alongside markdown).

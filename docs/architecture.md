@@ -16,13 +16,13 @@ The renderer calls `window.gitfreddo.invoke(method, params)` for git operations:
 
 | Read | Write |
 |------|-------|
-| `repo.status` | `branch.checkout`, `branch.checkoutRemote`, `branch.create`, `branch.delete`, `branch.rename`, `branch.setUpstream`, `branch.unsetUpstream`, `branch.deleteRemote` |
+| `repo.status` | `branch.checkout`, `branch.checkoutRemote`, `branch.create`, `branch.delete`, `branch.rename`, `branch.setUpstream`, `branch.unsetUpstream`, `branch.deleteRemote`, `branch.fastForward` |
 | `log.graph`, `log.show`, `log.message`, `log.file`, `log.pickaxe`, `log.search` | `stage.add`, `stage.reset`, `stage.applyPatch`, `commit.create`, `commit.reword`, `commit.revert` |
 | `branch.list`, `tag.list`, `reflog.list`, `undo.peek` | `tag.create`, `tag.delete`, `tag.push`, `tag.rename`, `undo.last` |
 | `working.status`, `working.cleanPreview`, `working.read` | `working.discard`, `working.remove`, `working.clean`, `working.write`, `working.rename` |
 | `remote.list` | `remote.add`, `remote.remove`, `remote.rename`, `remote.setUrl`, `fetch`, `push`, `pull` |
 | `diff.working`, `diff.staged`, `diff.commits`, `diff.show` | `stash.push`, `stash.pop`, `stash.apply`, `stash.drop`, `stash.branch` |
-| `stash.list`, `stash.show`, `stash.files` | `merge.start` (no-ff/squash), `merge.abort`, `merge.continue` |
+| `stash.list`, `stash.show`, `stash.files` | `merge.start` (no-ff/squash/ff-only), `merge.abort`, `merge.continue` |
 | `worktree.list`, `file.read`, `file.blame`, `file.readStage` | `worktree.add`, `worktree.remove`, `worktree.prune` |
 | `submodule.list` | `submodule.add`, `submodule.init`, `submodule.update`, `submodule.sync`, `submodule.deinit`, `submodule.remove`, `submodule.setUrl` |
 | `merge.status`, `bisect.status`, `notes.list` | `rebase.start` (--onto), `rebase.interactive`, `rebase.abort`, `rebase.continue`, `rebase.skip`, `rebase.squash`, `rebase.drop` |

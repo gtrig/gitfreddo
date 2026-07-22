@@ -53,6 +53,16 @@ export function buildBranchShowCurrentArgs(): string[] {
   return ['branch', '--show-current']
 }
 
+export interface BranchFastForwardParams {
+  branch: string
+  toRef: string
+}
+
+/** Fast-forward a local branch tip to toRef without checking it out (`git fetch . toRef:branch`). */
+export function buildBranchFastForwardArgs({ branch, toRef }: BranchFastForwardParams): string[] {
+  return ['fetch', '.', `${toRef}:${branch}`]
+}
+
 export const branchList = defineCommand({
   id: 'branch.list',
   subcommand: 'branch',
@@ -93,4 +103,10 @@ export const branchShowCurrent = defineCommand({
   id: 'branch.show-current',
   subcommand: 'branch',
   buildArgs: () => buildBranchShowCurrentArgs()
+})
+
+export const branchFastForward = defineCommand({
+  id: 'branch.fast-forward',
+  subcommand: 'fetch',
+  buildArgs: buildBranchFastForwardArgs
 })

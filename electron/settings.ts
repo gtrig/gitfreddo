@@ -45,7 +45,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   gitlabAuthType: null,
   gitlabSshKeyTitle: '',
   gitlabHost: 'gitlab.com',
-  pullRebase: false,
+  pullMode: 'merge',
   submoduleRecursion: 'on-demand',
   pushSubmoduleRecursion: 'no',
   diffViewMode: 'unified',
@@ -58,6 +58,15 @@ const DEFAULT_SETTINGS: AppSettings = {
 }
 
 let writeChain: Promise<void> = Promise.resolve()
+
+function resolvePullMode(
+  parsed: AppSettings & { pullRebase?: boolean }
+): AppSettings['pullMode'] {
+  if (parsed.pullMode === 'rebase' || parsed.pullMode === 'ff-only' || parsed.pullMode === 'merge') {
+    return parsed.pullMode
+  }
+  return parsed.pullRebase ? 'rebase' : 'merge'
+}
 
 function normalizeSettings(parsed: AppSettings): AppSettings {
   return {
@@ -101,7 +110,7 @@ function normalizeSettings(parsed: AppSettings): AppSettings {
         : null,
     gitlabSshKeyTitle: parsed.gitlabSshKeyTitle ?? '',
     gitlabHost: parsed.gitlabHost ?? DEFAULT_SETTINGS.gitlabHost,
-    pullRebase: Boolean(parsed.pullRebase),
+    pullMode: resolvePullMode(parsed),
     submoduleRecursion:
       parsed.submoduleRecursion === 'always' || parsed.submoduleRecursion === 'none'
         ? parsed.submoduleRecursion

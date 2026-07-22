@@ -53,17 +53,63 @@ describe('MergeBranchDialog', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument()
   })
 
-  it('merges with no-ff and squash options', async () => {
+  it('merges with no-ff option', async () => {
+    mergeMutate.mockResolvedValue({ status: 'completed' })
+    const onClose = vi.fn()
+    renderWithProviders(<MergeBranchDialog sourceBranch="feature" onClose={onClose} />)
+
+    await userEvent.click(screen.getByLabelText(/create merge commit/i))
+    await userEvent.click(screen.getByRole('button', { name: /^merge$/i }))
+
+    await waitFor(() => {
+      expect(mergeMutate).toHaveBeenCalledWith({
+        branch: 'feature',
+        noFf: true,
+        squash: false,
+        ffOnly: false
+      })
+    })
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('merges with squash option and clears no-ff', async () => {
     mergeMutate.mockResolvedValue({ status: 'completed' })
     const onClose = vi.fn()
     renderWithProviders(<MergeBranchDialog sourceBranch="feature" onClose={onClose} />)
 
     await userEvent.click(screen.getByLabelText(/create merge commit/i))
     await userEvent.click(screen.getByLabelText(/squash merge/i))
+    expect(screen.getByLabelText(/create merge commit/i)).not.toBeChecked()
     await userEvent.click(screen.getByRole('button', { name: /^merge$/i }))
 
     await waitFor(() => {
-      expect(mergeMutate).toHaveBeenCalledWith({ branch: 'feature', noFf: true, squash: true })
+      expect(mergeMutate).toHaveBeenCalledWith({
+        branch: 'feature',
+        noFf: false,
+        squash: true,
+        ffOnly: false
+      })
+    })
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('merges with ff-only and clears other options', async () => {
+    mergeMutate.mockResolvedValue({ status: 'completed' })
+    const onClose = vi.fn()
+    renderWithProviders(<MergeBranchDialog sourceBranch="feature" onClose={onClose} />)
+
+    await userEvent.click(screen.getByLabelText(/create merge commit/i))
+    await userEvent.click(screen.getByLabelText(/fast-forward only/i))
+    expect(screen.getByLabelText(/create merge commit/i)).not.toBeChecked()
+    await userEvent.click(screen.getByRole('button', { name: /^merge$/i }))
+
+    await waitFor(() => {
+      expect(mergeMutate).toHaveBeenCalledWith({
+        branch: 'feature',
+        noFf: false,
+        squash: false,
+        ffOnly: true
+      })
     })
     expect(onClose).toHaveBeenCalled()
   })
@@ -83,7 +129,8 @@ describe('MergeBranchDialog', () => {
         sourceBranch: 'main',
         targetBranch: 'feature',
         noFf: false,
-        squash: false
+        squash: false,
+        ffOnly: false
       })
     })
     expect(mergeMutate).not.toHaveBeenCalled()

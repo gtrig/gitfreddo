@@ -34,7 +34,15 @@ export function useTimelineRefContextMenu({
 }: TimelineRefContextMenuOptions) {
   const { t } = useTranslation()
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
-  const { checkout, pushTag, deleteBranch, deleteRemoteBranch, unsetUpstream } = useGitMutations()
+  const {
+    checkout,
+    pushTag,
+    deleteBranch,
+    deleteRemoteBranch,
+    unsetUpstream,
+    merge,
+    fastForwardBranch
+  } = useGitMutations()
   const repoPath = useWorkspaceStore((s) => s.activePath)
   const { canCreatePr, provider, submitPullRequest } = useForgePullRequestActions(repoPath, connected)
   const show = useToastStore((s) => s.show)
@@ -63,12 +71,39 @@ export function useTimelineRefContextMenu({
     'main'
   const defaultRemote = remotes?.[0]?.name
 
+  const runFastForwardCurrent = useCallback(
+    (sourceBranch: string) => {
+      void merge
+        .mutateAsync({ branch: sourceBranch, ffOnly: true })
+        .then(() => show(t('contextMenu.sidebar.fastForwardCompleted'), 'success'))
+        .catch((error) =>
+          show(error instanceof Error ? error.message : String(error), 'error')
+        )
+    },
+    [merge, show, t]
+  )
+
+  const runFastForwardBranch = useCallback(
+    (branchName: string) => {
+      if (!currentBranch) return
+      void fastForwardBranch
+        .mutateAsync({ branch: branchName, toRef: currentBranch })
+        .then(() => show(t('contextMenu.sidebar.fastForwardCompleted'), 'success'))
+        .catch((error) =>
+          show(error instanceof Error ? error.message : String(error), 'error')
+        )
+    },
+    [currentBranch, fastForwardBranch, show, t]
+  )
+
   const handlers = useMemo(
     () => ({
       onSelectCommit,
       onCheckout: (params: BranchCheckoutParams) => void checkout.mutateAsync(params),
       onMerge,
       onMergeCurrentInto,
+      onFastForward: currentBranch ? runFastForwardCurrent : undefined,
+      onFastForwardBranch: currentBranch ? runFastForwardBranch : undefined,
       onRenameBranch: setRenameBranch,
       onDeleteBranch: setPendingDeleteBranch,
       onCreatePr: canCreatePr ? setPrBranch : undefined,
@@ -91,12 +126,15 @@ export function useTimelineRefContextMenu({
       branches,
       canCreatePr,
       checkout,
+      currentBranch,
       defaultRemote,
       isBranchHidden,
       onMerge,
       onMergeCurrentInto,
       onSelectCommit,
       pushTag,
+      runFastForwardBranch,
+      runFastForwardCurrent,
       toggleBranchVisibility,
       unsetUpstream
     ]

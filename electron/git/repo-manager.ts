@@ -78,6 +78,8 @@ function buildHandlerRegistry(): Record<GitIpcMethod, InvokeHandler> {
       branchOps.branchUnsetUpstream(cwd, git, p.branch as string | undefined),
     'branch.deleteRemote': (cwd, git, p) =>
       branchOps.branchDeleteRemote(cwd, git, p.remote as string, p.branch as string),
+    'branch.fastForward': (cwd, git, p) =>
+      branchOps.branchFastForward(cwd, git, p.branch as string, p.toRef as string),
     'tag.list': (cwd, git) => tagOps.tagList(cwd, git),
     'tag.create': (cwd, git, p) =>
       tagOps.tagCreate(cwd, git, p.name as string, p.target as string | undefined, p.message as string | undefined, Boolean(p.sign)),
@@ -196,10 +198,12 @@ function buildHandlerRegistry(): Record<GitIpcMethod, InvokeHandler> {
     },
     'pull': async (cwd, git, p) => {
       const settings = await loadSettings()
+      const ffOnly = Boolean(p.ffOnly) || settings.pullMode === 'ff-only'
+      const rebase = !ffOnly && (Boolean(p.rebase) || settings.pullMode === 'rebase')
       return remoteOps.pullRemote(
         cwd, git,
         p.remote as string | undefined, p.branch as string | undefined,
-        Boolean(p.rebase), settings.submoduleRecursion
+        rebase, settings.submoduleRecursion, ffOnly
       )
     },
     'stash.list': (cwd, git) => stashOps.stashList(cwd, git),
@@ -272,13 +276,18 @@ function buildHandlerRegistry(): Record<GitIpcMethod, InvokeHandler> {
       submoduleOps.submoduleSetUrl(cwd, git, p.path as string, p.url as string),
     'merge.status': (cwd, git) => mergeOps.mergeStatus(cwd, git),
     'merge.start': (cwd, git, p) =>
-      mergeOps.mergeStart(cwd, git, p.branch as string, { noFf: Boolean(p.noFf), squash: Boolean(p.squash) }),
+      mergeOps.mergeStart(cwd, git, p.branch as string, {
+        noFf: Boolean(p.noFf),
+        squash: Boolean(p.squash),
+        ffOnly: Boolean(p.ffOnly)
+      }),
     'merge.into': (cwd, git, p) =>
       mergeOps.mergeInto(cwd, git, {
         sourceBranch: p.sourceBranch as string,
         targetBranch: p.targetBranch as string,
         noFf: Boolean(p.noFf),
-        squash: Boolean(p.squash)
+        squash: Boolean(p.squash),
+        ffOnly: Boolean(p.ffOnly)
       }),
     'merge.squashInto': (cwd, git, p) =>
       mergeOps.mergeSquashInto(cwd, git, {

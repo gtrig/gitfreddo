@@ -39,6 +39,8 @@ export function localBranchContextMenuItems(
     onSelectCommit: (hash: string) => void
     onMerge: (name: string) => void
     onMergeCurrentInto?: (name: string) => void
+    onFastForward?: (name: string) => void
+    onFastForwardBranch?: (name: string) => void
     currentBranch?: string
     onSquashMergeInto?: (name: string) => void
     onRename: (name: string) => void
@@ -114,6 +116,18 @@ export function localBranchContextMenuItems(
           : 'Merge into current…',
       onClick: () => handlers.onMerge(branch.name)
     })
+    if (handlers.onFastForward && currentBranch) {
+      items.push({
+        id: 'fast-forward',
+        label: t
+          ? t('contextMenu.sidebar.fastForwardCurrentTo', {
+              current: currentBranch,
+              branch: branch.name
+            })
+          : `Fast-forward ${currentBranch} to ${branch.name}`,
+        onClick: () => handlers.onFastForward!(branch.name)
+      })
+    }
     if (handlers.onMergeCurrentInto && currentBranch) {
       items.push({
         id: 'merge-current-into',
@@ -124,6 +138,18 @@ export function localBranchContextMenuItems(
             })
           : `Merge ${currentBranch} into ${branch.name}…`,
         onClick: () => handlers.onMergeCurrentInto!(branch.name)
+      })
+    }
+    if (handlers.onFastForwardBranch && currentBranch) {
+      items.push({
+        id: 'fast-forward-branch',
+        label: t
+          ? t('contextMenu.sidebar.fastForwardBranchTo', {
+              branch: branch.name,
+              current: currentBranch
+            })
+          : `Fast-forward ${branch.name} to ${currentBranch}`,
+        onClick: () => handlers.onFastForwardBranch!(branch.name)
       })
     }
     if (handlers.onCreatePr && branch.ahead > 0) {

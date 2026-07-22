@@ -16,6 +16,8 @@ export interface TimelineRefContextMenuHandlers {
   onCheckout: (params: BranchCheckoutParams) => void
   onMerge: (name: string) => void
   onMergeCurrentInto?: (name: string) => void
+  onFastForward?: (name: string) => void
+  onFastForwardBranch?: (name: string) => void
   onRenameBranch: (name: string) => void
   onDeleteBranch: (name: string) => void
   onSetUpstream?: (name: string) => void
@@ -141,6 +143,8 @@ export function buildTimelineRefContextMenuItems(
       onSelectCommit: handlers.onSelectCommit,
       onMerge: handlers.onMerge,
       onMergeCurrentInto: handlers.onMergeCurrentInto,
+      onFastForward: handlers.onFastForward,
+      onFastForwardBranch: handlers.onFastForwardBranch,
       currentBranch: currentBranch || undefined,
       onRename: handlers.onRenameBranch,
       onDelete: handlers.onDeleteBranch,

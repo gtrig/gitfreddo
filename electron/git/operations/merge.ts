@@ -141,7 +141,7 @@ export async function mergeStart(
   cwd: string,
   gitBinaryPath: string,
   branch: string,
-  options: { noFf?: boolean; squash?: boolean } = {}
+  options: { noFf?: boolean; squash?: boolean; ffOnly?: boolean } = {}
 ): Promise<GitMergeStartResult> {
   const result = await runCommand(
     mergeStartCommand,
@@ -167,7 +167,13 @@ export async function mergeStart(
 export async function mergeInto(
   cwd: string,
   gitBinaryPath: string,
-  params: { sourceBranch: string; targetBranch: string; noFf?: boolean; squash?: boolean }
+  params: {
+    sourceBranch: string
+    targetBranch: string
+    noFf?: boolean
+    squash?: boolean
+    ffOnly?: boolean
+  }
 ): Promise<GitMergeStartResult> {
   const sourceBranch = params.sourceBranch.trim()
   const targetBranch = params.targetBranch.trim()
@@ -185,7 +191,8 @@ export async function mergeInto(
 
   return mergeStart(cwd, gitBinaryPath, sourceBranch, {
     noFf: params.noFf,
-    squash: params.squash
+    squash: params.squash,
+    ffOnly: params.ffOnly
   })
 }
 
@@ -260,9 +267,22 @@ export function formatMergeFailureMessage(stderr: string, stdout: string, code: 
     text
       .split('\n')
       .map((line) => line.trim())
-      .find((line) => line.length > 0 && !line.startsWith('Auto-merging')) ?? ''
+      .find(
+        (line) =>
+          line.length > 0 &&
+          !line.startsWith('Auto-merging') &&
+          !/\btrace:\s/.test(line) &&
+          !line.startsWith('hint:')
+      ) ?? ''
 
   if (firstLine) return firstLine
+  // Prefer a hint line over a generic exit code when that is all git printed.
+  const hintLine =
+    text
+      .split('\n')
+      .map((line) => line.trim())
+      .find((line) => line.startsWith('hint:') && !/\btrace:\s/.test(line)) ?? ''
+  if (hintLine) return hintLine
   return `git merge failed (exit ${code})`
 }
 

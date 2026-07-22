@@ -101,6 +101,11 @@ export const GIT_IPC_METHODS = {
     commands: ['push'],
     stateSource: 'git'
   },
+  'branch.fastForward': {
+    invalidates: ['branch.list', 'log.graph'],
+    commands: ['branch.fast-forward', 'branch.show-current'],
+    stateSource: 'git'
+  },
   'tag.list': {
     invalidates: [],
     commands: ['tag.list'],
@@ -385,7 +390,7 @@ export const GIT_IPC_METHODS = {
   pull: {
     invalidates: ['branch.list', 'log.graph', 'working.status'],
     commands: ['pull'],
-    settings: ['submoduleRecursion', 'pullRebase'],
+    settings: ['submoduleRecursion', 'pullMode'],
     stateSource: 'git'
   },
   'stash.list': {
@@ -625,6 +630,7 @@ export interface GitIpcParamsMap {
   'branch.setUpstream': P.BranchSetUpstreamParams
   'branch.unsetUpstream': P.BranchUnsetUpstreamParams | void
   'branch.deleteRemote': P.BranchDeleteRemoteParams
+  'branch.fastForward': P.BranchFastForwardParams
   'tag.list': void
   'tag.create': P.TagCreateParams
   'tag.delete': P.TagDeleteParams
@@ -743,6 +749,7 @@ export interface GitIpcResultMap {
   'branch.setUpstream': void
   'branch.unsetUpstream': void
   'branch.deleteRemote': void
+  'branch.fastForward': void
   'tag.list': R.GitTag[]
   'tag.create': void
   'tag.delete': void

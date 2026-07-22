@@ -19,6 +19,8 @@ vi.mock('@/hooks/useGitMutations', () => ({
   useGitMutations: () => ({
     deleteBranch: mutation,
     unsetUpstream: mutation,
+    merge: mutation,
+    fastForwardBranch: mutation,
     fetch: mutation,
     deleteRemoteBranch: mutation,
     remoteRemove: mutation
@@ -348,7 +350,7 @@ describe('LocalBranchesSection', () => {
     )
 
     fireEvent.contextMenu(screen.getByRole('button', { name: /login/i }))
-    await userEvent.click(screen.getByRole('menuitem', { name: /merge into current/i }))
+    await userEvent.click(screen.getByRole('menuitem', { name: /merge feature\/login into main/i }))
     expect(screen.getByTestId('merge-dialog')).toHaveTextContent('feature/login')
   })
 

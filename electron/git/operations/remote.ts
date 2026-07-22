@@ -181,14 +181,16 @@ export async function pullRemote(
   remote?: string,
   branch?: string,
   rebase = false,
-  submoduleRecursion: SubmoduleRecursion = 'none'
+  submoduleRecursion: SubmoduleRecursion = 'none',
+  ffOnly = false
 ): Promise<void> {
   const pullRemoteName = await resolveRemoteName(cwd, gitBinaryPath, remote)
   await runGitOrThrow(
     buildPullArgs({
       remote: pullRemoteName,
       branch,
-      rebase,
+      rebase: ffOnly ? false : rebase,
+      ffOnly,
       submoduleRecursion
     }),
     { cwd, gitBinaryPath }

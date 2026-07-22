@@ -7,7 +7,7 @@ Manage remotes, fetch updates, push commits, and work with remote branches.
 | Button | Git command | Notes |
 |--------|-------------|-------|
 | Fetch | `git fetch --tags` | Updates remote-tracking branches |
-| Pull | `git pull` or `git pull --rebase` | Uses rebase if enabled in settings |
+| Pull | `git pull`, `git pull --rebase`, or `git pull --ff-only` | Mode from Settings → Git → Pull mode |
 | Push | `git push` | Pushes current branch to upstream |
 
 ## Remotes section

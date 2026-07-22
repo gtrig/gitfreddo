@@ -77,6 +77,9 @@ function BranchTree({
   onCheckout,
   onMerge,
   onSquashMergeInto,
+  onFastForward,
+  onFastForwardBranch,
+  currentBranch,
   onRename,
   onDelete,
   onCreatePr,
@@ -97,6 +100,9 @@ function BranchTree({
   onCheckout: (params: BranchCheckoutParams) => void
   onMerge: (name: string) => void
   onSquashMergeInto?: (name: string) => void
+  onFastForward?: (name: string) => void
+  onFastForwardBranch?: (name: string) => void
+  currentBranch?: string
   onRename: (name: string) => void
   onDelete: (name: string) => void
   onCreatePr?: (name: string) => void
@@ -136,6 +142,9 @@ function BranchTree({
                   onCheckout={onCheckout}
                   onMerge={onMerge}
                   onSquashMergeInto={onSquashMergeInto}
+                  onFastForward={onFastForward}
+                  onFastForwardBranch={onFastForwardBranch}
+                  currentBranch={currentBranch}
                   onRename={onRename}
                   onDelete={onDelete}
                   onCreatePr={onCreatePr}
@@ -162,6 +171,9 @@ function BranchTree({
             onSelectCommit,
             onMerge,
             onSquashMergeInto,
+            onFastForward,
+            onFastForwardBranch,
+            currentBranch,
             onRename,
             onDelete,
             onCreatePr,
@@ -240,12 +252,28 @@ export function LocalBranchesSection({
   const [worktreeBranch, setWorktreeBranch] = useState<string | null>(null)
   const [upstreamBranch, setUpstreamBranch] = useState<string | null>(null)
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
-  const { deleteBranch, unsetUpstream } = useGitMutations()
+  const { deleteBranch, unsetUpstream, merge, fastForwardBranch } = useGitMutations()
   const repoPath = useWorkspaceStore((s) => s.activePath)
   const toggleBranchVisibility = useBranchVisibilityStore((s) => s.toggleBranchVisibility)
   const isBranchHidden = useBranchVisibilityStore((s) => s.isBranchHidden)
   const { canCreatePr, provider, submitPullRequest } = useForgePullRequestActions(repoPath, true)
   const show = useToastStore((s) => s.show)
+  const currentBranch = localBranches.find((b) => b.isCurrent)?.name
+
+  const runFastForwardCurrent = (sourceBranch: string) => {
+    void merge
+      .mutateAsync({ branch: sourceBranch, ffOnly: true })
+      .then(() => show(t('contextMenu.sidebar.fastForwardCompleted'), 'success'))
+      .catch((error) => show(error instanceof Error ? error.message : String(error), 'error'))
+  }
+
+  const runFastForwardBranch = (branchName: string) => {
+    if (!currentBranch) return
+    void fastForwardBranch
+      .mutateAsync({ branch: branchName, toRef: currentBranch })
+      .then(() => show(t('contextMenu.sidebar.fastForwardCompleted'), 'success'))
+      .catch((error) => show(error instanceof Error ? error.message : String(error), 'error'))
+  }
 
   const defaultBase =
     localBranches.find((b) => b.name === 'main')?.name ??
@@ -356,6 +384,9 @@ export function LocalBranchesSection({
                           onSelectCommit,
                           onMerge: setMergeSource,
                           onSquashMergeInto: setSquashMergeSource,
+                          onFastForward: currentBranch ? runFastForwardCurrent : undefined,
+                          onFastForwardBranch: currentBranch ? runFastForwardBranch : undefined,
+                          currentBranch,
                           onRename: setRenameBranch,
                           onDelete: setPendingDelete,
                           onCreatePr: canCreatePr ? setPrBranch : undefined,
@@ -426,6 +457,9 @@ export function LocalBranchesSection({
             onCheckout={onCheckout}
             onMerge={setMergeSource}
             onSquashMergeInto={setSquashMergeSource}
+            onFastForward={currentBranch ? runFastForwardCurrent : undefined}
+            onFastForwardBranch={currentBranch ? runFastForwardBranch : undefined}
+            currentBranch={currentBranch}
             onRename={setRenameBranch}
             onDelete={setPendingDelete}
             onCreatePr={canCreatePr ? setPrBranch : undefined}

@@ -21,9 +21,15 @@ GIT_BINARY=/usr/bin/git
 
 Set the remote name used for push, pull, and upstream operations. Default is `origin`.
 
-## Pull with rebase
+## Pull mode
 
-Enable **Pull with rebase** to run `git pull --rebase` instead of merge when pulling from the action bar.
+Choose how the action bar **Pull** runs:
+
+- **Merge** — `git pull` (default)
+- **Rebase** — `git pull --rebase`
+- **Fast-forward only** — `git pull --ff-only` (fails if histories diverge)
+
+Existing installs that had **Pull with rebase** enabled migrate to Rebase mode.
 
 ## Repository config (when a repo is open)
 

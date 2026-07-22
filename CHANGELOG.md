@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-22 — Fast-forward actions
+
+- **Why:** Users need explicit fast-forward merges, updating other branch tips without checkout, and pull that refuses divergent history.
+- **What:** `--ff-only` on merge (dialog + dedicated menus); `branch.fastForward` for non-checked-out tips; Settings → Git pull mode (`merge` / `rebase` / `ff-only`) replacing the old pull-with-rebase checkbox (legacy `pullRebase` still migrates).
+
 ## [0.4.9] - 2026-07-21
 
 ### 2026-07-21 — Render HTML in PR descriptions

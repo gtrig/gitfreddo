@@ -30,7 +30,9 @@ vi.mock('./useGitMutations', () => ({
     pushTag: { mutateAsync },
     deleteBranch: { mutateAsync, isPending: false },
     deleteRemoteBranch: { mutateAsync, isPending: false },
-    unsetUpstream: { mutateAsync }
+    unsetUpstream: { mutateAsync },
+    merge: { mutateAsync },
+    fastForwardBranch: { mutateAsync }
   })
 }))
 

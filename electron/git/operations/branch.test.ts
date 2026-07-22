@@ -9,6 +9,7 @@ import {
   branchCreate,
   branchDelete,
   branchDeleteRemote,
+  branchFastForward,
   branchList,
   branchRename,
   branchSetUpstream,
@@ -425,6 +426,66 @@ describe('branch upstream and remote delete', () => {
     } finally {
       rmSync(repoDir, { recursive: true, force: true })
       rmSync(bareRemote, { recursive: true, force: true })
+    }
+  })
+})
+
+describe('branchFastForward', () => {
+  it('fast-forwards a non-checked-out branch to another ref', async () => {
+    const repoDir = mkdtempSync(join(tmpdir(), 'gf-branch-ff-'))
+    try {
+      initRepo(repoDir)
+      execSync('git branch feature', { cwd: repoDir, stdio: 'ignore' })
+      writeFileSync(join(repoDir, 'README.md'), 'main advance\n')
+      execSync('git add README.md', { cwd: repoDir, stdio: 'ignore' })
+      execSync('git commit -m "advance"', { cwd: repoDir, stdio: 'ignore' })
+      const mainHead = execSync('git rev-parse HEAD', { cwd: repoDir, encoding: 'utf8' }).trim()
+
+      await branchFastForward(repoDir, 'git', 'feature', 'main')
+
+      const featureHead = execSync('git rev-parse feature', {
+        cwd: repoDir,
+        encoding: 'utf8'
+      }).trim()
+      expect(featureHead).toBe(mainHead)
+      const current = execSync('git branch --show-current', {
+        cwd: repoDir,
+        encoding: 'utf8'
+      }).trim()
+      expect(current).toBe('main')
+    } finally {
+      rmSync(repoDir, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects fast-forwarding the checked-out branch', async () => {
+    const repoDir = mkdtempSync(join(tmpdir(), 'gf-branch-ff-current-'))
+    try {
+      initRepo(repoDir)
+      execSync('git branch feature', { cwd: repoDir, stdio: 'ignore' })
+      await expect(branchFastForward(repoDir, 'git', 'main', 'feature')).rejects.toThrow(
+        /checked-out branch/i
+      )
+    } finally {
+      rmSync(repoDir, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects when histories diverge', async () => {
+    const repoDir = mkdtempSync(join(tmpdir(), 'gf-branch-ff-diverge-'))
+    try {
+      initRepo(repoDir)
+      execSync('git branch feature', { cwd: repoDir, stdio: 'ignore' })
+      writeFileSync(join(repoDir, 'README.md'), 'main change\n')
+      execSync('git commit -am "main edit"', { cwd: repoDir, stdio: 'ignore' })
+      execSync('git switch feature', { cwd: repoDir, stdio: 'ignore' })
+      writeFileSync(join(repoDir, 'README.md'), 'feature change\n')
+      execSync('git commit -am "feature edit"', { cwd: repoDir, stdio: 'ignore' })
+      execSync('git switch main', { cwd: repoDir, stdio: 'ignore' })
+
+      await expect(branchFastForward(repoDir, 'git', 'feature', 'main')).rejects.toThrow()
+    } finally {
+      rmSync(repoDir, { recursive: true, force: true })
     }
   })
 })

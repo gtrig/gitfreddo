@@ -26,6 +26,7 @@ export type AppLocale = 'en' | 'el'
 
 export type SubmoduleRecursion = 'none' | 'on-demand' | 'always'
 export type PushSubmoduleRecursion = 'no' | 'check' | 'on-demand'
+export type PullMode = 'merge' | 'rebase' | 'ff-only'
 
 export interface AppSettings {
   theme: AppTheme
@@ -61,7 +62,7 @@ export interface AppSettings {
   gitlabAuthType: import('./gitlab').GitlabAuthType | null
   gitlabSshKeyTitle: string
   gitlabHost: string
-  pullRebase: boolean
+  pullMode: PullMode
   submoduleRecursion: SubmoduleRecursion
   pushSubmoduleRecursion: PushSubmoduleRecursion
   diffViewMode: 'unified' | 'split' | 'word'

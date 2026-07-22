@@ -65,6 +65,7 @@ export function useGitMutations() {
     setUpstream: wrap('branch.setUpstream'),
     unsetUpstream: wrap('branch.unsetUpstream'),
     deleteRemoteBranch: wrap('branch.deleteRemote'),
+    fastForwardBranch: wrap('branch.fastForward'),
     stageAdd: wrap('stage.add'),
     stageReset: wrap('stage.reset'),
     workingDiscard: wrap('working.discard'),

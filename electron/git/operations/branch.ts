@@ -2,9 +2,11 @@ import { runGit, runGitOrThrow } from '../git-runner'
 import {
   buildBranchCreateArgs,
   buildBranchDeleteArgs,
+  buildBranchFastForwardArgs,
   buildBranchListArgs,
   buildBranchRenameArgs,
   buildBranchSetUpstreamArgs,
+  buildBranchShowCurrentArgs,
   buildBranchUnsetUpstreamArgs,
   buildPushDeleteBranchArgs,
   buildRevParseAbbrevRefArgs,
@@ -168,6 +170,36 @@ export async function branchRename(
   newName: string
 ): Promise<void> {
   await runGitOrThrow(buildBranchRenameArgs({ oldName, newName }), {
+    cwd,
+    gitBinaryPath
+  })
+}
+
+export async function branchFastForward(
+  cwd: string,
+  gitBinaryPath: string,
+  branch: string,
+  toRef: string
+): Promise<void> {
+  const targetBranch = branch.trim()
+  const source = toRef.trim()
+  if (!targetBranch || !source) {
+    throw new Error('Branch and target ref are required.')
+  }
+  if (targetBranch === source) {
+    throw new Error('Branch and target ref must differ.')
+  }
+
+  const current = (
+    await runGitOrThrow(buildBranchShowCurrentArgs(), { cwd, gitBinaryPath })
+  ).trim()
+  if (current === targetBranch) {
+    throw new Error(
+      'Cannot fast-forward the checked-out branch without updating the working tree. Use merge --ff-only instead.'
+    )
+  }
+
+  await runGitOrThrow(buildBranchFastForwardArgs({ branch: targetBranch, toRef: source }), {
     cwd,
     gitBinaryPath
   })

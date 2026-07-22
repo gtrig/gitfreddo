@@ -15,6 +15,7 @@ import {
 import {
   buildBranchCreateArgs,
   buildBranchDeleteArgs,
+  buildBranchFastForwardArgs,
   buildBranchListArgs,
   buildBranchRenameArgs,
   buildBranchSetUpstreamArgs,
@@ -207,6 +208,7 @@ describe('GIT_COMMAND_REGISTRY', () => {
       'branch.set-upstream': { branch: 'main', upstream: 'origin/main' },
       'branch.unset-upstream': 'main',
       'branch.show-current': v,
+      'branch.fast-forward': { branch: 'feature', toRef: 'main' },
       add: { paths: ['a.ts'] },
       'reset.head-paths': { paths: ['a.ts'] },
       'reset.mode': { mode: 'soft' },
@@ -278,6 +280,11 @@ describe('command argv builders', () => {
       '--set-upstream-to'
     )
     expect(buildBranchUnsetUpstreamArgs('main')).toContain('--unset-upstream')
+    expect(buildBranchFastForwardArgs({ branch: 'feature', toRef: 'main' })).toEqual([
+      'fetch',
+      '.',
+      'main:feature'
+    ])
     expect(buildSwitchCheckoutArgs({ name: 'main', detach: true })).toContain('--detach')
     expect(buildSwitchCreateTrackingArgs({ local: 'feat', trackingRef: 'origin/feat' })).toContain(
       '--track'
@@ -339,6 +346,10 @@ describe('command argv builders', () => {
     expect(buildFetchArgs({ remote: 'origin', tags: true })).toContain('--prune')
     expect(buildPushArgs({ remote: 'origin', branch: 'main', setUpstream: true })).toContain('-u')
     expect(buildPullArgs({ remote: 'origin', rebase: true })).toContain('--rebase')
+    expect(buildPullArgs({ remote: 'origin', ffOnly: true })).toContain('--ff-only')
+    expect(buildPullArgs({ remote: 'origin', ffOnly: true, rebase: true })).not.toContain(
+      '--rebase'
+    )
     expect(buildPushDeleteBranchArgs({ remote: 'origin', branch: 'old' }).join(' ')).toContain(
       ':refs/heads/'
     )
@@ -392,6 +403,7 @@ describe('command argv builders', () => {
     expect(buildGitmodulesConfigArgs()).toContain('.gitmodules')
 
     expect(buildMergeStartArgs({ branch: 'feature', noFf: true })).toContain('--no-ff')
+    expect(buildMergeStartArgs({ branch: 'feature', ffOnly: true })).toContain('--ff-only')
     expect(buildMergeAbortArgs()).toContain('--abort')
     expect(buildMergeContinueArgs()).toContain('--continue')
     expect(buildRebaseStartArgs({ onto: 'main', from: 'topic' })).toContain('--onto')

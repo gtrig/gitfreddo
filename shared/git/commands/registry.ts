@@ -52,6 +52,7 @@ export const GIT_COMMAND_REGISTRY: Map<string, GitCommandDescriptor<unknown>> = 
   [branchCmd.branchSetUpstream.id, branchCmd.branchSetUpstream],
   [branchCmd.branchUnsetUpstream.id, branchCmd.branchUnsetUpstream],
   [branchCmd.branchShowCurrent.id, branchCmd.branchShowCurrent],
+  [branchCmd.branchFastForward.id, branchCmd.branchFastForward],
   [workingTree.add.id, workingTree.add],
   [workingTree.resetHead.id, workingTree.resetHead],
   [workingTree.resetMode.id, workingTree.resetMode],

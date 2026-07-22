@@ -110,7 +110,7 @@ let settings: AppSettings = {
   gitlabAuthType: null,
   gitlabSshKeyTitle: '',
   gitlabHost: '',
-  pullRebase: false,
+  pullMode: 'merge',
   submoduleRecursion: 'on-demand',
   pushSubmoduleRecursion: 'no',
   diffViewMode: 'unified',

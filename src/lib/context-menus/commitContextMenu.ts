@@ -22,6 +22,7 @@ export interface CommitContextMenuActions extends MultiCommitContextMenuActions 
   explainCommits: (commits: GitCommit[]) => void
   checkout: (params: BranchCheckoutParams) => void
   mergeBranch: (branchName: string) => void
+  fastForwardBranch?: (branchName: string) => void
   createWorktreeFromCommit: (commit: GitCommit) => void
   createBranch: (hash: string) => void
   createTag: (hash: string) => void
@@ -274,6 +275,19 @@ export function buildCommitContextMenuItems({
         disabled: gitBusy || workingTreeDirty || alreadyMerged,
         onClick: () => actions.mergeBranch(branchName)
       })
+      if (!alreadyMerged && actions.fastForwardBranch) {
+        items.push({
+          id: `fast-forward-${branchName}`,
+          label: t
+            ? t('contextMenu.sidebar.fastForwardCurrentTo', {
+                current: branch,
+                branch: branchName
+              })
+            : `Fast-forward ${branch} to ${branchName}`,
+          disabled: gitBusy || workingTreeDirty,
+          onClick: () => actions.fastForwardBranch!(branchName)
+        })
+      }
     }
   }
 

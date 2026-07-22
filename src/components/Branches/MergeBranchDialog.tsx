@@ -25,6 +25,7 @@ export function MergeBranchDialog({ sourceBranch, targetBranch, onClose }: Merge
   const [error, setError] = useState<string | null>(null)
   const [noFf, setNoFf] = useState(false)
   const [squash, setSquash] = useState(false)
+  const [ffOnly, setFfOnly] = useState(false)
 
   const effectiveTarget = targetBranch ?? current?.name
   // The reverse direction merges the current branch into another branch, which git
@@ -42,12 +43,46 @@ export function MergeBranchDialog({ sourceBranch, targetBranch, onClose }: Merge
           })}
         </p>
         <label className="flex items-center gap-2 text-sm text-gf-fg-muted">
-          <Checkbox checked={noFf} onChange={(e) => setNoFf(e.target.checked)} />
+          <Checkbox
+            checked={noFf}
+            onChange={(e) => {
+              const checked = e.target.checked
+              setNoFf(checked)
+              if (checked) {
+                setSquash(false)
+                setFfOnly(false)
+              }
+            }}
+          />
           {t('modals.mergeBranch.noFf')}
         </label>
         <label className="flex items-center gap-2 text-sm text-gf-fg-muted">
-          <Checkbox checked={squash} onChange={(e) => setSquash(e.target.checked)} />
+          <Checkbox
+            checked={squash}
+            onChange={(e) => {
+              const checked = e.target.checked
+              setSquash(checked)
+              if (checked) {
+                setNoFf(false)
+                setFfOnly(false)
+              }
+            }}
+          />
           {t('modals.mergeBranch.squash')}
+        </label>
+        <label className="flex items-center gap-2 text-sm text-gf-fg-muted">
+          <Checkbox
+            checked={ffOnly}
+            onChange={(e) => {
+              const checked = e.target.checked
+              setFfOnly(checked)
+              if (checked) {
+                setNoFf(false)
+                setSquash(false)
+              }
+            }}
+          />
+          {t('modals.mergeBranch.ffOnly')}
         </label>
         {error && <p className="text-sm text-red-400">{error}</p>}
         <div className="flex justify-end gap-2">
@@ -61,12 +96,14 @@ export function MergeBranchDialog({ sourceBranch, targetBranch, onClose }: Merge
                       sourceBranch,
                       targetBranch: targetBranch!,
                       noFf,
-                      squash
+                      squash,
+                      ffOnly
                     })
                   : await merge.mutateAsync({
                       branch: sourceBranch,
                       noFf,
-                      squash
+                      squash,
+                      ffOnly
                     })) as GitMergeStartResult
                 onClose()
                 if (result.status === 'conflicts') {
