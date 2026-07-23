@@ -11,7 +11,7 @@ import { useAiEnabled } from '@/hooks/useAppSettings'
 import { useAiFill } from '@/hooks/useAiFill'
 import { useToastStore } from '@/stores/toast'
 import { useInvalidateGit } from '@/hooks/useInvalidateGit'
-import { buildFileTree, type FileTreeNode } from '@/lib/workspace/fileTree'
+import { buildFileTree, collectFolderPaths, type FileTreeNode } from '@/lib/workspace/fileTree'
 import { FILE_ROW_HEIGHT, VIRTUAL_OVERSCAN, shouldVirtualize } from '@/lib/ui/virtualList'
 import { parseConflictMarkers } from '@/lib/conflicts/conflictMarkers'
 import { hasUnresolvedMarkers } from '@/lib/conflicts/threeWayMerge'
@@ -75,6 +75,15 @@ function ConflictFileRow({
   )
 }
 
+function ResolvedFileRow({ path }: { path: string }) {
+  return (
+    <div className="flex items-center gap-2 rounded px-2 py-1 text-xs text-gf-fg-muted">
+      <span className="inline-block w-3 text-center font-mono text-[11px] text-emerald-400">✓</span>
+      <span className="truncate font-mono">{path}</span>
+    </div>
+  )
+}
+
 function TreeFolder({
   node,
   depth,
@@ -82,7 +91,7 @@ function TreeFolder({
   toggleExpanded,
   selectedFile,
   onSelectFile,
-  conflictedSet,
+  mode,
   pendingAiProposals,
   aiProposalsTitle
 }: {
@@ -91,10 +100,10 @@ function TreeFolder({
   expandedPaths: Set<string>
   toggleExpanded: (path: string) => void
   selectedFile: string | null
-  onSelectFile: (path: string) => void
-  conflictedSet: Set<string>
-  pendingAiProposals: Record<string, { count: number; avgConfidence: number }>
-  aiProposalsTitle: (count: number) => string
+  onSelectFile?: (path: string) => void
+  mode: 'conflicted' | 'resolved'
+  pendingAiProposals?: Record<string, { count: number; avgConfidence: number }>
+  aiProposalsTitle?: (count: number) => string
 }) {
   if (node.type === 'folder') {
     const open = expandedPaths.has(node.path)
@@ -119,7 +128,7 @@ function TreeFolder({
               toggleExpanded={toggleExpanded}
               selectedFile={selectedFile}
               onSelectFile={onSelectFile}
-              conflictedSet={conflictedSet}
+              mode={mode}
               pendingAiProposals={pendingAiProposals}
               aiProposalsTitle={aiProposalsTitle}
             />
@@ -128,17 +137,19 @@ function TreeFolder({
     )
   }
 
-  if (!conflictedSet.has(node.path)) return null
-
   return (
     <div style={{ paddingLeft: depth * 12 + 16 }}>
-      <ConflictFileRow
-        path={node.path}
-        selected={selectedFile === node.path}
-        proposalSummary={pendingAiProposals[node.path]}
-        onSelect={() => onSelectFile(node.path)}
-        aiProposalsTitle={aiProposalsTitle}
-      />
+      {mode === 'conflicted' ? (
+        <ConflictFileRow
+          path={node.name}
+          selected={selectedFile === node.path}
+          proposalSummary={pendingAiProposals?.[node.path]}
+          onSelect={() => onSelectFile?.(node.path)}
+          aiProposalsTitle={aiProposalsTitle ?? (() => '')}
+        />
+      ) : (
+        <ResolvedFileRow path={node.name} />
+      )}
     </div>
   )
 }
@@ -216,6 +227,24 @@ export function MergeConflictsPanel() {
       ),
     [resolvedPaths]
   )
+
+  const hasTreeFolders =
+    collectFolderPaths(conflictedTree).length > 0 || collectFolderPaths(resolvedTree).length > 0
+
+  function expandAllFolders() {
+    setExpandedPaths(
+      new Set([...collectFolderPaths(conflictedTree), ...collectFolderPaths(resolvedTree)])
+    )
+  }
+
+  function toggleExpanded(path: string) {
+    setExpandedPaths((current) => {
+      const next = new Set(current)
+      if (next.has(path)) next.delete(path)
+      else next.add(path)
+      return next
+    })
+  }
 
   async function verifyNoMarkers(paths: string[]): Promise<boolean> {
     if (!repoPath) return false
@@ -325,13 +354,37 @@ export function MergeConflictsPanel() {
               </p>
             )}
           </div>
-          <button
-            type="button"
-            onClick={() => setViewMode((m) => (m === 'path' ? 'tree' : 'path'))}
-            className="shrink-0 rounded border border-gf-border-strong px-2 py-0.5 text-[10px] text-gf-fg-subtle hover:bg-gf-surface"
-          >
-            {viewMode === 'path' ? t('conflicts.path') : t('conflicts.tree')}
-          </button>
+        </div>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex rounded-md border border-gf-border-strong p-0.5 text-[10px]">
+            <button
+              type="button"
+              onClick={() => setViewMode('path')}
+              className={`rounded px-2 py-0.5 ${
+                viewMode === 'path' ? 'bg-gf-accent text-white' : 'text-gf-fg-subtle hover:text-gf-fg-muted'
+              }`}
+            >
+              {t('conflicts.path')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('tree')}
+              className={`rounded px-2 py-0.5 ${
+                viewMode === 'tree' ? 'bg-gf-accent text-white' : 'text-gf-fg-subtle hover:text-gf-fg-muted'
+              }`}
+            >
+              {t('conflicts.tree')}
+            </button>
+          </div>
+          {viewMode === 'tree' && hasTreeFolders && (
+            <button
+              type="button"
+              onClick={expandAllFolders}
+              className="text-[10px] text-gf-accent-fg hover:text-gf-fg"
+            >
+              {t('conflicts.expandAll')}
+            </button>
+          )}
         </div>
       </div>
 
@@ -419,17 +472,10 @@ export function MergeConflictsPanel() {
                   node={node}
                   depth={0}
                   expandedPaths={expandedPaths}
-                  toggleExpanded={(p) =>
-                    setExpandedPaths((current) => {
-                      const next = new Set(current)
-                      if (next.has(p)) next.delete(p)
-                      else next.add(p)
-                      return next
-                    })
-                  }
+                  toggleExpanded={toggleExpanded}
                   selectedFile={selectedFile}
                   onSelectFile={setSelectedConflictFile}
-                  conflictedSet={conflictedSet}
+                  mode="conflicted"
                   pendingAiProposals={proposalSummaries}
                   aiProposalsTitle={(count) => t('conflicts.aiProposalsTitle', { count })}
                 />
@@ -462,10 +508,8 @@ export function MergeConflictsPanel() {
                           height: `${virtualItem.size}px`,
                           transform: `translateY(${virtualItem.start}px)`
                         }}
-                        className="flex items-center gap-2 rounded px-2 py-1 text-xs text-gf-fg-muted"
                       >
-                        <span className="inline-block w-3 text-center font-mono text-[11px] text-emerald-400">✓</span>
-                        <span className="truncate font-mono">{path}</span>
+                        <ResolvedFileRow path={path} />
                       </div>
                     )
                   })}
@@ -474,24 +518,22 @@ export function MergeConflictsPanel() {
             ) : (
               <div className="space-y-0.5">
                 {resolvedPaths.map((path) => (
-                  <div
-                    key={path}
-                    className="flex items-center gap-2 rounded px-2 py-1 text-xs text-gf-fg-muted"
-                  >
-                    <span className="inline-block w-3 text-center font-mono text-[11px] text-emerald-400">
-                      ✓
-                    </span>
-                    <span className="truncate font-mono">{path}</span>
-                  </div>
+                  <ResolvedFileRow key={path} path={path} />
                 ))}
               </div>
             )
           ) : (
             <div className="space-y-0.5">
               {resolvedTree.children.map((node) => (
-                <div key={node.path} className="text-xs font-mono text-gf-fg-muted">
-                  {node.path}
-                </div>
+                <TreeFolder
+                  key={node.path}
+                  node={node}
+                  depth={0}
+                  expandedPaths={expandedPaths}
+                  toggleExpanded={toggleExpanded}
+                  selectedFile={null}
+                  mode="resolved"
+                />
               ))}
             </div>
           )}

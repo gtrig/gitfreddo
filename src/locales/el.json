@@ -945,6 +945,7 @@
     "aiProposalsReady_plural": "Προτάσεις AI έτοιμες για {{count}} αρχεία — ανοίξτε για έλεγχο",
     "path": "Διαδρομή",
     "tree": "Δέντρο",
+    "expandAll": "Ανάπτυξη όλων",
     "conflictedFiles": "Αρχεία με σύγκρουση ({{count}})",
     "resolvedFiles": "Επιλυμένα αρχεία ({{count}})",
     "aiProposalsTitle": "{{count}} πρόταση(ες) AI",

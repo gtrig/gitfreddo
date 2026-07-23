@@ -5,6 +5,11 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+- Merge conflict panel has Path/Tree view and Expand all for nested folders.
+- Opening add/add (and similar) conflicts no longer errors when Git has no base stage.
+- Merge conflict tree view shows just the file name under its folders (not the full path again).
+- Amend previous commit now loads the message from the tip of the branch you have checked out, even when another branch (like `main`) is ahead.
+
 ## [0.5.0]
 
 - Fast-forward merges: dedicated menu actions, a merge-dialog `--ff-only` option, and update another local branch tip without checking it out.

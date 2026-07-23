@@ -9,7 +9,7 @@ import { useAiEnabled, useResolvedRemote } from '@/hooks/useAppSettings'
 import { useAiFill } from '@/hooks/useAiFill'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { usePushRemote } from '@/hooks/usePushRemote'
-import { useLogGraph } from '@/hooks/useGit'
+import { useLogGraph, useRepoStatus } from '@/hooks/useGit'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useLayoutStore } from '@/stores/layout'
 import { useToastStore } from '@/stores/toast'
@@ -38,6 +38,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
   const connected = useWorkspaceStore((s) => s.connected)
   const repoPath = useWorkspaceStore((s) => s.activePath)
   const { data: graph } = useLogGraph(connected)
+  const { data: repoStatus } = useRepoStatus(connected)
   const { commit, stageAdd, stashPush } = useGitMutations()
   const { pushRemote, isPushPending, forceConfirm, confirmForcePush, cancelForcePush } =
     usePushRemote()
@@ -83,7 +84,11 @@ export function CommitPanel({ working }: CommitPanelProps) {
   const hasUnstaged = unstagedFiles.length > 0
   const hasStaged = working.staged.length > 0
   const hasChanges = hasStaged || hasUnstaged
-  const headCommit = graph?.commits[0]
+  const headHash = repoStatus?.head
+  const headCommit = useMemo(() => {
+    if (!headHash || !graph?.commits.length) return undefined
+    return graph.commits.find((commit) => commit.hash === headHash)
+  }, [graph?.commits, headHash])
 
   const stagedPaths = useMemo(() => working.staged.map((file) => file.path), [working.staged])
   const allChangedPaths = useMemo(

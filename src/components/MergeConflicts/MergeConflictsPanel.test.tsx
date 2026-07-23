@@ -150,10 +150,41 @@ describe('MergeConflictsPanel', () => {
 
   it('toggles between tree and path views', async () => {
     renderWithProviders(<MergeConflictsPanel />)
-    await userEvent.click(screen.getByRole('button', { name: /^tree$/i }))
-    expect(screen.getByRole('button', { name: /^path$/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^tree$/i })).toHaveClass(/bg-gf-accent/)
     await userEvent.click(screen.getByRole('button', { name: /^path$/i }))
-    expect(screen.getByRole('button', { name: /^tree$/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^path$/i })).toHaveClass(/bg-gf-accent/)
+    expect(screen.getByRole('button', { name: /^tree$/i })).not.toHaveClass(/bg-gf-accent/)
+    await userEvent.click(screen.getByRole('button', { name: /^tree$/i }))
+    expect(screen.getByRole('button', { name: /^tree$/i })).toHaveClass(/bg-gf-accent/)
+  })
+
+  it('expands all folders in tree view', async () => {
+    const git = await import('@/hooks/useGit')
+    vi.mocked(git.useMergeStatus).mockReturnValue({
+      data: {
+        inProgress: true,
+        kind: 'merge',
+        conflictedPaths: ['src/nested/conflict.ts'],
+        incomingLabel: 'feature',
+        currentBranch: 'main'
+      },
+      isLoading: false,
+      error: null
+    } as unknown as ReturnType<typeof git.useMergeStatus>)
+    vi.mocked(git.useWorkingStatus).mockReturnValue({
+      data: {
+        staged: [{ path: 'lib/done.ts' }],
+        unstaged: [],
+        untracked: [],
+        conflicted: [{ path: 'src/nested/conflict.ts' }]
+      }
+    } as unknown as ReturnType<typeof git.useWorkingStatus>)
+
+    renderWithProviders(<MergeConflictsPanel />)
+    expect(screen.queryByText('conflict.ts')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /expand all/i }))
+    expect(screen.getByText('conflict.ts')).toBeInTheDocument()
+    expect(screen.getByText('done.ts')).toBeInTheDocument()
   })
 
   it('stages all conflicted files when markers are resolved', async () => {
@@ -283,7 +314,10 @@ describe('MergeConflictsPanel', () => {
     renderWithProviders(<MergeConflictsPanel />)
     await userEvent.click(screen.getByRole('button', { name: 'src/' }))
     await userEvent.click(screen.getByRole('button', { name: 'nested/' }))
-    expect(screen.getByText('src/nested/conflict.ts')).toBeInTheDocument()
+    expect(screen.getByText('conflict.ts')).toBeInTheDocument()
+    expect(screen.queryByText('src/nested/conflict.ts')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByText('conflict.ts'))
+    expect(useSelectionStore.getState().selectedConflictFile).toBe('src/nested/conflict.ts')
   })
 
   it('shows loading row while merge status is loading', async () => {
@@ -404,7 +438,7 @@ describe('MergeConflictsPanel', () => {
     } as unknown as ReturnType<typeof git.useMergeStatus>)
 
     renderWithProviders(<MergeConflictsPanel />)
-    await userEvent.click(screen.getByRole('button', { name: /^tree$/i }))
+    await userEvent.click(screen.getByRole('button', { name: /^path$/i }))
     expect(screen.getByText('src/file-0.ts')).toBeInTheDocument()
     expect(screen.getByText('src/file-54.ts')).toBeInTheDocument()
   })
@@ -421,7 +455,7 @@ describe('MergeConflictsPanel', () => {
     } as unknown as ReturnType<typeof git.useWorkingStatus>)
 
     renderWithProviders(<MergeConflictsPanel />)
-    await userEvent.click(screen.getByRole('button', { name: /^tree$/i }))
+    await userEvent.click(screen.getByRole('button', { name: /^path$/i }))
     expect(screen.getByText('resolved.txt')).toBeInTheDocument()
   })
 })

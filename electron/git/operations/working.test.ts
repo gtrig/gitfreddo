@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { workingAddToGitignore, workingRead } from './working'
+import { fileReadStage, workingAddToGitignore, workingRead } from './working'
 
 function initRepo(dir: string) {
   execSync('git init -b main', { cwd: dir, stdio: 'ignore' })
@@ -31,6 +31,56 @@ describe('workingRead', () => {
       exists: true,
       content: '*.txt text\n'
     })
+  })
+})
+
+describe('fileReadStage', () => {
+  it('returns empty string when an add/add conflict has no base stage', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'gf-read-stage-'))
+    initRepo(dir)
+    writeFileSync(join(dir, 'shared.txt'), 'root\n')
+    execSync('git add shared.txt', { cwd: dir, stdio: 'ignore' })
+    execSync('git commit -m "root"', { cwd: dir, stdio: 'ignore' })
+    execSync('git checkout -b side', { cwd: dir, stdio: 'ignore' })
+    writeFileSync(join(dir, 'lesson.go'), 'package side\n')
+    execSync('git add lesson.go', { cwd: dir, stdio: 'ignore' })
+    execSync('git commit -m "side adds lesson"', { cwd: dir, stdio: 'ignore' })
+    execSync('git checkout main', { cwd: dir, stdio: 'ignore' })
+    writeFileSync(join(dir, 'lesson.go'), 'package main\n')
+    execSync('git add lesson.go', { cwd: dir, stdio: 'ignore' })
+    execSync('git commit -m "main adds lesson"', { cwd: dir, stdio: 'ignore' })
+    try {
+      execSync('git merge side', { cwd: dir, stdio: 'ignore' })
+    } catch {
+      // expected conflict
+    }
+
+    await expect(fileReadStage(dir, 'git', 1, 'lesson.go')).resolves.toBe('')
+    await expect(fileReadStage(dir, 'git', 2, 'lesson.go')).resolves.toBe('package main\n')
+    await expect(fileReadStage(dir, 'git', 3, 'lesson.go')).resolves.toBe('package side\n')
+  })
+
+  it('returns stage content for a both-modified conflict', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'gf-read-stage-uu-'))
+    initRepo(dir)
+    writeFileSync(join(dir, 'file.txt'), 'base\n')
+    execSync('git add file.txt', { cwd: dir, stdio: 'ignore' })
+    execSync('git commit -m "base"', { cwd: dir, stdio: 'ignore' })
+    execSync('git checkout -b side', { cwd: dir, stdio: 'ignore' })
+    writeFileSync(join(dir, 'file.txt'), 'side\n')
+    execSync('git commit -am "side"', { cwd: dir, stdio: 'ignore' })
+    execSync('git checkout main', { cwd: dir, stdio: 'ignore' })
+    writeFileSync(join(dir, 'file.txt'), 'main\n')
+    execSync('git commit -am "main"', { cwd: dir, stdio: 'ignore' })
+    try {
+      execSync('git merge side', { cwd: dir, stdio: 'ignore' })
+    } catch {
+      // expected conflict
+    }
+
+    await expect(fileReadStage(dir, 'git', 1, 'file.txt')).resolves.toBe('base\n')
+    await expect(fileReadStage(dir, 'git', 2, 'file.txt')).resolves.toBe('main\n')
+    await expect(fileReadStage(dir, 'git', 3, 'file.txt')).resolves.toBe('side\n')
   })
 })
 

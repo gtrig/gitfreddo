@@ -11,6 +11,7 @@ import { useToastStore } from '@/stores/toast'
 import { renderWithProviders } from '@/test/render'
 import type { GitWorkingStatus } from '@/lib/types'
 import { useAiEnabled } from '@/hooks/useAppSettings'
+import { useLogGraph, useRepoStatus } from '@/hooks/useGit'
 
 const commitMutate = vi.fn(async () => undefined)
 const stageAddMutate = vi.fn(async () => undefined)
@@ -49,19 +50,27 @@ vi.mock('@/hooks/useAiFill', () => ({
   })
 }))
 
+const headHash = 'abc123def4567890123456789012345678901234'
+const mainTipHash = 'fff999aaa888777666555444333222111000ffff'
+
+const defaultGraphCommits = [
+  {
+    hash: headHash,
+    subject: 'Previous subject',
+    message: 'Previous subject\n\nPrevious body',
+    parents: [] as string[]
+  }
+]
+
 vi.mock('@/hooks/useGit', () => ({
   useLogGraph: vi.fn(() => ({
     data: {
-      commits: [
-        {
-          hash: 'abc123def4567890123456789012345678901234',
-          subject: 'Previous subject',
-          message: 'Previous subject\n\nPrevious body',
-          parents: []
-        }
-      ],
+      commits: defaultGraphCommits,
       refs: []
     }
+  })),
+  useRepoStatus: vi.fn(() => ({
+    data: { head: headHash, branch: 'main', isDetached: false, root: '/tmp/repo' }
   }))
 }))
 
@@ -122,6 +131,12 @@ describe('CommitPanel', () => {
     aiFillMutate.mockClear()
     showToast.mockClear()
     vi.mocked(useAiEnabled).mockReturnValue(true)
+    vi.mocked(useLogGraph).mockReturnValue({
+      data: { commits: defaultGraphCommits, refs: [] }
+    } as unknown as ReturnType<typeof useLogGraph>)
+    vi.mocked(useRepoStatus).mockReturnValue({
+      data: { head: headHash, branch: 'main', isDetached: false, root: '/tmp/repo' }
+    } as unknown as ReturnType<typeof useRepoStatus>)
 
     useLayoutStore.setState({ commitPanelHeight: COMMIT_PANEL_DEFAULT })
     useToastStore.setState({ message: null, tone: 'info', show: showToast, clear: vi.fn() })
@@ -213,6 +228,45 @@ describe('CommitPanel', () => {
     await userEvent.click(screen.getByRole('checkbox', { name: /amend previous commit/i }))
     expect(screen.getByPlaceholderText('Commit summary')).toHaveValue('Previous subject')
     expect(screen.getByPlaceholderText('Description')).toHaveValue('Previous body')
+  })
+
+  it('seeds amend from HEAD when the graph tip is a newer commit on another branch', async () => {
+    vi.mocked(useLogGraph).mockReturnValue({
+      data: {
+        commits: [
+          {
+            hash: mainTipHash,
+            subject: 'Main tip subject',
+            message: 'Main tip subject\n\nMain tip body',
+            parents: [headHash]
+          },
+          {
+            hash: headHash,
+            subject: 'Feature tip subject',
+            message: 'Feature tip subject\n\nFeature tip body',
+            parents: []
+          }
+        ],
+        refs: []
+      }
+    } as unknown as ReturnType<typeof useLogGraph>)
+    vi.mocked(useRepoStatus).mockReturnValue({
+      data: { head: headHash, branch: 'feature', isDetached: false, root: '/tmp/repo' }
+    } as unknown as ReturnType<typeof useRepoStatus>)
+
+    renderWithProviders(
+      <CommitPanel
+        working={{
+          ...emptyWorking,
+          branch: 'feature',
+          staged: [{ path: 'ready.txt', status: 'modified' }]
+        }}
+      />
+    )
+
+    await userEvent.click(screen.getByRole('checkbox', { name: /amend previous commit/i }))
+    expect(screen.getByPlaceholderText('Commit summary')).toHaveValue('Feature tip subject')
+    expect(screen.getByPlaceholderText('Description')).toHaveValue('Feature tip body')
   })
 
   it('pushes after commit when the option is enabled', async () => {

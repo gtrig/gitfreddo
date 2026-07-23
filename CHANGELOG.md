@@ -7,6 +7,26 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-23 — Conflict panel Path/Tree + Expand all
+
+- **Why:** Nested conflict paths were hard to browse with a single Tree toggle and collapsed folders.
+- **What:** Segmented Path/Tree control and Expand all (like commit file list); resolved files use the same nested tree with basenames. i18n for `conflicts.expandAll`.
+
+### 2026-07-23 — Conflict stages tolerate missing index entries
+
+- **Why:** Selecting an add/add conflicted file failed with `path is in the index, but not at stage 1` because `file.readStage` always required stages 1–3.
+- **What:** `fileReadStage` returns empty content when a stage is absent (add/add, modify/delete, etc.); both-modified conflicts still return all three stages. Co-located regression tests.
+
+### 2026-07-23 — Conflict tree shows file basename
+
+- **Why:** In the merge conflicts panel tree view, nested conflicted files repeated the full path under their folders (e.g. `lessons/.../mine/lesson...` instead of just the filename).
+- **What:** Tree leaf rows render `node.name`; selection still uses the full path. Regression test expects basename-only labels and click → full-path selection.
+
+### 2026-07-23 — Amend seeds from HEAD, not graph tip
+
+- **Why:** With a branch checked out behind `main`, “Amend previous commit” filled the message from `main`’s tip (`graph.commits[0]`) instead of the checked-out branch’s HEAD.
+- **What:** `CommitPanel` resolves the amend message from `repo.status` HEAD in the log graph; regression test covers HEAD behind a newer tip on another branch.
+
 ## [0.5.0] - 2026-07-22
 
 ### 2026-07-22 — Fast-forward actions

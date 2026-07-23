@@ -945,6 +945,7 @@
     "aiProposalsReady_plural": "AI proposals ready for {{count}} files — open to review",
     "path": "Path",
     "tree": "Tree",
+    "expandAll": "Expand all",
     "conflictedFiles": "Conflicted Files ({{count}})",
     "resolvedFiles": "Resolved Files ({{count}})",
     "aiProposalsTitle": "{{count}} AI proposal(s)",

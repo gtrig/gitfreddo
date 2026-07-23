@@ -75,7 +75,13 @@ export async function fileReadStage(
   stage: 1 | 2 | 3,
   path: string
 ): Promise<string> {
-  return runGitOrThrow(buildShowStageArgs({ stage, path }), { cwd, gitBinaryPath })
+  const result = await runGit(buildShowStageArgs({ stage, path }), { cwd, gitBinaryPath })
+  if (result.code === 0) return result.stdout
+  // Add/add, modify/delete, and similar conflicts omit some index stages.
+  if (/not at stage \d/i.test(result.stderr) || /does not exist/i.test(result.stderr)) {
+    return ''
+  }
+  throw new Error(result.stderr.trim() || result.stdout.trim() || `git exited with code ${result.code}`)
 }
 
 export async function workingAddToGitignore(
