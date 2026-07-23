@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-07-23 — Keep divergent tip chains on one graph lane
+
+- **Why:** With HEAD on `main` and another tip (e.g. `fix`) ahead on a parallel chain, claiming column 0 only moved the lane occupant — newer tip commits stayed on column 0, so the side branch kinked (0 → 1 → 0).
+- **What:** When HEAD displaces a divergent lane, reassign that commit and its first-parent descendants still on the old column. Regression test covers the fix/main fork case from the timeline screenshot.
+
 ### 2026-07-23 — Conflict panel Path/Tree + Expand all
 
 - **Why:** Nested conflict paths were hard to browse with a single Tree toggle and collapsed folders.

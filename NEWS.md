@@ -5,6 +5,7 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+- Commit graph keeps a side branch (like `fix`) on one straight lane when HEAD is on another branch — no more zigzag back to column 0.
 - Merge conflict panel has Path/Tree view and Expand all for nested folders.
 - Opening add/add (and similar) conflicts no longer errors when Git has no base stage.
 - Merge conflict tree view shows just the file name under its folders (not the full path again).

@@ -199,6 +199,29 @@ describe('buildGitGraphLayout', () => {
     expect(columnOf(layoutReversed, '078238a')).toBe(0)
   })
 
+  it('keeps a divergent tip chain on one side lane when HEAD is on another branch', () => {
+    // HEAD on main; fix is ahead on a parallel first-parent chain from the same fork.
+    // Displacing only the lane occupant used to kink fix (tip@0 → mid@1 → fork@0).
+    const layout = buildGitGraphLayout(
+      [
+        commit('bfbc34b', ['471ce78'], 'fix tip'),
+        commit('471ce78', ['6dcc423'], 'fix mid'),
+        commit('6dcc423', ['fork'], 'fix base'),
+        commit('dcbcc96', ['fork'], 'main tip'),
+        commit('fork', ['base'], 'fork'),
+        commit('base', [])
+      ],
+      'dcbcc96'
+    )
+
+    expect(columnOf(layout, 'dcbcc96')).toBe(0)
+    expect(columnOf(layout, 'fork')).toBe(0)
+    const fixColumn = columnOf(layout, 'bfbc34b')
+    expect(fixColumn).toBeGreaterThan(0)
+    expect(columnOf(layout, '471ce78')).toBe(fixColumn)
+    expect(columnOf(layout, '6dcc423')).toBe(fixColumn)
+  })
+
   it('anchors stash pad after the base commit hash was rewritten', () => {
     const stash = {
       ...commit(

@@ -80,6 +80,28 @@ function insertActiveBranch(
   return branches.length - 1
 }
 
+/** Reassign a displaced lane occupant and its first-parent descendants still on that lane. */
+function reassignFirstParentDescendantsOnColumn(
+  rootSha: string,
+  fromColumn: number,
+  toColumn: number,
+  columnByHash: Map<string, number>,
+  childrenByHash: Map<string, string[]>,
+  parentsByHash: Map<string, string[]>
+): void {
+  const queue = [rootSha]
+  while (queue.length > 0) {
+    const sha = queue.shift()!
+    if (columnByHash.get(sha) !== fromColumn) continue
+    columnByHash.set(sha, toColumn)
+    for (const childSha of childrenByHash.get(sha) ?? []) {
+      if (parentsByHash.get(childSha)?.[0] === sha) {
+        queue.push(childSha)
+      }
+    }
+  }
+}
+
 function applyStashPadLayout(layout: GitGraphLayout, commits: GitCommit[]): GitGraphLayout {
   const stashRows = layout.rows.filter((row) => row.isStash)
   if (stashRows.length === 0) return layout
@@ -196,7 +218,16 @@ export function buildGitGraphLayout(commits: GitCommit[], head: string): GitGrap
         !branchChildren.includes(displaced)
       ) {
         const newColumn = insertActiveBranch(branches, column, displaced, forbiddenIndices)
-        columnByHash.set(displaced, newColumn)
+        // Move the whole first-parent chain already painted on this lane — otherwise
+        // only the lane occupant shifts and newer tip commits kink back to column 0.
+        reassignFirstParentDescendantsOnColumn(
+          displaced,
+          column,
+          newColumn,
+          columnByHash,
+          childrenByHash,
+          parentsByHash
+        )
       }
     } else if (children.length > 0) {
       const childColumn = columnByHash.get(children[0]) ?? 0
