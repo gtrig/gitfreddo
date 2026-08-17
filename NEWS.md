@@ -5,6 +5,8 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+## [0.5.2]
+
 - File preview closes after a successful commit instead of staying open and empty.
 
 ## [0.5.1]

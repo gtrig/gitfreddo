@@ -7,6 +7,8 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-08-17
+
 ### 2026-08-17 — Close file preview after commit
 
 - **Why:** After committing, the file preview stayed open and empty because the selected working-tree file was no longer in the list.
@@ -563,6 +565,7 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 - Git config editor and `.gitignore` / `.gitattributes` editor
 - Linux (AppImage, deb) and Windows (NSIS) installers via GitHub Actions
 
+[0.5.2]: https://github.com/gtrig/gitfreddo/releases/tag/v0.5.2
 [0.5.1]: https://github.com/gtrig/gitfreddo/releases/tag/v0.5.1
 [0.5.0]: https://github.com/gtrig/gitfreddo/releases/tag/v0.5.0
 [0.4.9]: https://github.com/gtrig/gitfreddo/releases/tag/v0.4.9
