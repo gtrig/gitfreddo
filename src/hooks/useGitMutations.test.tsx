@@ -304,4 +304,25 @@ describe('useGitMutations', () => {
       expect(selection.diffMode).toBe(diffMode)
     }
   )
+
+  it('does not call closeDiffOverlay for wrap methods other than commit.create', async () => {
+    const closeDiffOverlay = vi.fn()
+    const originalClose = useSelectionStore.getState().closeDiffOverlay
+    useSelectionStore.setState({
+      diffMode: 'working',
+      selectedWorkingFile: 'dirty.txt',
+      closeDiffOverlay
+    })
+
+    try {
+      const { result } = renderHook(() => useGitMutations(), { wrapper })
+      await act(async () => {
+        await result.current.stageAdd.mutateAsync({ paths: ['dirty.txt'] })
+      })
+
+      expect(closeDiffOverlay).not.toHaveBeenCalled()
+    } finally {
+      useSelectionStore.setState({ closeDiffOverlay: originalClose })
+    }
+  })
 })
