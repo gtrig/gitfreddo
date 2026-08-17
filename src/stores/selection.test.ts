@@ -70,6 +70,54 @@ describe('useSelectionStore', () => {
     expect(state.selectedWorkingFile).toBeNull()
   })
 
+  it('always pairs a working-tree preview with working or staged diffMode', () => {
+    const store = useSelectionStore.getState()
+
+    store.setSelectedWorkingFile('unstaged.ts')
+    expect(useSelectionStore.getState()).toMatchObject({
+      selectedWorkingFile: 'unstaged.ts',
+      diffMode: 'working'
+    })
+
+    store.setSelectedWorkingFile('staged.ts', 'staged')
+    expect(useSelectionStore.getState()).toMatchObject({
+      selectedWorkingFile: 'staged.ts',
+      diffMode: 'staged'
+    })
+
+    store.setSelectedWorkingFile(null)
+    expect(useSelectionStore.getState()).toMatchObject({
+      selectedWorkingFile: null,
+      diffMode: null
+    })
+  })
+
+  it('keeps working/staged diffMode when setting the primary commit', () => {
+    const store = useSelectionStore.getState()
+    store.toggleCommitSelection('abc')
+    store.setSelectedWorkingFile('dirty.ts', 'working')
+    store.setPrimaryCommit('abc')
+
+    expect(useSelectionStore.getState()).toMatchObject({
+      selectedWorkingFile: 'dirty.ts',
+      diffMode: 'working',
+      selectedCommitHash: 'abc'
+    })
+  })
+
+  it('clears a commit-file preview when setting the primary commit', () => {
+    const store = useSelectionStore.getState()
+    store.toggleCommitSelection('abc')
+    store.setSelectedCommitFile('src/app.ts')
+    store.setPrimaryCommit('abc')
+
+    expect(useSelectionStore.getState()).toMatchObject({
+      selectedCommitFile: null,
+      diffMode: null,
+      selectedCommitHash: 'abc'
+    })
+  })
+
   it('supports primary commit, compare range, stash, and AI proposal state', () => {
     const store = useSelectionStore.getState()
     store.toggleCommitSelection('primary')
