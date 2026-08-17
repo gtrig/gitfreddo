@@ -5,6 +5,8 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+- File preview closes after a successful commit instead of staying open and empty.
+
 ## [0.5.1]
 
 - Commit graph keeps a side branch (like `fix`) on one straight lane when HEAD is on another branch — no more zigzag back to column 0.

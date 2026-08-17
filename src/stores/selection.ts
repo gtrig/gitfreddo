@@ -126,11 +126,14 @@ export const useSelectionStore = create<SelectionState>((set) => ({
         return state
       }
 
+      const keepWorkingPreview = state.diffMode === 'working' || state.diffMode === 'staged'
+
       return {
         timelineSelection: { kind: 'commit', id: hash },
         selectedCommitHash: hash,
+        // Working/staged previews never have a commit file; always clear so mixed state cannot linger.
         selectedCommitFile: null,
-        diffMode: null
+        diffMode: keepWorkingPreview ? state.diffMode : null
       }
     }),
   showCompareCommitRange: (oldestHash, newestHash, label) =>

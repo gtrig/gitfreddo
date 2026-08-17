@@ -10,6 +10,7 @@ import { createGitFreddoMock } from '@/test/mocks/gitfreddo'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
 import { useOperationStore } from '@/stores/operation'
+import { useSelectionStore } from '@/stores/selection'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -35,6 +36,15 @@ describe('useGitMutations', () => {
       connected: true
     })
     useToastStore.setState({ message: null, tone: 'info', show: vi.fn(), clear: vi.fn() })
+    useSelectionStore.setState({
+      selectedWorkingFile: null,
+      selectedCommitFile: null,
+      selectedCommitHash: null,
+      selectedStashFile: null,
+      selectedStashIndex: null,
+      compareCommitRange: null,
+      diffMode: null
+    })
     useOperationStore.setState({
       count: 0,
       message: null,
@@ -186,5 +196,133 @@ describe('useGitMutations', () => {
 
     expect(window.gitfreddo.invoke).toHaveBeenCalledWith('branch.checkout', { name: 'main' })
     expect(window.gitfreddo.invoke).toHaveBeenCalledWith('notes.add', { hash: 'abc', message: 'note' })
+  })
+
+  it.each(['working', 'staged'] as const)(
+    'closes the %s file preview after a successful commit',
+    async (diffMode) => {
+      useSelectionStore.setState({
+        diffMode,
+        selectedWorkingFile: 'ready.txt',
+        selectedCommitFile: null,
+        selectedStashFile: null,
+        selectedStashIndex: null,
+        compareCommitRange: null
+      })
+
+      const { result } = renderHook(() => useGitMutations(), { wrapper })
+      await act(async () => {
+        await result.current.commit.mutateAsync({ message: 'feat: ship it' })
+      })
+
+      const selection = useSelectionStore.getState()
+      expect(selection.selectedWorkingFile).toBeNull()
+      expect(selection.diffMode).toBeNull()
+    }
+  )
+
+  it.each([
+    {
+      diffMode: 'commit-range' as const,
+      extra: {
+        compareCommitRange: { oldestHash: 'aaa', newestHash: 'bbb', label: 'aaa..bbb' }
+      }
+    },
+    {
+      diffMode: 'stash' as const,
+      extra: { selectedStashIndex: 0, selectedStashFile: 'stashed.txt' }
+    },
+    {
+      diffMode: 'commit' as const,
+      extra: { selectedCommitHash: 'abc1234', selectedCommitFile: 'src/app.ts' }
+    }
+  ])('leaves a $diffMode preview open after a successful commit', async ({ diffMode, extra }) => {
+    useSelectionStore.setState({
+      diffMode,
+      selectedWorkingFile: null,
+      ...extra
+    })
+
+    const { result } = renderHook(() => useGitMutations(), { wrapper })
+    await act(async () => {
+      await result.current.commit.mutateAsync({ message: 'feat: ship it' })
+    })
+
+    const selection = useSelectionStore.getState()
+    expect(selection.diffMode).toBe(diffMode)
+    expect(selection).toMatchObject(extra)
+  })
+
+  it('keeps the working-tree file preview open when commit fails', async () => {
+    vi.mocked(window.gitfreddo.invoke).mockRejectedValueOnce(new Error('hook failed'))
+    useSelectionStore.setState({
+      diffMode: 'working',
+      selectedWorkingFile: 'dirty.txt'
+    })
+
+    const { result } = renderHook(() => useGitMutations(), { wrapper })
+    await expect(result.current.commit.mutateAsync({ message: 'feat: nope' })).rejects.toThrow(
+      'hook failed'
+    )
+
+    const selection = useSelectionStore.getState()
+    expect(selection.selectedWorkingFile).toBe('dirty.txt')
+    expect(selection.diffMode).toBe('working')
+  })
+
+  it.each(
+    (['working', 'staged'] as const).flatMap((diffMode) =>
+      (
+        [
+          {
+            mutation: 'stashPush',
+            run: (git: ReturnType<typeof useGitMutations>) =>
+              git.stashPush.mutateAsync({ message: 'wip' })
+          },
+          {
+            mutation: 'checkout',
+            run: (git: ReturnType<typeof useGitMutations>) => git.checkout.mutateAsync({ name: 'main' })
+          }
+        ] as const
+      ).map((entry) => ({ diffMode, ...entry }))
+    )
+  )(
+    'leaves the $diffMode file preview open after $mutation',
+    async ({ diffMode, run }) => {
+      useSelectionStore.setState({
+        diffMode,
+        selectedWorkingFile: 'dirty.txt'
+      })
+
+      const { result } = renderHook(() => useGitMutations(), { wrapper })
+      await act(async () => {
+        await run(result.current)
+      })
+
+      const selection = useSelectionStore.getState()
+      expect(selection.selectedWorkingFile).toBe('dirty.txt')
+      expect(selection.diffMode).toBe(diffMode)
+    }
+  )
+
+  it('does not call closeDiffOverlay for wrap methods other than commit.create', async () => {
+    const closeDiffOverlay = vi.fn()
+    const originalClose = useSelectionStore.getState().closeDiffOverlay
+    useSelectionStore.setState({
+      diffMode: 'working',
+      selectedWorkingFile: 'dirty.txt',
+      closeDiffOverlay
+    })
+
+    try {
+      const { result } = renderHook(() => useGitMutations(), { wrapper })
+      await act(async () => {
+        await result.current.stageAdd.mutateAsync({ paths: ['dirty.txt'] })
+      })
+
+      expect(closeDiffOverlay).not.toHaveBeenCalled()
+    } finally {
+      useSelectionStore.setState({ closeDiffOverlay: originalClose })
+    }
   })
 })

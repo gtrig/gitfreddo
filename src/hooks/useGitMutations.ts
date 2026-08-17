@@ -5,6 +5,7 @@ import { gitIpcInvalidates } from '@shared/git/ipc'
 import { useInvalidateGit } from '@/hooks/useInvalidateGit'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
+import { useSelectionStore } from '@/stores/selection'
 import { useOperationStore, showHookExecutionToast } from '@/stores/operation'
 
 const REMOTE_ACTION_KEYS: Record<string, { success: string; error: string }> = {
@@ -46,6 +47,14 @@ export function useGitMutations() {
       },
       onSuccess: () => {
         invalidate(...keys)
+        if (method === 'commit.create') {
+          const { diffMode, closeDiffOverlay } = useSelectionStore.getState()
+          // Only commit.create closes the overlay. Other wrap() methods (stash, checkout, …) must not.
+          // Working/staged previews always set diffMode via setSelectedWorkingFile.
+          if (diffMode === 'working' || diffMode === 'staged') {
+            closeDiffOverlay()
+          }
+        }
         if (remoteAction) {
           showToast(t(remoteAction.success), 'success')
         }
