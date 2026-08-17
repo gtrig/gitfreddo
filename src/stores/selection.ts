@@ -131,6 +131,7 @@ export const useSelectionStore = create<SelectionState>((set) => ({
       return {
         timelineSelection: { kind: 'commit', id: hash },
         selectedCommitHash: hash,
+        // Working/staged previews never have a commit file; always clear so mixed state cannot linger.
         selectedCommitFile: null,
         diffMode: keepWorkingPreview ? state.diffMode : null
       }

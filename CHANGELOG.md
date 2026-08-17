@@ -10,7 +10,7 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 ### 2026-08-17 — Close file preview after commit
 
 - **Why:** After committing, the file preview stayed open and empty because the selected working-tree file was no longer in the list.
-- **What:** Successful `commit.create` closes the working/staged diff overlay; commit, stash, and commit-range previews stay open. Failed commits and other mutations (stash, checkout) leave the preview as-is. Tests cover close modes, leave-open modes, and the commit-only method guard. `setSelectedWorkingFile` always pairs a file with `working`/`staged` `diffMode`; setting the primary commit no longer clears that pairing.
+- **What:** Successful `commit.create` closes the working/staged diff overlay; commit, stash, and commit-range previews stay open. Failed commits and other mutations (stash, checkout) leave the preview as-is. Tests cover close modes, leave-open modes, and the commit-only method guard. `setSelectedWorkingFile` always pairs a file with `working`/`staged` `diffMode` and clears `selectedCommitFile`; setting the primary commit keeps that pairing and still drops a leftover commit file.
 
 ## [0.5.1] - 2026-07-23
 
