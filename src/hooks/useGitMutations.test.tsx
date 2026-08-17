@@ -39,6 +39,7 @@ describe('useGitMutations', () => {
     useSelectionStore.setState({
       selectedWorkingFile: null,
       selectedCommitFile: null,
+      selectedCommitHash: null,
       selectedStashFile: null,
       selectedStashIndex: null,
       compareCommitRange: null,
@@ -197,29 +198,49 @@ describe('useGitMutations', () => {
     expect(window.gitfreddo.invoke).toHaveBeenCalledWith('notes.add', { hash: 'abc', message: 'note' })
   })
 
-  it('closes the working-tree file preview after a successful commit', async () => {
+  it.each(['working', 'staged'] as const)(
+    'closes the %s file preview after a successful commit',
+    async (diffMode) => {
+      useSelectionStore.setState({
+        diffMode,
+        selectedWorkingFile: 'ready.txt',
+        selectedCommitFile: null,
+        selectedStashFile: null,
+        selectedStashIndex: null,
+        compareCommitRange: null
+      })
+
+      const { result } = renderHook(() => useGitMutations(), { wrapper })
+      await act(async () => {
+        await result.current.commit.mutateAsync({ message: 'feat: ship it' })
+      })
+
+      const selection = useSelectionStore.getState()
+      expect(selection.selectedWorkingFile).toBeNull()
+      expect(selection.diffMode).toBeNull()
+    }
+  )
+
+  it.each([
+    {
+      diffMode: 'commit-range' as const,
+      extra: {
+        compareCommitRange: { oldestHash: 'aaa', newestHash: 'bbb', label: 'aaa..bbb' }
+      }
+    },
+    {
+      diffMode: 'stash' as const,
+      extra: { selectedStashIndex: 0, selectedStashFile: 'stashed.txt' }
+    },
+    {
+      diffMode: 'commit' as const,
+      extra: { selectedCommitHash: 'abc1234', selectedCommitFile: 'src/app.ts' }
+    }
+  ])('leaves a $diffMode preview open after a successful commit', async ({ diffMode, extra }) => {
     useSelectionStore.setState({
-      diffMode: 'staged',
-      selectedWorkingFile: 'ready.txt',
-      selectedCommitFile: null,
-      compareCommitRange: null
-    })
-
-    const { result } = renderHook(() => useGitMutations(), { wrapper })
-    await act(async () => {
-      await result.current.commit.mutateAsync({ message: 'feat: ship it' })
-    })
-
-    const selection = useSelectionStore.getState()
-    expect(selection.selectedWorkingFile).toBeNull()
-    expect(selection.diffMode).toBeNull()
-  })
-
-  it('leaves a commit-range preview open after a successful commit', async () => {
-    useSelectionStore.setState({
-      diffMode: 'commit-range',
+      diffMode,
       selectedWorkingFile: null,
-      compareCommitRange: { oldestHash: 'aaa', newestHash: 'bbb', label: 'aaa..bbb' }
+      ...extra
     })
 
     const { result } = renderHook(() => useGitMutations(), { wrapper })
@@ -228,12 +249,8 @@ describe('useGitMutations', () => {
     })
 
     const selection = useSelectionStore.getState()
-    expect(selection.diffMode).toBe('commit-range')
-    expect(selection.compareCommitRange).toEqual({
-      oldestHash: 'aaa',
-      newestHash: 'bbb',
-      label: 'aaa..bbb'
-    })
+    expect(selection.diffMode).toBe(diffMode)
+    expect(selection).toMatchObject(extra)
   })
 
   it('keeps the working-tree file preview open when commit fails', async () => {
