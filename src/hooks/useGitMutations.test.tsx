@@ -10,6 +10,7 @@ import { createGitFreddoMock } from '@/test/mocks/gitfreddo'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
 import { useOperationStore } from '@/stores/operation'
+import { useSelectionStore } from '@/stores/selection'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -35,6 +36,14 @@ describe('useGitMutations', () => {
       connected: true
     })
     useToastStore.setState({ message: null, tone: 'info', show: vi.fn(), clear: vi.fn() })
+    useSelectionStore.setState({
+      selectedWorkingFile: null,
+      selectedCommitFile: null,
+      selectedStashFile: null,
+      selectedStashIndex: null,
+      compareCommitRange: null,
+      diffMode: null
+    })
     useOperationStore.setState({
       count: 0,
       message: null,
@@ -186,5 +195,61 @@ describe('useGitMutations', () => {
 
     expect(window.gitfreddo.invoke).toHaveBeenCalledWith('branch.checkout', { name: 'main' })
     expect(window.gitfreddo.invoke).toHaveBeenCalledWith('notes.add', { hash: 'abc', message: 'note' })
+  })
+
+  it('closes the working-tree file preview after a successful commit', async () => {
+    useSelectionStore.setState({
+      diffMode: 'staged',
+      selectedWorkingFile: 'ready.txt',
+      selectedCommitFile: null,
+      compareCommitRange: null
+    })
+
+    const { result } = renderHook(() => useGitMutations(), { wrapper })
+    await act(async () => {
+      await result.current.commit.mutateAsync({ message: 'feat: ship it' })
+    })
+
+    const selection = useSelectionStore.getState()
+    expect(selection.selectedWorkingFile).toBeNull()
+    expect(selection.diffMode).toBeNull()
+  })
+
+  it('leaves a commit-range preview open after a successful commit', async () => {
+    useSelectionStore.setState({
+      diffMode: 'commit-range',
+      selectedWorkingFile: null,
+      compareCommitRange: { oldestHash: 'aaa', newestHash: 'bbb', label: 'aaa..bbb' }
+    })
+
+    const { result } = renderHook(() => useGitMutations(), { wrapper })
+    await act(async () => {
+      await result.current.commit.mutateAsync({ message: 'feat: ship it' })
+    })
+
+    const selection = useSelectionStore.getState()
+    expect(selection.diffMode).toBe('commit-range')
+    expect(selection.compareCommitRange).toEqual({
+      oldestHash: 'aaa',
+      newestHash: 'bbb',
+      label: 'aaa..bbb'
+    })
+  })
+
+  it('keeps the working-tree file preview open when commit fails', async () => {
+    vi.mocked(window.gitfreddo.invoke).mockRejectedValueOnce(new Error('hook failed'))
+    useSelectionStore.setState({
+      diffMode: 'working',
+      selectedWorkingFile: 'dirty.txt'
+    })
+
+    const { result } = renderHook(() => useGitMutations(), { wrapper })
+    await expect(result.current.commit.mutateAsync({ message: 'feat: nope' })).rejects.toThrow(
+      'hook failed'
+    )
+
+    const selection = useSelectionStore.getState()
+    expect(selection.selectedWorkingFile).toBe('dirty.txt')
+    expect(selection.diffMode).toBe('working')
   })
 })
