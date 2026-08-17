@@ -270,9 +270,25 @@ describe('useGitMutations', () => {
     expect(selection.diffMode).toBe('working')
   })
 
-  it.each(['working', 'staged'] as const)(
-    'leaves the %s file preview open after a successful non-commit mutation',
-    async (diffMode) => {
+  it.each(
+    (['working', 'staged'] as const).flatMap((diffMode) =>
+      (
+        [
+          {
+            mutation: 'stashPush',
+            run: (git: ReturnType<typeof useGitMutations>) =>
+              git.stashPush.mutateAsync({ message: 'wip' })
+          },
+          {
+            mutation: 'checkout',
+            run: (git: ReturnType<typeof useGitMutations>) => git.checkout.mutateAsync({ name: 'main' })
+          }
+        ] as const
+      ).map((entry) => ({ diffMode, ...entry }))
+    )
+  )(
+    'leaves the $diffMode file preview open after $mutation',
+    async ({ diffMode, run }) => {
       useSelectionStore.setState({
         diffMode,
         selectedWorkingFile: 'dirty.txt'
@@ -280,7 +296,7 @@ describe('useGitMutations', () => {
 
       const { result } = renderHook(() => useGitMutations(), { wrapper })
       await act(async () => {
-        await result.current.stashPush.mutateAsync({ message: 'wip' })
+        await run(result.current)
       })
 
       const selection = useSelectionStore.getState()

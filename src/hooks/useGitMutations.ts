@@ -49,6 +49,7 @@ export function useGitMutations() {
         invalidate(...keys)
         if (method === 'commit.create') {
           const { diffMode, closeDiffOverlay } = useSelectionStore.getState()
+          // Only commit.create closes the overlay. Other wrap() methods (stash, checkout, …) must not.
           // Working/staged previews always set diffMode via setSelectedWorkingFile.
           if (diffMode === 'working' || diffMode === 'staged') {
             closeDiffOverlay()
