@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-08-17 — Decode quoted git file paths
+
+- **Why:** Files with non-ASCII names (e.g. ⚡) showed up as `\342\232\241…` under a quoted `"resources"` folder, split from the real `resources` tree, because git C-quotes unusual pathnames by default.
+- **What:** Decode C-quoted paths in status, name-status, ls-tree, and clean-preview parsers; run git with `core.quotepath=false`. Working-tree and commit file lists show the real UTF-8 names.
+
 ## [0.5.2] - 2026-08-17
 
 ### 2026-08-17 — Close file preview after commit

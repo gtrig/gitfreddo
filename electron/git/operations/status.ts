@@ -14,6 +14,7 @@ import {
 } from '../../../shared/git/commands'
 import { gitMetadataExists, rebaseInProgress } from '../git-dir'
 import type { GitFileChange, GitWorkingStatus } from '../types'
+import { unquoteGitPath } from '../../../shared/git/quotePath'
 
 function singleStatusCharToKind(char: string): GitFileChange['status'] | null {
   if (char === 'U') return 'conflicted'
@@ -83,7 +84,7 @@ export async function workingStatus(
       ahead = Math.max(0, Number(parts[1]) || 0)
       behind = Math.max(0, Math.abs(Number(parts[0]) || 0))
     } else if (line.startsWith('# submodule.')) {
-      const path = line.slice(line.indexOf(' ') + 1).trim()
+      const path = unquoteGitPath(line.slice(line.indexOf(' ') + 1).trim())
       if (path) submoduleModified.add(path)
     } else if (line.startsWith('1 ') || line.startsWith('2 ')) {
       const classified = classifyPorcelainV2Line(line)
@@ -94,7 +95,7 @@ export async function workingStatus(
         if (classified.unstaged) unstaged.push(classified.unstaged)
       }
     } else if (line.startsWith('? ')) {
-      const path = line.slice(2).trim()
+      const path = unquoteGitPath(line.slice(2).trim())
       untracked.push({ path, status: 'untracked' })
     } else if (line.startsWith('u ')) {
       const change = parsePorcelainV2Line(line)
@@ -171,20 +172,20 @@ export function parsePorcelainV2Line(line: string): GitFileChange | null {
     if (parts.length < 10) return null
     const pathField = parts.slice(9).join(' ')
     const tabIndex = pathField.indexOf('\t')
-    if (tabIndex === -1) return withSubmodule({ path: pathField, status })
+    if (tabIndex === -1) return withSubmodule({ path: unquoteGitPath(pathField), status })
     return withSubmodule({
-      path: pathField.slice(0, tabIndex),
-      oldPath: pathField.slice(tabIndex + 1),
+      path: unquoteGitPath(pathField.slice(0, tabIndex)),
+      oldPath: unquoteGitPath(pathField.slice(tabIndex + 1)),
       status
     })
   }
 
   if (recordType === 'u') {
-    const path = parts.slice(10).join(' ')
+    const path = unquoteGitPath(parts.slice(10).join(' '))
     return path ? withSubmodule({ path, status }) : null
   }
 
-  const path = parts.slice(8).join(' ')
+  const path = unquoteGitPath(parts.slice(8).join(' '))
   return path ? withSubmodule({ path, status }) : null
 }
 
@@ -279,6 +280,7 @@ export function parseCleanPreviewOutput(stdout: string): string[] {
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => line.replace(/^Would remove\s+/, ''))
+    .map(unquoteGitPath)
 }
 
 export async function workingCleanPreview(

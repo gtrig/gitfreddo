@@ -22,6 +22,15 @@ describe('parseCommitNameStatus', () => {
     expect(files).toEqual([{ path: 'new-name.ts', kind: 'changed' }])
   })
 
+  it('unquotes C-quoted non-ASCII paths', () => {
+    const files = parseCommitNameStatus(
+      'M\t"resources/views/\\342\\232\\241dashboard.blade.php"'
+    )
+    expect(files).toEqual([
+      { path: 'resources/views/⚡dashboard.blade.php', kind: 'changed' }
+    ])
+  })
+
   it('parses combined-diff status codes from merge commits', () => {
     const files = parseCommitNameStatus('MM\tsrc/App.tsx\nAM\tsrc/new.ts')
     expect(files).toEqual([
@@ -50,6 +59,12 @@ describe('commitFileKindColor', () => {
 describe('parseCommitTreePaths', () => {
   it('parses newline-separated paths from ls-tree output', () => {
     expect(parseCommitTreePaths('src/a.ts\nsrc/b.ts\n\n')).toEqual(['src/a.ts', 'src/b.ts'])
+  })
+
+  it('unquotes C-quoted tree paths', () => {
+    expect(parseCommitTreePaths('"resources/\\342\\232\\241dashboard.blade.php"\n')).toEqual([
+      'resources/⚡dashboard.blade.php'
+    ])
   })
 })
 

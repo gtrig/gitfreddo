@@ -5,6 +5,8 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+- File names with emoji or other non-English characters show correctly in the working-tree list (no `\342\232\241` or extra `"resources"` folder).
+
 ## [0.5.2]
 
 - File preview closes after a successful commit instead of staying open and empty.

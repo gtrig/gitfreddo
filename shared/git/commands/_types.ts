@@ -1,4 +1,4 @@
-/** argv after global `-c color.ui=never` (injected by runner). */
+/** argv after global `-c color.ui=never -c core.quotepath=false` (injected by runner). */
 export type GitArgv = string[]
 
 export type GitEnv = Record<string, string | undefined>

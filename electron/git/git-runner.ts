@@ -19,7 +19,7 @@ export interface RunGitOptions {
 }
 
 const DEFAULT_TIMEOUT_MS = 120_000
-const COLOR_OFF_ARGS = ['-c', 'color.ui=never'] as const
+const GLOBAL_GIT_ARGS = ['-c', 'color.ui=never', '-c', 'core.quotepath=false'] as const
 
 function prependConfig(
   args: readonly string[],
@@ -34,7 +34,7 @@ export async function runGit(
   args: string[],
   { cwd, gitBinaryPath = 'git', timeoutMs = DEFAULT_TIMEOUT_MS, input, env: envOverride }: RunGitOptions
 ): Promise<GitResult> {
-  const gitArgs = [...COLOR_OFF_ARGS, ...args]
+  const gitArgs = [...GLOBAL_GIT_ARGS, ...args]
   const cmd = `${gitBinaryPath} ${gitArgs.join(' ')}`
   emitLog('git', 'debug', `> ${cmd}`, cwd)
 

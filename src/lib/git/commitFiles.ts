@@ -1,4 +1,5 @@
 import type { CommitFileChangeKind, CommitFileItem } from '@/lib/types'
+import { unquoteGitPath } from '@shared/git/quotePath'
 
 /** Parse `git show --name-status` output into structured file rows. */
 export function parseCommitNameStatus(output: string): CommitFileItem[] {
@@ -16,7 +17,7 @@ export function parseCommitNameStatus(output: string): CommitFileItem[] {
       const path = parts[2] ?? parts[1]
       if (!path) continue
       items.push({
-        path,
+        path: unquoteGitPath(path),
         kind: status[0] === 'R' ? 'changed' : 'added'
       })
       continue
@@ -27,17 +28,17 @@ export function parseCommitNameStatus(output: string): CommitFileItem[] {
 
     switch (status[0]) {
       case 'A':
-        items.push({ path, kind: 'added' })
+        items.push({ path: unquoteGitPath(path), kind: 'added' })
         break
       case 'M':
       case 'T':
-        items.push({ path, kind: 'changed' })
+        items.push({ path: unquoteGitPath(path), kind: 'changed' })
         break
       case 'D':
-        items.push({ path, kind: 'removed' })
+        items.push({ path: unquoteGitPath(path), kind: 'removed' })
         break
       default:
-        items.push({ path, kind: 'changed' })
+        items.push({ path: unquoteGitPath(path), kind: 'changed' })
         break
     }
   }
@@ -64,7 +65,7 @@ export function commitFileKindLabel(kind: CommitFileChangeKind): string {
 export function parseCommitTreePaths(output: string): string[] {
   return output
     .split('\n')
-    .map((line) => line.trim())
+    .map((line) => unquoteGitPath(line.trim()))
     .filter(Boolean)
 }
 

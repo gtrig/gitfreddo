@@ -113,7 +113,7 @@ describe('git-runner', () => {
 
     expect(mocks.spawnMock).toHaveBeenCalledWith(
       'git',
-      ['-c', 'color.ui=never', '-c', 'user.name=Test', 'branch', '--show-current'],
+      ['-c', 'color.ui=never', '-c', 'core.quotepath=false', '-c', 'user.name=Test', 'branch', '--show-current'],
       expect.objectContaining({ cwd: '/repo' })
     )
   })

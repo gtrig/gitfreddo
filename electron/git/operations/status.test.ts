@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process'
-import { mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -25,6 +25,12 @@ describe('parseCleanPreviewOutput', () => {
   it('returns empty array for empty output', () => {
     expect(parseCleanPreviewOutput('')).toEqual([])
     expect(parseCleanPreviewOutput('\n\n')).toEqual([])
+  })
+
+  it('unquotes C-quoted would-remove paths', () => {
+    expect(parseCleanPreviewOutput('Would remove "tmp/\\342\\232\\241.txt"\n')).toEqual([
+      'tmp/⚡.txt'
+    ])
   })
 })
 
@@ -53,6 +59,25 @@ describe('parsePorcelainV2Line', () => {
     expect(parsePorcelainV2Line(line)).toEqual({
       path: 'docs/my file.md',
       status: 'modified'
+    })
+  })
+
+  it('unquotes C-quoted paths with non-ASCII bytes', () => {
+    const line =
+      '1 .M N... 100644 100644 100644 abc def "resources/views/pages/reviews/\\342\\232\\241dashboard.blade.php"'
+    expect(parsePorcelainV2Line(line)).toEqual({
+      path: 'resources/views/pages/reviews/⚡dashboard.blade.php',
+      status: 'modified'
+    })
+  })
+
+  it('unquotes C-quoted rename paths', () => {
+    const line =
+      '2 R. N... 100644 100644 100644 abc def R100 "resources/\\342\\232\\241new.blade.php"\t"resources/\\342\\232\\241old.blade.php"'
+    expect(parsePorcelainV2Line(line)).toEqual({
+      path: 'resources/⚡new.blade.php',
+      oldPath: 'resources/⚡old.blade.php',
+      status: 'renamed'
     })
   })
 
@@ -161,6 +186,21 @@ describe('workingStatus integration', () => {
 
     expect(status.staged).toEqual([{ path: 'foo.txt', status: 'modified' }])
     expect(status.unstaged).toEqual([{ path: 'foo.txt', status: 'modified' }])
+  })
+
+  it('lists files whose names contain non-ASCII characters', async () => {
+    const repo = mkdtempSync(join(tmpdir(), 'gf-status-unicode-'))
+    execSync('git init', { cwd: repo, stdio: 'ignore' })
+    execSync('git config user.email "t@e.com"', { cwd: repo, stdio: 'ignore' })
+    execSync('git config user.name "T"', { cwd: repo, stdio: 'ignore' })
+    mkdirSync(join(repo, 'resources', 'views'), { recursive: true })
+    const relative = 'resources/views/⚡dashboard.blade.php'
+    writeFileSync(join(repo, relative), 'one\n')
+    execSync('git add . && git commit -m init', { cwd: repo, stdio: 'ignore' })
+    writeFileSync(join(repo, relative), 'two\n')
+
+    const status = await workingStatus(repo, 'git')
+    expect(status.unstaged).toEqual([{ path: relative, status: 'modified' }])
   })
 })
 
