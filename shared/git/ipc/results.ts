@@ -255,4 +255,13 @@ export interface RemoveStaleBranchesResult {
   removedCommitCount: number
 }
 
+export interface ComposeCommitProposal {
+  files: string[]
+  message: string
+}
+
+export interface ComposeCommitsResult {
+  created: number
+}
+
 export type { GitSubmoduleEntry, WorkingReadResult }

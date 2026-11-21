@@ -113,6 +113,7 @@ export function useGitMutations() {
     submoduleSetUrl: wrap('submodule.setUrl'),
     stageApplyPatch: wrap('stage.applyPatch'),
     commit: wrap('commit.create'),
+    composeCommits: wrap('commit.compose'),
     rewordCommit: wrap('commit.reword'),
     fetch: wrap('fetch'),
     push: wrap('push'),

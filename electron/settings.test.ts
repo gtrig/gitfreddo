@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { mkdtemp, readFile, writeFile, access } from 'fs/promises'
+import { mkdtemp, readFile, writeFile, access, readdir } from 'fs/promises'
 import { join } from 'path'
 import { tmpdir } from 'os'
 
@@ -86,6 +86,35 @@ describe('settings persistence', () => {
       'Failed to load settings; using defaults',
       expect.any(String)
     )
+  })
+
+  it('keeps a copy of an unreadable settings.json before saving over it', async () => {
+    await writeFile(join(settingsDir, 'settings.json'), '{"recentRepos": ["/tmp/keep"', 'utf8')
+    const { saveSettings } = await loadModule()
+
+    await saveSettings({ theme: 'iced-latte' })
+
+    const backups = (await readdir(settingsDir)).filter((name) =>
+      name.startsWith('settings.json.corrupt-')
+    )
+    expect(backups).toHaveLength(1)
+    expect(await readFile(join(settingsDir, backups[0]!), 'utf8')).toBe('{"recentRepos": ["/tmp/keep"')
+  })
+
+  it('migrates a legacy plaintext AI key through the save queue', async () => {
+    await writeFile(
+      join(settingsDir, 'settings.json'),
+      JSON.stringify({ aiApiKey: 'sk-legacy', theme: 'iced-matcha' }),
+      'utf8'
+    )
+    const { loadSettings, saveSettings } = await loadModule()
+
+    await Promise.all([loadSettings(), saveSettings({ editorCommand: 'code' })])
+
+    const onDisk = JSON.parse(await readFile(join(settingsDir, 'settings.json'), 'utf8'))
+    expect(onDisk.aiApiKey ?? '').toBe('')
+    expect(onDisk.theme).toBe('iced-matcha')
+    expect(onDisk.editorCommand).toBe('code')
   })
 
   it('does not log when settings.json is missing', async () => {

@@ -882,7 +882,10 @@
     "commitCreated": "Commit created.",
     "commitsCreated": "{{count}} commits created.",
     "createCommitCount": "Create {{count}} commit",
-    "createCommitCount_plural": "Create {{count}} commits"
+    "createCommitCount_plural": "Create {{count}} commits",
+    "removeHasChangesTitle": "File has uncommitted changes",
+    "removeHasChangesMessage": "\"{{path}}\" has uncommitted changes. Removing it will discard them. Remove anyway?",
+    "removeAnyway": "Remove anyway"
   },
   "diff": {
     "close": "Close",
@@ -1219,9 +1222,8 @@
       "searchPlaceholder": "Search repositories…",
       "loading": "Loading repositories…",
       "empty": "No repositories found.",
-        "public": "Public",
-        "private": "Private"
-
+      "public": "Public",
+      "private": "Private"
     }
   },
   "bitbucket": {

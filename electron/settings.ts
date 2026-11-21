@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir, rename } from 'fs/promises'
+import { copyFile, readFile, writeFile, mkdir, rename } from 'fs/promises'
 import { join } from 'path'
 import type { AppSettings } from '../shared/ipc'
 import { normalizeAppTheme } from '../shared/ipc'
@@ -148,11 +148,27 @@ function normalizeSettings(parsed: AppSettings): AppSettings {
   }
 }
 
-async function readSettingsFile(): Promise<AppSettings | null> {
+/** Raw content we already copied aside, so repeated loads don't pile up backups. */
+let backedUpCorruptContent: string | null = null
+
+/** Copy an unreadable settings.json aside before a later save replaces it with defaults. */
+async function backUpCorruptSettings(raw: string): Promise<void> {
+  if (backedUpCorruptContent === raw) return
+  const backupPath = `${SETTINGS_PATH}.corrupt-${new Date().toISOString().replace(/[:.]/g, '-')}`
   try {
-    const raw = await readFile(SETTINGS_PATH, 'utf8')
-    const parsed = { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } as AppSettings
-    return normalizeSettings(parsed)
+    await copyFile(SETTINGS_PATH, backupPath)
+    backedUpCorruptContent = raw
+    emitLog('app', 'warn', 'Saved a copy of the unreadable settings file', backupPath)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    emitLog('app', 'warn', 'Could not back up the unreadable settings file', message)
+  }
+}
+
+async function readSettingsFile(): Promise<AppSettings | null> {
+  let raw: string
+  try {
+    raw = await readFile(SETTINGS_PATH, 'utf8')
   } catch (error) {
     const code = (error as NodeJS.ErrnoException).code
     if (code === 'ENOENT') {
@@ -160,6 +176,15 @@ async function readSettingsFile(): Promise<AppSettings | null> {
     }
     const message = error instanceof Error ? error.message : String(error)
     emitLog('app', 'warn', 'Failed to load settings; using defaults', message)
+    return null
+  }
+  try {
+    const parsed = { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } as AppSettings
+    return normalizeSettings(parsed)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    emitLog('app', 'warn', 'Failed to load settings; using defaults', message)
+    await backUpCorruptSettings(raw)
     return null
   }
 }
@@ -171,7 +196,17 @@ async function writeSettingsFile(settings: AppSettings): Promise<void> {
   await rename(SETTINGS_TMP_PATH, SETTINGS_PATH)
 }
 
-async function hydrateAiApiKey(settings: AppSettings): Promise<AppSettings> {
+/** Run a settings.json write after any queued ones, so writes never interleave. */
+function enqueueWrite<T>(task: () => Promise<T>): Promise<T> {
+  const run = writeChain.then(task)
+  writeChain = run.then(
+    () => undefined,
+    () => undefined
+  )
+  return run
+}
+
+async function hydrateAiApiKey(settings: AppSettings, inWriteChain = false): Promise<AppSettings> {
   const stored = await loadAiApiKey()
   if (stored?.trim()) {
     return { ...settings, aiApiKey: stored }
@@ -181,7 +216,12 @@ async function hydrateAiApiKey(settings: AppSettings): Promise<AppSettings> {
   if (settings.aiApiKey.trim()) {
     try {
       await saveAiApiKey(settings.aiApiKey)
-      await writeSettingsFile({ ...settings, aiApiKey: '' })
+      const clearPlaintextKey = async () => {
+        // Re-read so a save that ran meanwhile is not overwritten.
+        const latest = (await readSettingsFile()) ?? settings
+        await writeSettingsFile({ ...latest, aiApiKey: '' })
+      }
+      await (inWriteChain ? clearPlaintextKey() : enqueueWrite(clearPlaintextKey))
       return settings
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
@@ -199,8 +239,11 @@ export async function loadSettings(): Promise<AppSettings> {
 }
 
 export async function saveSettings(patch: Partial<AppSettings>): Promise<AppSettings> {
-  const task = writeChain.then(async () => {
-    const current = await hydrateAiApiKey((await readSettingsFile()) ?? { ...DEFAULT_SETTINGS })
+  return enqueueWrite(async () => {
+    const current = await hydrateAiApiKey(
+      (await readSettingsFile()) ?? { ...DEFAULT_SETTINGS },
+      true
+    )
     const next = normalizeSettings({ ...current, ...patch })
     if ('aiApiKey' in patch) {
       await saveAiApiKey(next.aiApiKey)
@@ -209,11 +252,6 @@ export async function saveSettings(patch: Partial<AppSettings>): Promise<AppSett
     const stored = await loadAiApiKey()
     return { ...next, aiApiKey: stored?.trim() || '' }
   })
-  writeChain = task.then(
-    () => undefined,
-    () => undefined
-  )
-  return task
 }
 
 export function nextRecentRepos(recentRepos: readonly string[], repoPath: string): string[] {

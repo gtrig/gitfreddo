@@ -12,12 +12,14 @@ import { ComposeCommitsModal } from './ComposeCommitsModal'
 const commitMutate = vi.fn(async () => undefined)
 const stageAddMutate = vi.fn(async () => undefined)
 const stageResetMutate = vi.fn(async () => undefined)
+const composeMutate = vi.fn(async () => ({ created: 2 }))
 
 vi.mock('@/hooks/useGitMutations', () => ({
   useGitMutations: () => ({
     commit: { mutateAsync: commitMutate, isPending: false },
     stageAdd: { mutateAsync: stageAddMutate, isPending: false },
-    stageReset: { mutateAsync: stageResetMutate, isPending: false }
+    stageReset: { mutateAsync: stageResetMutate, isPending: false },
+    composeCommits: { mutateAsync: composeMutate, isPending: false }
   })
 }))
 
@@ -40,6 +42,7 @@ describe('ComposeCommitsModal', () => {
     commitMutate.mockClear()
     stageAddMutate.mockClear()
     stageResetMutate.mockClear()
+    composeMutate.mockClear()
     useWorkspaceStore.setState({
       tabs: [{ path: '/tmp/repo', connected: true, connecting: false }],
       activePath: '/tmp/repo',
@@ -77,14 +80,21 @@ describe('ComposeCommitsModal', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /create 2 commit/i }))
     await waitFor(() => {
-      expect(stageResetMutate).toHaveBeenCalledWith({ paths: [] })
-      expect(stageAddMutate).toHaveBeenCalledTimes(2)
-      expect(commitMutate).toHaveBeenCalledTimes(2)
+      expect(composeMutate).toHaveBeenCalledWith({
+        proposals: [
+          { files: ['src/a.ts', 'src/b.ts'], message: 'Add feature\n\nDetails here' },
+          { files: ['src/c.ts'], message: 'Fix bug' }
+        ]
+      })
     })
+    // Building commits from the index keeps partial staging; never reset + re-add.
+    expect(stageResetMutate).not.toHaveBeenCalled()
+    expect(stageAddMutate).not.toHaveBeenCalled()
+    expect(commitMutate).not.toHaveBeenCalled()
     expect(onClose).toHaveBeenCalled()
   })
 
-  it('stages files and forwards a proposal to the commit panel', async () => {
+  it('unstages the other proposals and forwards a proposal to the commit panel', async () => {
     const onUseInPanel = vi.fn()
     const onClose = vi.fn()
     renderWithProviders(
@@ -98,9 +108,9 @@ describe('ComposeCommitsModal', () => {
 
     await userEvent.click(screen.getAllByRole('button', { name: /use in commit panel/i })[0]!)
     await waitFor(() => {
-      expect(stageResetMutate).toHaveBeenCalledWith({ paths: [] })
-      expect(stageAddMutate).toHaveBeenCalledWith({ paths: proposals[0]!.files })
+      expect(stageResetMutate).toHaveBeenCalledWith({ paths: ['src/c.ts'] })
     })
+    expect(stageAddMutate).not.toHaveBeenCalled()
     expect(onUseInPanel).toHaveBeenCalledWith(proposals[0])
     expect(onClose).toHaveBeenCalled()
   })

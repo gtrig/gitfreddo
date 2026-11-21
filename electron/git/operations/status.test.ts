@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process'
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -7,9 +7,91 @@ import {
   classifyPorcelainV2Line,
   parseCleanPreviewOutput,
   parsePorcelainV2Line,
+  stageReset,
+  workingClean,
   workingCleanPreview,
+  workingRemove,
   workingStatus
 } from './status'
+import { REMOVE_HAS_LOCAL_CHANGES } from '../../../shared/working'
+
+function newRepo(prefix: string, withCommit = true): string {
+  const repo = mkdtempSync(join(tmpdir(), prefix))
+  execSync('git init -b main', { cwd: repo, stdio: 'ignore' })
+  execSync('git config user.email "t@e.com"', { cwd: repo, stdio: 'ignore' })
+  execSync('git config user.name "T"', { cwd: repo, stdio: 'ignore' })
+  if (withCommit) {
+    writeFileSync(join(repo, 'README.md'), 'hello\n')
+    execSync('git add README.md && git commit -m init', { cwd: repo, stdio: 'ignore' })
+  }
+  return repo
+}
+
+const cachedNames = (repo: string) =>
+  execSync('git diff --cached --name-only', { cwd: repo, encoding: 'utf8' }).trim()
+
+describe('stageReset', () => {
+  it('unstages everything on a branch with no commits yet', async () => {
+    const repo = newRepo('gf-reset-unborn-', false)
+    writeFileSync(join(repo, 'a.txt'), 'a\n')
+    writeFileSync(join(repo, 'b.txt'), 'b\n')
+    execSync('git add a.txt b.txt', { cwd: repo, stdio: 'ignore' })
+
+    await stageReset(repo, 'git', [])
+    expect(cachedNames(repo)).toBe('')
+    expect(existsSync(join(repo, 'a.txt'))).toBe(true)
+  })
+
+  it('unstages chosen paths on a branch with no commits yet', async () => {
+    const repo = newRepo('gf-reset-unborn-paths-', false)
+    writeFileSync(join(repo, 'a.txt'), 'a\n')
+    writeFileSync(join(repo, 'b.txt'), 'b\n')
+    execSync('git add a.txt b.txt', { cwd: repo, stdio: 'ignore' })
+
+    await stageReset(repo, 'git', ['a.txt'])
+    expect(cachedNames(repo)).toBe('b.txt')
+  })
+})
+
+describe('workingRemove', () => {
+  it('refuses to drop local modifications unless forced', async () => {
+    const repo = newRepo('gf-remove-')
+    writeFileSync(join(repo, 'README.md'), 'edited\n')
+    execSync('git add README.md', { cwd: repo, stdio: 'ignore' })
+    writeFileSync(join(repo, 'README.md'), 'edited again\n')
+
+    await expect(workingRemove(repo, 'git', ['README.md'])).rejects.toThrow(REMOVE_HAS_LOCAL_CHANGES)
+    expect(readFileSync(join(repo, 'README.md'), 'utf8')).toBe('edited again\n')
+
+    await workingRemove(repo, 'git', ['README.md'], true)
+    expect(existsSync(join(repo, 'README.md'))).toBe(false)
+  })
+
+  it('removes a clean tracked file without forcing', async () => {
+    const repo = newRepo('gf-remove-clean-')
+    await workingRemove(repo, 'git', ['README.md'])
+    expect(existsSync(join(repo, 'README.md'))).toBe(false)
+  })
+})
+
+describe('workingClean', () => {
+  it('deletes only the previewed paths', async () => {
+    const repo = newRepo('gf-clean-paths-')
+    writeFileSync(join(repo, 'previewed.txt'), 'x\n')
+    writeFileSync(join(repo, 'appeared-later.txt'), 'y\n')
+
+    await workingClean(repo, 'git', false, ['previewed.txt'])
+    expect(existsSync(join(repo, 'previewed.txt'))).toBe(false)
+    expect(existsSync(join(repo, 'appeared-later.txt'))).toBe(true)
+  })
+
+  it('does nothing when the preview was empty', async () => {
+    const repo = newRepo('gf-clean-empty-')
+    writeFileSync(join(repo, 'new.txt'), 'x\n')
+    await workingClean(repo, 'git', false, [])
+    expect(existsSync(join(repo, 'new.txt'))).toBe(true)
+  })
+})
 
 describe('parseCleanPreviewOutput', () => {
   it('parses would-remove lines', () => {

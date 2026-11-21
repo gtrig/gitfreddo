@@ -22,7 +22,7 @@ export function ComposeCommitsModal({
   onUseInPanel
 }: ComposeCommitsModalProps) {
   const { t } = useTranslation()
-  const { commit, stageAdd, stageReset } = useGitMutations()
+  const { stageReset, composeCommits } = useGitMutations()
   const showToast = useToastStore((s) => s.show)
   const [proposals, setProposals] = useState(initialProposals)
 
@@ -32,7 +32,7 @@ export function ComposeCommitsModal({
     }
   }, [open, initialProposals])
 
-  const busy = commit.isPending || stageAdd.isPending || stageReset.isPending
+  const busy = composeCommits.isPending || stageReset.isPending
 
   function updateProposal(index: number, patch: Partial<AiComposeCommitProposal>) {
     setProposals((current) =>
@@ -48,12 +48,14 @@ export function ComposeCommitsModal({
     }
 
     try {
-      await stageReset.mutateAsync({ paths: [] })
-
-      for (const proposal of proposals) {
-        await stageAdd.mutateAsync({ paths: proposal.files })
-        await commit.mutateAsync({ message: buildCommitMessage(proposal.summary, proposal.description) })
-      }
+      // Built from the staged content in main, so partially staged files and renames
+      // are committed exactly as staged and a tab switch cannot split the run.
+      await composeCommits.mutateAsync({
+        proposals: proposals.map((proposal) => ({
+          files: proposal.files,
+          message: buildCommitMessage(proposal.summary, proposal.description)
+        }))
+      })
 
       showToast(
         proposals.length === 1
@@ -75,8 +77,12 @@ export function ComposeCommitsModal({
     }
 
     try {
-      await stageReset.mutateAsync({ paths: [] })
-      await stageAdd.mutateAsync({ paths: proposal.files })
+      // Unstage only the other proposals' files; this one keeps its staged hunks.
+      const keep = new Set(proposal.files)
+      const others = proposals.flatMap((candidate) => candidate.files).filter((file) => !keep.has(file))
+      if (others.length > 0) {
+        await stageReset.mutateAsync({ paths: [...new Set(others)] })
+      }
       onUseInPanel(proposal)
       onClose()
     } catch (error) {

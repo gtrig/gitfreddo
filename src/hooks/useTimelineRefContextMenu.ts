@@ -6,10 +6,11 @@ import { useContextMenu } from '@/hooks/useContextMenu'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useForgePullRequestActions } from '@/hooks/useForgePullRequestActions'
 import { useWorkspaceStore } from '@/stores/workspace'
-import { useToastStore } from '@/stores/toast'
+import { useToastStore, reportToast } from '@/stores/toast'
 import { buildTimelineRefContextMenuItems } from '@/lib/timeline/timelineRefContextMenu'
 import type { TimelineRef } from '@/lib/timeline/timelineRefs'
 import { useBranchVisibilityStore } from '@/stores/branchVisibility'
+import { runMutation } from '@/lib/ui/runMutation'
 
 export interface TimelineRefContextMenuOptions {
   connected: boolean
@@ -99,7 +100,7 @@ export function useTimelineRefContextMenu({
   const handlers = useMemo(
     () => ({
       onSelectCommit,
-      onCheckout: (params: BranchCheckoutParams) => void checkout.mutateAsync(params),
+      onCheckout: (params: BranchCheckoutParams) => void runMutation(checkout.mutateAsync(params), reportToast),
       onMerge,
       onMergeCurrentInto,
       onFastForward: currentBranch ? runFastForwardCurrent : undefined,
@@ -109,13 +110,13 @@ export function useTimelineRefContextMenu({
       onCreatePr: canCreatePr ? setPrBranch : undefined,
       onCheckoutInWorktree: setWorktreeBranch,
       onSetUpstream: setUpstreamBranch,
-      onUnsetUpstream: (name: string) => void unsetUpstream.mutateAsync({ branch: name }),
+      onUnsetUpstream: (name: string) => void runMutation(unsetUpstream.mutateAsync({ branch: name }), reportToast),
       onCheckoutRemote: setCheckoutRemote,
       onDeleteRemoteBranch: (remoteBranch: string) => {
         const branch = (branches ?? []).find((entry) => entry.name === remoteBranch)
         if (branch) setPendingDeleteRemote(branch)
       },
-      onPushTag: (name: string, remote?: string) => void pushTag.mutateAsync({ name, remote }),
+      onPushTag: (name: string, remote?: string) => void runMutation(pushTag.mutateAsync({ name, remote }), reportToast),
       onRenameTag: setRenameTag,
       onDeleteTag: (tag: GitTag, remote?: string) => setPendingDeleteTag({ tag, remote }),
       defaultRemote,

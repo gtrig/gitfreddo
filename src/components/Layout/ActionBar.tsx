@@ -16,6 +16,8 @@ import { useUndoLast } from '@/hooks/useUndoLast'
 import { Spinner } from '@/components/Ui/Spinner'
 import { PushForceConfirm } from '@/components/Layout/PushForceConfirm'
 import { StashPushModal } from '@/components/Stash/StashPushModal'
+import { runMutation } from '@/lib/ui/runMutation'
+import { reportToast } from '@/stores/toast'
 
 const iconClass = 'h-3.5 w-3.5 shrink-0'
 
@@ -91,11 +93,11 @@ export function ActionBar() {
         <ActionBarButton
           loading={pull.isPending}
           onClick={() =>
-            void pull.mutateAsync({
+            void runMutation(pull.mutateAsync({
               remote: defaultRemote,
               rebase: settings?.pullMode === 'rebase',
               ffOnly: settings?.pullMode === 'ff-only'
-            })
+            }), reportToast)
           }
           icon={<ArrowDownTrayIcon aria-hidden className={iconClass} />}
         >
@@ -103,7 +105,7 @@ export function ActionBar() {
         </ActionBarButton>
         <ActionBarButton
           loading={fetch.isPending}
-          onClick={() => void fetch.mutateAsync({ remote: defaultRemote })}
+          onClick={() => void runMutation(fetch.mutateAsync({ remote: defaultRemote }), reportToast)}
           icon={<ArrowPathIcon aria-hidden className={iconClass} />}
         >
           {t('actions.fetch')}

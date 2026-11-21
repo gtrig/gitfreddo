@@ -86,7 +86,11 @@ describe('RepoManager invoke coverage', { timeout: 30_000 }, () => {
     await manager.invoke(tmpDir, 'working.write', { path: 'notes.txt', content: 'hello\n' })
     await manager.invoke(tmpDir, 'working.read', { path: 'notes.txt' })
     execSync('git add notes.txt', { cwd: tmpDir, stdio: 'ignore' })
-    await manager.invoke(tmpDir, 'working.remove', { paths: ['notes.txt'] })
+    // Staged but never committed: git rm refuses unless the user confirms (force).
+    await expect(
+      manager.invoke(tmpDir, 'working.remove', { paths: ['notes.txt'] })
+    ).rejects.toThrow(/local modifications/)
+    await manager.invoke(tmpDir, 'working.remove', { paths: ['notes.txt'], force: true })
     await manager.invoke(tmpDir, 'working.addToGitignore', { path: 'ignored.txt', directory: false })
     await manager.invoke(tmpDir, 'stage.add', { paths: ['.gitignore'] })
     await manager.invoke(tmpDir, 'commit.create', { message: 'Track ignore update', amend: false, sign: false })

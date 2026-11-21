@@ -48,3 +48,8 @@ export const useToastStore = create<ToastState>((set) => ({
     set({ message: null })
   }
 }))
+
+/** Non-hook toast reporter, e.g. for `runMutation(..., reportToast)`. */
+export function reportToast(message: string, tone: ToastState['tone'] = 'info'): void {
+  useToastStore.getState().show(message, tone)
+}

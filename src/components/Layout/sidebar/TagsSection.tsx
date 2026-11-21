@@ -17,6 +17,8 @@ import { tagContextMenuItems } from '@/lib/context-menus/sidebarContextMenus'
 import { CreateTagModal } from '@/components/Tags/CreateTagModal'
 import { RenameTagModal } from '@/components/Tags/RenameTagModal'
 import { DeleteTagModal } from '@/components/Tags/DeleteTagModal'
+import { runMutation } from '@/lib/ui/runMutation'
+import { reportToast } from '@/stores/toast'
 
 interface TagsSectionProps {
   tags: GitTag[] | undefined
@@ -95,8 +97,8 @@ export function TagsSection({
                   {
                     defaultRemote,
                     onSelectCommit,
-                    onCheckout: (params) => void checkout.mutateAsync(params),
-                    onPush: (name, remote) => void pushTag.mutateAsync({ name, remote }),
+                    onCheckout: (params) => void runMutation(checkout.mutateAsync(params), reportToast),
+                    onPush: (name, remote) => void runMutation(pushTag.mutateAsync({ name, remote }), reportToast),
                     onRename: (tag) => setRenameTag(tag),
                     onDelete: (tag, remote) => setPendingDelete({ tag, remote })
                   },
@@ -125,7 +127,7 @@ export function TagsSection({
                       onClick={() => onSelectCommit(tag.target)}
                       onDoubleClick={() => {
                         if (!tag.isRemote) {
-                          void checkout.mutateAsync(detachedRefCheckoutParams(tagCheckoutRef(tag.name)))
+                          void runMutation(checkout.mutateAsync(detachedRefCheckoutParams(tagCheckoutRef(tag.name))), reportToast)
                         }
                       }}
                     />
@@ -146,8 +148,8 @@ export function TagsSection({
                 {
                   defaultRemote,
                   onSelectCommit,
-                  onCheckout: (params) => void checkout.mutateAsync(params),
-                  onPush: (name, remote) => void pushTag.mutateAsync({ name, remote }),
+                  onCheckout: (params) => void runMutation(checkout.mutateAsync(params), reportToast),
+                  onPush: (name, remote) => void runMutation(pushTag.mutateAsync({ name, remote }), reportToast),
                   onRename: (tag) => setRenameTag(tag),
                   onDelete: (tag, remote) => setPendingDelete({ tag, remote })
                 },
@@ -169,7 +171,7 @@ export function TagsSection({
                   onClick={() => onSelectCommit(tag.target)}
                   onDoubleClick={() => {
                     if (!tag.isRemote) {
-                      void checkout.mutateAsync(detachedRefCheckoutParams(tagCheckoutRef(tag.name)))
+                      void runMutation(checkout.mutateAsync(detachedRefCheckoutParams(tagCheckoutRef(tag.name))), reportToast)
                     }
                   }}
                 />

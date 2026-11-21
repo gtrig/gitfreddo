@@ -198,6 +198,11 @@ export const GIT_IPC_METHODS = {
     commands: ['commit'],
     stateSource: 'git'
   },
+  'commit.compose': {
+    invalidates: ['working.status', 'log.graph', 'repo.status', 'branch.list'],
+    commands: ['diff.cached-name-status', 'diff.cached-patch', 'reset.index', 'read-tree.empty', 'apply.patch', 'commit'],
+    stateSource: 'git'
+  },
   'commit.reword': {
     invalidates: ['working.status', 'log.graph', 'repo.status', 'branch.list'],
     commands: ['rebase'],
@@ -649,6 +654,7 @@ export interface GitIpcParamsMap {
   'stage.reset': P.StageResetParams | void
   'stage.applyPatch': P.StageApplyPatchParams
   'commit.create': P.CommitCreateParams
+  'commit.compose': P.CommitComposeParams
   'commit.reword': P.CommitRewordParams
   'commit.revert': P.CommitRevertParams
   'diff.working': P.DiffPathParams | void
@@ -768,6 +774,7 @@ export interface GitIpcResultMap {
   'stage.reset': void
   'stage.applyPatch': void
   'commit.create': string
+  'commit.compose': R.ComposeCommitsResult
   'commit.reword': void
   'commit.revert': void
   'diff.working': R.GitDiffResult

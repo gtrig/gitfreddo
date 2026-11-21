@@ -24,6 +24,31 @@ export function buildResetHeadArgs({ paths }: ResetHeadParams): string[] {
   return withPaths(['reset', 'HEAD'], paths)
 }
 
+export interface DiffCachedPatchParams {
+  paths?: readonly string[]
+}
+
+/** Binary-safe staged patch (renames detected), optionally limited to paths. */
+export function buildDiffCachedPatchArgs({ paths }: DiffCachedPatchParams = {}): string[] {
+  const args = ['diff', '--cached', '--binary', '--no-color', '--no-ext-diff', '-M']
+  return paths && paths.length > 0 ? withPaths(args, paths) : args
+}
+
+/** Staged changes as NUL-separated name-status records (renames detected). */
+export function buildDiffCachedNameStatusArgs(): string[] {
+  return ['diff', '--cached', '--name-status', '-M', '-z']
+}
+
+/** Unstage everything: index back to HEAD. */
+export function buildResetIndexArgs(): string[] {
+  return ['reset', '-q']
+}
+
+/** Empty the index (branch with no commits yet). */
+export function buildReadTreeEmptyArgs(): string[] {
+  return ['read-tree', '--empty']
+}
+
 export type ResetMode = 'soft' | 'mixed' | 'hard'
 
 export interface ResetModeParams {
@@ -128,6 +153,30 @@ export const resetHead = defineCommand({
   id: 'reset.head-paths',
   subcommand: 'reset',
   buildArgs: buildResetHeadArgs
+})
+
+export const diffCachedPatch = defineCommand({
+  id: 'diff.cached-patch',
+  subcommand: 'diff',
+  buildArgs: buildDiffCachedPatchArgs
+})
+
+export const diffCachedNameStatus = defineCommand({
+  id: 'diff.cached-name-status',
+  subcommand: 'diff',
+  buildArgs: () => buildDiffCachedNameStatusArgs()
+})
+
+export const resetIndex = defineCommand({
+  id: 'reset.index',
+  subcommand: 'reset',
+  buildArgs: () => buildResetIndexArgs()
+})
+
+export const readTreeEmpty = defineCommand({
+  id: 'read-tree.empty',
+  subcommand: 'read-tree',
+  buildArgs: () => buildReadTreeEmptyArgs()
 })
 
 export const resetMode = defineCommand({

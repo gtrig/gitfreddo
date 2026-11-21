@@ -882,7 +882,10 @@
     "commitCreated": "Το commit δημιουργήθηκε.",
     "commitsCreated": "Δημιουργήθηκαν {{count}} commits.",
     "createCommitCount": "Δημιουργία {{count}} commit",
-    "createCommitCount_plural": "Δημιουργία {{count}} commits"
+    "createCommitCount_plural": "Δημιουργία {{count}} commits",
+    "removeHasChangesTitle": "Το αρχείο έχει αλλαγές που δεν έχουν γίνει commit",
+    "removeHasChangesMessage": "Το \"{{path}}\" έχει αλλαγές που δεν έχουν γίνει commit. Η αφαίρεσή του θα τις απορρίψει. Αφαίρεση παρ' όλα αυτά;",
+    "removeAnyway": "Αφαίρεση παρ' όλα αυτά"
   },
   "diff": {
     "close": "Κλείσιμο",
@@ -1387,9 +1390,8 @@
       "searchPlaceholder": "Αναζήτηση αποθετηρίων…",
       "loading": "Φόρτωση αποθετηρίων…",
       "empty": "Δεν βρέθηκαν αποθετήρια.",
-        "public": "Δημόσιο",
-        "private": "Ιδιώτικό"
-
+      "public": "Δημόσιο",
+      "private": "Ιδιώτικό"
     }
   },
   "bitbucket": {

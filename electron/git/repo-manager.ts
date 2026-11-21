@@ -23,6 +23,7 @@ import * as configOps from './operations/config'
 import * as hooksOps from './operations/hooks'
 import * as submoduleOps from './operations/submodule'
 import * as undoOps from './operations/undo'
+import * as composeOps from './operations/compose'
 import { loadSettings } from '../settings'
 import type { GitIpcMethod, GitIpcParams, GitIpcResult } from '../../shared/git/ipc'
 import { gitIpcIsMutation } from '../../shared/git/ipc'
@@ -94,11 +95,21 @@ function buildHandlerRegistry(): Record<GitIpcMethod, InvokeHandler> {
     'stage.reset': (cwd, git, p) => statusOps.stageReset(cwd, git, p.paths as string[] | undefined),
     'working.discard': (cwd, git, p) =>
       statusOps.workingDiscard(cwd, git, (p.paths as string[]) ?? [], Boolean(p.staged)),
-    'working.remove': (cwd, git, p) => statusOps.workingRemove(cwd, git, (p.paths as string[]) ?? []),
+    'working.remove': (cwd, git, p) =>
+      statusOps.workingRemove(cwd, git, (p.paths as string[]) ?? [], Boolean(p.force)),
     'working.cleanPreview': (cwd, git, p) => statusOps.workingCleanPreview(cwd, git, Boolean(p.includeIgnored)),
-    'working.clean': (cwd, git, p) => statusOps.workingClean(cwd, git, Boolean(p.includeIgnored)),
+    'working.clean': (cwd, git, p) =>
+      statusOps.workingClean(
+        cwd, git, Boolean(p.includeIgnored),
+        Array.isArray(p.paths) ? (p.paths as string[]) : undefined
+      ),
     'commit.create': (cwd, git, p) =>
       statusOps.commitCreate(cwd, git, p.message as string, Boolean(p.amend), Boolean(p.sign)),
+    'commit.compose': (cwd, git, p) =>
+      composeOps.composeCommits(
+        cwd, git,
+        Array.isArray(p.proposals) ? (p.proposals as composeOps.ComposeProposalInput[]) : []
+      ),
     'commit.reword': (cwd, git, p) =>
       rebaseOps.rebaseReword(cwd, git, p.hash as string, p.message as string),
     'diff.working': (cwd, git, p) =>

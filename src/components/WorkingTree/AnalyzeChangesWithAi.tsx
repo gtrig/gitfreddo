@@ -29,8 +29,21 @@ interface AnalyzeChangesWithAiProps {
   branch: string
   stagedPaths: string[]
   unstagedPaths: string[]
+  /** Renamed files: new path → old path, so a rename is staged as a whole. */
+  renamedFrom?: Record<string, string>
   disabled?: boolean
   variant?: 'toolbar' | 'pill'
+}
+
+/** Add each renamed file's old path, so its deletion lands in the same commit. */
+function withRenameSources(files: string[], renamedFrom?: Record<string, string>): string[] {
+  if (!renamedFrom) return files
+  const paths = [...files]
+  for (const file of files) {
+    const source = renamedFrom[file]
+    if (source && !paths.includes(source)) paths.push(source)
+  }
+  return paths
 }
 
 function FeatureGroupChips({
@@ -301,6 +314,7 @@ export function AnalyzeChangesWithAi({
   branch,
   stagedPaths,
   unstagedPaths,
+  renamedFrom,
   disabled = false,
   variant = 'toolbar'
 }: AnalyzeChangesWithAiProps) {
@@ -438,7 +452,7 @@ export function AnalyzeChangesWithAi({
       await stageReset.mutateAsync({ paths: [] })
 
       for (const proposal of selectedProposals) {
-        await stageAdd.mutateAsync({ paths: proposal.files })
+        await stageAdd.mutateAsync({ paths: withRenameSources(proposal.files, renamedFrom) })
         await commit.mutateAsync({ message: buildCommitMessage(proposal.summary, proposal.description) })
         createdCount++
       }

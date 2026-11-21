@@ -16,6 +16,8 @@ import { SubmodulesSection } from '@/components/Layout/sidebar/SubmodulesSection
 import { TagsSection } from '@/components/Layout/sidebar/TagsSection'
 import { SidebarPullRequestsSection } from '@/components/Layout/sidebar/SidebarPullRequestsSection'
 import { SidebarIssuesSection } from '@/components/Layout/sidebar/SidebarIssuesSection'
+import { runMutation } from '@/lib/ui/runMutation'
+import { reportToast } from '@/stores/toast'
 
 export function RepoSidebar() {
   const openPrDetail = useWorkspaceStore((s) => s.openPrDetail)
@@ -70,7 +72,7 @@ export function RepoSidebar() {
           isDetached={repoStatus?.isDetached ?? false}
           head={repoStatus?.head}
           onSelectCommit={(hash) => selectTimelineNode('commit', hash)}
-          onCheckout={(params) => void checkout.mutateAsync(params)}
+          onCheckout={(params) => void runMutation(checkout.mutateAsync(params), reportToast)}
           onCreateBranch={() => setCreateOpen(true)}
         />
         <RemoteBranchesSection

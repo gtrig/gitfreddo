@@ -118,16 +118,24 @@ export interface WorkingDiscardParams {
 
 export interface WorkingRemoveParams {
   paths: string[]
+  /** Drop local modifications too. Only after the user confirmed. */
+  force?: boolean
 }
 
 export interface WorkingCleanParams {
   includeIgnored?: boolean
+  /** Remove only these (the previewed list). Ignored by `working.cleanPreview`. */
+  paths?: string[]
 }
 
 export interface CommitCreateParams {
   message: string
   amend?: boolean
   sign?: boolean
+}
+
+export interface CommitComposeParams {
+  proposals: { files: string[]; message: string }[]
 }
 
 export interface CommitRewordParams {

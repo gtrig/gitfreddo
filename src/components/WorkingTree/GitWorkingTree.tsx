@@ -6,7 +6,7 @@ import { useSelectionStore } from '@/stores/selection'
 import { useWorkingStatus, useRepoStatus } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useInvalidateGit } from '@/hooks/useInvalidateGit'
-import { useToastStore } from '@/stores/toast'
+import { useToastStore, reportToast } from '@/stores/toast'
 import type { GitFileChange } from '@/lib/types'
 import { buildFileTree, collectFolderPaths } from '@/lib/workspace/fileTree'
 import { LoadingRow } from '@/components/Ui/Spinner'
@@ -25,6 +25,8 @@ import {
   toTreeItems
 } from '@/components/WorkingTree/WorkingTreeFileRow'
 import { FILE_ROW_HEIGHT, VIRTUAL_OVERSCAN, shouldVirtualize } from '@/lib/ui/virtualList'
+import { runMutation } from '@/lib/ui/runMutation'
+import { isRemoveHasLocalChangesError } from '@shared/working'
 
 
 export function GitWorkingTree() {
@@ -59,6 +61,7 @@ export function GitWorkingTree() {
   )
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const [pendingRemove, setPendingRemove] = useState<string | null>(null)
+  const [pendingForceRemove, setPendingForceRemove] = useState<string | null>(null)
   const [deleteBusy, setDeleteBusy] = useState(false)
   const [cleanOpen, setCleanOpen] = useState(false)
   const [renamePath, setRenamePath] = useState<string | null>(null)
@@ -79,6 +82,13 @@ export function GitWorkingTree() {
     [changesFiles]
   )
   const stagedPaths = useMemo(() => stagedFiles.map((file) => file.path), [stagedFiles])
+  const renamedFrom = useMemo(() => {
+    const map: Record<string, string> = {}
+    for (const file of [...stagedFiles, ...changesFiles]) {
+      if (file.oldPath) map[file.path] = file.oldPath
+    }
+    return map
+  }, [stagedFiles, changesFiles])
   const unstagedDiscardable = discardablePaths(data?.unstaged ?? [])
   const stagedDiscardable = discardablePaths(stagedFiles)
   const totalChangeCount =
@@ -131,9 +141,9 @@ export function GitWorkingTree() {
     const paths = pathsUnderFolderPrefix(files, folderPath)
     if (paths.length === 0) return
     if (staged) {
-      void stageReset.mutateAsync({ paths })
+      void runMutation(stageReset.mutateAsync({ paths }), reportToast)
     } else {
-      void stageAdd.mutateAsync({ paths })
+      void runMutation(stageAdd.mutateAsync({ paths }), reportToast)
     }
   }
 
@@ -176,11 +186,11 @@ export function GitWorkingTree() {
   }
 
   function updateSubmodule(path: string) {
-    void submoduleUpdate.mutateAsync({ paths: [path], init: true })
+    void runMutation(submoduleUpdate.mutateAsync({ paths: [path], init: true }), reportToast)
   }
 
   function syncSubmodule(path: string) {
-    void submoduleSync.mutateAsync({ paths: [path] })
+    void runMutation(submoduleSync.mutateAsync({ paths: [path] }), reportToast)
   }
 
   const busy =
@@ -244,8 +254,8 @@ export function GitWorkingTree() {
                           onSelect={() => setSelectedWorkingFile(file.path, mode)}
                           onStage={
                             canStage
-                              ? () => void stageAdd.mutateAsync({ paths: [file.path] })
-                              : () => void stageReset.mutateAsync({ paths: [file.path] })
+                              ? () => void runMutation(stageAdd.mutateAsync({ paths: [file.path] }), reportToast)
+                              : () => void runMutation(stageReset.mutateAsync({ paths: [file.path] }), reportToast)
                           }
                           onDiscard={() => requestDiscard(file.path, mode === 'staged')}
                           onRemove={
@@ -288,8 +298,8 @@ export function GitWorkingTree() {
                     onSelect={() => setSelectedWorkingFile(file.path, mode)}
                     onStage={
                       canStage
-                        ? () => void stageAdd.mutateAsync({ paths: [file.path] })
-                        : () => void stageReset.mutateAsync({ paths: [file.path] })
+                        ? () => void runMutation(stageAdd.mutateAsync({ paths: [file.path] }), reportToast)
+                        : () => void runMutation(stageReset.mutateAsync({ paths: [file.path] }), reportToast)
                     }
                     onDiscard={() => requestDiscard(file.path, mode === 'staged')}
                     onRemove={
@@ -342,8 +352,8 @@ export function GitWorkingTree() {
                     mode={mode}
                     onStage={
                       canStage
-                        ? (path) => void stageAdd.mutateAsync({ paths: [path] })
-                        : (path) => void stageReset.mutateAsync({ paths: [path] })
+                        ? (path) => void runMutation(stageAdd.mutateAsync({ paths: [path] }), reportToast)
+                        : (path) => void runMutation(stageReset.mutateAsync({ paths: [path] }), reportToast)
                     }
                     onDiscard={requestDiscard}
                     onDelete={requestDelete}
@@ -407,6 +417,7 @@ export function GitWorkingTree() {
             branch={data?.branch ?? ''}
             stagedPaths={stagedPaths}
             unstagedPaths={unstagedPaths}
+            renamedFrom={renamedFrom}
             disabled={busy}
           />
           {(data?.untracked.length ?? 0) > 0 && (
@@ -423,7 +434,7 @@ export function GitWorkingTree() {
               label={t('workingTree.stageAll')}
               disabled={busy}
               loading={stageAdd.isPending}
-              onClick={() => void stageAdd.mutateAsync({ paths: [] })}
+              onClick={() => void runMutation(stageAdd.mutateAsync({ paths: [] }), reportToast)}
             />
           )}
           {stagedFiles.length > 0 && (
@@ -432,7 +443,7 @@ export function GitWorkingTree() {
               label={t('workingTree.unstageAll')}
               disabled={busy}
               loading={stageReset.isPending}
-              onClick={() => void stageReset.mutateAsync({})}
+              onClick={() => void runMutation(stageReset.mutateAsync({}), reportToast)}
             />
           )}
         </div>
@@ -530,10 +541,37 @@ export function GitWorkingTree() {
           confirmLabel={t('workingTree.remove')}
           busy={workingRemove.isPending}
           onConfirm={async () => {
-            await workingRemove.mutateAsync({ paths: [pendingRemove] })
-            setPendingRemove(null)
+            const path = pendingRemove
+            try {
+              await workingRemove.mutateAsync({ paths: [path] })
+            } catch (error) {
+              if (isRemoveHasLocalChangesError(error)) {
+                // git refused to drop uncommitted changes; ask before forcing.
+                setPendingForceRemove(path)
+              } else {
+                reportToast(error instanceof Error ? error.message : String(error), 'error')
+              }
+            } finally {
+              setPendingRemove(null)
+            }
           }}
           onCancel={() => setPendingRemove(null)}
+        />
+      )}
+
+      {pendingForceRemove && (
+        <ConfirmDialog
+          open
+          title={t('workingTree.removeHasChangesTitle')}
+          message={t('workingTree.removeHasChangesMessage', { path: pendingForceRemove })}
+          confirmLabel={t('workingTree.removeAnyway')}
+          busy={workingRemove.isPending}
+          onConfirm={async () => {
+            const path = pendingForceRemove
+            setPendingForceRemove(null)
+            await runMutation(workingRemove.mutateAsync({ paths: [path], force: true }), reportToast)
+          }}
+          onCancel={() => setPendingForceRemove(null)}
         />
       )}
 

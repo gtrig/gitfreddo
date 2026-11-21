@@ -61,7 +61,7 @@ describe('CleanUntrackedModal', () => {
     await user.click(screen.getByRole('button', { name: /remove 1 file/i }))
 
     await waitFor(() => {
-      expect(workingCleanMutate).toHaveBeenCalledWith({ includeIgnored: false })
+      expect(workingCleanMutate).toHaveBeenCalledWith({ includeIgnored: false, paths: ['tmp.txt'] })
     })
     expect(onClose).toHaveBeenCalled()
   })

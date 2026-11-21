@@ -175,12 +175,14 @@ export function buildApplyPatchArgs({ reverse }: ApplyPatchParams): string[] {
 export interface CleanParams {
   dryRun: boolean
   includeIgnored?: boolean
+  /** Limit the clean to these paths (the ones the user previewed). */
+  paths?: readonly string[]
 }
 
-export function buildCleanArgs({ dryRun, includeIgnored }: CleanParams): string[] {
+export function buildCleanArgs({ dryRun, includeIgnored, paths }: CleanParams): string[] {
   const args = ['clean', dryRun ? '-fdn' : '-fd']
   if (includeIgnored) args.push('-x')
-  return args
+  return paths && paths.length > 0 ? withPaths(args, paths) : args
 }
 
 export interface CommitParams {

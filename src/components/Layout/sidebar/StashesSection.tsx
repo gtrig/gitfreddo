@@ -11,6 +11,8 @@ import { useGitMutations } from '@/hooks/useGitMutations'
 import { matchesFilter } from '@/lib/workspace/branchTree'
 import { stashContextMenuItems } from '@/lib/context-menus/sidebarContextMenus'
 import { StashBranchModal } from '@/components/Stash/StashBranchModal'
+import { runMutation } from '@/lib/ui/runMutation'
+import { reportToast } from '@/stores/toast'
 
 interface StashesSectionProps {
   stashes: GitStashEntry[] | undefined
@@ -62,9 +64,9 @@ export function StashesSection({
             label,
             {
               onSelect,
-              onApply: (index) => void stashApply.mutateAsync({ index }),
-              onPop: (index) => void stashPop.mutateAsync({ index }),
-              onDrop: (index) => void stashDrop.mutateAsync({ index }),
+              onApply: (index) => void runMutation(stashApply.mutateAsync({ index }), reportToast),
+              onPop: (index) => void runMutation(stashPop.mutateAsync({ index }), reportToast),
+              onDrop: (index) => void runMutation(stashDrop.mutateAsync({ index }), reportToast),
               onBranch: (index) => setBranchStashIndex(index)
             },
             t

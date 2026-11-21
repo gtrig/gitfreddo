@@ -30,7 +30,7 @@ import { useGitMutations } from '@/hooks/useGitMutations'
 import { ForgeCreatePrModal } from '@/components/Forge/ForgeCreatePrModal'
 import { useForgePullRequestActions } from '@/hooks/useForgePullRequestActions'
 import { useWorkspaceStore } from '@/stores/workspace'
-import { useToastStore } from '@/stores/toast'
+import { useToastStore, reportToast } from '@/stores/toast'
 import { MergeBranchDialog } from '@/components/Branches/MergeBranchDialog'
 import { SquashMergeIntoModal } from '@/components/Branches/SquashMergeIntoModal'
 import { RenameBranchModal } from '@/components/Branches/RenameBranchModal'
@@ -52,6 +52,7 @@ import { useBranchVisibilityStore } from '@/stores/branchVisibility'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { flattenVisibleBranchTree } from '@/lib/ui/flattenVisibleBranchTree'
 import { shouldVirtualize, COMPACT_ROW_HEIGHT, VIRTUAL_OVERSCAN } from '@/lib/ui/virtualList'
+import { runMutation } from '@/lib/ui/runMutation'
 
 interface LocalBranchesSectionProps {
   branches: GitBranch[] | undefined
@@ -392,7 +393,7 @@ export function LocalBranchesSection({
                           onCreatePr: canCreatePr ? setPrBranch : undefined,
                           onCheckoutInWorktree: setWorktreeBranch,
                           onSetUpstream: setUpstreamBranch,
-                          onUnsetUpstream: (name) => void unsetUpstream.mutateAsync({ branch: name }),
+                          onUnsetUpstream: (name) => void runMutation(unsetUpstream.mutateAsync({ branch: name }), reportToast),
                           onToggleGraphVisibility: toggleBranchVisibility,
                           isHiddenInGraph: hiddenInGraph
                         },
@@ -465,7 +466,7 @@ export function LocalBranchesSection({
             onCreatePr={canCreatePr ? setPrBranch : undefined}
             onCheckoutInWorktree={setWorktreeBranch}
             onSetUpstream={setUpstreamBranch}
-            onUnsetUpstream={(name) => void unsetUpstream.mutateAsync({ branch: name })}
+            onUnsetUpstream={(name) => void runMutation(unsetUpstream.mutateAsync({ branch: name }), reportToast)}
             isBranchHidden={isBranchHidden}
             onToggleGraphVisibility={toggleBranchVisibility}
             openMenu={openMenu}
@@ -770,7 +771,7 @@ export function RemoteBranchesSection({
                   open,
                   {
                     onToggle: () => toggleRemote(remote),
-                    onFetch: (remoteName) => void fetch.mutateAsync({ remote: remoteName }),
+                    onFetch: (remoteName) => void runMutation(fetch.mutateAsync({ remote: remoteName }), reportToast),
                     onEditUrl: openEditRemote,
                     onRename: setRenameRemote,
                     onDelete: setPendingRemoveRemote

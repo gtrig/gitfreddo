@@ -5,6 +5,8 @@ import { Modal, ActionButton, Checkbox } from '@/components/Ui/Modal'
 import { useCleanPreview } from '@/hooks/useGit'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { LoadingRow } from '@/components/Ui/Spinner'
+import { runMutation } from '@/lib/ui/runMutation'
+import { reportToast } from '@/stores/toast'
 import { shouldVirtualize, CODE_LINE_HEIGHT, VIRTUAL_OVERSCAN } from '@/lib/ui/virtualList'
 
 interface CleanUntrackedModalProps {
@@ -79,8 +81,12 @@ export function CleanUntrackedModal({ open, onClose }: CleanUntrackedModalProps)
             disabled={fileCount === 0}
             loading={workingClean.isPending}
             onClick={async () => {
-              await workingClean.mutateAsync({ includeIgnored })
-              onClose()
+              // Remove exactly what was previewed, not whatever exists by now.
+              const done = await runMutation(
+                workingClean.mutateAsync({ includeIgnored, paths }).then(() => true),
+                reportToast
+              )
+              if (done) onClose()
             }}
           >
             {t('workingTree.removeFileCount', { count: fileCount })}

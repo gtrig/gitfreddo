@@ -7,6 +7,7 @@ import userEvent from '@testing-library/user-event'
 import { GitWorkingTree } from './GitWorkingTree'
 import { useSelectionStore } from '@/stores/selection'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { useToastStore } from '@/stores/toast'
 import { renderWithProviders } from '@/test/render'
 import { createGitFreddoMock } from '@/test/mocks/gitfreddo'
 import type { GitWorkingStatus } from '@/lib/types'
@@ -143,6 +144,42 @@ describe('GitWorkingTree', () => {
     await userEvent.click(screen.getAllByRole('button', { name: 'Unstage all' })[0]!)
     await userEvent.click(screen.getAllByRole('button', { name: 'Discard all…' })[0]!)
     await userEvent.click(screen.getByRole('button', { name: 'Tree' }))
+  })
+
+  it('shows an error toast when staging fails', async () => {
+    const { useWorkingStatus } = await import('@/hooks/useGit')
+    const { useGitMutations } = await import('@/hooks/useGitMutations')
+    vi.mocked(useWorkingStatus).mockReturnValue({
+      data: {
+        ...emptyWorking,
+        isClean: false,
+        unstaged: [{ path: 'dirty.txt', status: 'modified' }]
+      },
+      isLoading: false,
+      error: null
+    } as ReturnType<typeof useWorkingStatus>)
+    const failing = {
+      isPending: false,
+      mutateAsync: vi.fn().mockRejectedValue(new Error('index.lock exists'))
+    }
+    const idle = { isPending: false, mutateAsync: vi.fn() }
+    vi.mocked(useGitMutations).mockReturnValue({
+      stageAdd: failing,
+      stageReset: idle,
+      workingDiscard: idle,
+      workingRemove: idle,
+      workingAddToGitignore: idle,
+      submoduleUpdate: idle,
+      submoduleSync: idle,
+      commit: idle
+    } as unknown as ReturnType<typeof useGitMutations>)
+    const show = vi.fn()
+    useToastStore.setState({ show })
+
+    renderWithProviders(<GitWorkingTree />)
+    await userEvent.click(screen.getAllByRole('button', { name: 'Stage all' })[0]!)
+
+    await vi.waitFor(() => expect(show).toHaveBeenCalledWith('index.lock exists', 'error'))
   })
 
   it('prompts to open a repository when disconnected', () => {
@@ -565,5 +602,42 @@ describe('GitWorkingTree', () => {
     await userEvent.click(screen.getByRole('menuitem', { name: /remove from repository/i }))
     await userEvent.click(screen.getByRole('button', { name: 'Remove' }))
     expect(workingRemove).toHaveBeenCalledWith({ paths: ['file-0.txt'] })
+  })
+
+  it('asks again before force-removing a file with local changes', async () => {
+    const { useWorkingStatus } = await import('@/hooks/useGit')
+    const { useGitMutations } = await import('@/hooks/useGitMutations')
+    const workingRemove = vi
+      .fn()
+      .mockRejectedValueOnce(
+        new Error("File has local modifications: error: 'dirty.txt' has local modifications")
+      )
+      .mockResolvedValueOnce(undefined)
+    const idle = { isPending: false, mutateAsync: vi.fn() }
+    vi.mocked(useGitMutations).mockReturnValue({
+      stageAdd: idle,
+      stageReset: idle,
+      workingDiscard: idle,
+      workingRemove: { isPending: false, mutateAsync: workingRemove },
+      workingAddToGitignore: idle,
+      submoduleUpdate: idle,
+      submoduleSync: idle,
+      commit: idle
+    } as unknown as ReturnType<typeof useGitMutations>)
+    vi.mocked(useWorkingStatus).mockReturnValue({
+      data: { ...emptyWorking, isClean: false, unstaged: [{ path: 'dirty.txt', status: 'modified' }] },
+      isLoading: false,
+      error: null
+    } as ReturnType<typeof useWorkingStatus>)
+
+    renderWithProviders(<GitWorkingTree />)
+    fireEvent.contextMenu(screen.getByText('dirty.txt'))
+    await userEvent.click(screen.getByRole('menuitem', { name: /remove from repository/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Remove' }))
+
+    expect(await screen.findByRole('heading', { name: 'File has uncommitted changes' })).toBeInTheDocument()
+    expect(workingRemove).toHaveBeenCalledTimes(1)
+    await userEvent.click(screen.getByRole('button', { name: 'Remove anyway' }))
+    expect(workingRemove).toHaveBeenLastCalledWith({ paths: ['dirty.txt'], force: true })
   })
 })

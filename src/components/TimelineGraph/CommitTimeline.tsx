@@ -77,6 +77,8 @@ import {
   resolveCommitDoubleClickCheckout,
   resolveTimelineRefDoubleClickCheckout
 } from '@/lib/timeline/timelineRefCheckout'
+import { runMutation } from '@/lib/ui/runMutation'
+import { reportToast } from '@/stores/toast'
 
 const RESIZE_HANDLE_WIDTH = 4
 
@@ -172,7 +174,7 @@ export function CommitTimeline() {
     event.preventDefault()
     if (isStashCommit(commit)) return
 
-    void checkout.mutateAsync(resolveCommitDoubleClickCheckout(commit.hash))
+    void runMutation(checkout.mutateAsync(resolveCommitDoubleClickCheckout(commit.hash)), reportToast)
   }
   const {
     state: stashMenuState,
@@ -289,7 +291,7 @@ export function CommitTimeline() {
         return
       }
 
-      void checkout.mutateAsync(action.params)
+      void runMutation(checkout.mutateAsync(action.params), reportToast)
     }
 
   const onRowContextMenu = (commit: GitCommit) => (event: React.MouseEvent) => {
@@ -305,9 +307,9 @@ export function CommitTimeline() {
             label,
             {
               onSelect: selectStash,
-              onApply: (index) => void stashApply.mutateAsync({ index }),
-              onPop: (index) => void stashPop.mutateAsync({ index }),
-              onDrop: (index) => void stashDrop.mutateAsync({ index })
+              onApply: (index) => void runMutation(stashApply.mutateAsync({ index }), reportToast),
+              onPop: (index) => void runMutation(stashPop.mutateAsync({ index }), reportToast),
+              onDrop: (index) => void runMutation(stashDrop.mutateAsync({ index }), reportToast)
             },
             t
           )

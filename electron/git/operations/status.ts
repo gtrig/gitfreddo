@@ -5,6 +5,7 @@ import {
   buildCheckoutDiscardArgs,
   buildCleanArgs,
   buildCommitArgs,
+  buildReadTreeEmptyArgs,
   buildResetHeadArgs,
   buildRestoreDiscardArgs,
   buildRevListUpstreamAheadBehindArgs,
@@ -15,6 +16,7 @@ import {
 import { gitMetadataExists, rebaseInProgress } from '../git-dir'
 import type { GitFileChange, GitWorkingStatus } from '../types'
 import { unquoteGitPath } from '../../../shared/git/quotePath'
+import { REMOVE_HAS_LOCAL_CHANGES } from '../../../shared/working'
 
 function singleStatusCharToKind(char: string): GitFileChange['status'] | null {
   if (char === 'U') return 'conflicted'
@@ -241,6 +243,14 @@ export async function stageReset(
   gitBinaryPath: string,
   paths?: string[]
 ): Promise<void> {
+  if (!paths || paths.length === 0) {
+    const head = await runGit(buildRevParseHeadArgs(), { cwd, gitBinaryPath })
+    if (head.code !== 0) {
+      // No commits yet: there is no HEAD to reset to, so empty the index instead.
+      await runGitOrThrow(buildReadTreeEmptyArgs(), { cwd, gitBinaryPath })
+      return
+    }
+  }
   await runGitOrThrow(buildResetHeadArgs({ paths }), { cwd, gitBinaryPath })
 }
 
@@ -260,17 +270,28 @@ export async function workingDiscard(
   await runGitOrThrow(checkoutArgs, { cwd, gitBinaryPath })
 }
 
+const RM_REFUSED_RE = /has (staged content different from|local modifications|changes staged in the index)/i
+
+/**
+ * `git rm`. Without `force`, git's refusal to drop uncommitted changes is surfaced
+ * (as REMOVE_HAS_LOCAL_CHANGES) so the UI can ask before retrying with force.
+ */
 export async function workingRemove(
   cwd: string,
   gitBinaryPath: string,
-  paths: string[]
+  paths: string[],
+  force = false
 ): Promise<void> {
   if (paths.length === 0) return
 
-  const result = await runGit(buildRmArgs({ paths }), { cwd, gitBinaryPath })
+  const result = await runGit(buildRmArgs({ paths, force }), { cwd, gitBinaryPath })
   if (result.code === 0) return
 
-  await runGitOrThrow(buildRmArgs({ paths, force: true }), { cwd, gitBinaryPath })
+  const detail = result.stderr.trim() || result.stdout.trim() || `git exited with code ${result.code}`
+  if (!force && RM_REFUSED_RE.test(detail)) {
+    throw new Error(`${REMOVE_HAS_LOCAL_CHANGES}: ${detail}`)
+  }
+  throw new Error(detail)
 }
 
 /** Parse `git clean -n` output lines into relative paths. */
@@ -292,12 +313,21 @@ export async function workingCleanPreview(
   return parseCleanPreviewOutput(stdout)
 }
 
+/**
+ * `git clean`. When `paths` is given, only those (the previewed list) are removed,
+ * so files that appeared after the preview are kept. An empty list is a no-op.
+ */
 export async function workingClean(
   cwd: string,
   gitBinaryPath: string,
-  includeIgnored = false
+  includeIgnored = false,
+  paths?: string[]
 ): Promise<void> {
-  await runGitOrThrow(buildCleanArgs({ dryRun: false, includeIgnored }), { cwd, gitBinaryPath })
+  if (paths && paths.length === 0) return
+  await runGitOrThrow(buildCleanArgs({ dryRun: false, includeIgnored, paths }), {
+    cwd,
+    gitBinaryPath
+  })
 }
 
 export async function commitCreate(

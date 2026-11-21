@@ -11,7 +11,7 @@ import { useContextMenu } from '@/hooks/useContextMenu'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useRepoStatus } from '@/hooks/useGit'
 import { useWorkspaceStore } from '@/stores/workspace'
-import { useToastStore } from '@/stores/toast'
+import { useToastStore, reportToast } from '@/stores/toast'
 import { matchesFilter } from '@/lib/workspace/branchTree'
 import {
   submoduleContextMenuItems,
@@ -20,6 +20,7 @@ import {
 import { submoduleRowLabel, submoduleStatusColor, submoduleStatusLabel } from '@/lib/git/submoduleStatus'
 import { AddSubmoduleModal } from '@/components/Submodules/AddSubmoduleModal'
 import { EditSubmoduleUrlModal } from '@/components/Submodules/EditSubmoduleUrlModal'
+import { runMutation } from '@/lib/ui/runMutation'
 
 interface SubmodulesSectionProps {
   submodules: GitSubmoduleEntry[] | undefined
@@ -177,7 +178,7 @@ export function SubmodulesSection({
                 onSetUrl: () => setEditUrlEntry(entry),
                 onStage:
                   entry.status === 'ahead' || entry.status === 'dirty'
-                    ? () => void stageAdd.mutateAsync({ paths: [entry.path] })
+                    ? () => void runMutation(stageAdd.mutateAsync({ paths: [entry.path] }), reportToast)
                     : undefined,
                 onDeinit: () => {
                   setForceAction(false)

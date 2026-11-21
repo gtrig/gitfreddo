@@ -99,6 +99,31 @@ describe('AnalyzeChangesWithAi', () => {
     return user
   }
 
+  it('stages the old path of a renamed file along with the new one', async () => {
+    const user = userEvent.setup()
+    renderWithProviders(
+      <AnalyzeChangesWithAi
+        branch="main"
+        stagedPaths={['src/a.ts']}
+        unstagedPaths={['src/b.ts']}
+        renamedFrom={{ 'src/a.ts': 'src/old-a.ts' }}
+      />
+    )
+    await user.click(await screen.findByRole('button', { name: /^analyze$/i }))
+    await screen.findByDisplayValue('Add feature A')
+    const checkboxes = screen.getAllByRole('checkbox', { name: /include this commit/i })
+    await user.click(checkboxes[1]!)
+    await user.click(screen.getByRole('button', { name: /create 1 commit/i }))
+
+    await waitFor(() => {
+      expect(window.gitfreddo.invoke).toHaveBeenCalledWith(
+        'stage.add',
+        { paths: ['src/a.ts', 'src/old-a.ts'] },
+        '/tmp/repo'
+      )
+    })
+  })
+
   it('shows a checkbox for each proposed commit', async () => {
     await openAnalysisModal()
     const checkboxes = screen.getAllByRole('checkbox', { name: /include this commit/i })
