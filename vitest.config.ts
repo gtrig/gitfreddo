@@ -75,7 +75,9 @@ export default defineConfig({
           name: { label: 'unit', color: 'green' },
           environment: 'node',
           pool: 'threads',
-          testTimeout: process.env.CI ? 30_000 : 5_000,
+          // Git integration tests spawn many real git processes; with every core busy
+          // (local runs use all of them) 5s is too tight, so allow 20s locally.
+          testTimeout: process.env.CI ? 30_000 : 20_000,
           include: [
             'electron/**/*.test.ts',
             'shared/**/*.test.ts',

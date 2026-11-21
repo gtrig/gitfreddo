@@ -11,8 +11,7 @@ test.describe('interactive rebase', () => {
     await runElectronTest(
       {
         settingsPrefix: 'gitfreddo-e2e-rebase-',
-        repoPath: E2E_FIXTURE_PATHS.rebaseRepo,
-        waitMs: 2000
+        repoPath: E2E_FIXTURE_PATHS.rebaseRepo
       },
       async (page) => {
         const graph = await invokeGitfreddo<{ commits: { hash: string; subject: string }[] }>(

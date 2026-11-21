@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-11-21 — Reliable e2e and local test runs
+
+- **Why:** `merge-conflict` and `rebase-interactive` e2e specs failed about half the time with "No repository connected", and git integration unit tests timed out locally under full parallelism (both also on `main`).
+- **What:** E2E `runElectronTest` polls until main has the fixture repo connected (retrying through the renderer's startup reload) instead of a fixed 2s wait, which parallel load regularly exceeded; `invokeGitfreddo` names the repo explicitly. The unit project's local `testTimeout` is 20s (was 5s; CI stays 30s).
+
 ### 2026-11-21 — Push to a chosen remote
 
 - **Why:** With more than one remote, Push always went to the default remote; there was no way to push a branch to another one.

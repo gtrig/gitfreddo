@@ -1,6 +1,6 @@
 import { _electron as electron, type ElectronApplication, type Page, test } from '@playwright/test'
 import { execFileSync } from 'child_process'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync, existsSync } from 'fs'
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync, existsSync } from 'fs'
 import { tmpdir } from 'os'
 import { join, resolve } from 'path'
 
@@ -112,10 +112,12 @@ export async function launchApp(settingsDir: string): Promise<ElectronApplicatio
   })
 }
 
+/** Invoke git IPC on the app's active repo, naming it explicitly like the renderer does. */
 export async function invokeGitfreddo<T>(page: Page, method: string, params?: unknown): Promise<T> {
   return page.evaluate(
     async ({ method, params }) => {
-      return window.gitfreddo.invoke(method, params) as T
+      const repoPath = (await window.gitfreddo.getWorkspacePath()) ?? undefined
+      return window.gitfreddo.invoke(method, params, repoPath) as T
     },
     { method, params }
   )
@@ -123,6 +125,42 @@ export async function invokeGitfreddo<T>(page: Page, method: string, params?: un
 
 export function runFixtureScript(scriptPath: string): void {
   execFileSync('bash', [scriptPath], { stdio: 'inherit' })
+}
+
+/**
+ * Wait until main has `repoPath` connected (the renderer restores the session tab
+ * on startup). Under parallel load this takes several seconds, so a fixed delay
+ * is not enough. Retries through the reload the renderer does right at startup.
+ */
+export async function waitForRepoConnected(
+  page: Page,
+  repoPath: string,
+  timeoutMs = 30_000
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs
+  let lastSeen: string[] = []
+  while (Date.now() < deadline) {
+    try {
+      lastSeen = await page.evaluate(() => window.gitfreddo.listWorkspaces())
+      if (lastSeen.some((path) => path === repoPath || realpathOrSelf(path) === realpathOrSelf(repoPath))) {
+        return
+      }
+    } catch {
+      // Execution context replaced by the startup navigation; try again.
+    }
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, 100))
+  }
+  throw new Error(
+    `Repository ${repoPath} was not connected within ${timeoutMs}ms (connected: ${JSON.stringify(lastSeen)})`
+  )
+}
+
+function realpathOrSelf(path: string): string {
+  try {
+    return realpathSync(path)
+  } catch {
+    return path
+  }
 }
 
 export async function runElectronTest(
@@ -140,6 +178,7 @@ export async function runElectronTest(
   try {
     const page = await electronApp.firstWindow()
     await page.waitForLoadState('domcontentloaded')
+    await waitForRepoConnected(page, options.repoPath)
     if (options.waitMs) {
       await page.waitForTimeout(options.waitMs)
     }

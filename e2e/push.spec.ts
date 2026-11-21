@@ -34,8 +34,7 @@ test.describe('push', () => {
     await runElectronTest(
       {
         settingsPrefix: 'gitfreddo-e2e-push-',
-        repoPath: E2E_FIXTURE_PATHS.pushRepo,
-        waitMs: 2000
+        repoPath: E2E_FIXTURE_PATHS.pushRepo
       },
       async (page) => {
         await invokeGitfreddo(page, 'push', { remote: 'origin', branch: 'main' })
@@ -54,8 +53,7 @@ test.describe('push', () => {
       {
         settingsPrefix: 'gitfreddo-e2e-push-backup-',
         repoPath: E2E_FIXTURE_PATHS.pushRepo,
-        settings: hideStartupModal,
-        waitMs: 2000
+        settings: hideStartupModal
       },
       async (page) => {
         await page.getByRole('button', { name: 'Choose remote' }).click()
@@ -82,8 +80,7 @@ test.describe('push', () => {
     await runElectronTest(
       {
         settingsPrefix: 'gitfreddo-e2e-push-upstream-',
-        repoPath: E2E_FIXTURE_PATHS.pushRepo,
-        waitMs: 2000
+        repoPath: E2E_FIXTURE_PATHS.pushRepo
       },
       async (page) => {
         await invokeGitfreddo(page, 'push', { remote: 'backup', branch: 'main', setUpstream: true })

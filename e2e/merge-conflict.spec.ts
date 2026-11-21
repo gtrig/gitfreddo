@@ -11,8 +11,7 @@ test.describe('merge conflict', () => {
     await runElectronTest(
       {
         settingsPrefix: 'gitfreddo-e2e-conflict-',
-        repoPath: E2E_FIXTURE_PATHS.mergeConflictRepo,
-        waitMs: 2000
+        repoPath: E2E_FIXTURE_PATHS.mergeConflictRepo
       },
       async (page) => {
         const mergeStatus = await invokeGitfreddo<{ conflictedPaths: string[] }>(page, 'merge.status')
