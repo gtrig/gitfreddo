@@ -12,25 +12,31 @@ export interface ForgeAskpassResult {
   exitCode: number
 }
 
+/** Lowercased host from a git credential prompt, without userinfo or port. */
 export function hostFromAskpassPrompt(value: string): string {
-  const match = value.match(/https?:\/\/([^/'"]+)/i) || value.match(/'([^']+)'/i)
-  return match ? match[1].toLowerCase() : ''
+  const match = value.match(/https?:\/\/([^/'"\s]+)/i) || value.match(/'([^']+)'/i)
+  if (!match) return ''
+  return normalizeHost(match[1])
 }
 
+/** Strip scheme, userinfo, port and trailing slash; lowercase. */
+export function normalizeHost(value: string): string {
+  let host = value.trim().toLowerCase().replace(/^[a-z][a-z0-9+.-]*:\/\//, '')
+  host = host.split('/')[0] ?? ''
+  const at = host.lastIndexOf('@')
+  if (at !== -1) host = host.slice(at + 1)
+  return host.replace(/:\d*$/, '')
+}
+
+/** Exact host match only — lookalike hosts never receive a forge token. */
 function classifyHost(
   host: string,
   gitlabHost: string
 ): 'bitbucket' | 'github' | 'gitlab' | 'unknown' {
-  if (host.includes('bitbucket.org')) return 'bitbucket'
-  if (host.includes('github.com') || host.includes('github')) return 'github'
-  const normalizedGitlab = gitlabHost.toLowerCase()
-  if (
-    host.includes('gitlab.com') ||
-    host === normalizedGitlab ||
-    host.endsWith('.gitlab.com')
-  ) {
-    return 'gitlab'
-  }
+  if (!host) return 'unknown'
+  if (host === 'bitbucket.org') return 'bitbucket'
+  if (host === 'github.com') return 'github'
+  if (host === 'gitlab.com' || host === normalizeHost(gitlabHost)) return 'gitlab'
   return 'unknown'
 }
 

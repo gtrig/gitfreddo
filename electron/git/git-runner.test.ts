@@ -5,7 +5,9 @@ import type { GitHookExecution, GitHookFailure } from './hook-failure'
 const mocks = vi.hoisted(() => ({
   spawnMock: vi.fn(),
   emitLog: vi.fn(),
-  buildGitEnv: vi.fn(async () => ({})),
+  envCleanup: vi.fn(async () => {}),
+  prepareGitEnv: vi.fn(),
+  gitCommandNeedsCredentials: vi.fn((args: string[]) => args[0] === 'fetch'),
   detectGitHookFailure: vi.fn<() => GitHookFailure | null>(() => null),
   detectGitHookExecution: vi.fn<() => GitHookExecution | null>(() => null),
   formatHookResultLogMessage: vi.fn(() => 'hook ran'),
@@ -18,7 +20,10 @@ vi.mock('child_process', () => ({
 }))
 
 vi.mock('./log-bus', () => ({ emitLog: mocks.emitLog }))
-vi.mock('./credentials', () => ({ buildGitEnv: mocks.buildGitEnv }))
+vi.mock('./credentials', () => ({
+  prepareGitEnv: mocks.prepareGitEnv,
+  gitCommandNeedsCredentials: mocks.gitCommandNeedsCredentials
+}))
 vi.mock('./hook-failure', () => ({
   detectGitHookFailure: mocks.detectGitHookFailure,
   detectGitHookExecution: mocks.detectGitHookExecution,
@@ -64,11 +69,29 @@ describe('git-runner', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.useRealTimers()
+    mocks.prepareGitEnv.mockImplementation(async () => ({ env: {}, cleanup: mocks.envCleanup }))
     mocks.gitCommandMayRunHooks.mockReturnValue(false)
   })
 
   afterEach(() => {
     vi.useRealTimers()
+  })
+
+  it('asks for credentials only for network commands and cleans up after exit', async () => {
+    mockChild({ exitCode: 0, stdout: '' })
+    await runGit(['fetch', 'origin'], { cwd: '/repo' })
+    expect(mocks.prepareGitEnv).toHaveBeenLastCalledWith({ needsCredentials: true })
+    expect(mocks.envCleanup).toHaveBeenCalledTimes(1)
+
+    mockChild({ exitCode: 0, stdout: '' })
+    await runGit(['status'], { cwd: '/repo' })
+    expect(mocks.prepareGitEnv).toHaveBeenLastCalledWith({ needsCredentials: false })
+  })
+
+  it('cleans up the credentials env when git fails to spawn', async () => {
+    mockChild({ error: new Error('ENOENT') })
+    await expect(runGit(['fetch'], { cwd: '/repo' })).rejects.toThrow(/Failed to run git/)
+    expect(mocks.envCleanup).toHaveBeenCalledTimes(1)
   })
 
   it('returns stdout on success', async () => {

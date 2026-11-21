@@ -27,6 +27,7 @@ import { registerExternalLinkHandlers } from '../external-links'
 import { onLog } from '../git/log-bus'
 import type { GitIpcMethod, GitIpcParams } from '../../shared/git/ipc'
 import { cloneRepository } from '../git/clone'
+import { removeLegacyAskpassSecrets } from '../git/credentials'
 import { initRepository } from '../git/init'
 import { aiConfigFromSettings, aiFill } from '../llm/client'
 import { enrichAiContext } from '../llm/context'
@@ -444,6 +445,7 @@ function broadcastLogEntry(entry: LogEntry): void {
 
 if (gotSingleInstanceLock) {
   app.whenReady().then(async () => {
+    await removeLegacyAskpassSecrets()
     settings = await loadSettings()
     applyGitConfig()
     onLog(broadcastLogEntry)

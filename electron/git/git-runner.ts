@@ -1,6 +1,6 @@
 import { spawn } from 'child_process'
 import { emitLog } from './log-bus'
-import { buildGitEnv } from './credentials'
+import { gitCommandNeedsCredentials, prepareGitEnv } from './credentials'
 import { detectGitHookFailure, detectGitHookExecution, formatHookResultLogMessage, gitCommandMayRunHooks, stripGitTraceLines } from './hook-failure'
 import type { GitCommandDescriptor } from '../../shared/git/commands'
 
@@ -38,7 +38,11 @@ export async function runGit(
   const cmd = `${gitBinaryPath} ${gitArgs.join(' ')}`
   emitLog('git', 'debug', `> ${cmd}`, cwd)
 
-  const env = { ...(await buildGitEnv()), ...envOverride }
+  const prepared = await prepareGitEnv({ needsCredentials: gitCommandNeedsCredentials(args) })
+  const env = { ...prepared.env, ...envOverride }
+  const releaseEnv = () => {
+    void prepared.cleanup().catch(() => undefined)
+  }
   if (gitCommandMayRunHooks(args)) {
     env.GIT_TRACE = '1'
   }
@@ -79,6 +83,7 @@ export async function runGit(
     })
 
     child.on('error', (error) => {
+      releaseEnv()
       if (settled) return
       settled = true
       clearTimeout(timer)
@@ -87,6 +92,7 @@ export async function runGit(
     })
 
     child.on('close', (code) => {
+      releaseEnv()
       if (settled) return
       settled = true
       clearTimeout(timer)

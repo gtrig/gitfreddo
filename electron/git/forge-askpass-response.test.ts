@@ -67,3 +67,54 @@ describe('resolveForgeAskpassResponse', () => {
     ).toEqual({ stdout: 'alice@ex.com', exitCode: 0 })
   })
 })
+
+describe('hostFromAskpassPrompt — userinfo and ports', () => {
+  it('strips userinfo and port from the prompt host', () => {
+    expect(hostFromAskpassPrompt("Password for 'https://u@github.com':")).toBe('github.com')
+    expect(hostFromAskpassPrompt("Password for 'https://u:x@gitlab.example.com:8443':")).toBe(
+      'gitlab.example.com'
+    )
+  })
+})
+
+describe('resolveForgeAskpassResponse — exact host matching', () => {
+  const lookalikes = [
+    'https://github.attacker.io',
+    'https://notgithub.com',
+    'https://github.com.evil.io',
+    'https://bitbucket.org.evil.com',
+    'https://evilbitbucket.org',
+    'https://gitlab.com.evil.io',
+    'https://mygitlab.com',
+    'https://foo.gitlab.com'
+  ]
+
+  for (const host of lookalikes) {
+    it(`does not hand out a token for ${host}`, () => {
+      expect(resolveForgeAskpassResponse(`Password for '${host}':`, secrets())).toEqual({
+        stdout: '',
+        exitCode: 1
+      })
+      expect(resolveForgeAskpassResponse(`Username for '${host}':`, secrets())).toEqual({
+        stdout: '',
+        exitCode: 1
+      })
+    })
+  }
+
+  it('matches a known host when the prompt carries userinfo', () => {
+    expect(
+      resolveForgeAskpassResponse("Password for 'https://x-access-token@github.com':", secrets())
+    ).toEqual({ stdout: 'gho_github', exitCode: 0 })
+  })
+
+  it('matches a self-hosted GitLab host exactly, ignoring ports', () => {
+    const selfHosted = secrets({ gitlabHost: 'gitlab.example.com' })
+    expect(
+      resolveForgeAskpassResponse("Password for 'https://gitlab.example.com:8443':", selfHosted)
+    ).toEqual({ stdout: 'gl_token', exitCode: 0 })
+    expect(
+      resolveForgeAskpassResponse("Password for 'https://gitlab.example.com.evil.io':", selfHosted)
+    ).toEqual({ stdout: '', exitCode: 1 })
+  })
+})

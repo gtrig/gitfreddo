@@ -17,30 +17,69 @@ export function createForgeTokenStore(
   const settingsDir = getAppDataDir()
   const tokenPath = join(settingsDir, fileName)
 
+  /** Decrypted token kept in memory: `undefined` = not loaded yet. */
+  let cached: string | null | undefined
+  let inflight: Promise<string | null> | null = null
+  let generation = 0
+
+  async function writeEncrypted(token: string): Promise<void> {
+    await mkdir(settingsDir, { recursive: true })
+    const encrypted = await safeStorage.encryptStringAsync(token)
+    await writeFile(tokenPath, encrypted)
+  }
+
   async function saveToken(token: string): Promise<void> {
-    if (!safeStorage.isEncryptionAvailable()) {
+    if (!(await safeStorage.isAsyncEncryptionAvailable())) {
       throw new Error(
         `OS encryption is not available. Cannot store ${displayName} token securely on this system.`
       )
     }
-    await mkdir(settingsDir, { recursive: true })
-    const encrypted = safeStorage.encryptString(token)
-    await writeFile(tokenPath, encrypted)
+    generation += 1
+    await writeEncrypted(token)
+    cached = token
+  }
+
+  async function readAndDecrypt(): Promise<string | null> {
+    let encrypted: Buffer
+    try {
+      encrypted = await readFile(tokenPath)
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return null
+      }
+      throw error
+    }
+    if (!(await safeStorage.isAsyncEncryptionAvailable())) {
+      throw new Error('OS encryption is not available')
+    }
+    const { result, shouldReEncrypt } = await safeStorage.decryptStringAsync(encrypted)
+    if (shouldReEncrypt) {
+      await writeEncrypted(result).catch(() => undefined)
+    }
+    return result
   }
 
   async function loadToken(): Promise<string | null> {
-    try {
-      const encrypted = await readFile(tokenPath)
-      if (!safeStorage.isEncryptionAvailable()) {
-        return null
-      }
-      return safeStorage.decryptString(encrypted)
-    } catch {
-      return null
+    if (cached !== undefined) return cached
+    if (!inflight) {
+      const startedAt = generation
+      inflight = readAndDecrypt()
+        .then((token) => {
+          // A save/clear that happened meanwhile wins over this read.
+          if (startedAt === generation) cached = token
+          return startedAt === generation ? token : (cached ?? null)
+        })
+        .catch(() => null)
+        .finally(() => {
+          inflight = null
+        })
     }
+    return inflight
   }
 
   async function clearToken(): Promise<void> {
+    generation += 1
+    cached = null
     try {
       await unlink(tokenPath)
     } catch {

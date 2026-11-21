@@ -51,8 +51,8 @@ async function waitForAuthorizationUri(
   throw new Error('Bitbucket OAuth flow did not publish an authorization URI')
 }
 
-// OAuth flow tests bind a local HTTP port — run sequentially to avoid EADDRINUSE.
-describe.sequential('bitbucket oauth helpers', () => {
+// OAuth flow tests bind a local HTTP port — tests in a file run sequentially by default (no .concurrent).
+describe('bitbucket oauth helpers', () => {
   const originalEnv = { ...process.env }
   const activeFlows: Promise<unknown>[] = []
 
