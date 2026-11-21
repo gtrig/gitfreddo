@@ -7,6 +7,8 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-21
+
 ### 2026-11-21 — Release blockers: coverage back to 95%, Windows-safe tests
 
 - **Why:** The release workflow runs `test:coverage` on Linux, macOS and Windows. After the Vitest 3 → 5 upgrade, line coverage measured 91.4% against the 95% threshold (v0.5.2 measured 95.44% under Vitest 3; the new version counts lines differently), and some new tests relied on Unix-only behavior.
