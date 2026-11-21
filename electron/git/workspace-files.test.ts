@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'fs'
+import { existsSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join, resolve } from 'path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -21,6 +21,30 @@ describe('resolveRepoFile', () => {
 
   it('rejects absolute relative paths', () => {
     expect(() => resolveRepoFile(repo, '/etc/passwd')).toThrow('Path escapes repository root')
+  })
+
+  it('rejects a broken symlink that points outside the repository', () => {
+    const root = mkdtempSync(join(tmpdir(), 'gf-ws-dangling-'))
+    const outside = mkdtempSync(join(tmpdir(), 'gf-ws-dangling-out-'))
+    try {
+      symlinkSync(join(outside, 'not-created-yet.desktop'), join(root, 'innocent.txt'))
+      expect(() => resolveRepoFile(root, 'innocent.txt')).toThrow('Path escapes repository root')
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+      rmSync(outside, { recursive: true, force: true })
+    }
+  })
+
+  it('follows a broken symlink that stays inside the repository', () => {
+    const root = mkdtempSync(join(tmpdir(), 'gf-ws-dangling-in-'))
+    try {
+      symlinkSync('real/target.txt', join(root, 'link.txt'))
+      expect(resolveRepoFile(root, 'link.txt')).toBe(
+        join(realpathSync(root), 'real', 'target.txt')
+      )
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
   })
 
   it('rejects symlink escapes that point outside the repository', () => {

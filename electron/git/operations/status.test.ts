@@ -2,11 +2,13 @@ import { execSync } from 'node:child_process'
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import * as gitRunner from '../git-runner'
 import {
   classifyPorcelainV2Line,
   parseCleanPreviewOutput,
   parsePorcelainV2Line,
+  stageAdd,
   stageReset,
   workingClean,
   workingCleanPreview,
@@ -29,6 +31,60 @@ function newRepo(prefix: string, withCommit = true): string {
 
 const cachedNames = (repo: string) =>
   execSync('git diff --cached --name-only', { cwd: repo, encoding: 'utf8' }).trim()
+
+describe('workingStatus path and upstream handling', () => {
+  it('keeps leading and trailing spaces in untracked file names', async () => {
+    const repo = newRepo('gf-status-spaces-')
+    writeFileSync(join(repo, ' padded name '), 'x\n')
+
+    const status = await workingStatus(repo, 'git')
+    expect(status.untracked.map((file) => file.path)).toEqual([' padded name '])
+  })
+
+  it('reports commits ahead of the upstream as ahead, not behind', async () => {
+    const repo = newRepo('gf-status-ahead-')
+    const remote = mkdtempSync(join(tmpdir(), 'gf-status-ahead-remote-'))
+    execSync(`git init --bare "${remote}"`, { stdio: 'ignore' })
+    execSync(`git remote add origin "${remote}" && git push -u origin main`, { cwd: repo, stdio: 'ignore' })
+    writeFileSync(join(repo, 'README.md'), 'ahead\n')
+    execSync('git commit -am ahead', { cwd: repo, stdio: 'ignore' })
+
+    const status = await workingStatus(repo, 'git')
+    expect(status).toMatchObject({ ahead: 1, behind: 0 })
+  })
+
+  it('does not run an extra rev-list when git already reported ahead/behind', async () => {
+    const repo = newRepo('gf-status-ab-')
+    const remote = mkdtempSync(join(tmpdir(), 'gf-status-ab-remote-'))
+    execSync(`git init --bare "${remote}"`, { stdio: 'ignore' })
+    execSync(`git remote add origin "${remote}" && git push -u origin main`, { cwd: repo, stdio: 'ignore' })
+    const spy = vi.spyOn(gitRunner, 'runGitOrThrow')
+    try {
+      const status = await workingStatus(repo, 'git')
+      expect(status).toMatchObject({ ahead: 0, behind: 0 })
+      expect(spy.mock.calls.some(([args]) => args.includes('rev-list'))).toBe(false)
+    } finally {
+      spy.mockRestore()
+    }
+  })
+})
+
+describe('stageAdd', () => {
+  it('refuses an empty path list instead of staging everything', async () => {
+    const repo = newRepo('gf-add-empty-')
+    writeFileSync(join(repo, 'a.txt'), 'a\n')
+    await expect(stageAdd(repo, 'git', [])).rejects.toThrow(/no files/i)
+    expect(cachedNames(repo)).toBe('')
+  })
+
+  it('stages everything only when asked explicitly', async () => {
+    const repo = newRepo('gf-add-all-')
+    writeFileSync(join(repo, 'a.txt'), 'a\n')
+    writeFileSync(join(repo, 'b.txt'), 'b\n')
+    await stageAdd(repo, 'git', [], true)
+    expect(cachedNames(repo).split('\n')).toEqual(['a.txt', 'b.txt'])
+  })
+})
 
 describe('stageReset', () => {
   it('unstages everything on a branch with no commits yet', async () => {
@@ -171,6 +227,15 @@ describe('parsePorcelainV2Line', () => {
       isSubmodule: true,
       submoduleStatus: 'ahead'
     })
+  })
+
+  it('reads submodule state from the porcelain S<c><m><u> field', () => {
+    const at = (sub: string) =>
+      parsePorcelainV2Line(`1 .M ${sub} 160000 160000 160000 abc def vendor/lib`)?.submoduleStatus
+    expect(at('SC..')).toBe('ahead')
+    expect(at('SCM.')).toBe('ahead')
+    expect(at('S.M.')).toBe('dirty')
+    expect(at('S..U')).toBe('dirty')
   })
 
   it('parses added, deleted, untracked, and conflicted files', () => {

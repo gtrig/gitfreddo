@@ -163,7 +163,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
 
   async function handlePrimaryAction() {
     if (!hasStaged && hasUnstaged) {
-      await stageAdd.mutateAsync({ paths: [] })
+      await stageAdd.mutateAsync({ all: true })
       return
     }
 

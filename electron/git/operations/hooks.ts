@@ -1,6 +1,8 @@
 import {
   chmodSync,
+  copyFileSync,
   existsSync,
+  mkdirSync,
   readdirSync,
   readFileSync,
   renameSync,
@@ -144,10 +146,11 @@ export async function hooksList(
     const sample = variants.sample
     const disabled = variants.disabled
     const enabled = Boolean(active)
+    // A disabled hook is the user's own script, so it wins over git's sample.
     let filename: string
     if (active) filename = active
-    else if (sample) filename = sample
     else if (disabled) filename = disabled
+    else if (sample) filename = sample
     else continue
 
     const filePath = join(hooksDir, filename)
@@ -169,7 +172,7 @@ export async function hooksList(
 }
 
 function findHookFile(hooksDir: string, name: string): string | null {
-  for (const suffix of ['', SAMPLE_SUFFIX, DISABLED_SUFFIX]) {
+  for (const suffix of ['', DISABLED_SUFFIX, SAMPLE_SUFFIX]) {
     const filename = name + suffix
     const filePath = join(hooksDir, filename)
     if (existsSync(filePath)) return filePath
@@ -199,6 +202,7 @@ export async function hooksWrite(
 ): Promise<void> {
   validateHookName(name)
   const hooksDir = await resolveHooksDir(cwd, gitBinaryPath)
+  mkdirSync(hooksDir, { recursive: true })
   const filePath = join(hooksDir, name)
   writeFileSync(filePath, content, 'utf8')
   chmodSync(filePath, 0o755)
@@ -218,10 +222,12 @@ export async function hooksEnable(
   }
   const samplePath = join(hooksDir, name + SAMPLE_SUFFIX)
   const disabledPath = join(hooksDir, name + DISABLED_SUFFIX)
-  if (existsSync(samplePath)) {
-    renameSync(samplePath, activePath)
-  } else if (existsSync(disabledPath)) {
+  if (existsSync(disabledPath)) {
+    // Restore the user's own (previously disabled) script.
     renameSync(disabledPath, activePath)
+  } else if (existsSync(samplePath)) {
+    // Copy, so git's sample stays available as a reference.
+    copyFileSync(samplePath, activePath)
   } else {
     throw new Error(`Hook not found: ${name}`)
   }
@@ -248,7 +254,8 @@ export async function hooksDelete(
 ): Promise<void> {
   validateHookName(name)
   const hooksDir = await resolveHooksDir(cwd, gitBinaryPath)
-  for (const suffix of ['', SAMPLE_SUFFIX, DISABLED_SUFFIX]) {
+  // Remove the user's script (active or disabled); git's .sample is left alone.
+  for (const suffix of ['', DISABLED_SUFFIX]) {
     const filePath = join(hooksDir, name + suffix)
     if (existsSync(filePath)) {
       unlinkSync(filePath)

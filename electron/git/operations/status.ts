@@ -76,18 +76,17 @@ export async function workingStatus(
   const unstaged: GitFileChange[] = []
   const untracked: GitFileChange[] = []
   const conflicted: GitFileChange[] = []
-  const submoduleModified = new Set<string>()
+  let sawAheadBehind = false
 
   for (const line of lines) {
     if (line.startsWith('# branch.head ')) {
       branch = line.slice('# branch.head '.length).trim()
     } else if (line.startsWith('# branch.ab ')) {
+      // Format: "# branch.ab +<ahead> -<behind>".
       const parts = line.slice('# branch.ab '.length).trim().split(' ')
-      ahead = Math.max(0, Number(parts[1]) || 0)
-      behind = Math.max(0, Math.abs(Number(parts[0]) || 0))
-    } else if (line.startsWith('# submodule.')) {
-      const path = unquoteGitPath(line.slice(line.indexOf(' ') + 1).trim())
-      if (path) submoduleModified.add(path)
+      ahead = Math.max(0, Number(parts[0]) || 0)
+      behind = Math.max(0, Math.abs(Number(parts[1]) || 0))
+      sawAheadBehind = true
     } else if (line.startsWith('1 ') || line.startsWith('2 ')) {
       const classified = classifyPorcelainV2Line(line)
       if (classified.conflicted) {
@@ -97,28 +96,16 @@ export async function workingStatus(
         if (classified.unstaged) unstaged.push(classified.unstaged)
       }
     } else if (line.startsWith('? ')) {
-      const path = unquoteGitPath(line.slice(2).trim())
-      untracked.push({ path, status: 'untracked' })
+      // No trim: file names may start or end with spaces.
+      const path = unquoteGitPath(line.slice(2))
+      if (path) untracked.push({ path, status: 'untracked' })
     } else if (line.startsWith('u ')) {
       const change = parsePorcelainV2Line(line)
       if (change) conflicted.push(change)
     }
   }
 
-  if (submoduleModified.size > 0) {
-    const enrich = (change: GitFileChange): GitFileChange =>
-      submoduleModified.has(change.path)
-        ? {
-            ...change,
-            isSubmodule: true,
-            submoduleStatus: change.submoduleStatus ?? 'dirty'
-          }
-        : change
-    for (let i = 0; i < staged.length; i++) staged[i] = enrich(staged[i]!)
-    for (let i = 0; i < unstaged.length; i++) unstaged[i] = enrich(unstaged[i]!)
-  }
-
-  if (ahead === 0 && behind === 0) {
+  if (!sawAheadBehind) {
     const ab = await parseAheadBehind(cwd, gitBinaryPath)
     ahead = ab.ahead
     behind = ab.behind
@@ -147,6 +134,23 @@ export async function workingStatus(
   }
 }
 
+/**
+ * Porcelain v2 `<sub>` is "S<c><m><u>" for submodules: C = commit changed,
+ * M = tracked changes inside, U = untracked files inside.
+ */
+function submoduleStatusFromSubField(
+  sub: string,
+  status: GitFileChange['status']
+): SubmoduleEntryStatus {
+  if (sub.startsWith('S') && sub.length >= 4) {
+    if (sub[1] === 'C') return 'ahead'
+    if (sub[2] === 'M' || sub[3] === 'U') return 'dirty'
+  }
+  if (status === 'added') return 'uninitialized'
+  if (status === 'modified') return 'ahead'
+  return 'initialized'
+}
+
 /** Parse a porcelain v2 status line (`1`, `2`, or `u` record). Exported for unit tests. */
 export function parsePorcelainV2Line(line: string): GitFileChange | null {
   const parts = line.split(' ')
@@ -159,11 +163,7 @@ export function parsePorcelainV2Line(line: string): GitFileChange | null {
   if (!status) return null
   const isSubmodule = parts[3] === '160000' || parts[4] === '160000'
   const submoduleStatus: SubmoduleEntryStatus | undefined = isSubmodule
-    ? status === 'added'
-      ? 'uninitialized'
-      : status === 'modified'
-        ? 'ahead'
-        : 'initialized'
+    ? submoduleStatusFromSubField(parts[2] ?? '', status)
     : undefined
 
   const withSubmodule = (change: GitFileChange): GitFileChange =>
@@ -226,16 +226,24 @@ export function classifyPorcelainV2Line(line: string): PorcelainV2Classification
   }
 }
 
+/**
+ * `git add`. Staging everything needs `all: true`; an empty path list is an error
+ * so a caller with nothing selected can never stage the whole tree by accident.
+ */
 export async function stageAdd(
   cwd: string,
   gitBinaryPath: string,
-  paths: string[]
+  paths: string[],
+  all = false
 ): Promise<void> {
-  if (paths.length === 0) {
+  if (all) {
     await runGitOrThrow(buildAddArgs({ all: true }), { cwd, gitBinaryPath })
-  } else {
-    await runGitOrThrow(buildAddArgs({ paths }), { cwd, gitBinaryPath })
+    return
   }
+  if (paths.length === 0) {
+    throw new Error('No files to stage.')
+  }
+  await runGitOrThrow(buildAddArgs({ paths }), { cwd, gitBinaryPath })
 }
 
 export async function stageReset(

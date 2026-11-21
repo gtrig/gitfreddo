@@ -91,7 +91,8 @@ function buildHandlerRegistry(): Record<GitIpcMethod, InvokeHandler> {
     'tag.rename': (cwd, git, p) =>
       tagOps.tagRename(cwd, git, p.oldName as string, p.newName as string),
     'working.status': (cwd, git) => statusOps.workingStatus(cwd, git),
-    'stage.add': (cwd, git, p) => statusOps.stageAdd(cwd, git, (p.paths as string[]) ?? []),
+    'stage.add': (cwd, git, p) =>
+      statusOps.stageAdd(cwd, git, (p.paths as string[]) ?? [], p.all === true),
     'stage.reset': (cwd, git, p) => statusOps.stageReset(cwd, git, p.paths as string[] | undefined),
     'working.discard': (cwd, git, p) =>
       statusOps.workingDiscard(cwd, git, (p.paths as string[]) ?? [], Boolean(p.staged)),

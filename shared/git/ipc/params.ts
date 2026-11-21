@@ -105,6 +105,8 @@ export interface TagRenameParams {
 
 export interface StageAddParams {
   paths?: string[]
+  /** Stage every change (`git add -A`). Required for that: empty `paths` is an error. */
+  all?: boolean
 }
 
 export interface StageResetParams {

@@ -434,7 +434,7 @@ export function GitWorkingTree() {
               label={t('workingTree.stageAll')}
               disabled={busy}
               loading={stageAdd.isPending}
-              onClick={() => void runMutation(stageAdd.mutateAsync({ paths: [] }), reportToast)}
+              onClick={() => void runMutation(stageAdd.mutateAsync({ all: true }), reportToast)}
             />
           )}
           {stagedFiles.length > 0 && (

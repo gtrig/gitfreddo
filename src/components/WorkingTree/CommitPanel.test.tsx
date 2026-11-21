@@ -190,7 +190,7 @@ describe('CommitPanel', () => {
     )
 
     await userEvent.click(primaryButton()!)
-    expect(stageAddMutate).toHaveBeenCalledWith({ paths: [] })
+    expect(stageAddMutate).toHaveBeenCalledWith({ all: true })
   })
 
   it('commits staged changes and clears the form', async () => {

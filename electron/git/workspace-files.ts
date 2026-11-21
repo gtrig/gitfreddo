@@ -1,13 +1,26 @@
-import { existsSync, realpathSync } from 'fs'
+import { existsSync, lstatSync, readlinkSync, realpathSync } from 'fs'
 import { unlink } from 'fs/promises'
-import { isAbsolute, join, relative, resolve } from 'path'
+import { dirname, isAbsolute, join, relative, resolve } from 'path'
 import { canonicalizePath, normalizeRepoPath } from './repo-path'
 
 /**
  * Resolve a repo-relative path and reject escapes (including via symlinks).
  * Non-existent leaf paths are allowed when every existing ancestor stays inside the repo.
  */
-export function resolveRepoFile(repoPath: string, relativePath: string): string {
+const MAX_SYMLINK_HOPS = 40
+
+function isBrokenSymlink(path: string): boolean {
+  try {
+    return lstatSync(path).isSymbolicLink()
+  } catch {
+    return false
+  }
+}
+
+export function resolveRepoFile(repoPath: string, relativePath: string, hops = 0): string {
+  if (hops > MAX_SYMLINK_HOPS) {
+    throw new Error('Too many symbolic links')
+  }
   if (isAbsolute(relativePath)) {
     throw new Error('Path escapes repository root')
   }
@@ -25,6 +38,20 @@ export function resolveRepoFile(repoPath: string, relativePath: string): string 
   for (let index = 0; index < parts.length; index += 1) {
     const next = join(current, parts[index]!)
     if (!existsSync(next)) {
+      if (isBrokenSymlink(next)) {
+        // A link to a path that doesn't exist yet: writing would create its target,
+        // so the target must stay inside the repo too.
+        const target = resolve(dirname(next), readlinkSync(next))
+        const targetRel = relative(rootReal, target)
+        if (targetRel.startsWith('..') || isAbsolute(targetRel)) {
+          throw new Error('Path escapes repository root')
+        }
+        return resolveRepoFile(
+          rootReal,
+          join(targetRel, ...parts.slice(index + 1)),
+          hops + 1
+        )
+      }
       return join(current, ...parts.slice(index))
     }
     let realNext: string

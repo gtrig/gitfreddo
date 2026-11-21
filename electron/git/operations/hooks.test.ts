@@ -38,7 +38,7 @@ describe('hooks', () => {
     expect(preCommit?.filename).toBe('pre-commit.sample')
   })
 
-  it('enables a sample hook by renaming it', async () => {
+  it('enables a sample hook as an active copy', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'gf-hooks-'))
     initRepo(dir)
 
@@ -49,7 +49,7 @@ describe('hooks', () => {
     expect(preCommit?.enabled).toBe(true)
     expect(preCommit?.filename).toBe('pre-commit')
     expect(existsSync(join(result.hooksDir, 'pre-commit'))).toBe(true)
-    expect(existsSync(join(result.hooksDir, 'pre-commit.sample'))).toBe(false)
+    expect(existsSync(join(result.hooksDir, 'pre-commit.sample'))).toBe(true)
   })
 
   it('reads and writes hook content with executable permissions', async () => {
@@ -82,19 +82,60 @@ describe('hooks', () => {
     expect(existsSync(join(result.hooksDir, 'pre-commit.disabled'))).toBe(true)
   })
 
-  it('deletes all hook variants', async () => {
+  it('deletes the active and disabled hook but keeps the git sample', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'gf-hooks-'))
     initRepo(dir)
     await hooksWrite(dir, 'git', 'pre-push', '#!/bin/sh\n')
     const { hooksDir } = await hooksList(dir, 'git')
-    copyFileSync(join(hooksDir, 'pre-push'), join(hooksDir, 'pre-push.sample'))
+    copyFileSync(join(hooksDir, 'pre-push'), join(hooksDir, 'pre-push.disabled'))
 
     await hooksDelete(dir, 'git', 'pre-push')
 
-    const result = await hooksList(dir, 'git')
-    expect(result.hooks.some((hook) => hook.name === 'pre-push')).toBe(false)
     expect(existsSync(join(hooksDir, 'pre-push'))).toBe(false)
-    expect(existsSync(join(hooksDir, 'pre-push.sample'))).toBe(false)
+    expect(existsSync(join(hooksDir, 'pre-push.disabled'))).toBe(false)
+    expect(existsSync(join(hooksDir, 'pre-push.sample'))).toBe(true)
+    const result = await hooksList(dir, 'git')
+    expect(result.hooks.find((hook) => hook.name === 'pre-push')).toMatchObject({
+      enabled: false,
+      filename: 'pre-push.sample'
+    })
+  })
+
+  it('keeps the sample when enabling a hook from it', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'gf-hooks-'))
+    initRepo(dir)
+    const { hooksDir } = await hooksList(dir, 'git')
+
+    await hooksEnable(dir, 'git', 'pre-commit')
+
+    expect(existsSync(join(hooksDir, 'pre-commit'))).toBe(true)
+    expect(existsSync(join(hooksDir, 'pre-commit.sample'))).toBe(true)
+    expect(isExecutable(join(hooksDir, 'pre-commit'))).toBe(true)
+  })
+
+  it('re-enables your edited hook, not the sample, after disabling it', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'gf-hooks-'))
+    initRepo(dir)
+    await hooksWrite(dir, 'git', 'pre-commit', '#!/bin/sh\necho mine\n')
+    await hooksDisable(dir, 'git', 'pre-commit')
+
+    expect(await hooksRead(dir, 'git', 'pre-commit')).toContain('echo mine')
+    const listed = await hooksList(dir, 'git')
+    expect(listed.hooks.find((hook) => hook.name === 'pre-commit')?.filename).toBe(
+      'pre-commit.disabled'
+    )
+
+    await hooksEnable(dir, 'git', 'pre-commit')
+    expect(await hooksRead(dir, 'git', 'pre-commit')).toContain('echo mine')
+  })
+
+  it('creates the hooks directory when core.hooksPath points to a missing one', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'gf-hooks-'))
+    initRepo(dir)
+    execSync('git config core.hooksPath .hooks-new', { cwd: dir, stdio: 'ignore' })
+
+    await hooksWrite(dir, 'git', 'pre-commit', '#!/bin/sh\n')
+    expect(existsSync(join(dir, '.hooks-new', 'pre-commit'))).toBe(true)
   })
 
   it('uses core.hooksPath when set', async () => {
