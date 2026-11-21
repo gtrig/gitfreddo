@@ -9,6 +9,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [0.6.0] - 2026-11-21
 
+### 2026-11-21 — Fix the v0.6.0 release build
+
+- **Why:** The first v0.6.0 release run failed: packaging on Linux and macOS, and three new tests on Windows.
+- **What:** Restore `electron-builder` 26.15.3 (it had been downgraded to 20.44.4, which cannot package the app). Normalize both sides in the watcher's ignored-directory check, and use `realpathSync.native` in the broken-symlink test so it passes on Windows.
+
 ### 2026-11-21 — Release blockers: coverage back to 95%, Windows-safe tests
 
 - **Why:** The release workflow runs `test:coverage` on Linux, macOS and Windows. After the Vitest 3 → 5 upgrade, line coverage measured 91.4% against the 95% threshold (v0.5.2 measured 95.44% under Vitest 3; the new version counts lines differently), and some new tests relied on Unix-only behavior.
