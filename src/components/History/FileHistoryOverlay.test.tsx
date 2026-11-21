@@ -136,7 +136,7 @@ describe('FileHistoryOverlay', () => {
       expect(window.gitfreddo.invoke).toHaveBeenCalledWith('diff.show', {
         ref: 'bbb222222222222222222222222222222222222',
         path: 'README.md'
-      })
+      }, '/tmp/repo')
     })
   })
 
@@ -209,7 +209,7 @@ describe('FileHistoryOverlay', () => {
       expect(window.gitfreddo.invoke).toHaveBeenCalledWith('file.read', {
         ref: commits[0]!.hash,
         path: 'README.md'
-      })
+      }, '/tmp/repo')
     })
     expect(await screen.findByText('full file contents')).toBeInTheDocument()
   })

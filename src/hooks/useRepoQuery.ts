@@ -29,10 +29,11 @@ export function useRepoQuery<M extends GitIpcMethod, TData = GitIpcResult<M>>(
   return useQuery({
     queryKey: ['repo', repoPath, options.method, ...extraKey],
     queryFn: async () => {
-      const result =
-        options.params === undefined
-          ? await window.gitfreddo.invoke(options.method)
-          : await window.gitfreddo.invoke(options.method, options.params as never)
+      const result = await window.gitfreddo.invoke(
+        options.method,
+        options.params as never,
+        repoPath ?? undefined
+      )
       return options.select ? options.select(result) : (result as TData)
     },
     enabled: enabled && connected && Boolean(repoPath)

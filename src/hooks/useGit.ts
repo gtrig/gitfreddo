@@ -183,11 +183,12 @@ export function useConflictFileStages(path: string | undefined, enabled = true) 
     queryKey: ['repo', repoPath, 'conflict.stages', path],
     queryFn: async () => {
       const filePath = path!
+      const scopedPath = repoPath ?? undefined
       const [base, sideA, sideB, workingRead] = await Promise.all([
-        window.gitfreddo.invoke('file.readStage', { stage: 1, path: filePath }),
-        window.gitfreddo.invoke('file.readStage', { stage: 2, path: filePath }),
-        window.gitfreddo.invoke('file.readStage', { stage: 3, path: filePath }),
-        window.gitfreddo.invoke('working.read', { path: filePath })
+        window.gitfreddo.invoke('file.readStage', { stage: 1, path: filePath }, scopedPath),
+        window.gitfreddo.invoke('file.readStage', { stage: 2, path: filePath }, scopedPath),
+        window.gitfreddo.invoke('file.readStage', { stage: 3, path: filePath }, scopedPath),
+        window.gitfreddo.invoke('working.read', { path: filePath }, scopedPath)
       ])
       return { base, sideA, sideB, working: workingRead.content }
     },

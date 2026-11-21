@@ -16,6 +16,7 @@ import { parseUnifiedDiffRows, splitRowsForDisplay } from '@/lib/diff/unifiedDif
 import type { GitCommit } from '@/lib/types'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { VIRTUAL_OVERSCAN, shouldVirtualize } from '@/lib/ui/virtualList'
+import { repoInvoke } from '@/lib/git/repoInvoke'
 
 interface FileHistoryOverlayProps {
   path: string
@@ -66,7 +67,7 @@ export function FileHistoryOverlay({ path, onClose }: FileHistoryOverlayProps) {
   const { data: commits, isLoading, error } = useQuery({
     queryKey: ['repo', repoPath, 'log.file', path],
     queryFn: async () =>
-      (await window.gitfreddo.invoke('log.file', { path, maxCount: 100 })) as GitCommit[],
+      (await repoInvoke('log.file', { path, maxCount: 100 })) as GitCommit[],
     enabled: connected && Boolean(repoPath) && Boolean(path)
   })
 

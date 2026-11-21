@@ -69,7 +69,35 @@ describe('useGitMutations', () => {
       await result.current.fetch.mutateAsync(undefined)
     })
 
-    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('fetch', undefined)
+    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('fetch', undefined, '/repo')
+  })
+
+  it('keeps targeting the tab a mutation started in after switching tabs', async () => {
+    let release!: () => void
+    vi.mocked(window.gitfreddo.invoke).mockImplementation(
+      () => new Promise<undefined>((resolve) => { release = () => resolve(undefined) })
+    )
+    const { result } = renderHook(() => useGitMutations(), { wrapper })
+
+    let pending!: Promise<unknown>
+    act(() => {
+      pending = result.current.stageAdd.mutateAsync({ paths: ['a.ts'] })
+    })
+    act(() => {
+      useWorkspaceStore.setState({ activePath: '/other', workspacePath: '/other' })
+    })
+    await waitFor(() => expect(window.gitfreddo.invoke).toHaveBeenCalled())
+    await act(async () => {
+      release()
+      await pending
+    })
+
+    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('stage.add', { paths: ['a.ts'] }, '/repo')
+    expect(window.gitfreddo.invoke).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      '/other'
+    )
   })
 
   it('shows a success toast for remote actions', async () => {
@@ -194,8 +222,8 @@ describe('useGitMutations', () => {
       await result.current.notesAdd.mutateAsync({ hash: 'abc', message: 'note' })
     })
 
-    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('branch.checkout', { name: 'main' })
-    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('notes.add', { hash: 'abc', message: 'note' })
+    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('branch.checkout', { name: 'main' }, '/repo')
+    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('notes.add', { hash: 'abc', message: 'note' }, '/repo')
   })
 
   it.each(['working', 'staged'] as const)(

@@ -8,6 +8,7 @@ import { useSelectionStore } from '@/stores/selection'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { shouldVirtualize, VIRTUAL_OVERSCAN } from '@/lib/ui/virtualList'
 import type { GitReflogEntry } from '@/lib/types'
+import { repoInvoke } from '@/lib/git/repoInvoke'
 
 interface ReflogModalProps {
   open: boolean
@@ -23,7 +24,7 @@ export function ReflogModal({ open, onClose }: ReflogModalProps) {
   const { data, isLoading, error } = useQuery({
     queryKey: ['repo', repoPath, 'reflog.list'],
     queryFn: async () =>
-      (await window.gitfreddo.invoke('reflog.list', { maxCount: 200 })) as GitReflogEntry[],
+      (await repoInvoke('reflog.list', { maxCount: 200 })) as GitReflogEntry[],
     enabled: open && connected && Boolean(repoPath)
   })
 

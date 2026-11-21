@@ -444,6 +444,9 @@ export class RepoManager {
     method: string,
     params: unknown = {}
   ): Promise<unknown> {
+    if (repoPath === undefined) {
+      emitLog('git', 'debug', `invoke ${method} without a repo path; using active repo`)
+    }
     const cwd = normalizeRepoPath(repoPath ?? this.activePath ?? '')
     if (!cwd || !this.repos.has(cwd)) {
       throw new Error('No repository connected')

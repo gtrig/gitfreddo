@@ -22,6 +22,7 @@ import { PushForceConfirm } from '@/components/Layout/PushForceConfirm'
 import { ComposeCommitsModal } from '@/components/WorkingTree/ComposeCommitsModal'
 import { StashPushModal } from '@/components/Stash/StashPushModal'
 import { parseComposeCommitsResponse, type AiComposeCommitProposal } from '@shared/ai'
+import { repoInvoke } from '@/lib/git/repoInvoke'
 
 const SUBJECT_MAX = 72
 
@@ -64,7 +65,7 @@ export function CommitPanel({ working }: CommitPanelProps) {
   const gpgSignQuery = useQuery({
     queryKey: ['repo', repoPath, 'config.get', 'commit.gpgsign'],
     queryFn: async () =>
-      (await window.gitfreddo.invoke('config.get', {
+      (await repoInvoke('config.get', {
         key: 'commit.gpgsign',
         scope: 'local'
       })) as string | null,

@@ -82,7 +82,7 @@ describe('useGit query hooks', () => {
 
     const { result } = renderHook(() => useRepoStatus(), { wrapper })
     await waitFor(() => expect(result.current.data).toEqual(status))
-    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('repo.status')
+    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('repo.status', undefined, '/repo/test')
   })
 
   it('fetches branches for the active repository', async () => {
@@ -92,7 +92,7 @@ describe('useGit query hooks', () => {
 
     const { result } = renderHook(() => useBranches(), { wrapper })
     await waitFor(() => expect(result.current.data).toEqual(branches))
-    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('branch.list')
+    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('branch.list', undefined, '/repo/test')
   })
 
   it('passes maxCount from settings to log.graph', async () => {
@@ -105,7 +105,7 @@ describe('useGit query hooks', () => {
 
     const { result } = renderHook(() => useLogGraph(), { wrapper })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('log.graph', { maxCount: 250 })
+    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('log.graph', { maxCount: 250 }, '/repo/test')
   })
 
   it('parses commit changed files from log.show output', async () => {
@@ -114,7 +114,7 @@ describe('useGit query hooks', () => {
 
     const { result } = renderHook(() => useCommitChangedFiles('abc123'), { wrapper })
     await waitFor(() => expect(result.current.data).toHaveLength(2))
-    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('log.show', { hash: 'abc123' })
+    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('log.show', { hash: 'abc123' }, '/repo/test')
     expect(result.current.data?.[0]?.path).toBe('src/app.ts')
   })
 
@@ -122,7 +122,7 @@ describe('useGit query hooks', () => {
     connectWorkspace()
     const { result } = renderHook(() => useWorkingStatus(false), { wrapper })
     expect(result.current.fetchStatus).toBe('idle')
-    expect(window.gitfreddo.invoke).not.toHaveBeenCalledWith('working.status')
+    expect(window.gitfreddo.invoke).not.toHaveBeenCalledWith('working.status', undefined, '/repo/test')
   })
 
   it('fetches additional git query hooks for the active repository', async () => {

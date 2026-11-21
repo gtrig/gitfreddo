@@ -87,7 +87,7 @@ describe('RepoHooksPanel', () => {
       key: 'core.hooksPath',
       value: '.githooks',
       scope: 'local'
-    })
+    }, '/tmp/repo')
   })
 
   it('loads hook content and saves edits', async () => {
@@ -113,7 +113,7 @@ describe('RepoHooksPanel', () => {
     expect(window.gitfreddo.invoke).toHaveBeenCalledWith('hooks.write', {
       name: 'pre-commit',
       content: '#!/bin/sh\necho hook\n\necho updated'
-    })
+    }, '/tmp/repo')
   })
 
   it('enables a disabled hook', async () => {
@@ -132,7 +132,7 @@ describe('RepoHooksPanel', () => {
     renderWithProviders(<RepoHooksPanel />)
     await screen.findByRole('textbox')
     await userEvent.click(screen.getByRole('button', { name: 'Enable' }))
-    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('hooks.enable', { name: 'pre-push' })
+    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('hooks.enable', { name: 'pre-push' }, '/tmp/repo')
   })
 
   it('shows connect prompt when no repository is open', () => {
@@ -164,7 +164,7 @@ describe('RepoHooksPanel', () => {
     renderWithProviders(<RepoHooksPanel />)
     await screen.findByRole('textbox')
     await userEvent.click(screen.getByRole('button', { name: 'Disable' }))
-    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('hooks.disable', { name: 'pre-commit' })
+    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('hooks.disable', { name: 'pre-commit' }, '/tmp/repo')
   })
 
   it('deletes a hook after confirmation', async () => {
@@ -185,7 +185,7 @@ describe('RepoHooksPanel', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Delete' }))
 
     expect(window.confirm).toHaveBeenCalled()
-    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('hooks.delete', { name: 'pre-commit' })
+    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('hooks.delete', { name: 'pre-commit' }, '/tmp/repo')
   })
 
   it('skips delete when confirmation is declined', async () => {
@@ -205,6 +205,6 @@ describe('RepoHooksPanel', () => {
     await screen.findByRole('textbox')
     await userEvent.click(screen.getByRole('button', { name: 'Delete' }))
 
-    expect(window.gitfreddo.invoke).not.toHaveBeenCalledWith('hooks.delete', expect.anything())
+    expect(window.gitfreddo.invoke).not.toHaveBeenCalledWith('hooks.delete', expect.anything(), '/tmp/repo')
   })
 })

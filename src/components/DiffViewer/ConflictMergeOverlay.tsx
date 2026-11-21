@@ -34,6 +34,7 @@ import { ThreeWayCodePane } from '@/components/DiffViewer/ThreeWayCodePane'
 import { ConflictOutputEditor } from '@/components/DiffViewer/ConflictOutputEditor'
 import { ConflictAiProposalCard } from '@/components/DiffViewer/ConflictAiProposalCard'
 import { Spinner } from '@/components/Ui/Spinner'
+import { repoInvoke } from '@/lib/git/repoInvoke'
 
 interface ConflictMergeOverlayProps {
   path: string
@@ -320,7 +321,7 @@ export function ConflictMergeOverlay({ path, onClose }: ConflictMergeOverlayProp
     }
     setSaving(true)
     try {
-      await window.gitfreddo.invoke('working.write', { path, content: output }, repoPath)
+      await repoInvoke('working.write', { path, content: output }, repoPath)
       await stageAdd.mutateAsync({ paths: [path] })
       clearPendingAiProposals(path)
       showToast(t('diff.conflictResolvedStaged'), 'success')

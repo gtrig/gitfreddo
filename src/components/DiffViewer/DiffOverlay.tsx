@@ -25,6 +25,7 @@ import {
 import { diffModeAfterLastHunkAction } from '@/lib/diff/hunkStageMode'
 import type { AppSettings } from '@/hooks/useAppSettings'
 import type { GitBlameLine, GitDiffResult } from '@/lib/types'
+import { repoInvoke } from '@/lib/git/repoInvoke'
 
 interface DiffOverlayProps {
   onClose: () => void
@@ -132,7 +133,7 @@ export function DiffOverlay({ onClose }: DiffOverlayProps) {
   const blameQuery = useQuery({
     queryKey: ['repo', repoPath, 'file.blame', filePath, blameRef],
     queryFn: async () =>
-      (await window.gitfreddo.invoke('file.blame', {
+      (await repoInvoke('file.blame', {
         path: filePath!,
         ...(blameRef ? { ref: blameRef } : {})
       })) as GitBlameLine[],

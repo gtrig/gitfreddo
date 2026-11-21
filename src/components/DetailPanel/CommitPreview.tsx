@@ -16,6 +16,7 @@ import { CommitFileList } from '@/components/DetailPanel/CommitFileList'
 import { commitMessageBody, countCommitFiles, parseCommitMessage } from '@/lib/workspace/fileTree'
 import { useCommitDisplayFiles } from '@/hooks/useCommitDisplayFiles'
 import type { GitCommit } from '@/lib/types'
+import { repoInvoke } from '@/lib/git/repoInvoke'
 
 function authorInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean)
@@ -167,7 +168,7 @@ export function CommitPreview({ commit }: { commit: GitCommit }) {
   const fullMessageQuery = useQuery({
     queryKey: ['repo', repoPath, 'log.message', commit.hash],
     queryFn: async () =>
-      window.gitfreddo.invoke('log.message', { hash: commit.hash }) as Promise<string>,
+      repoInvoke('log.message', { hash: commit.hash }) as Promise<string>,
     enabled: connected && Boolean(repoPath) && Boolean(commit.hash)
   })
 

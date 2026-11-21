@@ -41,7 +41,6 @@ describe('CreateTagModal', () => {
 
     expect(window.gitfreddo.invoke).toHaveBeenCalledWith(
       'tag.create',
-      expect.objectContaining({ name: 'v1.0.0', sign: true })
-    )
+      expect.objectContaining({ name: 'v1.0.0', sign: true }), '/tmp/repo')
   })
 })

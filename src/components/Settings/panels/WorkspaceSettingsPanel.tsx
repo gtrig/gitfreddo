@@ -7,6 +7,7 @@ import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
 import { RepoFilesPanel } from '@/components/Settings/panels/RepoFilesPanel'
 import { RepoHooksPanel } from '@/components/Settings/panels/RepoHooksPanel'
+import { repoInvoke } from '@/lib/git/repoInvoke'
 
 const REPO_CONFIG_KEYS = [
   'user.name',
@@ -27,7 +28,7 @@ export function WorkspaceSettingsPanel() {
   const configQuery = useQuery({
     queryKey: ['repo', repoPath, 'config.list', 'local'],
     queryFn: async () =>
-      (await window.gitfreddo.invoke('config.list', { scope: 'local' })) as Record<string, string>,
+      (await repoInvoke('config.list', { scope: 'local' })) as Record<string, string>,
     enabled: connected && Boolean(repoPath)
   })
 
@@ -40,7 +41,7 @@ export function WorkspaceSettingsPanel() {
   async function saveKey(key: string) {
     setSavingKey(key)
     try {
-      await window.gitfreddo.invoke('config.set', {
+      await repoInvoke('config.set', {
         key,
         value: draft[key] ?? '',
         scope: 'local'

@@ -6,6 +6,7 @@ import { LoadingRow } from '@/components/Ui/Spinner'
 import { useSelectionStore } from '@/stores/selection'
 import { useWorkspaceStore } from '@/stores/workspace'
 import type { GitCommit } from '@/lib/types'
+import { repoInvoke } from '@/lib/git/repoInvoke'
 
 interface PickaxeSearchModalProps {
   open: boolean
@@ -26,7 +27,7 @@ export function PickaxeSearchModal({ open, onClose }: PickaxeSearchModalProps) {
   const results = useQuery({
     queryKey: ['repo', repoPath, 'log.pickaxe', submitted?.query, submitted?.mode],
     queryFn: async () =>
-      (await window.gitfreddo.invoke('log.pickaxe', {
+      (await repoInvoke('log.pickaxe', {
         query: submitted!.query,
         mode: submitted!.mode,
         maxCount: 100

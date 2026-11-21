@@ -9,6 +9,7 @@ import { useToastStore } from '@/stores/toast'
 import { shouldVirtualize, VIRTUAL_OVERSCAN } from '@/lib/ui/virtualList'
 import { parseHashInput } from '@/lib/git/parseHashInput'
 import type { RemoveStaleBranchesResult, StaleBranchSummary } from '@/lib/types'
+import { repoInvoke } from '@/lib/git/repoInvoke'
 
 interface RemoveStaleBranchesModalProps {
   open: boolean
@@ -59,7 +60,7 @@ export function RemoveStaleBranchesModal({
 
     setLoading(true)
     try {
-      const result = (await window.gitfreddo.invoke(
+      const result = (await repoInvoke(
         'maintenance.staleBranches',
         hashes.length > 0 ? { hashes } : undefined,
         repoPath
@@ -99,7 +100,7 @@ export function RemoveStaleBranchesModal({
 
     setRemoving(true)
     try {
-      const result = (await window.gitfreddo.invoke(
+      const result = (await repoInvoke(
         'maintenance.removeStaleBranches',
         { refs: [...selected] },
         repoPath

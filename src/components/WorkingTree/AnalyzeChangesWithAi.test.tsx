@@ -116,16 +116,22 @@ describe('AnalyzeChangesWithAi', () => {
     await user.click(screen.getByRole('button', { name: /create 1 commit/i }))
 
     await waitFor(() => {
-      expect(window.gitfreddo.invoke).toHaveBeenCalledWith('stage.reset', { paths: [] })
+      expect(window.gitfreddo.invoke).toHaveBeenCalledWith('stage.reset', { paths: [] }, '/tmp/repo')
     })
-    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('stage.add', { paths: ['src/a.ts'] })
+    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('stage.add', { paths: ['src/a.ts'] }, '/tmp/repo')
     expect(window.gitfreddo.invoke).toHaveBeenCalledWith('commit.create', {
       message: 'Add feature A\n\nImplements A.'
-    })
-    expect(window.gitfreddo.invoke).not.toHaveBeenCalledWith('stage.add', { paths: ['src/b.ts'] })
-    expect(window.gitfreddo.invoke).not.toHaveBeenCalledWith('commit.create', {
-      message: 'Add feature B\n\nImplements B.'
-    })
+    }, '/tmp/repo')
+    expect(window.gitfreddo.invoke).not.toHaveBeenCalledWith(
+      'stage.add',
+      { paths: ['src/b.ts'] },
+      '/tmp/repo'
+    )
+    expect(window.gitfreddo.invoke).not.toHaveBeenCalledWith(
+      'commit.create',
+      { message: 'Add feature B\n\nImplements B.' },
+      '/tmp/repo'
+    )
   })
 
   it('disables create when no commits are selected', async () => {
@@ -170,8 +176,7 @@ describe('AnalyzeChangesWithAi', () => {
           selectedCommitIndices: [0, 1],
           userMessage: 'Merge the selected commits into one'
         })
-      })
-    )
+      }), '/tmp/repo')
 
     expect(screen.getByDisplayValue('Add features A and B')).toBeInTheDocument()
     expect(screen.queryByDisplayValue('Add feature B')).not.toBeInTheDocument()
@@ -232,10 +237,10 @@ describe('AnalyzeChangesWithAi', () => {
     await waitFor(() => {
       expect(window.gitfreddo.invoke).toHaveBeenCalledWith('commit.create', {
         message: 'Add feature A\n\nImplements A.'
-      })
+      }, '/tmp/repo')
       expect(window.gitfreddo.invoke).toHaveBeenCalledWith('commit.create', {
         message: 'Add feature B\n\nImplements B.'
-      })
+      }, '/tmp/repo')
     })
   })
 
@@ -259,7 +264,7 @@ describe('AnalyzeChangesWithAi', () => {
     await user.click(screen.getByRole('button', { name: /analyze again/i }))
 
     await waitFor(() => {
-      expect(aiFill).toHaveBeenCalledWith(expect.objectContaining({ purpose: 'analyze_changes' }))
+      expect(aiFill).toHaveBeenCalledWith(expect.objectContaining({ purpose: 'analyze_changes' }), '/tmp/repo')
     })
   })
 })

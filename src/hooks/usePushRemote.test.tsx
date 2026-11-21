@@ -50,7 +50,7 @@ describe('usePushRemote', () => {
     await act(async () => {
       result.current.pushRemote({ remote: 'origin' })
     })
-    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('push', { remote: 'origin' })
+    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('push', { remote: 'origin' }, '/repo')
   })
 
   it('opens force-push confirmation on non-fast-forward errors', async () => {
@@ -92,11 +92,41 @@ describe('usePushRemote', () => {
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
 
-    expect(window.gitfreddo.invoke).toHaveBeenLastCalledWith('push', {
-      remote: 'origin',
-      force: true
-    })
+    expect(window.gitfreddo.invoke).toHaveBeenLastCalledWith(
+      'push',
+      { remote: 'origin', force: true },
+      '/repo'
+    )
     expect(result.current.forceConfirm).toBeNull()
+  })
+
+  it('retries a confirmed force push in the repo the push started in', async () => {
+    vi.mocked(window.gitfreddo.invoke)
+      .mockRejectedValueOnce(new Error('! [rejected] main -> main (non-fast-forward)'))
+      .mockResolvedValueOnce(undefined)
+
+    const { result } = renderHook(() => usePushRemote(), { wrapper })
+    await act(async () => {
+      result.current.pushRemote({ remote: 'upstream', branch: 'main' })
+    })
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    act(() => {
+      useWorkspaceStore.setState({ activePath: '/other', workspacePath: '/other' })
+    })
+    await act(async () => {
+      result.current.confirmForcePush()
+    })
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+
+    expect(window.gitfreddo.invoke).toHaveBeenLastCalledWith(
+      'push',
+      { remote: 'upstream', branch: 'main', force: true },
+      '/repo'
+    )
   })
 
   it('cancels force-push confirmation', async () => {

@@ -29,7 +29,7 @@ describe('useRepoQuery', () => {
     )
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('branch.list')
+    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('branch.list', undefined, '/repo')
     expect(result.current.data).toEqual([{ name: 'main' }])
   })
 

@@ -104,8 +104,7 @@ describe('CreatePrModal', () => {
       expect.objectContaining({
         purpose: 'pull_request',
         context: expect.objectContaining({ headBranch: 'feature', baseBranch: 'main' })
-      })
-    )
+      }), '/tmp/repo')
   })
 
   it('lists local branches in head and base dropdowns', async () => {

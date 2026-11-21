@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Modal, ActionButton, Checkbox } from '@/components/Ui/Modal'
 import { useGitMutations } from '@/hooks/useGitMutations'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { repoInvoke } from '@/lib/git/repoInvoke'
 
 interface CreateTagModalProps {
   open: boolean
@@ -22,7 +23,7 @@ export function CreateTagModal({ open, onClose, target }: CreateTagModalProps) {
     queryKey: ['repo', repoPath, 'config.get', 'tag.gpgsign'],
     queryFn: async () =>
       (
-        await window.gitfreddo.invoke('config.get', {
+        await repoInvoke('config.get', {
           key: 'tag.gpgsign',
           scope: 'local'
         })

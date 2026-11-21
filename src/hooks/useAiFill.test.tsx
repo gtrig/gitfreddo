@@ -39,7 +39,7 @@ describe('useAiFill', () => {
     expect(window.gitfreddo.aiFill).toHaveBeenCalledWith({
       purpose: 'commit_message',
       context: { branch: 'main' }
-    })
+    }, undefined)
     expect(begin).toHaveBeenCalledWith('AI is working…')
     expect(end).toHaveBeenCalled()
   })
@@ -62,7 +62,7 @@ describe('useAiFill', () => {
     expect(window.gitfreddo.invoke).toHaveBeenCalledWith('ai.fill', {
       purpose: 'commit_message',
       context: { branch: 'main' }
-    })
+    }, undefined)
   })
 
   it('ends the operation overlay when the request fails', async () => {

@@ -1,9 +1,8 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient, type MutateOptions } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import type { GitIpcMethod } from '@shared/git/ipc'
 import { gitIpcInvalidates } from '@shared/git/ipc'
-import { useInvalidateGit } from '@/hooks/useInvalidateGit'
-import { useWorkspaceStore } from '@/stores/workspace'
+import { activeRepoPath } from '@/lib/git/repoInvoke'
 import { useToastStore } from '@/stores/toast'
 import { useSelectionStore } from '@/stores/selection'
 import { useOperationStore, showHookExecutionToast } from '@/stores/operation'
@@ -15,20 +14,24 @@ const REMOTE_ACTION_KEYS: Record<string, { success: string; error: string }> = {
   'tag.push': { success: 'toast.tagPush.success', error: 'toast.tagPush.error' }
 }
 
+interface RepoMutationVariables {
+  params?: unknown
+  repoPath: string | null
+}
+
 export function useGitMutations() {
   const { t } = useTranslation()
-  const invalidate = useInvalidateGit()
-  const repoPath = useWorkspaceStore((s) => s.activePath)
+  const queryClient = useQueryClient()
   const showToast = useToastStore((s) => s.show)
 
   const wrap = <M extends GitIpcMethod>(method: M, invalidateKeys?: string[]) => {
     const remoteAction = REMOTE_ACTION_KEYS[method]
     const keys = invalidateKeys ?? [...gitIpcInvalidates(method)]
 
-    return useMutation({
-      mutationFn: async (params?: unknown) => {
+    const mutation = useMutation({
+      mutationFn: async ({ params, repoPath }: RepoMutationVariables) => {
         if (!repoPath) throw new Error(t('toast.noRepoConnected'))
-        return window.gitfreddo.invoke(method, params as never)
+        return window.gitfreddo.invoke(method, params as never, repoPath)
       },
       onMutate: () => {
         useOperationStore.getState().begin()
@@ -45,8 +48,11 @@ export function useGitMutations() {
           end()
         }, 0)
       },
-      onSuccess: () => {
-        invalidate(...keys)
+      onSuccess: (_data, { repoPath }) => {
+        // Invalidate the repo the mutation ran in, even if the user switched tabs since.
+        for (const suffix of keys) {
+          void queryClient.invalidateQueries({ queryKey: ['repo', repoPath, suffix] })
+        }
         if (method === 'commit.create') {
           const { diffMode, closeDiffOverlay } = useSelectionStore.getState()
           // Only commit.create closes the overlay. Other wrap() methods (stash, checkout, …) must not.
@@ -63,6 +69,22 @@ export function useGitMutations() {
         // Hook-aware errors are toasted from onSettled after operation logs arrive.
       }
     })
+
+    // Pin the target repo when the call is made: TanStack refreshes mutationFn on every
+    // render, so reading the active tab inside it would follow a later tab switch.
+    const withRepo = (params?: unknown): RepoMutationVariables => ({
+      params,
+      repoPath: activeRepoPath() ?? null
+    })
+    return {
+      ...mutation,
+      mutate: (params?: unknown, options?: MutateOptions<unknown, Error, RepoMutationVariables>) =>
+        mutation.mutate(withRepo(params), options),
+      mutateAsync: (
+        params?: unknown,
+        options?: MutateOptions<unknown, Error, RepoMutationVariables>
+      ) => mutation.mutateAsync(withRepo(params), options)
+    }
   }
 
   return {

@@ -122,7 +122,7 @@ describe('WorkspaceSettingsPanel', () => {
         key: 'user.name',
         value: 'New Name',
         scope: 'local'
-      })
+      }, '/tmp/repo')
     })
     expect(showToast).toHaveBeenCalledWith(
       expect.stringMatching(/user\.name/i),

@@ -7,6 +7,7 @@ import { LoadingRow } from '@/components/Ui/Spinner'
 import type { GitHook, GitHooksListResult } from '@/lib/types'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
+import { repoInvoke } from '@/lib/git/repoInvoke'
 
 export function RepoHooksPanel() {
   const { t } = useTranslation()
@@ -24,7 +25,7 @@ export function RepoHooksPanel() {
   const listQuery = useQuery({
     queryKey: ['repo', repoPath, 'hooks.list'],
     queryFn: async () =>
-      (await window.gitfreddo.invoke('hooks.list')) as GitHooksListResult,
+      (await repoInvoke('hooks.list')) as GitHooksListResult,
     enabled: connected && Boolean(repoPath)
   })
 
@@ -43,7 +44,7 @@ export function RepoHooksPanel() {
   const readQuery = useQuery({
     queryKey: ['repo', repoPath, 'hooks.read', selected],
     queryFn: async () =>
-      (await window.gitfreddo.invoke('hooks.read', { name: selected })) as string,
+      (await repoInvoke('hooks.read', { name: selected })) as string,
     enabled: connected && Boolean(repoPath) && Boolean(selected)
   })
 
@@ -71,7 +72,7 @@ export function RepoHooksPanel() {
     if (!selected) return
     setSaving(true)
     try {
-      await window.gitfreddo.invoke('hooks.write', { name: selected, content: draft })
+      await repoInvoke('hooks.write', { name: selected, content: draft })
       showToast(t('settings.repoHooks.saved', { name: selected }), 'success')
       await invalidateHooks()
     } catch (error) {
@@ -85,7 +86,7 @@ export function RepoHooksPanel() {
     if (!selected) return
     setToggling(true)
     try {
-      await window.gitfreddo.invoke('hooks.enable', { name: selected })
+      await repoInvoke('hooks.enable', { name: selected })
       showToast(t('settings.repoHooks.enabledToast', { name: selected }), 'success')
       await invalidateHooks()
     } catch (error) {
@@ -99,7 +100,7 @@ export function RepoHooksPanel() {
     if (!selected) return
     setToggling(true)
     try {
-      await window.gitfreddo.invoke('hooks.disable', { name: selected })
+      await repoInvoke('hooks.disable', { name: selected })
       showToast(t('settings.repoHooks.disabledToast', { name: selected }), 'success')
       await invalidateHooks()
     } catch (error) {
@@ -114,7 +115,7 @@ export function RepoHooksPanel() {
     if (!hooksPath) return
     setConfiguringHooksPath(true)
     try {
-      await window.gitfreddo.invoke('config.set', {
+      await repoInvoke('config.set', {
         key: 'core.hooksPath',
         value: hooksPath,
         scope: 'local'
@@ -133,7 +134,7 @@ export function RepoHooksPanel() {
     if (!window.confirm(t('settings.repoHooks.deleteConfirm', { name: selected }))) return
     setDeleting(true)
     try {
-      await window.gitfreddo.invoke('hooks.delete', { name: selected })
+      await repoInvoke('hooks.delete', { name: selected })
       showToast(t('settings.repoHooks.deleted', { name: selected }), 'success')
       setSelected(null)
       await invalidateHooks()

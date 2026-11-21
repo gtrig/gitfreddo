@@ -7,6 +7,7 @@ import { useGitMutations } from '@/hooks/useGitMutations'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
 import type { GitBisectStatus } from '@/lib/types'
+import { repoInvoke } from '@/lib/git/repoInvoke'
 
 interface BisectPanelModalProps {
   open: boolean
@@ -26,7 +27,7 @@ export function BisectPanelModal({ open, onClose }: BisectPanelModalProps) {
   const statusQuery = useQuery({
     queryKey: ['repo', repoPath, 'bisect.status'],
     queryFn: async () =>
-      (await window.gitfreddo.invoke('bisect.status')) as GitBisectStatus,
+      (await repoInvoke('bisect.status')) as GitBisectStatus,
     enabled: open && connected && Boolean(repoPath)
   })
 

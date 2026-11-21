@@ -98,8 +98,7 @@ describe('AnalyzePullRequestWithAi', () => {
           prNumber: 7,
           analysisScope: 'full'
         })
-      })
-    )
+      }), undefined)
   })
 
   it('refines analysis from a chat prompt', async () => {
@@ -135,7 +134,8 @@ describe('AnalyzePullRequestWithAi', () => {
           userMessage: 'Focus on logout risks',
           analysisScope: 'partial'
         })
-      })
+      }),
+      undefined
     )
   })
 })

@@ -135,8 +135,7 @@ describe('GitLab CreatePrModal', () => {
       expect.objectContaining({
         purpose: 'pull_request',
         context: expect.objectContaining({ headBranch: 'feature', baseBranch: 'main' })
-      })
-    )
+      }), '/tmp/repo')
   })
 
   it('does not submit when title is empty', async () => {

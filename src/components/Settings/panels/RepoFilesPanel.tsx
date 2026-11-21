@@ -7,6 +7,7 @@ import { CodeEditor } from '@/components/Ui/CodeEditor'
 import { LoadingRow } from '@/components/Ui/Spinner'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useToastStore } from '@/stores/toast'
+import { repoInvoke } from '@/lib/git/repoInvoke'
 
 const REPO_FILES = [
   { path: '.gitignore', label: '.gitignore' },
@@ -27,7 +28,7 @@ export function RepoFilesPanel() {
   const fileQuery = useQuery({
     queryKey: ['repo', repoPath, 'working.read', selected],
     queryFn: async () =>
-      (await window.gitfreddo.invoke('working.read', { path: selected })) as WorkingReadResult,
+      (await repoInvoke('working.read', { path: selected })) as WorkingReadResult,
     enabled: connected && Boolean(repoPath)
   })
 
@@ -45,7 +46,7 @@ export function RepoFilesPanel() {
   async function handleSave() {
     setSaving(true)
     try {
-      await window.gitfreddo.invoke('working.write', { path: selected, content: draft })
+      await repoInvoke('working.write', { path: selected, content: draft })
       showToast(t('settings.repoFiles.saved', { file: selected }), 'success')
       await fileQuery.refetch()
     } catch (error) {

@@ -52,7 +52,7 @@ describe('AddSubmoduleModal', () => {
         url: 'git@github.com:org/lib.git',
         path: 'vendor/lib',
         branch: 'develop'
-      })
+      }, '/tmp/repo')
     })
     expect(onClose).toHaveBeenCalled()
   })

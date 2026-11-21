@@ -50,8 +50,7 @@ describe('AddNoteModal', () => {
 
     expect(window.gitfreddo.invoke).toHaveBeenCalledWith(
       'notes.add',
-      expect.objectContaining({ hash: commit.hash, message: 'Release note' })
-    )
+      expect.objectContaining({ hash: commit.hash, message: 'Release note' }), '/tmp/repo')
     expect(onClose).toHaveBeenCalled()
   })
 })

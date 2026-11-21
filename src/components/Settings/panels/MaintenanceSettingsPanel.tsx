@@ -10,6 +10,7 @@ import { shouldVirtualize, CODE_LINE_HEIGHT, VIRTUAL_OVERSCAN } from '@/lib/ui/v
 import type { AppSettings } from '@/hooks/useAppSettings'
 import { useAppUpdate } from '@/hooks/useAppUpdate'
 import type { MaintenancePruneResult, UnreachableSummary } from '@/lib/types'
+import { repoInvoke } from '@/lib/git/repoInvoke'
 
 interface PanelProps {
   form: AppSettings
@@ -82,7 +83,7 @@ export function MaintenanceSettingsPanel({ form, onChange }: PanelProps) {
 
     setScanning(true)
     try {
-      const result = (await window.gitfreddo.invoke(
+      const result = (await repoInvoke(
         'maintenance.unreachable',
         undefined,
         repoPath
@@ -100,7 +101,7 @@ export function MaintenanceSettingsPanel({ form, onChange }: PanelProps) {
 
     setPruning(true)
     try {
-      const result = (await window.gitfreddo.invoke(
+      const result = (await repoInvoke(
         'maintenance.prune',
         undefined,
         repoPath

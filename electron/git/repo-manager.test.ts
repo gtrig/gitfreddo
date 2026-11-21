@@ -4,6 +4,8 @@ import { tmpdir } from 'os'
 import { join } from 'path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { RepoManager } from './repo-manager'
+import { onLog } from './log-bus'
+import type { LogEntry } from '../../shared/ipc'
 
 function initRepo(dir: string) {
   execSync('git init -b main', { cwd: dir, stdio: 'ignore' })
@@ -28,6 +30,41 @@ afterEach(() => {
 })
 
 describe('RepoManager', () => {
+  describe('invoke routing', () => {
+    it('logs a debug note when a call falls back to the active repo', async () => {
+      await manager.connect(tmpDir)
+      const entries: LogEntry[] = []
+      const off = onLog((entry) => entries.push(entry))
+      try {
+        await manager.invoke(undefined, 'working.status')
+        await manager.invoke(tmpDir, 'working.status')
+      } finally {
+        off()
+      }
+      const fallbacks = entries.filter((entry) => entry.message.includes('without a repo path'))
+      expect(fallbacks).toHaveLength(1)
+      expect(fallbacks[0]?.level).toBe('debug')
+    })
+
+    it('runs in the explicitly named repo, not the active one', async () => {
+      const other = mkdtempSync(join(tmpdir(), 'gitfreddo-test-'))
+      initRepo(other)
+      execSync('git checkout -b other-branch', { cwd: other, stdio: 'ignore' })
+      try {
+        await manager.connect(tmpDir)
+        await manager.connect(other)
+        expect(manager.getRepoPath()).toBe(other)
+
+        const status = await manager.invoke(tmpDir, 'working.status')
+        expect(status.branch).toBe('main')
+        const otherStatus = await manager.invoke(other, 'working.status')
+        expect(otherStatus.branch).toBe('other-branch')
+      } finally {
+        rmSync(other, { recursive: true, force: true })
+      }
+    })
+  })
+
   describe('connect / switchRepo / disconnectRepo', () => {
     it('connects to a valid git repo and sets active path', async () => {
       const path = await manager.connect(tmpDir)

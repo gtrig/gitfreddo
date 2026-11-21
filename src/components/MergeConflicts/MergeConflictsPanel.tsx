@@ -21,6 +21,7 @@ import { confidenceBadgeClass } from '@/components/DiffViewer/ConflictAiProposal
 import { LoadingRow } from '@/components/Ui/Spinner'
 import { MergeCommitFooter } from '@/components/MergeConflicts/MergeCommitFooter'
 import { SidebarIconChevron } from '@/components/Layout/sidebar/SidebarIcons'
+import { repoInvoke } from '@/lib/git/repoInvoke'
 
 function operationTitle(
   status: GitMergeStatus,
@@ -249,7 +250,7 @@ export function MergeConflictsPanel() {
   async function verifyNoMarkers(paths: string[]): Promise<boolean> {
     if (!repoPath) return false
     for (const path of paths) {
-      const { content } = (await window.gitfreddo.invoke('working.read', { path }, repoPath)) as {
+      const { content } = (await repoInvoke('working.read', { path }, repoPath)) as {
         content: string
       }
       if (parseConflictMarkers(content).length > 0 || hasUnresolvedMarkers(content)) {
@@ -289,7 +290,7 @@ export function MergeConflictsPanel() {
         branch: mergeStatus?.currentBranch
       }
     })
-    const { content: working } = (await window.gitfreddo.invoke('working.read', { path }, repoPath)) as {
+    const { content: working } = (await repoInvoke('working.read', { path }, repoPath)) as {
       content: string
     }
     const hunks = parseConflictMarkers(working)

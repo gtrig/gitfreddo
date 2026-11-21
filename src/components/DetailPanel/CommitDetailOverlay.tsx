@@ -19,6 +19,7 @@ import { commitMessageBody } from '@/lib/workspace/fileTree'
 import { defaultFileContentViewMode, type FileContentViewMode } from '@/lib/diff/fileViewMode'
 import { parseUnifiedDiffRows, splitRowsForDisplay } from '@/lib/diff/unifiedDiff'
 import type { GitCommit } from '@/lib/types'
+import { repoInvoke } from '@/lib/git/repoInvoke'
 
 interface CommitDetailOverlayProps {
   commit: GitCommit
@@ -50,7 +51,7 @@ export function CommitDetailOverlay({ commit, onClose }: CommitDetailOverlayProp
   const fullMessageQuery = useQuery({
     queryKey: ['repo', repoPath, 'log.message', commit.hash],
     queryFn: async () =>
-      window.gitfreddo.invoke('log.message', { hash: commit.hash }) as Promise<string>,
+      repoInvoke('log.message', { hash: commit.hash }) as Promise<string>,
     enabled: connected && Boolean(repoPath) && Boolean(commit.hash)
   })
 
