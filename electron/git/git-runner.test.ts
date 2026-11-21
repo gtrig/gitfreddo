@@ -43,12 +43,12 @@ function mockChild(options: {
   const child = new EventEmitter() as EventEmitter & {
     stdout: EventEmitter
     stderr: EventEmitter
-    stdin: { write: ReturnType<typeof vi.fn>; end: ReturnType<typeof vi.fn> }
+    stdin: EventEmitter & { write: ReturnType<typeof vi.fn>; end: ReturnType<typeof vi.fn> }
     kill: ReturnType<typeof vi.fn>
   }
   child.stdout = new EventEmitter()
   child.stderr = new EventEmitter()
-  child.stdin = { write: vi.fn(), end: vi.fn() }
+  child.stdin = Object.assign(new EventEmitter(), { write: vi.fn(), end: vi.fn() })
   child.kill = vi.fn()
   mocks.spawnMock.mockReturnValue(child)
 
@@ -207,6 +207,7 @@ describe('git-runner timeouts', () => {
     vi.clearAllMocks()
     vi.useFakeTimers()
     mocks.gitCommandMayRunHooks.mockReturnValue(false)
+    mocks.prepareGitEnv.mockImplementation(async () => ({ env: {}, cleanup: mocks.envCleanup }))
   })
 
   afterEach(() => {
@@ -217,12 +218,12 @@ describe('git-runner timeouts', () => {
     const child = new EventEmitter() as EventEmitter & {
       stdout: EventEmitter
       stderr: EventEmitter
-      stdin: { write: ReturnType<typeof vi.fn>; end: ReturnType<typeof vi.fn> }
+      stdin: EventEmitter & { write: ReturnType<typeof vi.fn>; end: ReturnType<typeof vi.fn> }
       kill: ReturnType<typeof vi.fn>
     }
     child.stdout = new EventEmitter()
     child.stderr = new EventEmitter()
-    child.stdin = { write: vi.fn(), end: vi.fn() }
+    child.stdin = Object.assign(new EventEmitter(), { write: vi.fn(), end: vi.fn() })
     child.kill = vi.fn()
     mocks.spawnMock.mockReturnValue(child)
 
@@ -231,5 +232,119 @@ describe('git-runner timeouts', () => {
     await vi.advanceTimersByTimeAsync(11)
     await timedOut
     expect(child.kill).toHaveBeenCalledWith('SIGTERM')
+  })
+})
+
+function silentChild() {
+  const stdin = Object.assign(new EventEmitter(), { write: vi.fn(), end: vi.fn() })
+  const child = Object.assign(new EventEmitter(), {
+    stdout: new EventEmitter(),
+    stderr: new EventEmitter(),
+    stdin,
+    kill: vi.fn()
+  })
+  mocks.spawnMock.mockReturnValue(child)
+  return child
+}
+
+describe('git-runner output decoding and stdin', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.useRealTimers()
+    mocks.gitCommandMayRunHooks.mockReturnValue(false)
+    mocks.prepareGitEnv.mockImplementation(async () => ({ env: {}, cleanup: mocks.envCleanup }))
+  })
+
+  it('keeps multi-byte characters intact when split across chunks', async () => {
+    const child = silentChild()
+    const bytes = Buffer.from('Γειά σου κόσμε\n', 'utf8')
+    const promise = runGit(['log'], { cwd: '/repo' })
+    await vi.waitFor(() => expect(mocks.spawnMock).toHaveBeenCalled())
+    // Split inside the two-byte 'ε' and inside 'ά'.
+    child.stdout.emit('data', bytes.subarray(0, 3))
+    child.stdout.emit('data', bytes.subarray(3, 7))
+    child.stdout.emit('data', bytes.subarray(7))
+    child.stderr.emit('data', Buffer.from('ά', 'utf8').subarray(0, 1))
+    child.stderr.emit('data', Buffer.from('ά', 'utf8').subarray(1))
+    child.emit('close', 0)
+
+    await expect(promise).resolves.toMatchObject({ stdout: 'Γειά σου κόσμε\n', stderr: 'ά' })
+  })
+
+  it('does not crash when git closes stdin early (EPIPE)', async () => {
+    const child = silentChild()
+    child.stdin.write.mockImplementation(() => {
+      process.nextTick(() =>
+        child.stdin.emit('error', Object.assign(new Error('write EPIPE'), { code: 'EPIPE' }))
+      )
+      return true
+    })
+    const promise = runGit(['apply', '--cached'], { cwd: '/repo', input: 'x'.repeat(10) })
+    await vi.waitFor(() => expect(child.stdin.write).toHaveBeenCalled())
+    await new Promise((resolve) => setImmediate(resolve))
+    child.stderr.emit('data', Buffer.from('error: corrupt patch'))
+    child.emit('close', 128)
+
+    await expect(promise).resolves.toMatchObject({ code: 128, stderr: 'error: corrupt patch' })
+  })
+})
+
+describe('git-runner network inactivity and kill escalation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.useFakeTimers()
+    mocks.gitCommandMayRunHooks.mockReturnValue(false)
+    mocks.prepareGitEnv.mockImplementation(async () => ({ env: {}, cleanup: mocks.envCleanup }))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('lets a network command run past the local limit while it keeps producing output', async () => {
+    const child = silentChild()
+    const promise = runGit(['fetch', 'origin'], { cwd: '/repo' })
+    await vi.advanceTimersByTimeAsync(0)
+    for (let minute = 0; minute < 10; minute += 1) {
+      child.stderr.emit('data', Buffer.from(`Receiving objects: ${minute}0%\r`))
+      await vi.advanceTimersByTimeAsync(60_000)
+    }
+    expect(child.kill).not.toHaveBeenCalled()
+    child.emit('close', 0)
+    await expect(promise).resolves.toMatchObject({ code: 0 })
+  })
+
+  it('stops a network command that goes silent', async () => {
+    const child = silentChild()
+    const promise = runGit(['fetch', 'origin'], { cwd: '/repo' })
+    const rejected = expect(promise).rejects.toThrow(/no output/i)
+    await vi.advanceTimersByTimeAsync(5 * 60_000 + 1)
+    await rejected
+    expect(child.kill).toHaveBeenCalledWith('SIGTERM')
+  })
+
+  it('escalates to SIGKILL when git ignores SIGTERM', async () => {
+    const child = silentChild()
+    const promise = runGit(['status'], { cwd: '/repo', timeoutMs: 1000 })
+    const rejected = expect(promise).rejects.toThrow(/timed out/)
+    await vi.advanceTimersByTimeAsync(1001)
+    await rejected
+    expect(child.kill).toHaveBeenCalledWith('SIGTERM')
+    expect(child.kill).not.toHaveBeenCalledWith('SIGKILL')
+    await vi.advanceTimersByTimeAsync(5001)
+    expect(child.kill).toHaveBeenCalledWith('SIGKILL')
+  })
+
+  it('does not SIGKILL a process that exited after SIGTERM', async () => {
+    const child = silentChild()
+    child.kill.mockImplementation((signal: string) => {
+      if (signal === 'SIGTERM') process.nextTick(() => child.emit('close', null))
+    })
+    const promise = runGit(['status'], { cwd: '/repo', timeoutMs: 1000 })
+    const rejected = expect(promise).rejects.toThrow(/timed out/)
+    await vi.advanceTimersByTimeAsync(1001)
+    await rejected
+    await vi.advanceTimersByTimeAsync(6000)
+    expect(child.kill).not.toHaveBeenCalledWith('SIGKILL')
   })
 })

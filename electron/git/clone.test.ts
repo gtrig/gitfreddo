@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { mkdtemp, rm } from 'fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'fs/promises'
+import { existsSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
 import { buildCloneArgs } from '../../shared/git/commands'
@@ -32,6 +33,24 @@ describe('cloneRepository', () => {
         }),
         expect.objectContaining({ cwd: parentDir, gitBinaryPath: 'git' })
       )
+    } finally {
+      await rm(parentDir, { recursive: true, force: true })
+    }
+  })
+
+  it('removes the partial folder when the clone fails', async () => {
+    const parentDir = await mkdtemp(join(tmpdir(), 'gitfreddo-clone-fail-'))
+    const target = join(parentDir, 'foo')
+    vi.mocked(runGitOrThrow).mockImplementation(async () => {
+      await mkdir(join(target, '.git'), { recursive: true })
+      await writeFile(join(target, '.git', 'HEAD'), 'ref: refs/heads/main\n')
+      throw new Error('fatal: early EOF')
+    })
+    try {
+      await expect(cloneRepository('https://example.com/foo.git', parentDir)).rejects.toThrow(
+        /early EOF/
+      )
+      expect(existsSync(target)).toBe(false)
     } finally {
       await rm(parentDir, { recursive: true, force: true })
     }

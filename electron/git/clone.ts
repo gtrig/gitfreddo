@@ -1,4 +1,5 @@
 import { existsSync } from 'fs'
+import { rm } from 'fs/promises'
 import { join } from 'path'
 import { repoNameFromUrl } from '../../shared/git'
 import type { SubmoduleRecursion } from '../../shared/submodule-types'
@@ -38,6 +39,9 @@ export async function cloneRepository(
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error)
     emitLog('app', 'error', 'Git clone failed', detail)
+    // The folder did not exist before (checked above), so whatever is there now is
+    // a partial clone; remove it so retrying doesn't fail with "already exists".
+    await rm(targetPath, { recursive: true, force: true }).catch(() => undefined)
     throw error instanceof Error ? error : new Error(detail)
   }
 }

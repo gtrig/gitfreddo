@@ -43,6 +43,11 @@ export function buildLsFilesTrackedPrefixArgs(prefix: string): string[] {
   return withPaths(['ls-files'], [prefix])
 }
 
+/** Untracked-but-ignored entries, collapsed to directories where possible (NUL-separated). */
+export function buildLsFilesIgnoredDirectoriesArgs(): string[] {
+  return ['ls-files', '-z', '--others', '--ignored', '--exclude-standard', '--directory']
+}
+
 export interface ReflogListParams {
   maxCount: number
   format?: string

@@ -38,7 +38,7 @@ import { registerGitlabIpc } from './ipc/gitlab'
 import type { AiFillParams } from '../../shared/ai'
 import type { AppSettings, LogEntry, RepoChangeEvent } from '../../shared/ipc'
 import { THEME_BG_COLORS } from '../../shared/themes'
-import { RepoWatcherManager } from '../git/repo-watcher'
+import { listGitIgnoredDirectories, RepoWatcherManager } from '../git/repo-watcher'
 import { loadDotEnvFile } from '../load-dotenv'
 
 loadDotEnvFile()
@@ -69,7 +69,8 @@ if (gotSingleInstanceLock) {
 
 const repoManager = new RepoManager()
 const repoWatcherManager = new RepoWatcherManager({
-  onChange: broadcastRepoChange
+  onChange: broadcastRepoChange,
+  listIgnoredDirectories: (repoPath) => listGitIgnoredDirectories(repoPath, settings.gitBinaryPath)
 })
 
 if (process.platform === 'linux') {

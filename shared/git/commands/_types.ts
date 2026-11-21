@@ -13,8 +13,10 @@ export interface GitCommandDescriptor<TParams = void> {
   acceptExitCodes?: readonly number[]
   /** Needs stdin (e.g. `git apply`). */
   stdin?: boolean | ((params: TParams) => string | undefined)
-  /** Per-invocation env beyond `buildGitEnv()`. */
+  /** Per-invocation env beyond `prepareGitEnv()`. */
   env?: (params: TParams) => GitEnv | undefined
+  /** Wall-clock limit override (ms). Network commands default to an inactivity limit. */
+  timeoutMs?: number
   /** Global `-c` overrides prepended before subcommand. */
   config?: readonly (readonly [string, string])[]
 }

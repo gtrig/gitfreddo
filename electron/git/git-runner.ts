@@ -1,4 +1,5 @@
 import { spawn } from 'child_process'
+import { StringDecoder } from 'string_decoder'
 import { emitLog } from './log-bus'
 import { gitCommandNeedsCredentials, prepareGitEnv } from './credentials'
 import { detectGitHookFailure, detectGitHookExecution, formatHookResultLogMessage, gitCommandMayRunHooks, stripGitTraceLines } from './hook-failure'
@@ -13,12 +14,21 @@ export interface GitResult {
 export interface RunGitOptions {
   cwd: string
   gitBinaryPath?: string
+  /**
+   * Wall-clock limit. Defaults to 120s for local commands; network commands
+   * (clone/fetch/push/pull/…) have none and use the inactivity limit instead.
+   */
   timeoutMs?: number
+  /** Kill when git produces no output for this long. Network default: 5 min. */
+  idleTimeoutMs?: number
   input?: string
   env?: NodeJS.ProcessEnv
 }
 
-const DEFAULT_TIMEOUT_MS = 120_000
+const LOCAL_TIMEOUT_MS = 120_000
+const NETWORK_IDLE_TIMEOUT_MS = 5 * 60_000
+/** Time git gets to exit after SIGTERM before it is SIGKILLed. */
+const KILL_GRACE_MS = 5_000
 const GLOBAL_GIT_ARGS = ['-c', 'color.ui=never', '-c', 'core.quotepath=false'] as const
 
 function prependConfig(
@@ -32,22 +42,25 @@ function prependConfig(
 
 export async function runGit(
   args: string[],
-  { cwd, gitBinaryPath = 'git', timeoutMs = DEFAULT_TIMEOUT_MS, input, env: envOverride }: RunGitOptions
+  { cwd, gitBinaryPath = 'git', timeoutMs, idleTimeoutMs, input, env: envOverride }: RunGitOptions
 ): Promise<GitResult> {
   const gitArgs = [...GLOBAL_GIT_ARGS, ...args]
   const cmd = `${gitBinaryPath} ${gitArgs.join(' ')}`
   emitLog('git', 'debug', `> ${cmd}`, cwd)
 
-  const prepared = await prepareGitEnv({ needsCredentials: gitCommandNeedsCredentials(args) })
+  const isNetwork = gitCommandNeedsCredentials(args)
+  const wallClockMs = timeoutMs ?? (isNetwork ? undefined : LOCAL_TIMEOUT_MS)
+  const idleMs = idleTimeoutMs ?? (isNetwork ? NETWORK_IDLE_TIMEOUT_MS : undefined)
+
+  const prepared = await prepareGitEnv({ needsCredentials: isNetwork })
   const env = { ...prepared.env, ...envOverride }
   const releaseEnv = () => {
     void prepared.cleanup().catch(() => undefined)
   }
-  if (gitCommandMayRunHooks(args)) {
+  const mayRunHooks = gitCommandMayRunHooks(args)
+  if (mayRunHooks) {
     env.GIT_TRACE = '1'
   }
-
-  const mayRunHooks = gitCommandMayRunHooks(args)
 
   return new Promise((resolve, reject) => {
     const child = spawn(gitBinaryPath, gitArgs, {
@@ -56,46 +69,89 @@ export async function runGit(
       stdio: ['pipe', 'pipe', 'pipe']
     })
 
-    let stdout = ''
-    let stderr = ''
+    // Collect raw bytes and decode once: decoding chunk by chunk splits multi-byte
+    // UTF-8 characters that straddle a chunk boundary.
+    const stdoutChunks: Buffer[] = []
+    const stderrChunks: Buffer[] = []
+    const stderrDecoder = new StringDecoder('utf8')
     let settled = false
+    let exited = false
+    let wallTimer: ReturnType<typeof setTimeout> | undefined
+    let idleTimer: ReturnType<typeof setTimeout> | undefined
+    let killTimer: ReturnType<typeof setTimeout> | undefined
 
-    const timer = setTimeout(() => {
-      if (!settled) {
-        settled = true
-        child.kill('SIGTERM')
-        reject(new Error(`git command timed out after ${timeoutMs}ms: ${cmd}`))
-      }
-    }, timeoutMs)
+    const clearTimers = () => {
+      if (wallTimer) clearTimeout(wallTimer)
+      if (idleTimer) clearTimeout(idleTimer)
+    }
+
+    const terminate = (reason: string) => {
+      if (settled) return
+      settled = true
+      clearTimers()
+      child.kill('SIGTERM')
+      killTimer = setTimeout(() => {
+        if (!exited) child.kill('SIGKILL')
+      }, KILL_GRACE_MS)
+      reject(new Error(`${reason}: ${cmd}`))
+    }
+
+    const armIdle = () => {
+      if (idleMs === undefined || settled) return
+      if (idleTimer) clearTimeout(idleTimer)
+      idleTimer = setTimeout(
+        () => terminate(`git command stopped: no output for ${Math.round(idleMs / 1000)}s`),
+        idleMs
+      )
+    }
+
+    if (wallClockMs !== undefined) {
+      wallTimer = setTimeout(
+        () => terminate(`git command timed out after ${wallClockMs}ms`),
+        wallClockMs
+      )
+    }
+    armIdle()
 
     child.stdout.on('data', (chunk: Buffer) => {
-      stdout += chunk.toString('utf8')
+      stdoutChunks.push(chunk)
+      armIdle()
     })
     child.stderr.on('data', (chunk: Buffer) => {
-      const text = chunk.toString('utf8')
-      stderr += text
+      stderrChunks.push(chunk)
+      armIdle()
       if (mayRunHooks) {
-        const output = stripGitTraceLines(text)
+        const output = stripGitTraceLines(stderrDecoder.write(chunk))
         if (output) {
           emitLog('operation', 'info', output)
         }
       }
     })
 
+    // git may exit before reading all of stdin (e.g. a rejected patch): that EPIPE
+    // is expected and the exit code reports the real failure.
+    child.stdin.on('error', () => undefined)
+
     child.on('error', (error) => {
+      exited = true
       releaseEnv()
+      if (killTimer) clearTimeout(killTimer)
       if (settled) return
       settled = true
-      clearTimeout(timer)
+      clearTimers()
       emitLog('git', 'error', `Failed to run git`, error.message)
       reject(new Error(`Failed to run git: ${error.message}`))
     })
 
     child.on('close', (code) => {
+      exited = true
       releaseEnv()
+      if (killTimer) clearTimeout(killTimer)
       if (settled) return
       settled = true
-      clearTimeout(timer)
+      clearTimers()
+      const stdout = Buffer.concat(stdoutChunks).toString('utf8')
+      const stderr = Buffer.concat(stderrChunks).toString('utf8')
       const exitCode = code ?? 1
       const result: GitResult = { stdout, stderr, code: exitCode }
       if (exitCode !== 0) {
@@ -122,10 +178,8 @@ export async function runGit(
 
     if (input !== undefined) {
       child.stdin.write(input)
-      child.stdin.end()
-    } else {
-      child.stdin.end()
     }
+    child.stdin.end()
   })
 }
 
@@ -161,7 +215,12 @@ export async function runCommand<T>(
         ? descriptor.stdin(params)
         : options.input
   const env = descriptor.env ? { ...options.env, ...descriptor.env(params) } : options.env
-  return runGit(args, { ...options, input: stdin, env })
+  return runGit(args, {
+    ...options,
+    timeoutMs: options.timeoutMs ?? descriptor.timeoutMs,
+    input: stdin,
+    env
+  })
 }
 
 export async function runCommandOrThrow<T>(

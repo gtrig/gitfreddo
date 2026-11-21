@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { resolve } from 'path'
 import {
+  gitWatchScope,
   isIgnorableGitWatchPath,
+  isUnderAnyDirectory,
+  parseIgnoredDirectories,
   shouldIgnoreWorktreeWatchPath
 } from './repo-watcher-paths'
 
@@ -41,5 +44,49 @@ describe('isIgnorableGitWatchPath', () => {
     expect(isIgnorableGitWatchPath('/repo/.git/HEAD')).toBe(false)
     expect(isIgnorableGitWatchPath('/repo/.git/refs/heads/main')).toBe(false)
     expect(isIgnorableGitWatchPath('/repo/.git/index')).toBe(false)
+  })
+})
+
+describe('parseIgnoredDirectories', () => {
+  const root = resolve('/home/user/project')
+
+  it('keeps ignored directories as absolute paths and drops single files', () => {
+    const output = 'node_modules/\0out/\0.env\0packages/app/dist/\0'
+    expect(parseIgnoredDirectories(output, root)).toEqual([
+      resolve(root, 'node_modules'),
+      resolve(root, 'out'),
+      resolve(root, 'packages/app/dist')
+    ])
+  })
+
+  it('returns nothing for empty output', () => {
+    expect(parseIgnoredDirectories('', root)).toEqual([])
+  })
+})
+
+describe('isUnderAnyDirectory', () => {
+  const dirs = [resolve('/r/node_modules'), resolve('/r/out')]
+
+  it('matches the directory itself and anything below it', () => {
+    expect(isUnderAnyDirectory(resolve('/r/node_modules'), dirs)).toBe(true)
+    expect(isUnderAnyDirectory(resolve('/r/node_modules/react/index.js'), dirs)).toBe(true)
+  })
+
+  it('does not match siblings that share a prefix', () => {
+    expect(isUnderAnyDirectory(resolve('/r/node_modules_backup/x'), dirs)).toBe(false)
+    expect(isUnderAnyDirectory(resolve('/r/src/app.ts'), dirs)).toBe(false)
+  })
+})
+
+describe('gitWatchScope', () => {
+  it('treats index writes as working-tree changes', () => {
+    expect(gitWatchScope('/r/.git/index')).toBe('working')
+    expect(gitWatchScope('/r/.git/worktrees/feature/index')).toBe('working')
+  })
+
+  it('treats refs and HEAD as ref changes', () => {
+    expect(gitWatchScope('/r/.git/HEAD')).toBe('refs')
+    expect(gitWatchScope('/r/.git/refs/heads/main')).toBe('refs')
+    expect(gitWatchScope(undefined)).toBe('refs')
   })
 })

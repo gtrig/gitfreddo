@@ -37,3 +37,34 @@ export function isIgnorableGitWatchPath(filePath: string): boolean {
     /\/\.watchman-cookie-/.test(normalized)
   )
 }
+
+/**
+ * Ignored directories from `git ls-files -z --others --ignored --exclude-standard
+ * --directory`, as absolute paths. Single ignored files are dropped: only whole
+ * directories (node_modules, build output) are worth keeping out of the watcher.
+ */
+export function parseIgnoredDirectories(output: string, repoRoot: string): string[] {
+  const root = normalizeWatchPath(repoRoot)
+  return output
+    .split('\0')
+    .filter((entry) => entry.endsWith('/'))
+    .map((entry) => resolve(root, entry.slice(0, -1)))
+}
+
+/** True when `path` is one of `directories` or inside one. */
+export function isUnderAnyDirectory(path: string, directories: readonly string[]): boolean {
+  const normalized = normalizeWatchPath(path)
+  return directories.some(
+    (directory) => normalized === directory || normalized.startsWith(`${directory}${sep}`)
+  )
+}
+
+/**
+ * Which caches a change inside the git dir affects. Index writes (staging, or
+ * git refreshing stat info) only change working-tree status, not refs or history.
+ */
+export function gitWatchScope(filePath: string | undefined): 'working' | 'refs' {
+  if (!filePath) return 'refs'
+  const normalized = filePath.replace(/\\/g, '/')
+  return /\/\.git(\/worktrees\/[^/]+)?\/index$/.test(normalized) ? 'working' : 'refs'
+}
