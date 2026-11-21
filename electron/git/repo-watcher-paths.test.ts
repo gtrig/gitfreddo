@@ -72,6 +72,11 @@ describe('isUnderAnyDirectory', () => {
     expect(isUnderAnyDirectory(resolve('/r/node_modules/react/index.js'), dirs)).toBe(true)
   })
 
+  it('normalizes the directory list as well as the path', () => {
+    expect(isUnderAnyDirectory(resolve('/r/out/main.js'), ['/r/out/'])).toBe(true)
+    expect(isUnderAnyDirectory(resolve('/r/out/main.js'), ['/r/./out'])).toBe(true)
+  })
+
   it('does not match siblings that share a prefix', () => {
     expect(isUnderAnyDirectory(resolve('/r/node_modules_backup/x'), dirs)).toBe(false)
     expect(isUnderAnyDirectory(resolve('/r/src/app.ts'), dirs)).toBe(false)

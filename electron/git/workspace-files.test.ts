@@ -40,7 +40,8 @@ describe('resolveRepoFile', () => {
     try {
       symlinkSync('real/target.txt', join(root, 'link.txt'))
       expect(resolveRepoFile(root, 'link.txt')).toBe(
-        join(realpathSync(root), 'real', 'target.txt')
+        // .native matches the code and avoids Windows 8.3 short names (RUNNER~1).
+        join(realpathSync.native(root), 'real', 'target.txt')
       )
     } finally {
       rmSync(root, { recursive: true, force: true })

@@ -54,9 +54,11 @@ export function parseIgnoredDirectories(output: string, repoRoot: string): strin
 /** True when `path` is one of `directories` or inside one. */
 export function isUnderAnyDirectory(path: string, directories: readonly string[]): boolean {
   const normalized = normalizeWatchPath(path)
-  return directories.some(
-    (directory) => normalized === directory || normalized.startsWith(`${directory}${sep}`)
-  )
+  return directories.some((entry) => {
+    // Normalize both sides: on Windows a POSIX-style entry only matches once resolved.
+    const directory = normalizeWatchPath(entry)
+    return normalized === directory || normalized.startsWith(`${directory}${sep}`)
+  })
 }
 
 /**
