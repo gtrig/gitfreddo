@@ -36,9 +36,13 @@ export function useResolvedRemote(): string {
   const connected = useWorkspaceStore((s) => s.connected)
   const { data: remotes } = useRemotes(connected)
   const { data: branches } = useBranches(connected)
-  const current = branches?.find((branch) => branch.isCurrent)
+  const current = Array.isArray(branches) ? branches.find((branch) => branch.isCurrent) : undefined
 
-  return resolveDefaultRemote(settingsRemote, remotes ?? [], current?.upstream)
+  return resolveDefaultRemote(
+    settingsRemote,
+    Array.isArray(remotes) ? remotes : [],
+    current?.upstream
+  )
 }
 
 export function useAiEnabled(): boolean {

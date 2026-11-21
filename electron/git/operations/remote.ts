@@ -10,7 +10,8 @@ import {
   buildRemoteRemoveArgs,
   buildRemoteRenameArgs,
   buildRemoteSetUrlArgs,
-  buildRevParseAbbrevRefArgs
+  buildRevParseAbbrevRefArgs,
+  buildRevParseUpstreamArgs
 } from '../../../shared/git/commands'
 
 export function remoteNameFromUpstream(upstream: string): string {
@@ -21,7 +22,8 @@ export function remoteNameFromUpstream(upstream: string): string {
 export async function resolveRemoteName(
   cwd: string,
   gitBinaryPath: string,
-  remote?: string
+  remote?: string,
+  { strict = false }: { strict?: boolean } = {}
 ): Promise<string> {
   const requested = remote?.trim()
   const remotes = await remoteList(cwd, gitBinaryPath)
@@ -29,6 +31,10 @@ export async function resolveRemoteName(
 
   if (requested && names.has(requested)) {
     return requested
+  }
+  if (strict && requested) {
+    // The user picked this remote: never silently use another one.
+    throw new Error(`Remote "${requested}" is not configured.`)
   }
 
   try {
@@ -58,8 +64,12 @@ export async function resolveRemoteName(
   )
 }
 
-async function branchHasUpstream(cwd: string, gitBinaryPath: string): Promise<boolean> {
-  const result = await runGit(buildRevParseAbbrevRefArgs('@{upstream}'), { cwd, gitBinaryPath })
+async function branchHasUpstream(
+  cwd: string,
+  gitBinaryPath: string,
+  branch: string
+): Promise<boolean> {
+  const result = await runGit(buildRevParseUpstreamArgs(branch), { cwd, gitBinaryPath })
   return result.code === 0 && Boolean(result.stdout.trim())
 }
 
@@ -142,7 +152,9 @@ export async function pushRemote(
   pushAll = false,
   pushSubmoduleRecursion: PushSubmoduleRecursion = 'no'
 ): Promise<void> {
-  const pushRemoteName = await resolveRemoteName(cwd, gitBinaryPath, remote)
+  const pushRemoteName = await resolveRemoteName(cwd, gitBinaryPath, remote, {
+    strict: Boolean(remote?.trim())
+  })
 
   if (pushAll) {
     await runGitOrThrow(
@@ -152,16 +164,19 @@ export async function pushRemote(
     return
   }
 
-  const currentBranch = (
-    await runGitOrThrow(buildRevParseAbbrevRefArgs('HEAD'), { cwd, gitBinaryPath })
-  ).trim()
-
-  if (currentBranch === 'HEAD') {
-    throw new Error('Cannot push while in a detached HEAD state.')
+  let pushBranch = branch?.trim()
+  if (!pushBranch) {
+    const currentBranch = (
+      await runGitOrThrow(buildRevParseAbbrevRefArgs('HEAD'), { cwd, gitBinaryPath })
+    ).trim()
+    if (currentBranch === 'HEAD') {
+      throw new Error('Cannot push while in a detached HEAD state.')
+    }
+    pushBranch = currentBranch
   }
 
-  const pushBranch = branch?.trim() || currentBranch
-  const useUpstream = setUpstream || !(await branchHasUpstream(cwd, gitBinaryPath))
+  // Track the remote only when asked, or when the pushed branch has no upstream yet.
+  const useUpstream = setUpstream || !(await branchHasUpstream(cwd, gitBinaryPath, pushBranch))
 
   await runGitOrThrow(
     buildPushArgs({

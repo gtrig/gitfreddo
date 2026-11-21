@@ -10,6 +10,7 @@ export const E2E_FIXTURE_PATHS = {
   minimalRepo: resolve('test/fixtures/minimal-repo'),
   pushRepo: resolve('test/fixtures/push-repo'),
   pushRemote: resolve('test/fixtures/push-remote.git'),
+  pushBackupRemote: resolve('test/fixtures/push-backup.git'),
   rebaseRepo: resolve('test/fixtures/rebase-repo'),
   mergeConflictRepo: resolve('test/fixtures/merge-conflict-repo')
 } as const

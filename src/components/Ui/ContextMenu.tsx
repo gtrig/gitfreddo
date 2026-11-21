@@ -8,6 +8,8 @@ export interface ContextMenuItem {
   danger?: boolean
   separator?: boolean
   checked?: boolean
+  /** Leave the menu open after clicking (for toggles). */
+  keepOpen?: boolean
 }
 
 interface ContextMenuProps {
@@ -96,7 +98,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
                 return
               }
               item.onClick()
-              onClose()
+              if (!item.keepOpen) onClose()
             }}
             className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs disabled:cursor-default disabled:opacity-40 ${
               item.danger

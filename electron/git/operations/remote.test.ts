@@ -199,7 +199,8 @@ describe('pushRemote', () => {
     const head = (await run(tempDir, ['rev-parse', 'HEAD'])).trim()
     await run(tempDir, ['checkout', '--detach', head])
 
-    await expect(pushRemote(tempDir, 'git', 'origin', 'main')).rejects.toThrow(/detached HEAD/i)
+    // No branch named: there is no current branch to push.
+    await expect(pushRemote(tempDir, 'git', 'origin')).rejects.toThrow(/detached HEAD/i)
   })
 })
 
@@ -355,5 +356,88 @@ describe('pullRemote', () => {
     )
     const pullCall = spy.mock.calls.find((call) => call[0]?.[0] === 'pull')
     expect(pullCall?.[0]).not.toContain('--rebase')
+  })
+})
+
+describe('pushRemote to a chosen remote', () => {
+  const dirs: string[] = []
+  const run = (cwd: string, args: string[]) => runGitOrThrow(args, { cwd, gitBinaryPath: 'git' })
+
+  afterEach(() => {
+    for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true })
+  })
+
+  /** Repo with `origin` (main tracks origin/main) and a second remote `backup`. */
+  async function repoWithTwoRemotes() {
+    const repo = mkdtempSync(join(tmpdir(), 'gitfreddo-push-two-'))
+    const origin = mkdtempSync(join(tmpdir(), 'gitfreddo-push-origin-'))
+    const backup = mkdtempSync(join(tmpdir(), 'gitfreddo-push-backup-'))
+    dirs.push(repo, origin, backup)
+    execFileSync('git', ['init', '--bare', origin])
+    execFileSync('git', ['init', '--bare', backup])
+    await run(repo, ['init', '-b', 'main'])
+    await run(repo, ['config', 'user.email', 'test@example.com'])
+    await run(repo, ['config', 'user.name', 'Test'])
+    await run(repo, ['remote', 'add', 'origin', origin])
+    await run(repo, ['remote', 'add', 'backup', backup])
+    writeFileSync(join(repo, 'README.md'), '# two remotes\n')
+    await run(repo, ['add', 'README.md'])
+    await run(repo, ['commit', '-m', 'initial'])
+    await run(repo, ['push', '-u', 'origin', 'main'])
+    return { repo, origin, backup }
+  }
+
+  const upstreamOf = async (repo: string, branch: string) =>
+    (await gitRunner.runGit(['rev-parse', '--abbrev-ref', `${branch}@{upstream}`], { cwd: repo }))
+      .stdout.trim()
+
+  it('pushes to the chosen remote and leaves the upstream alone', async () => {
+    const { repo, backup } = await repoWithTwoRemotes()
+
+    await pushRemote(repo, 'git', 'backup', 'main')
+
+    expect((await run(backup, ['rev-parse', 'main'])).trim()).toBe(
+      (await run(repo, ['rev-parse', 'main'])).trim()
+    )
+    expect(await upstreamOf(repo, 'main')).toBe('origin/main')
+  })
+
+  it('moves the upstream only when asked', async () => {
+    const { repo } = await repoWithTwoRemotes()
+
+    await pushRemote(repo, 'git', 'backup', 'main', true)
+
+    expect(await upstreamOf(repo, 'main')).toBe('backup/main')
+  })
+
+  it('refuses an unknown remote instead of pushing somewhere else', async () => {
+    const { repo, origin } = await repoWithTwoRemotes()
+    writeFileSync(join(repo, 'README.md'), '# changed\n')
+    await run(repo, ['commit', '-am', 'second'])
+
+    await expect(pushRemote(repo, 'git', 'typo', 'main')).rejects.toThrow(/typo/)
+    expect((await run(origin, ['rev-parse', 'main'])).trim()).not.toBe(
+      (await run(repo, ['rev-parse', 'main'])).trim()
+    )
+  })
+
+  it('sets the upstream of the pushed branch, not of the current one', async () => {
+    const { repo, backup } = await repoWithTwoRemotes()
+    await run(repo, ['branch', 'feature'])
+
+    // main (checked out) already tracks origin/main; feature has no upstream yet.
+    await pushRemote(repo, 'git', 'backup', 'feature')
+
+    expect((await run(backup, ['branch', '--list', 'feature'])).trim()).toContain('feature')
+    expect(await upstreamOf(repo, 'feature')).toBe('backup/feature')
+    expect(await upstreamOf(repo, 'main')).toBe('origin/main')
+  })
+
+  it('pushes a named branch while HEAD is detached', async () => {
+    const { repo, backup } = await repoWithTwoRemotes()
+    await run(repo, ['checkout', '--detach', 'HEAD'])
+
+    await pushRemote(repo, 'git', 'backup', 'main')
+    expect((await run(backup, ['branch', '--list', 'main'])).trim()).toContain('main')
   })
 })

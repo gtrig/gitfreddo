@@ -354,6 +354,50 @@ describe('LocalBranchesSection', () => {
     expect(screen.getByTestId('merge-dialog')).toHaveTextContent('feature/login')
   })
 
+  it('pushes a branch to a remote chosen from its context menu', async () => {
+    window.gitfreddo = createGitFreddoMock({
+      invoke: vi.fn(async (method: string) => {
+        if (method === 'remote.list') {
+          return [
+            { name: 'origin', url: '/r/origin', fetch: '', push: '' },
+            { name: 'backup', url: '/r/backup', fetch: '', push: '' }
+          ]
+        }
+        if (method === 'branch.list') return branches
+        return undefined
+      })
+    })
+    renderWithProviders(
+      <LocalBranchesSection
+        branches={branches}
+        filter="login"
+        isLoading={false}
+        error={null}
+        checkoutPending={false}
+        isDetached={false}
+        head="abc"
+        onSelectCommit={vi.fn()}
+        onCheckout={vi.fn()}
+        onCreateBranch={vi.fn()}
+      />
+    )
+
+    // The menu captures its items when opened, so reopen until the remotes have loaded.
+    await vi.waitFor(() => {
+      fireEvent.contextMenu(screen.getByRole('button', { name: /login/i }))
+      expect(screen.getByRole('menuitem', { name: 'Push to backup' })).toBeInTheDocument()
+    })
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Push to backup' }))
+
+    await vi.waitFor(() =>
+      expect(window.gitfreddo.invoke).toHaveBeenCalledWith(
+        'push',
+        { remote: 'backup', branch: 'feature/login' },
+        '/tmp/repo'
+      )
+    )
+  })
+
   it('calls onCreateBranch from the section header', async () => {
     const onCreateBranch = vi.fn()
     renderWithProviders(

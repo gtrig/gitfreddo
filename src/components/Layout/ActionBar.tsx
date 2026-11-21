@@ -6,7 +6,8 @@ import {
   ArrowDownTrayIcon,
   ArrowPathIcon,
   ArrowUturnLeftIcon,
-  ArrowUpTrayIcon
+  ArrowUpTrayIcon,
+  ChevronDownIcon
 } from '@heroicons/react/24/outline'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useGitMutations } from '@/hooks/useGitMutations'
@@ -16,6 +17,9 @@ import { useUndoLast } from '@/hooks/useUndoLast'
 import { Spinner } from '@/components/Ui/Spinner'
 import { PushForceConfirm } from '@/components/Layout/PushForceConfirm'
 import { StashPushModal } from '@/components/Stash/StashPushModal'
+import { ContextMenu } from '@/components/Ui/ContextMenu'
+import { useBranches, useRemotes } from '@/hooks/useGit'
+import { buildPushMenuItems, buildPushTargets } from '@/lib/git/pushTargets'
 import { runMutation } from '@/lib/ui/runMutation'
 import { reportToast } from '@/stores/toast'
 
@@ -59,6 +63,60 @@ function ActionBarButton({
   )
 }
 
+/** "▾" next to Push: pick which remote to push to (shown only with 2+ remotes). */
+function PushRemoteMenuButton({
+  defaultRemote,
+  disabled,
+  onPush
+}: {
+  defaultRemote: string
+  disabled?: boolean
+  onPush: (remote: string, setUpstream: boolean) => void
+}) {
+  const { t } = useTranslation()
+  const { data: remotes } = useRemotes()
+  const { data: branches } = useBranches()
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
+  const [setUpstream, setSetUpstream] = useState(false)
+
+  if (!Array.isArray(remotes) || remotes.length < 2) return null
+
+  const current = Array.isArray(branches) ? branches.find((branch) => branch.isCurrent) : undefined
+  const items = buildPushMenuItems(buildPushTargets(remotes, defaultRemote, current?.upstream), {
+    setUpstream,
+    labels: {
+      pushTo: (remote) => t('actions.pushTo', { remote }),
+      upstreamSuffix: t('actions.upstreamMarker'),
+      setAsUpstream: t('actions.setAsUpstream')
+    },
+    onPush: (remote) => onPush(remote, setUpstream),
+    onToggleSetUpstream: () => setSetUpstream((value) => !value)
+  })
+
+  return (
+    <>
+      <button
+        type="button"
+        aria-label={t('actions.chooseRemote')}
+        title={t('actions.chooseRemote')}
+        aria-haspopup="menu"
+        aria-expanded={menu !== null}
+        disabled={disabled}
+        onClick={(event) => {
+          const rect = event.currentTarget.getBoundingClientRect()
+          setMenu({ x: rect.left, y: rect.bottom + 4 })
+        }}
+        className="-ml-1.5 inline-flex items-center rounded-r border border-l-0 border-gf-border-strong px-1.5 py-1 text-gf-fg-muted hover:bg-gf-bg disabled:opacity-50"
+      >
+        <ChevronDownIcon aria-hidden className="h-3 w-3" />
+      </button>
+      {menu && (
+        <ContextMenu x={menu.x} y={menu.y} items={items} onClose={() => setMenu(null)} />
+      )}
+    </>
+  )
+}
+
 export function ActionBar() {
   const { t } = useTranslation()
   const connected = useWorkspaceStore((s) => s.connected)
@@ -83,13 +141,20 @@ export function ActionBar() {
         >
           {t('actions.undo')}
         </ActionBarButton>
-        <ActionBarButton
-          loading={isPushPending}
-          onClick={() => pushRemote({ remote: defaultRemote })}
-          icon={<ArrowUpTrayIcon aria-hidden className={iconClass} />}
-        >
-          {t('actions.push')}
-        </ActionBarButton>
+        <div className="inline-flex items-stretch">
+          <ActionBarButton
+            loading={isPushPending}
+            onClick={() => pushRemote({ remote: defaultRemote })}
+            icon={<ArrowUpTrayIcon aria-hidden className={iconClass} />}
+          >
+            {t('actions.push')}
+          </ActionBarButton>
+          <PushRemoteMenuButton
+            defaultRemote={defaultRemote}
+            disabled={isPushPending}
+            onPush={(remote, setUpstream) => pushRemote({ remote, setUpstream })}
+          />
+        </div>
         <ActionBarButton
           loading={pull.isPending}
           onClick={() =>

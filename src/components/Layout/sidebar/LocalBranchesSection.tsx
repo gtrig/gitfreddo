@@ -53,6 +53,11 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { flattenVisibleBranchTree } from '@/lib/ui/flattenVisibleBranchTree'
 import { shouldVirtualize, COMPACT_ROW_HEIGHT, VIRTUAL_OVERSCAN } from '@/lib/ui/virtualList'
 import { runMutation } from '@/lib/ui/runMutation'
+import { usePushRemote } from '@/hooks/usePushRemote'
+import { useResolvedRemote } from '@/hooks/useAppSettings'
+import { useRemotes } from '@/hooks/useGit'
+import { buildPushTargets } from '@/lib/git/pushTargets'
+import { PushForceConfirm } from '@/components/Layout/PushForceConfirm'
 
 interface LocalBranchesSectionProps {
   branches: GitBranch[] | undefined
@@ -89,6 +94,8 @@ function BranchTree({
   onUnsetUpstream,
   isBranchHidden,
   onToggleGraphVisibility,
+  onPushTo,
+  pushRemotes,
   openMenu
 }: {
   nodes: BranchTreeNode[]
@@ -112,6 +119,8 @@ function BranchTree({
   onUnsetUpstream?: (name: string) => void
   isBranchHidden: (branchKey: string) => boolean
   onToggleGraphVisibility: (branchKey: string) => void
+  onPushTo?: (name: string, remote: string) => void
+  pushRemotes?: readonly string[]
   openMenu: ReturnType<typeof useContextMenu>['openMenu']
 }) {
   const { t } = useTranslation()
@@ -154,6 +163,8 @@ function BranchTree({
                   onUnsetUpstream={onUnsetUpstream}
                   isBranchHidden={isBranchHidden}
                   onToggleGraphVisibility={onToggleGraphVisibility}
+                  onPushTo={onPushTo}
+                  pushRemotes={pushRemotes}
                   openMenu={openMenu}
                 />
               )}
@@ -182,7 +193,9 @@ function BranchTree({
             onSetUpstream,
             onUnsetUpstream,
             onToggleGraphVisibility,
-            isHiddenInGraph: hiddenInGraph
+            isHiddenInGraph: hiddenInGraph,
+            onPushTo,
+            remotes: pushRemotes
           },
           t
         )
@@ -254,6 +267,17 @@ export function LocalBranchesSection({
   const [upstreamBranch, setUpstreamBranch] = useState<string | null>(null)
   const { state: menuState, openMenu, closeMenu } = useContextMenu()
   const { deleteBranch, unsetUpstream, merge, fastForwardBranch } = useGitMutations()
+  const { pushRemote, isPushPending, forceConfirm, confirmForcePush, cancelForcePush } =
+    usePushRemote()
+  const defaultRemote = useResolvedRemote()
+  const { data: remoteList } = useRemotes()
+  const pushRemoteNames = useMemo(
+    () =>
+      Array.isArray(remoteList)
+        ? buildPushTargets(remoteList, defaultRemote).map((target) => target.name)
+        : [],
+    [remoteList, defaultRemote]
+  )
   const repoPath = useWorkspaceStore((s) => s.activePath)
   const toggleBranchVisibility = useBranchVisibilityStore((s) => s.toggleBranchVisibility)
   const isBranchHidden = useBranchVisibilityStore((s) => s.isBranchHidden)
@@ -469,10 +493,19 @@ export function LocalBranchesSection({
             onUnsetUpstream={(name) => void runMutation(unsetUpstream.mutateAsync({ branch: name }), reportToast)}
             isBranchHidden={isBranchHidden}
             onToggleGraphVisibility={toggleBranchVisibility}
+            onPushTo={(name, remote) => pushRemote({ remote, branch: name })}
+            pushRemotes={pushRemoteNames}
             openMenu={openMenu}
           />
         </div>
       )}
+
+      <PushForceConfirm
+        params={forceConfirm}
+        busy={isPushPending}
+        onConfirm={confirmForcePush}
+        onCancel={cancelForcePush}
+      />
 
       {menuState && (
         <ContextMenu

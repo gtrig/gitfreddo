@@ -23,6 +23,22 @@ describe('ContextMenu', () => {
     expect(screen.getByRole('menuitem', { name: 'Copy path' })).toBeInTheDocument()
   })
 
+  it('stays open after clicking a keepOpen item', async () => {
+    const onClose = vi.fn()
+    const onToggle = vi.fn()
+    renderWithProviders(
+      <ContextMenu
+        x={0}
+        y={0}
+        items={[{ id: 'toggle', label: 'Set as upstream', keepOpen: true, onClick: onToggle }]}
+        onClose={onClose}
+      />
+    )
+    await userEvent.click(screen.getByRole('menuitem', { name: /set as upstream/i }))
+    expect(onToggle).toHaveBeenCalled()
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
   it('returns null for empty or separator-only menus', () => {
     const { container, rerender } = renderWithProviders(
       <ContextMenu x={0} y={0} items={[]} onClose={vi.fn()} />

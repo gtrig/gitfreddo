@@ -758,7 +758,11 @@
       "confirm": "Εξαναγκαστικό push",
       "currentBranch": "τον τρέχοντα κλάδο",
       "theRemote": "το remote"
-    }
+    },
+    "chooseRemote": "Επιλογή remote",
+    "pushTo": "Push στο {{remote}}",
+    "upstreamMarker": "(upstream)",
+    "setAsUpstream": "Ορισμός ως upstream"
   },
   "timeline": {
     "graphTitle": "Γράφημα commits",
@@ -1313,7 +1317,8 @@
       "mergeCommit": "Merge commit",
       "squashAndMerge": "Squash and merge",
       "rebaseAndMerge": "Rebase and merge",
-      "branchFromIssue": "Κλάδος από issue"
+      "branchFromIssue": "Κλάδος από issue",
+      "pushTo": "Push στο {{remote}}"
     },
     "detailPanel": {
       "collapse": "Σύμπτυξη",

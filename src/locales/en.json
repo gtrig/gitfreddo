@@ -758,7 +758,11 @@
       "confirm": "Force push",
       "currentBranch": "the current branch",
       "theRemote": "the remote"
-    }
+    },
+    "chooseRemote": "Choose remote",
+    "pushTo": "Push to {{remote}}",
+    "upstreamMarker": "(upstream)",
+    "setAsUpstream": "Set as upstream"
   },
   "timeline": {
     "graphTitle": "Commit graph",
@@ -1464,7 +1468,8 @@
       "mergeCommit": "Merge commit",
       "squashAndMerge": "Squash and merge",
       "rebaseAndMerge": "Rebase and merge",
-      "branchFromIssue": "Branch from issue"
+      "branchFromIssue": "Branch from issue",
+      "pushTo": "Push to {{remote}}"
     },
     "detailPanel": {
       "collapse": "Collapse",

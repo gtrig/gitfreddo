@@ -34,6 +34,38 @@ describe('folderContextMenuItems', () => {
 })
 
 describe('localBranchContextMenuItems', () => {
+  const baseHandlers = {
+    onCheckout: noop,
+    onSelectCommit: noop,
+    onMerge: noop,
+    onRename: noop,
+    onDelete: noop
+  }
+
+  it('offers push to each remote when there are two or more', () => {
+    const onPushTo = vi.fn()
+    const items = localBranchContextMenuItems(
+      branch({ upstream: 'origin/feature/login' }),
+      { ...baseHandlers, onPushTo, remotes: ['origin', 'backup'] }
+    )
+    const pushItems = items.filter((item) => item.id.startsWith('push-to-'))
+    expect(pushItems.map((item) => item.label)).toEqual([
+      'Push to origin (upstream)',
+      'Push to backup'
+    ])
+    pushItems[1]!.onClick()
+    expect(onPushTo).toHaveBeenCalledWith('feature/login', 'backup')
+  })
+
+  it('has no push-to items with a single remote', () => {
+    const items = localBranchContextMenuItems(branch(), {
+      ...baseHandlers,
+      onPushTo: noop,
+      remotes: ['origin']
+    })
+    expect(items.some((item) => item.id.startsWith('push-to-'))).toBe(false)
+  })
+
   it('disables checkout for the current branch', () => {
     const items = localBranchContextMenuItems(branch({ isCurrent: true }), {
       onCheckout: noop,

@@ -11,6 +11,7 @@ import { detachedRefCheckoutParams, localBranchCheckoutParams } from '@/lib/git/
 import { remoteBranchShortName } from '@/lib/workspace/branchTree'
 import { localTagName, tagCheckoutRef } from '@/lib/format/tagNames'
 import { menuLabel, separator, toggleLabel } from '@/lib/context-menus/builders'
+import { remoteNameFromUpstream } from '@/lib/git/remote'
 
 export function folderContextMenuItems(
   name: string,
@@ -51,6 +52,9 @@ export function localBranchContextMenuItems(
     onCheckoutInWorktree?: (name: string) => void
     onToggleGraphVisibility?: (name: string) => void
     isHiddenInGraph?: boolean
+    /** Push this branch to a specific remote (offered when 2+ remotes exist). */
+    onPushTo?: (name: string, remote: string) => void
+    remotes?: readonly string[]
   },
   t?: TFunction
 ): ContextMenuItem[] {
@@ -186,6 +190,22 @@ export function localBranchContextMenuItems(
       label: t ? t('contextMenu.sidebar.rename') : 'Rename…',
       onClick: () => handlers.onRename(branch.name)
     })
+  }
+
+  if (handlers.onPushTo && handlers.remotes && handlers.remotes.length >= 2) {
+    const upstreamRemote = branch.upstream ? remoteNameFromUpstream(branch.upstream) : ''
+    items.push(separator('sep-push-to'))
+    for (const remote of handlers.remotes) {
+      const label = t
+        ? t('contextMenu.sidebar.pushTo', { remote })
+        : `Push to ${remote}`
+      const suffix = t ? t('actions.upstreamMarker') : '(upstream)'
+      items.push({
+        id: `push-to-${remote}`,
+        label: remote === upstreamRemote ? `${label} ${suffix}` : label,
+        onClick: () => handlers.onPushTo!(branch.name, remote)
+      })
+    }
   }
 
   if (handlers.onSetUpstream || handlers.onUnsetUpstream) {
