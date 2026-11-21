@@ -17,7 +17,7 @@ The renderer calls `window.gitfreddo.invoke(method, params)` for git operations:
 | Read | Write |
 |------|-------|
 | `repo.status` | `branch.checkout`, `branch.checkoutRemote`, `branch.create`, `branch.delete`, `branch.rename`, `branch.setUpstream`, `branch.unsetUpstream`, `branch.deleteRemote`, `branch.fastForward` |
-| `log.graph`, `log.show`, `log.message`, `log.file`, `log.pickaxe`, `log.search` | `stage.add`, `stage.reset`, `stage.applyPatch`, `commit.create`, `commit.reword`, `commit.revert` |
+| `log.graph`, `log.show`, `log.message`, `log.file`, `log.pickaxe`, `log.search` | `stage.add` (`all: true` to stage everything), `stage.reset`, `stage.applyPatch`, `commit.create`, `commit.compose`, `commit.reword`, `commit.revert` |
 | `branch.list`, `tag.list`, `reflog.list`, `undo.peek` | `tag.create`, `tag.delete`, `tag.push`, `tag.rename`, `undo.last` |
 | `working.status`, `working.cleanPreview`, `working.read` | `working.discard`, `working.remove`, `working.clean`, `working.write`, `working.rename` |
 | `remote.list` | `remote.add`, `remote.remove`, `remote.rename`, `remote.setUrl`, `fetch`, `push`, `pull` |
@@ -28,6 +28,10 @@ The renderer calls `window.gitfreddo.invoke(method, params)` for git operations:
 | `merge.status`, `bisect.status`, `notes.list` | `rebase.start` (--onto), `rebase.interactive`, `rebase.abort`, `rebase.continue`, `rebase.skip`, `rebase.squash`, `rebase.drop` |
 | `maintenance.unreachable`, `maintenance.staleBranches`, `config.get`, `config.list` | `cherry-pick` (-n), `cherry-pick.continue`, `cherry-pick.abort`, `cherry-pick.skip`, `config.set` |
 | | `reset`, `reset.head`, `maintenance.prune`, `maintenance.removeStaleBranches`, `bisect.start`, `bisect.good`, `bisect.bad`, `bisect.reset`, `notes.add` |
+
+Every renderer call passes the target repo as the third `invoke` argument (`repoInvoke` in `src/lib/git/repoInvoke.ts`; mutation hooks pin it when called), so a tab switch never redirects a call.
+
+`commit.compose` splits the staged index into several commits (per-proposal patches from `git diff --cached --binary`), preserving partial staging and renames.
 
 Workspace helpers: `connect`, `switchWorkspace`, `cloneRepository`, `openWorkspace`, `deleteWorkspaceFile`, `openInEditor`, settings, **auto-update** (`checkForUpdates`, `downloadUpdate`, `installUpdate`).
 
@@ -50,6 +54,8 @@ Workspace helpers: `connect`, `switchWorkspace`, `cloneRepository`, `openWorkspa
 - `electron/git/repo-manager.ts` — per-tab repo pool + typed `invoke` dispatch
 - `electron/git/operations/*` — domain modules; argv built via `shared/git/commands` builders
 - `electron/git/git-dir.ts` — resolve git metadata dir for linked worktrees
+- `electron/git/credentials.ts` — forge askpass: tokens only for exact forge hosts, written to a per-process temp file for network commands only
+- Network commands (clone/fetch/push/pull/ls-remote/submodule add|update) have no wall-clock timeout; they stop after 5 minutes without output. Local commands time out after 120s.
 
 No third-party git libraries; output is parsed from porcelain/plumbing commands.
 

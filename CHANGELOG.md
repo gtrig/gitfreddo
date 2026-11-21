@@ -7,6 +7,24 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-11-21 — Push to a chosen remote
+
+- **Why:** With more than one remote, Push always went to the default remote; there was no way to push a branch to another one.
+- **What:** A ▾ next to Push in the action bar (shown with 2+ remotes) lists "Push to <remote>" with the current upstream marked and a "Set as upstream" toggle. Local branch menus get "Push to <remote>" items. Backend: an explicitly chosen remote that doesn't exist is an error, `-u` is decided from the pushed branch's own upstream, and a named branch can be pushed while HEAD is detached. E2E push fixture gains a second remote.
+
+### 2026-11-21 — Review fixes: credentials, repo routing, data safety, git runner
+
+- **Why:** A code review found forge tokens sent to lookalike hosts and kept in plaintext, git calls landing in the wrong tab, silent failures, and several ways to lose staged or uncommitted work.
+- **What:**
+  - Credentials: askpass hands out tokens only for exact `github.com` / `bitbucket.org` / GitLab hosts; tokens go to a per-process temp file for network commands only and the old shared `forge-askpass-secrets.json` is deleted at startup; token store uses async `safeStorage` with re-encryption and an in-memory cache.
+  - Routing: every renderer git call names its repo; mutations pin the repo when called and invalidate that repo's caches.
+  - Data safety: new `commit.compose` builds AI-composed commits from the staged index (partial staging and renames preserved, restores on failure); `working.remove` asks before forcing; `working.clean` removes only previewed paths; `stage.add` needs `all: true` to stage everything; unreadable `settings.json` is backed up before being replaced; fire-and-forget mutations show their errors.
+  - Git runner: UTF-8 output decoded once (no split characters), stdin EPIPE handled, network commands use a 5-minute inactivity limit instead of 120s, SIGKILL fallback, failed clones cleaned up.
+  - Watcher skips git-ignored directories and fires at least every 2s under constant change; index writes refresh status only.
+  - Status: ahead/behind were swapped in `# branch.ab` parsing; untracked names keep spaces; submodule state read from porcelain v2.
+  - Hooks keep git's `.sample` files and prefer the user's `.disabled` script; broken symlinks pointing outside the repo are rejected.
+  - Tests: replaced removed vitest `describe.sequential`.
+
 ### 2026-08-17 — Decode quoted git file paths
 
 - **Why:** Files with non-ASCII names (e.g. ⚡) showed up as `\342\232\241…` under a quoted `"resources"` folder, split from the real `resources` tree, because git C-quotes unusual pathnames by default.

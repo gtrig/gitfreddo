@@ -4,6 +4,14 @@ import { resolve } from 'path'
 import { E2E_FIXTURE_PATHS, invokeGitfreddo, runElectronTest, useFixture } from './helpers'
 
 const pushFixtureScript = resolve('scripts/create-push-fixture.sh')
+/**
+ * Keep the startup "Latest News" modal from covering the action bar. No version
+ * pin: under the e2e launcher the app version isn't the package version.
+ */
+const hideStartupModal = {
+  startupModalHiddenUntil: Date.now() + 24 * 60 * 60 * 1000,
+  startupModalHiddenForVersion: null
+}
 
 const revParse = (gitDir: string, ref: string) =>
   execFileSync('git', ['--git-dir', gitDir, 'rev-parse', '--verify', '--quiet', ref], {
@@ -46,6 +54,7 @@ test.describe('push', () => {
       {
         settingsPrefix: 'gitfreddo-e2e-push-backup-',
         repoPath: E2E_FIXTURE_PATHS.pushRepo,
+        settings: hideStartupModal,
         waitMs: 2000
       },
       async (page) => {

@@ -58,6 +58,7 @@ flowchart TB
 | Git write hooks | `src/hooks/useGitMutations.ts` | Mutations + cache invalidation |
 | Selection state | `src/stores/selection.ts` | Diff overlay, selected commit/file |
 | Workspace state | `src/stores/workspace.ts` | Tabs, paths, connection |
+| Other stores | `src/stores/` | `branchVisibility`, `commitSearch`, `logs`, `operation`, `toast` |
 | Pure logic | `src/lib/` | Graph layout, diff parsing, context menus (grouped by domain) |
 | i18n | `src/locales/` | UI string catalogs |
 | Styles | `src/styles/` | Global CSS and theme tokens |
@@ -85,9 +86,11 @@ flowchart TB
 | `conflicts/` | Three-way merge, conflict markers, AI resolution |
 | `context-menus/` | Commit, sidebar, detail-panel menu builders |
 | `workspace/` | Session persistence, file trees, branch tree, paths |
-| `git/` | Commit selection, reachability, stash, remote helpers |
+| `git/` | Commit selection, reachability, stash, remote helpers, `repoInvoke`, push targets |
 | `format/` | Time formatting, tag name helpers |
 | `docs/` | In-app docs catalog and content resolution |
+| `ui/` | Virtual list helpers, tree flattening, `runMutation` |
+| `ai/`, `brand/`, `editor/`, `forge/`, `github/`, `layout/`, `markdown/`, `news/`, `startup/` | AI helpers, branding, code editor, forge detection, layout, markdown, startup news |
 
 Root-level: `types.ts`, `themes.ts`, `clipboard.ts`.
 
@@ -105,7 +108,9 @@ Root-level: `types.ts`, `themes.ts`, `clipboard.ts`.
 | Bitbucket | `electron/bitbucket/` | OAuth, API client, token store |
 | Forge shared | `electron/forge/` | Token store factory, OAuth callback, HTTP helpers, connection status, SSH key helpers, repo cache/context |
 | LLM | `electron/llm/` | AI fill and conflict assist |
-| Settings | `electron/settings.ts` | App settings persistence |
+| Settings | `electron/settings.ts` | App settings persistence (unreadable files backed up as `settings.json.corrupt-*`) |
+| AI key | `electron/ai/` | Encrypted AI API key store |
+| Updates | `electron/update/` | Auto-update |
 
 ### Git operations modules
 
@@ -125,6 +130,11 @@ Root-level: `types.ts`, `themes.ts`, `clipboard.ts`.
 | `reflog.ts`, `bisect.ts`, `blame.ts` | Inspection tools |
 | `maintenance.ts` | Prune, stale branches |
 | `config.ts`, `notes.ts`, `repo.ts` | Config, notes, repo init |
+| `compose.ts` | Split the staged index into several commits (`commit.compose`) |
+| `submodule.ts` | Submodule add/init/update/sync/deinit/remove |
+| `hooks.ts` | List, edit, enable/disable git hooks |
+| `undo.ts` | Peek and undo the last action via reflog |
+| `commit-message.ts` | Commit message helpers |
 
 ## Shared (`shared/`)
 

@@ -60,6 +60,8 @@ export interface WorkspaceSettings {
   pollIntervalMs?: number
   defaultRemote?: string
   logMaxCount?: number
+  startupModalHiddenUntil?: number | null
+  startupModalHiddenForVersion?: string | null
 }
 
 export function seedWorkspaceSettings(settingsDir: string, repoPath: string, overrides: WorkspaceSettings = {}): void {

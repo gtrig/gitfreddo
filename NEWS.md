@@ -5,6 +5,10 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+- Push to any remote: use the ▾ next to Push (or a branch's right-click menu) when a repo has more than one remote.
+- Safer sign-in tokens: they're only sent to the real GitHub, GitLab and Bitbucket hosts and are no longer kept in a plain-text file.
+- AI "compose commits" keeps partially staged files and renames exactly as you staged them.
+- Branches ahead of their remote now show as ahead (not behind) in the working-tree status.
 - File names with emoji or other non-English characters show correctly in the working-tree list (no `\342\232\241` or extra `"resources"` folder).
 
 ## [0.5.2]
