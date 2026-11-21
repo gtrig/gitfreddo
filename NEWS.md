@@ -5,6 +5,7 @@ Keep bullets short and user-facing (not commit/PR session notes — those go in 
 
 ## [Unreleased]
 
+- Counts read correctly again ("Create 2 commits", "3 file changes"), and the Compose commits button no longer covers the Commit button.
 - Push to any remote: use the ▾ next to Push (or a branch's right-click menu) when a repo has more than one remote.
 - Safer sign-in tokens: they're only sent to the real GitHub, GitLab and Bitbucket hosts and are no longer kept in a plain-text file.
 - AI "compose commits" keeps partially staged files and renames exactly as you staged them.

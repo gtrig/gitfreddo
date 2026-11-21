@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'fs'
 import { join } from 'path'
 import { describe, expect, it } from 'vitest'
+import i18next from 'i18next'
 import en from './en.json'
 import el from './el.json'
 
@@ -87,6 +88,30 @@ describe('locale catalogs', () => {
   it('en.json contains every el.json key', () => {
     const missing = Object.keys(elFlat).filter((key) => !(key in enFlat))
     expect(missing).toEqual([])
+  })
+
+  it('uses i18next v21+ plural suffixes (_one/_other), not the removed _plural', () => {
+    const legacy = [...Object.keys(enFlat), ...Object.keys(elFlat)].filter((key) =>
+      key.endsWith('_plural')
+    )
+    expect(legacy).toEqual([])
+  })
+
+  it('renders plural forms with the real catalogs', async () => {
+    const i18n = i18next.createInstance()
+    await i18n.init({
+      resources: { en: { translation: en }, el: { translation: el } },
+      lng: 'en',
+      interpolation: { escapeValue: false }
+    })
+    expect(i18n.t('workingTree.createCommitCount', { count: 1 })).toBe('Create 1 commit')
+    expect(i18n.t('workingTree.createCommitCount', { count: 2 })).toBe('Create 2 commits')
+    expect(i18n.t('workingTree.removeFileCount', { count: 3 })).toBe('Remove 3 files')
+
+    await i18n.changeLanguage('el')
+    expect(i18n.t('workingTree.createCommitCount', { count: 2 })).toBe(
+      (el.workingTree as Record<string, string>).createCommitCount_other.replace('{{count}}', '2')
+    )
   })
 
   it('reports unused en.json keys within a soft budget', () => {

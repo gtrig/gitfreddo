@@ -182,7 +182,9 @@ export function CommitPanel({ working }: CommitPanelProps) {
     setAmend(false)
 
     if (pushAfterCommit) {
-      pushRemote({ remote: defaultRemote })
+      // Porcelain status reports "(detached)" without a branch; only name a real one.
+      const branch = /^\(|^HEAD$/.test(working.branch) ? undefined : working.branch || undefined
+      pushRemote({ remote: defaultRemote, branch })
     }
   }
 
@@ -239,7 +241,9 @@ export function CommitPanel({ working }: CommitPanelProps) {
       </button>
 
       {expanded && (
-        <div className="flex min-h-0 flex-1 flex-col gap-2 px-3 pb-2">
+        // Scroll instead of overflowing: when the panel is short, the form's minimum
+        // height would otherwise paint over the Commit / Create stash buttons below.
+        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-3 pb-2">
           <label className="flex shrink-0 items-center gap-2 text-xs text-gf-fg-muted">
             <Checkbox checked={amend} onChange={(e) => setAmend(e.target.checked)} />
             {t('workingTree.amendPrevious')}
@@ -303,18 +307,6 @@ export function CommitPanel({ working }: CommitPanelProps) {
             </div>
           )}
 
-          {aiEnabled && hasStaged && (
-            <div className="flex shrink-0 justify-end">
-              <AiActionButton
-                variant="detail"
-                disabled={aiFill.isPending}
-                loading={aiFill.isPending}
-                onClick={() => void handleComposeWithAi()}
-              >
-                {aiFill.isPending ? t('workingTree.composing') : t('workingTree.composeCommitsWithAi')}
-              </AiActionButton>
-            </div>
-          )}
         </div>
       )}
 
@@ -345,6 +337,20 @@ export function CommitPanel({ working }: CommitPanelProps) {
       />
 
       <div className="shrink-0 space-y-2 border-t border-gf-border px-3 py-2">
+        {/* In the fixed footer (not the scrolling form) so it stays visible and never
+            sits on top of the Commit button. */}
+        {expanded && aiEnabled && hasStaged && (
+          <div className="flex justify-end">
+            <AiActionButton
+              variant="detail"
+              disabled={aiFill.isPending}
+              loading={aiFill.isPending}
+              onClick={() => void handleComposeWithAi()}
+            >
+              {aiFill.isPending ? t('workingTree.composing') : t('workingTree.composeCommitsWithAi')}
+            </AiActionButton>
+          </div>
+        )}
         <button
           type="button"
           disabled={primaryDisabled}

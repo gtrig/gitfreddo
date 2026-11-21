@@ -114,7 +114,7 @@ describe('CommitPreview', () => {
     expect(screen.getByText(/1 modified/i)).toBeInTheDocument()
     expect(screen.getByText(/1 added/i)).toBeInTheDocument()
     expect(screen.getByText(/1 deleted/i)).toBeInTheDocument()
-    expect(screen.getByText(/3 file change in commit/i)).toBeInTheDocument()
+    expect(screen.getByText(/3 file changes in commit/i)).toBeInTheDocument()
   })
 
   it('selects the first changed file when view changes is clicked', async () => {

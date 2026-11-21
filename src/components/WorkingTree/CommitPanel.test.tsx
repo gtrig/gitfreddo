@@ -285,7 +285,7 @@ describe('CommitPanel', () => {
     await userEvent.click(primaryButton()!)
 
     await waitFor(() => {
-      expect(pushRemote).toHaveBeenCalledWith({ remote: 'origin' })
+      expect(pushRemote).toHaveBeenCalledWith({ remote: 'origin', branch: 'main' })
     })
   })
 

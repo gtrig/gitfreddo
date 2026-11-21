@@ -7,6 +7,11 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-11-21 — Plurals, force-push wording, Compose button layout
+
+- **Why:** Manual checks in the running app showed "Create 2 commit", a force-push dialog reading "your local the current branch", and the Compose commits button painted over the Commit button.
+- **What:** Locale plural keys renamed from the removed `_plural` suffix to i18next's `_other` (18 per locale); the Push button, push menu and push-after-commit name the current branch, and the dialog has its own sentence when no branch is known (`actions.forcePush.messageNoBranch`, replacing `currentBranch`); the commit form scrolls instead of overflowing, and Compose commits moved into the panel's fixed footer above Commit.
+
 ### 2026-11-21 — Reliable e2e and local test runs
 
 - **Why:** `merge-conflict` and `rebase-interactive` e2e specs failed about half the time with "No repository connected", and git integration unit tests timed out locally under full parallelism (both also on `main`).

@@ -204,7 +204,7 @@ describe('RemoveStaleBranchesModal', () => {
     )
 
     await screen.findByText('old-feature')
-    expect(screen.getByRole('button', { name: /delete 1 reference \(2 commit\)/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /delete 1 reference \(2 commits\)/i })).toBeInTheDocument()
   })
 
   it('shows toast when loading stale references fails', async () => {

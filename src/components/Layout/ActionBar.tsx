@@ -127,6 +127,12 @@ export function ActionBar() {
   const defaultRemote = useResolvedRemote()
   const { data: settings } = useAppSettings()
   const { performUndo, isUndoing } = useUndoLast()
+  const { data: branchList } = useBranches(connected)
+  // Name the branch so a force-push confirmation can say which one; undefined when
+  // HEAD is detached (the backend then reports that it can't push).
+  const currentBranch = Array.isArray(branchList)
+    ? branchList.find((branch) => branch.isCurrent && !branch.isRemote)?.name
+    : undefined
 
   if (!connected) return null
 
@@ -144,7 +150,7 @@ export function ActionBar() {
         <div className="inline-flex items-stretch">
           <ActionBarButton
             loading={isPushPending}
-            onClick={() => pushRemote({ remote: defaultRemote })}
+            onClick={() => pushRemote({ remote: defaultRemote, branch: currentBranch })}
             icon={<ArrowUpTrayIcon aria-hidden className={iconClass} />}
           >
             {t('actions.push')}
@@ -152,7 +158,9 @@ export function ActionBar() {
           <PushRemoteMenuButton
             defaultRemote={defaultRemote}
             disabled={isPushPending}
-            onPush={(remote, setUpstream) => pushRemote({ remote, setUpstream })}
+            onPush={(remote, setUpstream) =>
+              pushRemote({ remote, branch: currentBranch, setUpstream })
+            }
           />
         </div>
         <ActionBarButton

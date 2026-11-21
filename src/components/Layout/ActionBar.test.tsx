@@ -1,5 +1,5 @@
-import { describe, expect, it, beforeEach, vi } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, it, beforeEach, vi } from 'vitest'
+import { cleanup, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ActionBar } from './ActionBar'
 import { useWorkspaceStore } from '@/stores/workspace'
@@ -21,6 +21,8 @@ function mockRepo(remoteNames: string[], upstream = 'origin/main') {
 }
 
 describe('ActionBar', () => {
+  afterEach(() => cleanup())
+
   beforeEach(() => {
     useWorkspaceStore.setState({
       tabs: [{ path: '/tmp/repo', connected: true, connecting: false }],
@@ -61,7 +63,7 @@ describe('ActionBar', () => {
     await waitFor(() =>
       expect(window.gitfreddo.invoke).toHaveBeenCalledWith(
         'push',
-        { remote: 'backup', setUpstream: false },
+        { remote: 'backup', branch: 'main', setUpstream: false },
         '/tmp/repo'
       )
     )
@@ -79,7 +81,26 @@ describe('ActionBar', () => {
     await waitFor(() =>
       expect(window.gitfreddo.invoke).toHaveBeenCalledWith(
         'push',
-        { remote: 'backup', setUpstream: true },
+        { remote: 'backup', branch: 'main', setUpstream: true },
+        '/tmp/repo'
+      )
+    )
+  })
+
+  it('pushes the current branch by name so the force-push dialog can name it', async () => {
+    mockRepo(['origin'])
+    const user = userEvent.setup()
+    renderWithProviders(<ActionBar />)
+    await waitFor(() =>
+      expect(window.gitfreddo.invoke).toHaveBeenCalledWith('branch.list', undefined, '/tmp/repo')
+    )
+    // Let the branch query resolve before pushing.
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    await user.click(screen.getByRole('button', { name: /^push$/i }))
+    await waitFor(() =>
+      expect(window.gitfreddo.invoke).toHaveBeenCalledWith(
+        'push',
+        { remote: 'origin', branch: 'main' },
         '/tmp/repo'
       )
     )

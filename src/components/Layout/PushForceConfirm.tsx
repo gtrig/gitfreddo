@@ -14,14 +14,19 @@ export function PushForceConfirm({ params, busy, onConfirm, onCancel }: PushForc
 
   if (!params) return null
 
-  const branch = params.branch?.trim() || t('actions.forcePush.currentBranch')
+  const branch = params.branch?.trim()
   const remote = params.remote?.trim() || t('actions.forcePush.theRemote')
+  // Without a branch name, use the sentence written for that case rather than
+  // dropping a phrase into "your local {{branch}}".
+  const message = branch
+    ? t('actions.forcePush.message', { branch, remote })
+    : t('actions.forcePush.messageNoBranch', { remote })
 
   return (
     <ConfirmDialog
       open
       title={t('actions.forcePush.title')}
-      message={t('actions.forcePush.message', { branch, remote })}
+      message={message}
       confirmLabel={t('actions.forcePush.confirm')}
       busy={busy}
       onConfirm={onConfirm}
