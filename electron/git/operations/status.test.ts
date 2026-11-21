@@ -8,6 +8,7 @@ import {
   classifyPorcelainV2Line,
   parseCleanPreviewOutput,
   parsePorcelainV2Line,
+  commitCreate,
   stageAdd,
   stageReset,
   workingClean,
@@ -33,7 +34,8 @@ const cachedNames = (repo: string) =>
   execSync('git diff --cached --name-only', { cwd: repo, encoding: 'utf8' }).trim()
 
 describe('workingStatus path and upstream handling', () => {
-  it('keeps leading and trailing spaces in untracked file names', async () => {
+  // Windows does not allow file names that end with a space.
+  it.skipIf(process.platform === 'win32')('keeps leading and trailing spaces in untracked file names', async () => {
     const repo = newRepo('gf-status-spaces-')
     writeFileSync(join(repo, ' padded name '), 'x\n')
 
@@ -86,6 +88,18 @@ describe('stageAdd', () => {
   })
 })
 
+describe('commitCreate', () => {
+  it('returns the new commit hash on a branch with a non-ASCII name', async () => {
+    const repo = newRepo('gf-commit-unicode-')
+    execSync('git switch -q -c κλάδος', { cwd: repo })
+    writeFileSync(join(repo, 'README.md'), 'changed\n')
+    execSync('git add README.md', { cwd: repo })
+
+    const hash = await commitCreate(repo, 'git', 'Αλλαγή')
+    expect(hash).toBe(execSync('git rev-parse HEAD', { cwd: repo, encoding: 'utf8' }).trim())
+  })
+})
+
 describe('stageReset', () => {
   it('unstages everything on a branch with no commits yet', async () => {
     const repo = newRepo('gf-reset-unborn-', false)
@@ -121,6 +135,13 @@ describe('workingRemove', () => {
 
     await workingRemove(repo, 'git', ['README.md'], true)
     expect(existsSync(join(repo, 'README.md'))).toBe(false)
+  })
+
+  it('reports other git rm errors as they are', async () => {
+    const repo = newRepo('gf-remove-missing-')
+    await expect(workingRemove(repo, 'git', ['not-tracked.txt'])).rejects.toThrow(
+      /did not match any files/
+    )
   })
 
   it('removes a clean tracked file without forcing', async () => {
@@ -236,6 +257,12 @@ describe('parsePorcelainV2Line', () => {
     expect(at('SCM.')).toBe('ahead')
     expect(at('S.M.')).toBe('dirty')
     expect(at('S..U')).toBe('dirty')
+  })
+
+  it('marks a deleted submodule entry as initialized', () => {
+    expect(
+      parsePorcelainV2Line('1 D. N... 160000 000000 000000 abc 000 vendor/lib')?.submoduleStatus
+    ).toBe('initialized')
   })
 
   it('parses added, deleted, untracked, and conflicted files', () => {

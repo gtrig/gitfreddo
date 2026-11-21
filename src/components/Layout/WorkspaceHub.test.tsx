@@ -66,33 +66,92 @@ vi.mock('@/components/GitLab/RepoPicker', () => ({
 }))
 
 vi.mock('@/components/GitHub/CreateGitHubRepoModal', () => ({
-  CreateGitHubRepoModal: ({ open }: { open: boolean }) =>
-    open ? <div role="dialog">Create GitHub repo</div> : null
+  CreateGitHubRepoModal: ({
+    open,
+    onClose,
+    onCreated
+  }: {
+    open: boolean
+    onClose: () => void
+    onCreated: (repo: { cloneUrl: string }) => void
+  }) =>
+    open ? (
+      <div role="dialog">
+        Create GitHub repo
+        <button type="button" onClick={() => onCreated({ cloneUrl: 'https://github.com/me/new.git' })}>
+          Created
+        </button>
+        <button type="button" onClick={onClose}>
+          Close dialog
+        </button>
+      </div>
+    ) : null
 }))
 
 vi.mock('@/components/Bitbucket/CreateBitbucketRepoModal', () => ({
-  CreateBitbucketRepoModal: ({ open }: { open: boolean }) =>
-    open ? <div role="dialog">Create Bitbucket repo</div> : null
+  CreateBitbucketRepoModal: ({
+    open,
+    onClose,
+    onCreated
+  }: {
+    open: boolean
+    onClose: () => void
+    onCreated: (repo: { cloneUrl: string }) => void
+  }) =>
+    open ? (
+      <div role="dialog">
+        Create Bitbucket repo
+        <button type="button" onClick={() => onCreated({ cloneUrl: 'https://bitbucket.org/me/new.git' })}>
+          Created
+        </button>
+        <button type="button" onClick={onClose}>
+          Close dialog
+        </button>
+      </div>
+    ) : null
 }))
 
 vi.mock('@/components/GitLab/CreateGitlabRepoModal', () => ({
-  CreateGitlabRepoModal: ({ open }: { open: boolean }) =>
-    open ? <div role="dialog">Create GitLab repo</div> : null
+  CreateGitlabRepoModal: ({
+    open,
+    onClose,
+    onCreated
+  }: {
+    open: boolean
+    onClose: () => void
+    onCreated: (repo: { cloneUrl: string }) => void
+  }) =>
+    open ? (
+      <div role="dialog">
+        Create GitLab repo
+        <button type="button" onClick={() => onCreated({ cloneUrl: 'https://gitlab.com/me/new.git' })}>
+          Created
+        </button>
+        <button type="button" onClick={onClose}>
+          Close dialog
+        </button>
+      </div>
+    ) : null
 }))
 
 vi.mock('@/components/GitHub/ForkGitHubRepoModal', () => ({
   ForkGitHubRepoModal: ({
     open,
-    onForked
+    onForked,
+    onClose
   }: {
     open: boolean
     onForked: (repo: { cloneUrl: string }) => void
+    onClose: () => void
   }) =>
     open ? (
       <div role="dialog">
         Fork GitHub repo
         <button type="button" onClick={() => onForked({ cloneUrl: 'https://github.com/me/fork.git' })}>
           Fork
+        </button>
+        <button type="button" onClick={onClose}>
+          Close dialog
         </button>
       </div>
     ) : null
@@ -101,10 +160,12 @@ vi.mock('@/components/GitHub/ForkGitHubRepoModal', () => ({
 vi.mock('@/components/Bitbucket/ForkBitbucketRepoModal', () => ({
   ForkBitbucketRepoModal: ({
     open,
-    onForked
+    onForked,
+    onClose
   }: {
     open: boolean
     onForked: (repo: { cloneUrl: string }) => void
+    onClose: () => void
   }) =>
     open ? (
       <div role="dialog">
@@ -115,6 +176,9 @@ vi.mock('@/components/Bitbucket/ForkBitbucketRepoModal', () => ({
         >
           Fork
         </button>
+        <button type="button" onClick={onClose}>
+          Close dialog
+        </button>
       </div>
     ) : null
 }))
@@ -122,16 +186,21 @@ vi.mock('@/components/Bitbucket/ForkBitbucketRepoModal', () => ({
 vi.mock('@/components/GitLab/ForkGitlabRepoModal', () => ({
   ForkGitlabRepoModal: ({
     open,
-    onForked
+    onForked,
+    onClose
   }: {
     open: boolean
     onForked: (repo: { cloneUrl: string }) => void
+    onClose: () => void
   }) =>
     open ? (
       <div role="dialog">
         Fork GitLab repo
         <button type="button" onClick={() => onForked({ cloneUrl: 'https://gitlab.com/me/fork.git' })}>
           Fork
+        </button>
+        <button type="button" onClick={onClose}>
+          Close dialog
         </button>
       </div>
     ) : null
@@ -501,4 +570,94 @@ describe('WorkspaceHub', () => {
     await userEvent.click(screen.getByRole('button', { name: /^fork$/i }))
     expect(screen.getByLabelText(/repository url/i)).toHaveValue('https://gitlab.com/me/fork.git')
   })
+
+  it('closes the create-repository dialogs', async () => {
+    renderWithProviders(<WorkspaceHub variant="page" onOpen={vi.fn()} />)
+    for (const [button, title] of [
+      [/create on github/i, 'Create GitHub repo'],
+      [/create on bitbucket/i, 'Create Bitbucket repo'],
+      [/create on gitlab/i, 'Create GitLab repo']
+    ] as const) {
+      await userEvent.click(screen.getByRole('button', { name: button }))
+      expect(screen.getByText(title)).toBeInTheDocument()
+      await userEvent.click(screen.getByRole('button', { name: 'Close dialog' }))
+      expect(screen.queryByText(title)).not.toBeInTheDocument()
+    }
+  })
+
+  it('clones a newly created repository into the chosen folder and opens it', async () => {
+    const onOpen = vi.fn(async () => undefined)
+    const onClose = vi.fn()
+    renderWithProviders(<WorkspaceHub variant="modal" open onOpen={onOpen} onClose={onClose} />)
+    await userEvent.click(screen.getAllByText('Clone a repository')[0]!)
+    await userEvent.click(screen.getByRole('button', { name: /browse/i }))
+    await userEvent.click(screen.getByRole('button', { name: /^bitbucket$/i }))
+    await userEvent.click(screen.getByRole('button', { name: /create new repository/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Created' }))
+
+    await vi.waitFor(() =>
+      expect(window.gitfreddo.cloneRepository).toHaveBeenCalledWith(
+        'https://bitbucket.org/me/new.git',
+        '/tmp/clone-parent'
+      )
+    )
+    await vi.waitFor(() => expect(onOpen).toHaveBeenCalledWith('/tmp/cloned'))
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('asks for a folder before cloning a newly created repository', async () => {
+    window.gitfreddo = createGitFreddoMock({ getRecentRepos: vi.fn(async () => []) })
+    renderWithProviders(<WorkspaceHub variant="page" onOpen={vi.fn()} />)
+    await userEvent.click(screen.getByRole('button', { name: /create on github/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Created' }))
+    expect(await screen.findByText('Choose a parent folder first.')).toBeInTheDocument()
+  })
+
+  it('shows clone errors for a newly created repository', async () => {
+    window.gitfreddo = createGitFreddoMock({
+      getRecentRepos: vi.fn(async () => []),
+      pickDirectory: vi.fn(async () => '/tmp/clone-parent'),
+      cloneRepository: vi.fn(async () => {
+        throw new Error('remote hung up')
+      })
+    })
+    renderWithProviders(<WorkspaceHub variant="page" onOpen={vi.fn()} />)
+    await userEvent.click(screen.getAllByText('Clone a repository')[0]!)
+    await userEvent.click(screen.getByRole('button', { name: /browse/i }))
+    await userEvent.click(screen.getByRole('button', { name: /^github$/i }))
+    await userEvent.click(screen.getByRole('button', { name: /create new repository/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Created' }))
+    expect(await screen.findByText('remote hung up')).toBeInTheDocument()
+  })
+
+  it('forks Bitbucket URLs and closes the fork dialogs', async () => {
+    renderWithProviders(<WorkspaceHub variant="page" onOpen={vi.fn()} />)
+    await userEvent.click(screen.getAllByText('Clone a repository')[0]!)
+    const url = screen.getByLabelText(/repository url/i)
+    await userEvent.type(url, 'https://bitbucket.org/team/demo.git')
+    await userEvent.click(screen.getByRole('button', { name: /fork to my account/i }))
+    await userEvent.click(screen.getByRole('button', { name: /^fork$/i }))
+    expect(url).toHaveValue('https://bitbucket.org/me/fork.git')
+    await userEvent.click(screen.getByRole('button', { name: 'Close dialog' }))
+    expect(screen.queryByText('Fork Bitbucket repo')).not.toBeInTheDocument()
+
+    for (const repoUrl of ['https://gitlab.com/group/demo.git', 'https://github.com/octo/demo.git']) {
+      await userEvent.clear(url)
+      await userEvent.type(url, repoUrl)
+      await userEvent.click(screen.getByRole('button', { name: /fork to my account/i }))
+      await userEvent.click(screen.getByRole('button', { name: 'Close dialog' }))
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    }
+  })
+
+  it('opens a recent repository from a virtualized list', async () => {
+    const onOpen = vi.fn(async () => undefined)
+    window.gitfreddo = createGitFreddoMock({
+      getRecentRepos: vi.fn(async () => Array.from({ length: 55 }, (_, index) => `/tmp/repo-${index}`))
+    })
+    renderWithProviders(<WorkspaceHub variant="page" onOpen={onOpen} />)
+    await userEvent.click(await screen.findByRole('button', { name: /repo-7\b/i }))
+    expect(onOpen).toHaveBeenCalledWith('/tmp/repo-7')
+  })
 })
+

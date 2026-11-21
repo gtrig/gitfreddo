@@ -11,6 +11,8 @@ import { createGitFreddoMock } from '@/test/mocks/gitfreddo'
 import { useForgeContext } from '@/hooks/useForgeContext'
 import { useGitHubPullRequests } from '@/hooks/useGitHubPullRequests'
 import { useBitbucketPullRequests } from '@/hooks/useBitbucketPullRequests'
+import { useGitlabPullRequests } from '@/hooks/useGitlabPullRequests'
+import { useToastStore } from '@/stores/toast'
 
 vi.mock('@tanstack/react-virtual', () => ({
   useVirtualizer: vi.fn(({ count, estimateSize }: { count: number; estimateSize: () => number }) => ({
@@ -70,10 +72,83 @@ vi.mock('@/hooks/useGit', () => ({
   }))
 }))
 vi.mock('@/components/GitHub/CreatePrModal', () => ({
-  CreatePrModal: ({ open }: { open: boolean }) => (open ? <div role="dialog">Create PR</div> : null)
+  CreatePrModal: ({
+    open,
+    onClose,
+    onSubmit
+  }: {
+    open: boolean
+    onClose: () => void
+    onSubmit: (params: { title: string; body: string; head: string; base: string }) => Promise<void>
+  }) =>
+    open ? (
+      <div role="dialog">
+        Create PR
+        <button
+          type="button"
+          onClick={() => void onSubmit({ title: 'T', body: 'B', head: 'feature', base: 'main' })}
+        >
+          Submit PR
+        </button>
+        <button type="button" onClick={onClose}>
+          Close PR dialog
+        </button>
+      </div>
+    ) : null
 }))
 vi.mock('@/components/Bitbucket/CreatePrModal', () => ({
-  CreatePrModal: ({ open }: { open: boolean }) => (open ? <div role="dialog">Create PR</div> : null)
+  CreatePrModal: ({
+    open,
+    onClose,
+    onSubmit
+  }: {
+    open: boolean
+    onClose: () => void
+    onSubmit: (params: { title: string; body: string; head: string; base: string }) => Promise<void>
+  }) =>
+    open ? (
+      <div role="dialog">
+        Create PR
+        <button
+          type="button"
+          onClick={() => void onSubmit({ title: 'T', body: 'B', head: 'feature', base: 'main' })}
+        >
+          Submit PR
+        </button>
+        <button type="button" onClick={onClose}>
+          Close PR dialog
+        </button>
+      </div>
+    ) : null
+}))
+vi.mock('@/components/GitLab/CreatePrModal', () => ({
+  CreatePrModal: ({
+    open,
+    onClose,
+    onSubmit
+  }: {
+    open: boolean
+    onClose: () => void
+    onSubmit: (params: { title: string; body: string; head: string; base: string }) => Promise<void>
+  }) =>
+    open ? (
+      <div role="dialog">
+        Create PR
+        <button
+          type="button"
+          onClick={() => void onSubmit({ title: 'T', body: 'B', head: 'feature', base: 'main' })}
+        >
+          Submit PR
+        </button>
+        <button type="button" onClick={onClose}>
+          Close PR dialog
+        </button>
+      </div>
+    ) : null
+}))
+vi.mock('@/hooks/useGitlabPullRequests', () => ({
+  useGitlabPullRequests: vi.fn(() => ({ data: [], isLoading: false, error: null })),
+  useInvalidateGitlabPullRequests: vi.fn(() => vi.fn())
 }))
 
 describe('SidebarPullRequestsSection', () => {
@@ -331,4 +406,110 @@ describe('SidebarPullRequestsSection', () => {
     expect(screen.getByText(/#1 PR 1/)).toBeInTheDocument()
     expect(screen.getByText(/#55 PR 55/)).toBeInTheDocument()
   })
+
+  const pr = (number: number, title: string) => ({
+    number,
+    title,
+    state: 'open',
+    htmlUrl: `https://gitlab.com/t/r/-/merge_requests/${number}`,
+    repository: { owner: 't', repo: 'r' },
+    head: { ref: 'feature', sha: 'abc' },
+    base: { ref: 'main', sha: 'def' },
+    body: '',
+    draft: false,
+    mergeable: true,
+    user: 'test'
+  })
+
+  it.each([
+    ['github', 'githubCreatePullRequest'],
+    ['bitbucket', 'bitbucketCreatePullRequest'],
+    ['gitlab', 'gitlabCreatePullRequest']
+  ] as const)('creates a %s pull request, confirms it, and closes the dialog', async (provider, method) => {
+    vi.mocked(useForgeContext).mockReturnValue({
+      provider,
+      expectedProvider: provider,
+      connected: true,
+      login: 'testuser'
+    } as ReturnType<typeof useForgeContext>)
+    const show = vi.fn()
+    useToastStore.setState({ show })
+    window.gitfreddo = createGitFreddoMock({ [method]: vi.fn(async () => ({})) })
+
+    renderWithProviders(<SidebarPullRequestsSection />)
+    await userEvent.click(screen.getByRole('button', { name: /create pull request/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Submit PR' }))
+    await vi.waitFor(() =>
+      expect(window.gitfreddo[method]).toHaveBeenCalledWith('/tmp/repo', {
+        title: 'T',
+        body: 'B',
+        head: 'feature',
+        base: 'main'
+      })
+    )
+    await vi.waitFor(() => expect(show).toHaveBeenCalledWith(expect.any(String), 'success'))
+    await userEvent.click(screen.getByRole('button', { name: 'Close PR dialog' }))
+    expect(screen.queryByText('Create PR')).not.toBeInTheDocument()
+  })
+
+  it('merges GitLab merge requests from the context menu', async () => {
+    vi.mocked(useForgeContext).mockReturnValue({
+      provider: 'gitlab',
+      expectedProvider: 'gitlab',
+      connected: true,
+      login: 'testuser'
+    } as ReturnType<typeof useForgeContext>)
+    vi.mocked(useGitlabPullRequests).mockReturnValue({
+      data: [pr(9, 'GitLab MR')],
+      isLoading: false,
+      error: null
+    } as unknown as ReturnType<typeof useGitlabPullRequests>)
+    window.gitfreddo = createGitFreddoMock({ gitlabMergePullRequest: vi.fn(async () => undefined) })
+
+    renderWithProviders(<SidebarPullRequestsSection />)
+    await expandSection()
+    fireEvent.contextMenu(screen.getByText(/#9 GitLab MR/))
+    await userEvent.click(screen.getByRole('menuitem', { name: /merge commit/i }))
+    expect(window.gitfreddo.gitlabMergePullRequest).toHaveBeenCalledWith('/tmp/repo', 9, 'merge')
+  })
+
+  it('opens and merges pull requests from a virtualized list', async () => {
+    const onOpenPrDetail = vi.fn()
+    vi.mocked(useGitHubPullRequests).mockReturnValue({
+      data: Array.from({ length: 55 }, (_, index) => pr(index + 1, `PR ${index + 1}`)),
+      isLoading: false,
+      error: null
+    } as unknown as ReturnType<typeof useGitHubPullRequests>)
+    window.gitfreddo = createGitFreddoMock({ githubMergePullRequest: vi.fn(async () => undefined) })
+
+    renderWithProviders(<SidebarPullRequestsSection onOpenPrDetail={onOpenPrDetail} />)
+    await expandSection()
+    await userEvent.click(screen.getByText(/#3 PR 3$/))
+    expect(onOpenPrDetail).toHaveBeenCalled()
+    fireEvent.contextMenu(screen.getByText(/#3 PR 3$/))
+    await userEvent.click(screen.getByRole('menuitem', { name: /merge commit/i }))
+    expect(window.gitfreddo.githubMergePullRequest).toHaveBeenCalledWith('/tmp/repo', 3, 'merge')
+  })
+
+  it('opens Bitbucket pull requests externally from a virtualized list', async () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+    vi.mocked(useForgeContext).mockReturnValue({
+      provider: 'bitbucket',
+      expectedProvider: 'bitbucket',
+      connected: true,
+      login: 'testuser'
+    } as ReturnType<typeof useForgeContext>)
+    vi.mocked(useBitbucketPullRequests).mockReturnValue({
+      data: Array.from({ length: 55 }, (_, index) => pr(index + 1, `BB ${index + 1}`)),
+      isLoading: false,
+      error: null
+    } as unknown as ReturnType<typeof useBitbucketPullRequests>)
+
+    renderWithProviders(<SidebarPullRequestsSection />)
+    await expandSection()
+    await userEvent.click(screen.getByText(/#4 BB 4$/))
+    expect(openSpy).toHaveBeenCalledWith(expect.stringContaining('/4'), '_blank', 'noopener,noreferrer')
+    openSpy.mockRestore()
+  })
 })
+

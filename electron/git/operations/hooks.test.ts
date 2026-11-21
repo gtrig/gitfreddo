@@ -110,7 +110,9 @@ describe('hooks', () => {
 
     expect(existsSync(join(hooksDir, 'pre-commit'))).toBe(true)
     expect(existsSync(join(hooksDir, 'pre-commit.sample'))).toBe(true)
-    expect(isExecutable(join(hooksDir, 'pre-commit'))).toBe(true)
+    if (process.platform !== 'win32') {
+      expect(isExecutable(join(hooksDir, 'pre-commit'))).toBe(true)
+    }
   })
 
   it('re-enables your edited hook, not the sample, after disabling it', async () => {
@@ -207,6 +209,35 @@ describe('hooks', () => {
     const prePush = result.hooks.find((hook) => hook.name === 'pre-push')
     expect(prePush?.enabled).toBe(true)
     expect(prePush?.filename).toBe('pre-push')
+  })
+
+  it('reports a missing hook when reading or enabling it', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'gf-hooks-'))
+    initRepo(dir)
+    await expect(hooksRead(dir, 'git', 'post-nothing')).rejects.toThrow('Hook not found: post-nothing')
+    await expect(hooksEnable(dir, 'git', 'post-nothing')).rejects.toThrow('Hook not found: post-nothing')
+  })
+
+  it('ignores files in the hooks directory that are not hook names', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'gf-hooks-'))
+    initRepo(dir)
+    const { hooksDir } = await hooksList(dir, 'git')
+    for (const name of ['.disabled', '.sample', 'has space', 'has space.sample', 'has space.disabled']) {
+      writeFileSync(join(hooksDir, name), '#!/bin/sh\n')
+    }
+
+    const { hooks } = await hooksList(dir, 'git')
+    expect(hooks.some((hook) => hook.name.includes(' ') || hook.name === '')).toBe(false)
+  })
+
+  it('lists no hooks when core.hooksPath points to a missing directory', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'gf-hooks-'))
+    initRepo(dir)
+    execSync('git config core.hooksPath .missing-hooks', { cwd: dir, stdio: 'ignore' })
+
+    const result = await hooksList(dir, 'git')
+    expect(result.hooks).toEqual([])
+    expect(result.hooksDir).toContain('.missing-hooks')
   })
 
   it('rejects invalid hook names', async () => {

@@ -5,6 +5,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { useToastStore } from '@/stores/toast'
 import { renderWithProviders } from '@/test/render'
 import { createGitFreddoMock } from '@/test/mocks/gitfreddo'
 import { copyToClipboard } from '@/lib/clipboard'
@@ -26,8 +27,14 @@ vi.mock('@/lib/clipboard', () => ({
 }))
 
 vi.mock('@/components/Worktrees/AddWorktreeModal', () => ({
-  AddWorktreeModal: ({ open }: { open: boolean }) =>
-    open ? <div data-testid="add-worktree-modal" /> : null
+  AddWorktreeModal: ({ open, onClose }: { open: boolean; onClose: () => void }) =>
+    open ? (
+      <div data-testid="add-worktree-modal">
+        <button type="button" onClick={onClose}>
+          Close add worktree
+        </button>
+      </div>
+    ) : null
 }))
 
 const mainWorktree: GitWorktreeEntry = {
@@ -247,4 +254,44 @@ describe('WorktreesSection', () => {
     await userEvent.click(screen.getByRole('menuitem', { name: /prune stale worktrees/i }))
     expect(worktreePruneMutate).toHaveBeenCalledWith(undefined)
   })
+
+  it('reports other remove failures and closes the confirmation', async () => {
+    const show = vi.fn()
+    useToastStore.setState({ show })
+    worktreeRemoveMutate.mockRejectedValueOnce(new Error('permission denied'))
+    renderWithProviders(
+      <WorktreesSection worktrees={[featureWorktree]} filter="" isLoading={false} error={null} />
+    )
+    fireEvent.contextMenu(screen.getByRole('button', { name: /feature/i }))
+    await userEvent.click(screen.getByRole('menuitem', { name: /remove worktree/i }))
+    await userEvent.click(screen.getByRole('button', { name: /^remove$/i }))
+    await waitFor(() => expect(show).toHaveBeenCalledWith('permission denied', 'error'))
+    expect(screen.queryByRole('button', { name: /^remove$/i })).not.toBeInTheDocument()
+  })
+
+  it('cancels removing a worktree', async () => {
+    renderWithProviders(
+      <WorktreesSection worktrees={[featureWorktree]} filter="" isLoading={false} error={null} />
+    )
+    fireEvent.contextMenu(screen.getByRole('button', { name: /feature/i }))
+    await userEvent.click(screen.getByRole('menuitem', { name: /remove worktree/i }))
+    await userEvent.click(screen.getByRole('button', { name: /cancel/i }))
+    expect(worktreeRemoveMutate).not.toHaveBeenCalled()
+  })
+
+  it('opens a worktree in a tab from its menu and closes the add dialog', async () => {
+    renderWithProviders(
+      <WorktreesSection worktrees={[mainWorktree, featureWorktree]} filter="" isLoading={false} error={null} />
+    )
+    fireEvent.contextMenu(screen.getByRole('button', { name: /feature/i }))
+    await userEvent.click(screen.getByRole('menuitem', { name: /open in (new )?tab/i }))
+    await waitFor(() =>
+      expect(useWorkspaceStore.getState().openWorkspace).toHaveBeenCalledWith('/tmp/repo-feature')
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: /add worktree/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Close add worktree' }))
+    expect(screen.queryByTestId('add-worktree-modal')).not.toBeInTheDocument()
+  })
 })
+

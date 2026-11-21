@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
-import { cleanup, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { CommitPanel } from './CommitPanel'
 import { useWorkspaceStore } from '@/stores/workspace'
@@ -77,10 +77,12 @@ vi.mock('@/hooks/useGit', () => ({
 vi.mock('@/components/WorkingTree/ComposeCommitsModal', () => ({
   ComposeCommitsModal: ({
     open,
-    onUseInPanel
+    onUseInPanel,
+    onClose
   }: {
     open: boolean
     onUseInPanel: (proposal: { summary: string; description: string }) => void
+    onClose: () => void
   }) =>
     open ? (
       <div role="dialog">
@@ -90,12 +92,23 @@ vi.mock('@/components/WorkingTree/ComposeCommitsModal', () => ({
         >
           Use proposal
         </button>
+        <button type="button" onClick={onClose}>
+          Close compose
+        </button>
       </div>
     ) : null
 }))
 
 vi.mock('@/components/Stash/StashPushModal', () => ({
-  StashPushModal: ({ open }: { open: boolean }) => (open ? <div role="dialog">Stash modal</div> : null)
+  StashPushModal: ({ open, onClose }: { open: boolean; onClose: () => void }) =>
+    open ? (
+      <div role="dialog">
+        Stash modal
+        <button type="button" onClick={onClose}>
+          Close stash
+        </button>
+      </div>
+    ) : null
 }))
 
 const emptyWorking: GitWorkingStatus = {
@@ -439,4 +452,43 @@ describe('CommitPanel', () => {
       expect(showToast).toHaveBeenCalledWith('AI unavailable', 'error')
     })
   })
+
+  it('shows an error toast when composing with AI fails, and closes the compose dialog', async () => {
+    aiFillMutate.mockRejectedValueOnce(new Error('model offline'))
+    const working = { ...emptyWorking, staged: [{ path: 'src/auth.ts', status: 'added' as const }] }
+    renderWithProviders(<CommitPanel working={working} />)
+    await userEvent.click(screen.getByRole('button', { name: /compose commits/i }))
+    await waitFor(() => expect(showToast).toHaveBeenCalledWith('model offline', 'error'))
+
+    aiFillMutate.mockResolvedValueOnce(JSON.stringify([{ message: 'feat: auth', files: ['src/auth.ts'] }]))
+    await userEvent.click(screen.getByRole('button', { name: /compose commits/i }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Close compose' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('clears the typed message when the stash dialog closes after using it', async () => {
+    renderWithProviders(
+      <CommitPanel
+        working={{ ...emptyWorking, isClean: false, unstaged: [{ path: 'dirty.txt', status: 'modified' }] }}
+      />
+    )
+    await userEvent.type(screen.getByPlaceholderText('Commit summary'), 'WIP login')
+    await userEvent.type(screen.getByPlaceholderText(/description/i), 'notes')
+    await userEvent.click(screen.getByRole('button', { name: /create stash/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Close stash' }))
+    expect(screen.getByPlaceholderText('Commit summary')).toHaveValue('')
+    expect(screen.getByPlaceholderText(/description/i)).toHaveValue('')
+  })
+
+  it('resizes the commit panel with its drag handle', () => {
+    renderWithProviders(
+      <CommitPanel working={{ ...emptyWorking, staged: [{ path: 'a.txt', status: 'added' }] }} />
+    )
+    const handle = screen.getAllByRole('separator')[0]!
+    fireEvent.mouseDown(handle, { clientY: 300 })
+    fireEvent.mouseMove(window, { clientY: 260 })
+    fireEvent.mouseUp(window, { clientY: 260 })
+    expect(screen.getByTestId('commit-panel')).toBeInTheDocument()
+  })
 })
+

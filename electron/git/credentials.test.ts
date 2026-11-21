@@ -116,7 +116,10 @@ describe('prepareGitEnv', () => {
     expect(env.GIT_ASKPASS).toContain('forge-askpass.cjs')
     expect(env.gitfreddo_GITHUB_TOKEN).toBeUndefined()
     expect(secretsPath.startsWith('/tmp/gitfreddo-test-askpass-data')).toBe(false)
-    expect(statSync(secretsPath).mode & 0o777).toBe(0o600)
+    if (process.platform !== 'win32') {
+      // POSIX permission bits; Windows has no equivalent mode.
+      expect(statSync(secretsPath).mode & 0o777).toBe(0o600)
+    }
     expect(JSON.parse(await readFile(secretsPath, 'utf8')).githubToken).toBe('gho_test_token')
 
     await cleanup()

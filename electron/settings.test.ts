@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { mkdtemp, readFile, writeFile, access, readdir } from 'fs/promises'
+import { chmod, mkdtemp, readFile, writeFile, access, readdir } from 'fs/promises'
 import { join } from 'path'
 import { tmpdir } from 'os'
 
@@ -116,6 +116,50 @@ describe('settings persistence', () => {
     expect(onDisk.theme).toBe('iced-matcha')
     expect(onDisk.editorCommand).toBe('code')
   })
+
+  it('maps the legacy pullRebase flag to a pull mode', async () => {
+    await writeFile(join(settingsDir, 'settings.json'), JSON.stringify({ pullRebase: true }), 'utf8')
+    const { loadSettings } = await loadModule()
+    expect((await loadSettings()).pullMode).toBe('rebase')
+  })
+
+  it('keeps the plaintext AI key and warns when moving it to OS encryption fails', async () => {
+    await writeFile(
+      join(settingsDir, 'settings.json'),
+      JSON.stringify({ aiApiKey: 'sk-legacy' }),
+      'utf8'
+    )
+    vi.mocked(saveAiApiKey).mockRejectedValueOnce(new Error('keyring locked'))
+    const { loadSettings } = await loadModule()
+
+    expect((await loadSettings()).aiApiKey).toBe('sk-legacy')
+    expect(emitLog).toHaveBeenCalledWith(
+      'app',
+      'warn',
+      'Failed to migrate AI API key into OS encryption',
+      'keyring locked'
+    )
+  })
+
+  it.skipIf(process.platform === 'win32' || process.getuid?.() === 0)(
+    'warns when an unreadable settings.json cannot be backed up',
+    async () => {
+      await writeFile(join(settingsDir, 'settings.json'), '{broken', 'utf8')
+      await chmod(settingsDir, 0o500)
+      try {
+        const { loadSettings } = await loadModule()
+        await loadSettings()
+      } finally {
+        await chmod(settingsDir, 0o700)
+      }
+      expect(emitLog).toHaveBeenCalledWith(
+        'app',
+        'warn',
+        'Could not back up the unreadable settings file',
+        expect.any(String)
+      )
+    }
+  )
 
   it('does not log when settings.json is missing', async () => {
     const { loadSettings } = await loadModule()

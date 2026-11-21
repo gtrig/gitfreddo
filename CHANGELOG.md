@@ -7,6 +7,12 @@ Session notes for commits/PRs go under `[Unreleased]` until a git tag cuts a rel
 
 ## [Unreleased]
 
+### 2026-11-21 — Release blockers: coverage back to 95%, Windows-safe tests
+
+- **Why:** The release workflow runs `test:coverage` on Linux, macOS and Windows. After the Vitest 3 → 5 upgrade, line coverage measured 91.4% against the 95% threshold (v0.5.2 measured 95.44% under Vitest 3; the new version counts lines differently), and some new tests relied on Unix-only behavior.
+- **What:** About 230 new tests covering the large gaps (working tree actions, branch and remote menus, commit timeline dialogs, sidebar pull requests and issues, workspace hub, compose/analyze flows, repo-manager wiring, merge status during rebase/cherry-pick, submodule diffs, LLM context and AI parser fallbacks, settings, hooks). Line coverage is 95.17% with thresholds unchanged. POSIX-only assertions (file modes, executable bits, trailing-space file names, read-only directories) are skipped on Windows.
+- **Bugs found along the way:** an old `settings.json` with `pullRebase: true` lost its rebase pull mode because defaults were merged first; `buildUnifiedDiff` returned an empty diff for a single replaced line (now built from the LCS edit script, with standard hunk headers).
+
 ### 2026-11-21 — Plurals, force-push wording, Compose button layout
 
 - **Why:** Manual checks in the running app showed "Create 2 commit", a force-push dialog reading "your local the current branch", and the Compose commits button painted over the Commit button.

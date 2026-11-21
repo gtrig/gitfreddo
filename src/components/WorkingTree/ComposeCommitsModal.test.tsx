@@ -5,6 +5,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { cleanup, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { useToastStore } from '@/stores/toast'
 import { renderWithProviders } from '@/test/render'
 import { createGitFreddoMock } from '@/test/mocks/gitfreddo'
 import { ComposeCommitsModal } from './ComposeCommitsModal'
@@ -114,4 +115,41 @@ describe('ComposeCommitsModal', () => {
     expect(onUseInPanel).toHaveBeenCalledWith(proposals[0])
     expect(onClose).toHaveBeenCalled()
   })
+
+  it('requires a summary on every commit before creating or using one', async () => {
+    const show = vi.fn()
+    useToastStore.setState({ show })
+    renderWithProviders(
+      <ComposeCommitsModal open proposals={proposals} onClose={vi.fn()} onUseInPanel={vi.fn()} />
+    )
+    await userEvent.clear(screen.getAllByPlaceholderText(/commit summary/i)[0]!)
+    await userEvent.click(screen.getByRole('button', { name: /create 2 commits/i }))
+    expect(show).toHaveBeenCalledWith('Every commit needs a summary.', 'error')
+    await userEvent.click(screen.getAllByRole('button', { name: /use in commit panel/i })[0]!)
+    expect(show).toHaveBeenLastCalledWith(expect.any(String), 'error')
+    expect(composeMutate).not.toHaveBeenCalled()
+    expect(stageResetMutate).not.toHaveBeenCalled()
+  })
+
+  it('edits a description and reports compose and staging failures', async () => {
+    const show = vi.fn()
+    useToastStore.setState({ show })
+    const onClose = vi.fn()
+    renderWithProviders(
+      <ComposeCommitsModal open proposals={proposals} onClose={onClose} onUseInPanel={vi.fn()} />
+    )
+    const description = screen.getAllByPlaceholderText(/optional description/i)[1]!
+    await userEvent.type(description, 'Why')
+    expect(description).toHaveValue('Why')
+
+    composeMutate.mockRejectedValueOnce(new Error('Created 0 of 2 commits: hook failed'))
+    await userEvent.click(screen.getByRole('button', { name: /create 2 commits/i }))
+    await waitFor(() => expect(show).toHaveBeenCalledWith('Created 0 of 2 commits: hook failed', 'error'))
+    expect(onClose).not.toHaveBeenCalled()
+
+    stageResetMutate.mockRejectedValueOnce(new Error('index locked'))
+    await userEvent.click(screen.getAllByRole('button', { name: /use in commit panel/i })[0]!)
+    await waitFor(() => expect(show).toHaveBeenCalledWith('index locked', 'error'))
+  })
 })
+

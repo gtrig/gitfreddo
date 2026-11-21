@@ -162,4 +162,46 @@ describe('AddWorktreeModal', () => {
       expect(show).toHaveBeenCalledWith('path already exists', 'error')
     })
   })
+
+  const commitHash = 'abc1234567890abcdef1234567890abcdef123456'
+
+  it('creates a detached worktree at a commit when no branch name is given', async () => {
+    renderWithProviders(
+      <AddWorktreeModal open initialCommit={commitHash} initialCommitShort="abc1234" onClose={vi.fn()} />
+    )
+    const [pathInput, branchInput] = screen.getAllByRole('textbox')
+    await userEvent.clear(pathInput!)
+    await userEvent.type(pathInput!, '/tmp/at-commit')
+    await userEvent.clear(branchInput!)
+    await userEvent.click(screen.getByRole('button', { name: /show advanced/i }))
+    await userEvent.click(screen.getByLabelText(/detached head/i))
+    await userEvent.click(screen.getByRole('button', { name: /add worktree/i }))
+
+    await waitFor(() =>
+      expect(worktreeAddMutate).toHaveBeenCalledWith({ path: '/tmp/at-commit', detach: true, commit: commitHash })
+    )
+  })
+
+  it('switches between existing and new branch modes and picks another branch', async () => {
+    renderWithProviders(
+      <AddWorktreeModal open initialCommit={commitHash} initialCommitShort="abc1234" onClose={vi.fn()} />
+    )
+    const radios = screen.getAllByRole('radio')
+    await userEvent.click(radios[0]!)
+    await userEvent.selectOptions(screen.getByRole('combobox'), 'feature')
+    expect(screen.getByRole('combobox')).toHaveValue('feature')
+    await userEvent.click(screen.getByRole('button', { name: /add worktree/i }))
+    await waitFor(() =>
+      expect(worktreeAddMutate).toHaveBeenCalledWith(expect.objectContaining({ branch: 'feature' }))
+    )
+  })
+
+  it('leaves the path empty when the repository root is unknown', async () => {
+    const { useRepoStatus } = await import('@/hooks/useGit')
+    vi.mocked(useRepoStatus).mockReturnValueOnce({ data: undefined, isLoading: false, error: null } as never)
+    vi.mocked(useRepoStatus).mockReturnValueOnce({ data: undefined, isLoading: false, error: null } as never)
+    renderWithProviders(<AddWorktreeModal open onClose={vi.fn()} />)
+    expect(screen.getAllByRole('textbox').some((input) => (input as HTMLInputElement).value === '')).toBe(true)
+  })
 })
+

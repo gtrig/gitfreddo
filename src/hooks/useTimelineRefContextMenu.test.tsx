@@ -9,6 +9,7 @@ import { useTimelineRefContextMenu } from './useTimelineRefContextMenu'
 import { clickAllMenuItems } from '@/test/contextMenuTestUtils'
 import { createGitFreddoMock } from '@/test/mocks/gitfreddo'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { useToastStore } from '@/stores/toast'
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key })
@@ -131,4 +132,76 @@ describe('useTimelineRefContextMenu', () => {
     expect(result.current.prBranch).toBe('feature')
     expect(onSelectCommit).toHaveBeenCalled()
   })
+
+  function renderMenu() {
+    const feature = {
+      name: 'feature',
+      head: 'def',
+      isCurrent: false,
+      isRemote: false,
+      upstream: 'origin/feature',
+      ahead: 1,
+      behind: 0
+    }
+    return renderHook(
+      () =>
+        useTimelineRefContextMenu({
+          connected: true,
+          branches: [...branches, feature],
+          tags,
+          remotes,
+          currentBranch: 'main',
+          onSelectCommit: vi.fn(),
+          onMerge: vi.fn(),
+          onMergeCurrentInto: vi.fn()
+        }),
+      { wrapper }
+    )
+  }
+
+  it('runs every action for another branch, a remote branch and a tag', async () => {
+    const show = vi.fn()
+    useToastStore.setState({ show })
+    const { result } = renderMenu()
+    const refs = [
+      { kind: 'branch', label: 'feature', fullRef: 'refs/heads/feature', sourceOrder: 0 },
+      { kind: 'remote', label: 'origin/main', fullRef: 'refs/remotes/origin/main', sourceOrder: 1 },
+      { kind: 'tag', label: 'v1', fullRef: 'refs/tags/v1', sourceOrder: 2 }
+    ] as const
+    for (const ref of refs) {
+      act(() => {
+        result.current.openRefMenu(mouseEvent(), ref as never, 'def')
+      })
+      await act(async () => {
+        clickAllMenuItems(result.current.menuState!.items)
+      })
+    }
+    expect(mutateAsync).toHaveBeenCalledWith({ branch: 'feature', ffOnly: true })
+    expect(mutateAsync).toHaveBeenCalledWith({ branch: 'feature', toRef: 'main' })
+    expect(mutateAsync).toHaveBeenCalledWith({ branch: 'feature' })
+    expect(mutateAsync).toHaveBeenCalledWith(expect.objectContaining({ name: 'v1' }))
+    await vi.waitFor(() => expect(show).toHaveBeenCalledWith(expect.any(String), 'success'))
+  })
+
+  it('reports failed fast-forwards', async () => {
+    const show = vi.fn()
+    useToastStore.setState({ show })
+    mutateAsync.mockRejectedValue(new Error('not possible'))
+    const { result } = renderMenu()
+    act(() => {
+      result.current.openRefMenu(
+        mouseEvent(),
+        { kind: 'branch', label: 'feature', fullRef: 'refs/heads/feature', sourceOrder: 0 } as never,
+        'def'
+      )
+    })
+    await act(async () => {
+      for (const item of result.current.menuState!.items) {
+        if (/fast-forward/.test(item.id)) item.onClick()
+      }
+    })
+    await vi.waitFor(() => expect(show).toHaveBeenCalledWith('not possible', 'error'))
+    mutateAsync.mockResolvedValue(undefined)
+  })
 })
+

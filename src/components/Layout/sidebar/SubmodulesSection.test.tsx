@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { cleanup, fireEvent, screen } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { SubmodulesSection } from './SubmodulesSection'
 import { useWorkspaceStore } from '@/stores/workspace'
@@ -40,11 +40,21 @@ vi.mock('@/hooks/useGitMutations', () => ({
 vi.mock('@/components/Submodules/EditSubmoduleUrlModal', () => ({
   EditSubmoduleUrlModal: ({
     open,
-    submodulePath
+    submodulePath,
+    onClose
   }: {
     open: boolean
     submodulePath: string
-  }) => (open ? <div role="dialog">Edit URL for {submodulePath}</div> : null)
+    onClose: () => void
+  }) =>
+    open ? (
+      <div role="dialog">
+        Edit URL for {submodulePath}
+        <button type="button" onClick={onClose}>
+          Close edit URL
+        </button>
+      </div>
+    ) : null
 }))
 
 describe('SubmodulesSection', () => {
@@ -299,4 +309,43 @@ describe('SubmodulesSection', () => {
     await userEvent.click(screen.getByRole('menuitem', { name: /update all/i }))
     expect(showToast).toHaveBeenCalledWith('Update failed', 'error')
   })
+
+  it('offers a forced remove after a failed remove, and cancels it', async () => {
+    submoduleRemove.mockRejectedValueOnce(new Error('has local changes'))
+    renderWithProviders(
+      <SubmodulesSection submodules={[submodule]} filter="" isLoading={false} error={null} />
+    )
+    fireEvent.contextMenu(screen.getByText('vendor/lib'))
+    await userEvent.click(screen.getByRole('menuitem', { name: /^remove/i }))
+    await userEvent.click(screen.getByRole('button', { name: /^remove$/i }))
+    await waitFor(() => expect(showToast).toHaveBeenCalledWith('has local changes', 'error'))
+    await userEvent.click(screen.getByRole('button', { name: /cancel/i }))
+    expect(submoduleRemove).toHaveBeenCalledTimes(1)
+  })
+
+  it('cancels deinitializing a submodule', async () => {
+    renderWithProviders(
+      <SubmodulesSection submodules={[submodule]} filter="" isLoading={false} error={null} />
+    )
+    fireEvent.contextMenu(screen.getByText('vendor/lib'))
+    await userEvent.click(screen.getByRole('menuitem', { name: /deinitialize/i }))
+    await userEvent.click(screen.getByRole('button', { name: /cancel/i }))
+    expect(submoduleDeinit).not.toHaveBeenCalled()
+  })
+
+  it('reports a failed bulk sync and closes the edit URL dialog', async () => {
+    submoduleSync.mockRejectedValueOnce(new Error('network down'))
+    renderWithProviders(
+      <SubmodulesSection submodules={[submodule]} filter="" isLoading={false} error={null} />
+    )
+    await userEvent.click(screen.getByRole('button', { name: /submodules actions/i }))
+    await userEvent.click(screen.getByRole('menuitem', { name: /sync all/i }))
+    await waitFor(() => expect(showToast).toHaveBeenCalledWith('network down', 'error'))
+
+    fireEvent.contextMenu(screen.getByText('vendor/lib'))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Set URL…' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Close edit URL' }))
+    expect(screen.queryByText(/Edit URL for/)).not.toBeInTheDocument()
+  })
 })
+

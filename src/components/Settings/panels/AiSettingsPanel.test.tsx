@@ -57,4 +57,32 @@ describe('AiSettingsPanel', () => {
 
     expect(screen.getByText('Analyze instructions')).toBeInTheDocument()
   })
+
+  it('reports every field edit and provider switch through onChange', async () => {
+    const onChange = vi.fn()
+    renderWithProviders(
+      <AiSettingsPanel form={{ ...defaultMockSettings, aiEnabled: true, aiProvider: 'api' }} onChange={onChange} />
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Local LLM' }))
+    expect(onChange).toHaveBeenCalledWith({ aiProvider: 'local' })
+
+    const fields = [...screen.getAllByRole('textbox'), ...document.querySelectorAll('input[type="password"]')]
+    for (const field of fields) {
+      await userEvent.type(field as HTMLElement, 'x')
+    }
+    const keys = new Set(onChange.mock.calls.flatMap(([patch]) => Object.keys(patch as object)))
+    for (const key of [
+      'aiBaseUrl',
+      'aiApiKey',
+      'aiModel',
+      'aiSystemInstructions',
+      'aiCommitInstructions',
+      'aiStashInstructions',
+      'aiConflictInstructions',
+      'aiAnalyzeInstructions'
+    ]) {
+      expect(keys).toContain(key)
+    }
+  })
 })
+

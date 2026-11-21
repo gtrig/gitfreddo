@@ -276,4 +276,79 @@ describe('useTimelineDragSelect', () => {
 
     expect(raf).toHaveBeenCalled()
   })
+
+  it('selects the stash when a drag ends on a stash row', async () => {
+    const stashHash = 'c'.repeat(40)
+    const commits = [
+      makeCommit({ hash: 'b'.repeat(40), shortHash: 'bbbbbbb', subject: 'Second', parents: ['a'.repeat(40)] }),
+      makeCommit({ hash: stashHash, shortHash: 'ccccccc', subject: 'WIP', refs: ['stash'], parents: ['b'.repeat(40)] })
+    ]
+    const stashes: GitStashEntry[] = [{ index: 2, hash: stashHash, message: 'saved', branch: 'main' }]
+    const user = userEvent.setup()
+    const { overlay, actions } = renderDragHarness({ commits, stashes })
+
+    await user.pointer([
+      { keys: '[MouseLeft>]', target: overlay, coords: { clientY: 110 } },
+      { coords: { clientY: 138 } },
+      { keys: '[/MouseLeft]' }
+    ])
+    expect(actions.selectStash).toHaveBeenCalledWith(2, stashHash)
+  })
+
+  it('scrolls the container while dragging near its top or bottom edge', async () => {
+    let pending: FrameRequestCallback | null = null
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn((callback: FrameRequestCallback) => {
+        pending = callback
+        return 7
+      })
+    )
+    const runFrame = () => {
+      const callback = pending
+      pending = null
+      callback?.(0)
+    }
+    const user = userEvent.setup()
+    const { overlay, scroll } = renderDragHarness()
+    scroll.scrollTop = 100
+
+    await user.pointer([
+      { keys: '[MouseLeft>]', target: overlay, coords: { clientY: 110 } },
+      { coords: { clientY: 4 } }
+    ])
+    runFrame()
+    expect(scroll.scrollTop).toBeLessThan(100)
+
+    await user.pointer({ coords: { clientY: 198 } })
+    const before = scroll.scrollTop
+    runFrame()
+    expect(scroll.scrollTop).toBeGreaterThanOrEqual(before)
+    await user.pointer({ keys: '[/MouseLeft]' })
+    expect(cancelAnimationFrame).toHaveBeenCalled()
+  })
+
+  it('releases pointer capture when the pointer is cancelled', () => {
+    const { overlay } = renderDragHarness()
+    fireEvent.pointerDown(overlay, { clientY: 110, pointerId: 3, button: 0 })
+    fireEvent.pointerCancel(overlay, { pointerId: 3 })
+    expect(overlay.releasePointerCapture).toHaveBeenCalled()
+  })
+
+  it('ignores the click and double-click that end a drag', async () => {
+    const onCommitDoubleClick = vi.fn()
+    const user = userEvent.setup()
+    const { overlay, actions } = renderDragHarness({ onCommitDoubleClick })
+
+    await user.pointer([
+      { keys: '[MouseLeft>]', target: overlay, coords: { clientY: 110 } },
+      { coords: { clientY: 138 } }
+    ])
+    fireEvent.doubleClick(overlay, { clientY: 138 })
+    expect(onCommitDoubleClick).not.toHaveBeenCalled()
+    actions.selectTimelineNode.mockClear()
+    fireEvent.click(overlay, { clientY: 138 })
+    expect(actions.selectTimelineNode).not.toHaveBeenCalled()
+  })
 })
+

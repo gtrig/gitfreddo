@@ -86,42 +86,42 @@ vi.mock('@/components/Branches/MergeBranchDialog', () => ({
   )
 }))
 vi.mock('@/components/Forge/ForgeCreatePrModal', () => ({
-  ForgeCreatePrModal: ({ open, defaultHead }: { open: boolean; defaultHead: string }) =>
-    open ? <div data-testid="create-pr-modal">{defaultHead}</div> : null
+  ForgeCreatePrModal: ({ open, defaultHead , onClose}: { onClose?: () => void; open: boolean; defaultHead: string }) =>
+    open ? <div data-testid="create-pr-modal">{defaultHead}<button type="button" onClick={onClose}>close create-pr-modal</button></div> : null
 }))
 vi.mock('@/components/Worktrees/AddWorktreeModal', () => ({
   AddWorktreeModal: ({
     open,
     initialBranch,
     initialCommit
-  }: {
+  , onClose}: { onClose?: () => void;
     open: boolean
     initialBranch?: string
     initialCommit?: string
   }) =>
     open ? (
-      <div data-testid="add-worktree-modal">{initialBranch ?? initialCommit}</div>
+      <div data-testid="add-worktree-modal">{initialBranch ?? initialCommit}<button type="button" onClick={onClose}>close add-worktree-modal</button></div>
     ) : null
 }))
 vi.mock('@/components/Branches/CheckoutRemoteModal', () => ({
-  CheckoutRemoteModal: ({ open, remoteBranch }: { open: boolean; remoteBranch: string }) =>
-    open ? <div data-testid="checkout-remote-modal">{remoteBranch}</div> : null
+  CheckoutRemoteModal: ({ open, remoteBranch , onClose}: { onClose?: () => void; open: boolean; remoteBranch: string }) =>
+    open ? <div data-testid="checkout-remote-modal">{remoteBranch}<button type="button" onClick={onClose}>close checkout-remote-modal</button></div> : null
 }))
 vi.mock('@/components/Branches/CreateBranchModal', () => ({
   CreateBranchModal: ({ open, startPoint }: { open: boolean; startPoint?: string }) =>
     open ? <div data-testid="create-branch-modal">{startPoint}</div> : null
 }))
 vi.mock('@/components/Branches/RenameBranchModal', () => ({
-  RenameBranchModal: ({ open, currentName }: { open: boolean; currentName: string }) =>
-    open ? <div data-testid="rename-branch-modal">{currentName}</div> : null
+  RenameBranchModal: ({ open, currentName , onClose}: { onClose?: () => void; open: boolean; currentName: string }) =>
+    open ? <div data-testid="rename-branch-modal">{currentName}<button type="button" onClick={onClose}>close rename-branch-modal</button></div> : null
 }))
 vi.mock('@/components/Tags/RenameTagModal', () => ({
-  RenameTagModal: ({ open, currentName }: { open: boolean; currentName: string }) =>
-    open ? <div data-testid="rename-tag-modal">{currentName}</div> : null
+  RenameTagModal: ({ open, currentName , onClose}: { onClose?: () => void; open: boolean; currentName: string }) =>
+    open ? <div data-testid="rename-tag-modal">{currentName}<button type="button" onClick={onClose}>close rename-tag-modal</button></div> : null
 }))
 vi.mock('@/components/Branches/SetUpstreamModal', () => ({
-  SetUpstreamModal: ({ open, branchName }: { open: boolean; branchName: string }) =>
-    open ? <div data-testid="set-upstream-modal">{branchName}</div> : null
+  SetUpstreamModal: ({ open, branchName , onClose}: { onClose?: () => void; open: boolean; branchName: string }) =>
+    open ? <div data-testid="set-upstream-modal">{branchName}<button type="button" onClick={onClose}>close set-upstream-modal</button></div> : null
 }))
 vi.mock('@/components/Branches/RebaseSequenceModal', () => ({
   RebaseSequenceModal: ({ open }: { open: boolean }) =>
@@ -136,28 +136,35 @@ vi.mock('@/components/DetailPanel/DeleteCommitModal', () => ({
     open ? <div data-testid="delete-commit-modal">{action}</div> : null
 }))
 vi.mock('@/components/Tags/DeleteTagModal', () => ({
-  DeleteTagModal: ({ open, tag }: { open: boolean; tag: { name: string } }) =>
-    open ? <div data-testid="delete-tag-modal">{tag.name}</div> : null
+  DeleteTagModal: ({ open, tag , onClose}: { onClose?: () => void; open: boolean; tag: { name: string } }) =>
+    open ? <div data-testid="delete-tag-modal">{tag.name}<button type="button" onClick={onClose}>close delete-tag-modal</button></div> : null
 }))
 vi.mock('@/components/DetailPanel/RemoveStaleBranchesModal', () => ({
   RemoveStaleBranchesModal: ({ open }: { open: boolean }) =>
     open ? <div data-testid="remove-stale-modal">stale</div> : null
 }))
 vi.mock('@/components/DetailPanel/RewordCommitModal', () => ({
-  RewordCommitModal: ({ open, commit }: { open: boolean; commit: { subject: string } }) =>
-    open ? <div data-testid="reword-commit-modal">{commit.subject}</div> : null
+  RewordCommitModal: ({ open, commit , onClose}: { onClose?: () => void; open: boolean; commit: { subject: string } }) =>
+    open ? <div data-testid="reword-commit-modal">{commit.subject}<button type="button" onClick={onClose}>close reword-commit-modal</button></div> : null
 }))
 vi.mock('@/components/DetailPanel/ExplainCommitWithAi', () => ({
-  ExplainCommitModal: ({ open }: { open: boolean }) =>
-    open ? <div data-testid="explain-commit-modal">explain</div> : null
+  ExplainCommitModal: ({ open , onClose}: { onClose?: () => void; open: boolean }) =>
+    open ? <div data-testid="explain-commit-modal">explain<button type="button" onClick={onClose}>close explain-commit-modal</button></div> : null
 }))
 vi.mock('@/components/DetailPanel/AddNoteModal', () => ({
-  AddNoteModal: ({ open, commit }: { open: boolean; commit: { subject: string } }) =>
-    open ? <div data-testid="add-note-modal">{commit.subject}</div> : null
+  AddNoteModal: ({ open, commit , onClose}: { onClose?: () => void; open: boolean; commit: { subject: string } }) =>
+    open ? <div data-testid="add-note-modal">{commit.subject}<button type="button" onClick={onClose}>close add-note-modal</button></div> : null
 }))
 vi.mock('@/components/History/PickMergeParentModal', () => ({
-  PickMergeParentModal: ({ open }: { open: boolean }) =>
-    open ? <div role="dialog">Pick merge parent</div> : null
+  PickMergeParentModal: ({ open, onClose }: { open: boolean; onClose?: () => void }) =>
+    open ? (
+      <div role="dialog">
+        Pick merge parent
+        <button type="button" onClick={onClose}>
+          close pick-merge-parent
+        </button>
+      </div>
+    ) : null
 }))
 vi.mock('@/components/Ui/Modal', async () => {
   const actual = await vi.importActual<typeof import('@/components/Ui/Modal')>('@/components/Ui/Modal')
@@ -166,10 +173,12 @@ vi.mock('@/components/Ui/Modal', async () => {
     ConfirmDialog: ({
       open,
       onConfirm,
+      onCancel,
       message
     }: {
       open: boolean
       onConfirm: () => void | Promise<void>
+      onCancel?: () => void
       message: string
     }) =>
       open ? (
@@ -178,10 +187,19 @@ vi.mock('@/components/Ui/Modal', async () => {
           <button type="button" onClick={() => void onConfirm()}>
             Confirm delete
           </button>
+          <button type="button" onClick={onCancel}>
+            Cancel confirm
+          </button>
         </div>
       ) : null
   }
 })
+
+/** Close a mocked dialog through its onClose and check it is gone. */
+async function closeDialog(testId: string) {
+  await userEvent.click(screen.getByRole('button', { name: `close ${testId}` }))
+  expect(screen.queryByTestId(testId)).not.toBeInTheDocument()
+}
 
 const checkoutMutate = vi.fn(async () => undefined)
 const stashApplyMutate = vi.fn(async () => undefined)
@@ -698,6 +716,7 @@ describe('CommitTimeline', () => {
     fireEvent.contextMenu(screen.getByText('feature'))
     await userEvent.click(screen.getByRole('menuitem', { name: /^rename/i }))
     expect(screen.getByTestId('rename-branch-modal')).toHaveTextContent('feature')
+    await closeDialog('rename-branch-modal')
   })
 
   it('renders many commits through the virtualizer window', async () => {
@@ -819,6 +838,8 @@ describe('CommitTimeline', () => {
     fireEvent.contextMenu(overlay, { clientY: 214 })
     await userEvent.click(screen.getByRole('menuitem', { name: /cherry-pick merge12 onto main/i }))
     expect(screen.getByText('Pick merge parent')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'close pick-merge-parent' }))
+    expect(screen.queryByText('Pick merge parent')).not.toBeInTheDocument()
   })
 
   it('selects the first commit when pressing arrow down with no selection', async () => {
@@ -1014,6 +1035,7 @@ describe('CommitTimeline', () => {
     renderWithProviders(<CommitTimeline />)
     await userEvent.dblClick(screen.getByText('origin/feature'))
     expect(screen.getByTestId('checkout-remote-modal')).toHaveTextContent('remotes/origin/feature')
+    await closeDialog('checkout-remote-modal')
   })
 
   it('checks out a tag when double-clicking its ref badge', async () => {
@@ -1063,6 +1085,7 @@ describe('CommitTimeline', () => {
     fireEvent.contextMenu(screen.getByText('feature'))
     await userEvent.click(screen.getByRole('menuitem', { name: /create pull request/i }))
     expect(screen.getByTestId('create-pr-modal')).toHaveTextContent('feature')
+    await closeDialog('create-pr-modal')
   })
 
   it('opens worktree modal from the ref context menu', async () => {
@@ -1072,6 +1095,7 @@ describe('CommitTimeline', () => {
     fireEvent.contextMenu(screen.getByText('feature'))
     await userEvent.click(screen.getByRole('menuitem', { name: /checkout in new worktree/i }))
     expect(screen.getByTestId('add-worktree-modal')).toHaveTextContent('feature')
+    await closeDialog('add-worktree-modal')
   })
 
   it('opens set upstream modal from the ref context menu', async () => {
@@ -1081,6 +1105,7 @@ describe('CommitTimeline', () => {
     fireEvent.contextMenu(screen.getByText('feature'))
     await userEvent.click(screen.getByRole('menuitem', { name: /set upstream/i }))
     expect(screen.getByTestId('set-upstream-modal')).toHaveTextContent('feature')
+    await closeDialog('set-upstream-modal')
   })
 
   it('opens delete branch confirm from the ref context menu', async () => {
@@ -1092,6 +1117,17 @@ describe('CommitTimeline', () => {
     expect(screen.getByRole('dialog')).toHaveTextContent('feature')
     await userEvent.click(screen.getByRole('button', { name: /confirm delete/i }))
     expect(deleteBranchMutate).toHaveBeenCalledWith({ name: 'feature', force: true })
+  })
+
+  it('cancels deleting a branch from the ref context menu', async () => {
+    await setupFeatureBranchTimeline()
+    renderWithProviders(<CommitTimeline />)
+
+    fireEvent.contextMenu(screen.getByText('feature'))
+    await userEvent.click(screen.getByRole('menuitem', { name: /^delete branch/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel confirm' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(deleteBranchMutate).not.toHaveBeenCalled()
   })
 
   it('opens delete remote branch confirm from the remote ref context menu', async () => {
@@ -1153,10 +1189,12 @@ describe('CommitTimeline', () => {
     fireEvent.contextMenu(screen.getAllByText('v2.0.0')[0]!)
     await userEvent.click(screen.getByRole('menuitem', { name: /^rename/i }))
     expect(screen.getByTestId('rename-tag-modal')).toHaveTextContent('v2.0.0')
+    await closeDialog('rename-tag-modal')
 
     fireEvent.contextMenu(screen.getAllByText('v2.0.0')[0]!)
     await userEvent.click(screen.getByRole('menuitem', { name: /^delete tag/i }))
     expect(screen.getByTestId('delete-tag-modal')).toHaveTextContent('v2.0.0')
+    await closeDialog('delete-tag-modal')
   })
 
   it('opens commit modals from the commit context menu', async () => {
@@ -1176,14 +1214,17 @@ describe('CommitTimeline', () => {
 
     await userEvent.click(screen.getByRole('menuitem', { name: /reword/i }))
     expect(screen.getByTestId('reword-commit-modal')).toHaveTextContent('Second commit')
+    await closeDialog('reword-commit-modal')
 
     fireEvent.contextMenu(overlay, { clientY: 242 })
     await userEvent.click(screen.getByRole('menuitem', { name: /add note/i }))
     expect(screen.getByTestId('add-note-modal')).toHaveTextContent('Second commit')
+    await closeDialog('add-note-modal')
 
     fireEvent.contextMenu(overlay, { clientY: 242 })
     await userEvent.click(screen.getByRole('menuitem', { name: /checkout in new worktree/i }))
     expect(screen.getByTestId('add-worktree-modal')).toBeInTheDocument()
+    await closeDialog('add-worktree-modal')
 
     fireEvent.contextMenu(overlay, { clientY: 242 })
     await userEvent.click(screen.getByRole('menuitem', { name: /delete this commit \(soft\)/i }))
@@ -1241,6 +1282,7 @@ describe('CommitTimeline', () => {
     fireEvent.contextMenu(overlay, { clientY: 242 })
     await userEvent.click(screen.getByRole('menuitem', { name: /explain/i }))
     expect(screen.getByTestId('explain-commit-modal')).toBeInTheDocument()
+    await closeDialog('explain-commit-modal')
   })
 
   it('selects stash via keyboard when navigating to a stash commit', async () => {

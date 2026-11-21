@@ -40,7 +40,8 @@ vi.mock('./useGitMutations', () => ({
     cherryPickAbort: { mutateAsync },
     cherryPickSkip: { mutateAsync },
     revertCommit: { mutateAsync },
-    reset: { mutateAsync }
+    reset: { mutateAsync },
+    merge: { mutateAsync }
   })
 }))
 
@@ -494,4 +495,78 @@ describe('useCommitContextMenu', () => {
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(commit.shortHash)
     expect(show).toHaveBeenCalled()
   })
+
+  it('runs every multi-select action on the selected commits', async () => {
+    const older = makeCommit({
+      hash: 'b'.repeat(40),
+      shortHash: 'bbbbbbb',
+      parents: ['c'.repeat(40)]
+    })
+    const newer = makeCommit({ hash: 'a'.repeat(40), shortHash: 'aaaaaaa', parents: [older.hash] })
+    useSelectionStore.setState({ selectedCommitHashes: [older.hash, newer.hash] })
+
+    const { result } = renderHook(
+      () => useCommitContextMenu(true, { ...options, head: newer.hash, commits: [newer, older] }),
+      { wrapper }
+    )
+    act(() => {
+      result.current.openMenu(newer, mouseEvent(1, 2))
+    })
+    const items = result.current.items
+    // Some of these are disabled for this selection; the handlers behind them still
+    // have to be wired correctly, so call each one directly.
+    await act(async () => {
+      for (const id of [
+        'cherry-pick-all',
+        'cherry-pick-all-no-commit',
+        'squash-selected',
+        'interactive-rebase',
+        'drop-selected',
+        'remove-stale-selected'
+      ]) {
+        items.find((item) => item.id === id)!.onClick()
+      }
+    })
+
+    const hashes = expect.arrayContaining([older.hash, newer.hash])
+    expect(mutateAsync).toHaveBeenCalledWith({ hashes })
+    expect(mutateAsync).toHaveBeenCalledWith({ hashes, noCommit: true })
+  })
+
+  it('runs branch actions for a commit that carries another branch', async () => {
+    const feature = makeCommit({
+      hash: 'd'.repeat(40),
+      shortHash: 'ddddddd',
+      parents: [commit.hash],
+      refs: ['feature']
+    })
+    const merged = makeCommit({
+      hash: 'e'.repeat(40),
+      shortHash: 'eeeeeee',
+      parents: [commit.hash, feature.hash]
+    })
+    const { result } = renderHook(
+      () => useCommitContextMenu(true, { ...options, commits: [merged, feature, commit] }),
+      { wrapper }
+    )
+    act(() => {
+      result.current.openMenu(feature, mouseEvent(1, 2))
+    })
+    const branchItems = result.current.items
+    await act(async () => {
+      for (const item of branchItems) {
+        if (!item.separator && /merge|fast-forward/i.test(item.id)) item.onClick()
+      }
+    })
+    expect(branchItems.map((item) => item.id).join(',')).toMatch(/merge|fast-forward/)
+
+    act(() => {
+      result.current.openMenu(merged, mouseEvent(1, 2))
+    })
+    act(() => {
+      result.current.items.find((item) => item.id === 'cherry-pick-no-commit')?.onClick()
+    })
+    expect(result.current.mergeParentPick).not.toBeNull()
+  })
 })
+

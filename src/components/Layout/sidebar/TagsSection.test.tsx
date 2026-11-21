@@ -9,21 +9,28 @@ import { renderWithProviders } from '@/test/render'
 import { createGitFreddoMock } from '@/test/mocks/gitfreddo'
 import { TagsSection } from './TagsSection'
 
+const tagMutations = vi.hoisted(() => ({
+  checkout: { mutateAsync: vi.fn(async () => undefined), isPending: false },
+  pushTag: { mutateAsync: vi.fn(async () => undefined), isPending: false }
+}))
 vi.mock('@/hooks/useGitMutations', () => ({
-  useGitMutations: () => ({
-    checkout: { mutateAsync: vi.fn(async () => undefined), isPending: false },
-    pushTag: { mutateAsync: vi.fn(async () => undefined), isPending: false }
-  })
+  useGitMutations: () => tagMutations
 }))
-vi.mock('@/components/Tags/CreateTagModal', () => ({
-  CreateTagModal: ({ open }: { open: boolean }) => (open ? <div role="dialog">Create tag</div> : null)
-}))
-vi.mock('@/components/Tags/RenameTagModal', () => ({
-  RenameTagModal: ({ open }: { open: boolean }) => (open ? <div role="dialog">Rename tag</div> : null)
-}))
-vi.mock('@/components/Tags/DeleteTagModal', () => ({
-  DeleteTagModal: ({ open }: { open: boolean }) => (open ? <div role="dialog">Delete tag</div> : null)
-}))
+
+function dialogMock(title: string) {
+  return ({ open, onClose }: { open: boolean; onClose: () => void }) =>
+    open ? (
+      <div role="dialog">
+        {title}
+        <button type="button" onClick={onClose}>
+          Close {title}
+        </button>
+      </div>
+    ) : null
+}
+vi.mock('@/components/Tags/CreateTagModal', () => ({ CreateTagModal: dialogMock('Create tag') }))
+vi.mock('@/components/Tags/RenameTagModal', () => ({ RenameTagModal: dialogMock('Rename tag') }))
+vi.mock('@/components/Tags/DeleteTagModal', () => ({ DeleteTagModal: dialogMock('Delete tag') }))
 vi.mock('@tanstack/react-virtual', () => ({
   useVirtualizer: vi.fn(({ count, estimateSize }: { count: number; estimateSize: () => number }) => ({
     getVirtualItems: () =>
@@ -142,4 +149,66 @@ describe('TagsSection', () => {
     expect(screen.getByText('v0.0.0')).toBeInTheDocument()
     expect(screen.getByText('v54.0.0')).toBeInTheDocument()
   })
+
+  describe.each([
+    ['a short list', 1],
+    ['a virtualized list', 55]
+  ])('tag actions in %s', (_label, count) => {
+    it('checks out, pushes, renames and deletes a tag', async () => {
+      tagMutations.checkout.mutateAsync.mockClear()
+      tagMutations.pushTag.mutateAsync.mockClear()
+      const tags = [
+        { name: 'v1.0.0', target: 'abc', isAnnotated: false, isRemote: false },
+        ...Array.from({ length: count - 1 }, (_, index) => ({
+          name: `v0.${index}.0`,
+          target: `${index}`.padStart(40, '0'),
+          isAnnotated: false,
+          isRemote: false
+        }))
+      ]
+      const onSelectCommit = vi.fn()
+      renderWithProviders(
+        <TagsSection
+          tags={tags}
+          remotes={[{ name: 'origin', url: 'https://example.com/repo.git', fetch: '', push: '' }]}
+          filter=""
+          isLoading={false}
+          error={null}
+          onSelectCommit={onSelectCommit}
+        />
+      )
+      const row = () => screen.getByText('v1.0.0')
+      const menu = async (item: RegExp) => {
+        fireEvent.contextMenu(row())
+        await userEvent.click(screen.getByRole('menuitem', { name: item }))
+      }
+
+      await userEvent.click(row())
+      expect(onSelectCommit).toHaveBeenCalledWith('abc')
+      await userEvent.dblClick(row())
+      expect(tagMutations.checkout.mutateAsync).toHaveBeenCalled()
+
+      await menu(/^checkout v1\.0\.0/i)
+      expect(tagMutations.checkout.mutateAsync).toHaveBeenCalledTimes(2)
+      await menu(/^push to/i)
+      expect(tagMutations.pushTag.mutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'v1.0.0' })
+      )
+      await menu(/^rename/i)
+      await userEvent.click(screen.getByRole('button', { name: 'Close Rename tag' }))
+      await menu(/^delete tag/i)
+      await userEvent.click(screen.getByRole('button', { name: 'Close Delete tag' }))
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+  })
+
+  it('closes the create tag dialog', async () => {
+    renderWithProviders(
+      <TagsSection tags={[]} remotes={[]} filter="" isLoading={false} error={null} onSelectCommit={vi.fn()} />
+    )
+    await userEvent.click(screen.getByRole('button', { name: /create tag/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Close Create tag' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
 })
+

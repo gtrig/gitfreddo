@@ -179,7 +179,10 @@ async function readSettingsFile(): Promise<AppSettings | null> {
     return null
   }
   try {
-    const parsed = { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } as AppSettings
+    const stored = JSON.parse(raw) as Partial<AppSettings> & { pullRebase?: boolean }
+    // Pick the pull mode before defaults fill it in, or a legacy `pullRebase` is lost.
+    const pullMode = resolvePullMode({ ...stored } as AppSettings & { pullRebase?: boolean })
+    const parsed = { ...DEFAULT_SETTINGS, ...stored, pullMode } as AppSettings
     return normalizeSettings(parsed)
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)

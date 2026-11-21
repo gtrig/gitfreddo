@@ -207,4 +207,43 @@ describe('RepoHooksPanel', () => {
 
     expect(window.gitfreddo.invoke).not.toHaveBeenCalledWith('hooks.delete', expect.anything(), '/tmp/repo')
   })
+
+  it('reports failures for every hook action and switches between hooks', async () => {
+    vi.mocked(window.gitfreddo.invoke).mockImplementation(async (method: string, params) => {
+      if (method === 'hooks.list') {
+        return {
+          hooks: [
+            { name: 'pre-commit', filename: 'pre-commit', enabled: true, executable: true },
+            { name: 'pre-push', filename: 'pre-push.disabled', enabled: false, executable: false }
+          ],
+          hooksDir: '/tmp/repo/.git/hooks',
+          alternateHooksDir: '/tmp/repo/.githooks',
+          alternateHooksPath: '.githooks'
+        }
+      }
+      if (method === 'hooks.read') return `#!/bin/sh\n# ${(params as { name: string }).name}\n`
+      throw new Error(`${method} failed`)
+    })
+
+    renderWithProviders(<RepoHooksPanel />)
+    const textarea = await screen.findByRole('textbox')
+    await userEvent.type(textarea, '\necho edit')
+    await userEvent.click(screen.getByRole('button', { name: /save pre-commit/i }))
+    await vi.waitFor(() => expect(showToast).toHaveBeenCalledWith('hooks.write failed', 'error'))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Disable' }))
+    await vi.waitFor(() => expect(showToast).toHaveBeenCalledWith('hooks.disable failed', 'error'))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Use .githooks' }))
+    await vi.waitFor(() => expect(showToast).toHaveBeenCalledWith('config.set failed', 'error'))
+
+    await userEvent.click(screen.getByRole('button', { name: /delete/i }))
+    await vi.waitFor(() => expect(showToast).toHaveBeenCalledWith('hooks.delete failed', 'error'))
+
+    await userEvent.click(screen.getByRole('button', { name: /pre-push/ }))
+    expect(await screen.findByDisplayValue(/# pre-push/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Enable' }))
+    await vi.waitFor(() => expect(showToast).toHaveBeenCalledWith('hooks.enable failed', 'error'))
+  })
 })
+

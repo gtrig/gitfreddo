@@ -49,71 +49,40 @@ export interface DiffStats {
   deletions: number
 }
 
+/**
+ * Context-free unified diff of two texts, one hunk per run of changes.
+ * Built from the LCS edit script, so a replaced line is always reported.
+ */
 export function buildUnifiedDiff(oldText: string, newText: string, path: string): string {
-  const oldLines = splitLines(oldText)
-  const newLines = splitLines(newText)
+  const ops = computeLineEditScript(splitLines(oldText), splitLines(newText))
+  const lines = [`--- a/${path}`, `+++ b/${path}`]
 
-  const lines: string[] = []
-  lines.push(`--- a/${path}`)
-  lines.push(`+++ b/${path}`)
-
-  let i = 0
-  let j = 0
-  while (i < oldLines.length || j < newLines.length) {
-    if (i < oldLines.length && j < newLines.length && oldLines[i] === newLines[j]) {
-      i++
-      j++
+  let oldLine = 0
+  let newLine = 0
+  let index = 0
+  while (index < ops.length) {
+    if (ops[index]!.type === 'equal') {
+      oldLine += 1
+      newLine += 1
+      index += 1
       continue
     }
-
-    const oldStart = i
-    const newStart = j
-
-    while (i < oldLines.length && (j >= newLines.length || oldLines[i] !== newLines[j])) {
-      let matched = false
-      const peek = i + 1
-      for (let k = j; k < newLines.length && k < j + 5; k++) {
-        if (peek < oldLines.length && oldLines[peek] === newLines[k]) {
-          matched = true
-          break
-        }
-      }
-      if (matched) {
-        break
-      }
-      i++
+    const removed: string[] = []
+    const added: string[] = []
+    while (index < ops.length && ops[index]!.type !== 'equal') {
+      const op = ops[index]!
+      if (op.type === 'delete') removed.push(op.line)
+      else added.push(op.line)
+      index += 1
     }
-
-    while (j < newLines.length && (i >= oldLines.length || oldLines[i] !== newLines[j])) {
-      let matched = false
-      const peek = j + 1
-      for (let k = i; k < oldLines.length && k < i + 5; k++) {
-        if (peek < newLines.length && newLines[peek] === oldLines[k]) {
-          matched = true
-          break
-        }
-      }
-      if (matched) {
-        break
-      }
-      j++
-    }
-
-    const oldCount = i - oldStart
-    const newCount = j - newStart
-    if (oldCount === 0 && newCount === 0) {
-      break
-    }
-
-    lines.push(
-      `@@ -${oldStart + 1},${Math.max(oldCount, 1)} +${newStart + 1},${Math.max(newCount, 1)} @@`
-    )
-    for (let k = oldStart; k < i; k++) {
-      lines.push(`-${oldLines[k]}`)
-    }
-    for (let k = newStart; k < j; k++) {
-      lines.push(`+${newLines[k]}`)
-    }
+    // A side with no lines points at the line before the change.
+    const oldStart = removed.length > 0 ? oldLine + 1 : oldLine
+    const newStart = added.length > 0 ? newLine + 1 : newLine
+    lines.push(`@@ -${oldStart},${removed.length} +${newStart},${added.length} @@`)
+    for (const line of removed) lines.push(`-${line}`)
+    for (const line of added) lines.push(`+${line}`)
+    oldLine += removed.length
+    newLine += added.length
   }
 
   return lines.join('\n')

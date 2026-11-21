@@ -98,4 +98,55 @@ describe('WorkspaceTabs', () => {
       '/repos/alpha'
     ])
   })
+
+  const dataTransfer = (data = '') => ({
+    setData: vi.fn(),
+    getData: () => data,
+    effectAllowed: 'move',
+    dropEffect: 'move'
+  })
+
+  it('shows a toast when closing a tab fails', async () => {
+    const show = vi.fn()
+    useToastStore.setState({ message: null, tone: 'info', show, clear: vi.fn() })
+    useWorkspaceStore.setState({
+      closeWorkspace: vi.fn(async () => {
+        throw new Error('close failed')
+      })
+    })
+    renderWithProviders(<WorkspaceTabs />)
+    fireEvent.click(screen.getAllByRole('button', { name: /close/i })[0]!)
+    await waitFor(() => expect(show).toHaveBeenCalledWith('close failed', 'error'))
+  })
+
+  it('does not start a drag when there is only one tab', () => {
+    useWorkspaceStore.setState({ tabs: [tab('/repos/solo')], activePath: '/repos/solo' })
+    renderWithProviders(<WorkspaceTabs />)
+    const solo = screen.getByRole('button', { name: 'solo' })
+    const transfer = dataTransfer()
+    fireEvent.dragStart(solo, { dataTransfer: transfer })
+    expect(transfer.setData).not.toHaveBeenCalled()
+  })
+
+  it('clears the drop target on drag leave and drag end, and ignores drops on itself', () => {
+    renderWithProviders(<WorkspaceTabs />)
+    const alpha = screen.getByRole('button', { name: 'alpha' })
+    const gamma = screen.getByRole('button', { name: 'gamma' })
+
+    fireEvent.dragStart(alpha, { dataTransfer: dataTransfer('/repos/alpha') })
+    fireEvent.dragOver(alpha, { dataTransfer: dataTransfer('/repos/alpha') })
+    fireEvent.dragOver(gamma, { dataTransfer: dataTransfer('/repos/alpha') })
+    fireEvent.dragOver(gamma, { dataTransfer: dataTransfer('/repos/alpha') })
+    fireEvent.dragLeave(gamma)
+    fireEvent.dragEnd(alpha)
+
+    fireEvent.dragStart(alpha, { dataTransfer: dataTransfer('/repos/alpha') })
+    fireEvent.drop(alpha, { dataTransfer: dataTransfer('/repos/alpha') })
+    expect(useWorkspaceStore.getState().tabs.map((item) => item.path)).toEqual([
+      '/repos/alpha',
+      '/repos/beta',
+      '/repos/gamma'
+    ])
+  })
 })
+

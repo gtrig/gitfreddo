@@ -10,6 +10,7 @@ import { renderWithProviders } from '@/test/render'
 import { createGitFreddoMock } from '@/test/mocks/gitfreddo'
 import { useForgeContext } from '@/hooks/useForgeContext'
 import { useGitHubIssues } from '@/hooks/useGitHubIssues'
+import { useGitlabIssues } from '@/hooks/useGitlabIssues'
 import { useBitbucketIssues } from '@/hooks/useBitbucketIssues'
 import { useToastStore } from '@/stores/toast'
 
@@ -54,12 +55,74 @@ vi.mock('@/hooks/useGitMutations', () => ({
   })
 }))
 vi.mock('@/components/GitHub/EditIssueModal', () => ({
-  EditIssueModal: ({ open }: { open: boolean }) =>
-    open ? <div role="dialog">Edit issue</div> : null
+  EditIssueModal: ({
+    open,
+    onClose,
+    onUpdated
+  }: {
+    open: boolean
+    onClose: () => void
+    onUpdated: () => void
+  }) =>
+    open ? (
+      <div role="dialog">
+        Edit issue
+        <button type="button" onClick={onUpdated}>
+          Save issue
+        </button>
+        <button type="button" onClick={onClose}>
+          Close edit
+        </button>
+      </div>
+    ) : null
 }))
 vi.mock('@/components/Bitbucket/EditIssueModal', () => ({
-  EditIssueModal: ({ open }: { open: boolean }) =>
-    open ? <div role="dialog">Edit issue</div> : null
+  EditIssueModal: ({
+    open,
+    onClose,
+    onUpdated
+  }: {
+    open: boolean
+    onClose: () => void
+    onUpdated: () => void
+  }) =>
+    open ? (
+      <div role="dialog">
+        Edit issue
+        <button type="button" onClick={onUpdated}>
+          Save issue
+        </button>
+        <button type="button" onClick={onClose}>
+          Close edit
+        </button>
+      </div>
+    ) : null
+}))
+vi.mock('@/components/GitLab/EditIssueModal', () => ({
+  EditIssueModal: ({
+    open,
+    onClose,
+    onUpdated
+  }: {
+    open: boolean
+    onClose: () => void
+    onUpdated: () => void
+  }) =>
+    open ? (
+      <div role="dialog">
+        Edit issue
+        <button type="button" onClick={onUpdated}>
+          Save issue
+        </button>
+        <button type="button" onClick={onClose}>
+          Close edit
+        </button>
+      </div>
+    ) : null
+}))
+vi.mock('@/hooks/useGitlabIssues', () => ({
+  useGitlabIssues: vi.fn(() => ({ data: [], isLoading: false, error: null })),
+  useInvalidateGitlabIssues: vi.fn(() => vi.fn())
 }))
 
 vi.mock('@tanstack/react-virtual', () => ({
@@ -405,4 +468,114 @@ describe('SidebarIssuesSection', () => {
     expect(screen.getByText(/#1 Issue 1/)).toBeInTheDocument()
     expect(screen.getByText(/#55 Issue 55/)).toBeInTheDocument()
   })
+
+  const issue = (number: number, title: string, state = 'open') => ({
+    number,
+    title,
+    state,
+    htmlUrl: `https://gitlab.com/t/r/-/issues/${number}`,
+    user: 'test',
+    body: '',
+    labels: []
+  })
+
+  it('creates, closes, reopens and edits GitLab issues', async () => {
+    vi.mocked(useForgeContext).mockReturnValue({
+      provider: 'gitlab',
+      expectedProvider: 'gitlab',
+      connected: true,
+      login: 'testuser'
+    } as ReturnType<typeof useForgeContext>)
+    vi.mocked(useGitlabIssues).mockReturnValue({
+      data: [issue(5, 'GitLab bug'), issue(6, 'Old bug', 'closed')],
+      isLoading: false,
+      error: null
+    } as unknown as ReturnType<typeof useGitlabIssues>)
+    window.gitfreddo = createGitFreddoMock({
+      gitlabCreateIssue: vi.fn(async () => issue(7, 'New')),
+      gitlabUpdateIssue: vi.fn(async () => issue(5, 'GitLab bug', 'closed'))
+    })
+
+    renderWithProviders(<SidebarIssuesSection />)
+    await userEvent.click(screen.getByRole('button', { name: /create issue/i }))
+    const [titleBox, bodyBox] = screen.getAllByRole('textbox')
+    await userEvent.type(titleBox!, '  New  ')
+    await userEvent.type(bodyBox!, 'Details')
+    await userEvent.click(screen.getByRole('button', { name: /^create$/i }))
+    await vi.waitFor(() =>
+      expect(window.gitfreddo.gitlabCreateIssue).toHaveBeenCalledWith('/tmp/repo', {
+        title: 'New',
+        body: 'Details'
+      })
+    )
+
+    await expandSection()
+    fireEvent.contextMenu(screen.getByText(/#5 GitLab bug/))
+    await userEvent.click(screen.getByRole('menuitem', { name: /close issue/i }))
+    expect(window.gitfreddo.gitlabUpdateIssue).toHaveBeenCalledWith('/tmp/repo', 5, { state: 'closed' })
+    await vi.waitFor(() => expect(showToast).toHaveBeenCalledWith(expect.any(String), 'success'))
+
+    fireEvent.contextMenu(screen.getByText(/#6 Old bug/))
+    await userEvent.click(screen.getByRole('menuitem', { name: /reopen issue/i }))
+    expect(window.gitfreddo.gitlabUpdateIssue).toHaveBeenCalledWith('/tmp/repo', 6, { state: 'open' })
+
+    fireEvent.contextMenu(screen.getByText(/#5 GitLab bug/))
+    await userEvent.click(screen.getByRole('menuitem', { name: /edit issue/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Save issue' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Close edit' }))
+    expect(screen.queryByText('Edit issue')).not.toBeInTheDocument()
+  })
+
+  it('saves and closes the edit dialog for GitHub and Bitbucket issues', async () => {
+    renderWithProviders(<SidebarIssuesSection />)
+    await expandSection()
+    fireEvent.contextMenu(screen.getByText(/#1 Fix bug/))
+    await userEvent.click(screen.getByRole('menuitem', { name: /edit issue/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Save issue' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Close edit' }))
+    expect(screen.queryByText('Edit issue')).not.toBeInTheDocument()
+    cleanup()
+    localStorage.clear()
+
+    vi.mocked(useForgeContext).mockReturnValue({
+      provider: 'bitbucket',
+      expectedProvider: 'bitbucket',
+      connected: true,
+      login: 'testuser'
+    } as ReturnType<typeof useForgeContext>)
+    vi.mocked(useBitbucketIssues).mockReturnValue({
+      data: [issue(8, 'BB bug')],
+      isLoading: false,
+      error: null
+    } as unknown as ReturnType<typeof useBitbucketIssues>)
+    renderWithProviders(<SidebarIssuesSection />)
+    await expandSection()
+    fireEvent.contextMenu(screen.getByText(/#8 BB bug/))
+    await userEvent.click(screen.getByRole('menuitem', { name: /edit issue/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Save issue' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Close edit' }))
+    expect(screen.queryByText('Edit issue')).not.toBeInTheDocument()
+  })
+
+  it('opens, branches from and closes issues in a virtualized list', async () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+    vi.mocked(useGitHubIssues).mockReturnValue({
+      data: Array.from({ length: 55 }, (_, index) => issue(index + 1, `Issue ${index + 1}`)),
+      isLoading: false,
+      error: null
+    } as unknown as ReturnType<typeof useGitHubIssues>)
+    renderWithProviders(<SidebarIssuesSection />)
+    await expandSection()
+
+    await userEvent.click(screen.getByText(/#2 Issue 2$/))
+    expect(openSpy).toHaveBeenCalledWith(expect.stringContaining('/issues/2'), '_blank', 'noopener,noreferrer')
+    fireEvent.contextMenu(screen.getByText(/#2 Issue 2$/))
+    await userEvent.click(screen.getByRole('menuitem', { name: /branch from issue/i }))
+    expect(createBranchMutate).toHaveBeenCalledWith({ name: 'issue-2-issue-2' })
+    fireEvent.contextMenu(screen.getByText(/#2 Issue 2$/))
+    await userEvent.click(screen.getByRole('menuitem', { name: /close issue/i }))
+    expect(window.gitfreddo.githubUpdateIssue).toHaveBeenCalledWith('/tmp/repo', 2, { state: 'closed' })
+    openSpy.mockRestore()
+  })
 })
+

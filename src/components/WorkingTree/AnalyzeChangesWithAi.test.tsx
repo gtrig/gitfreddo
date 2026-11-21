@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { cleanup, screen, waitFor } from '@testing-library/react'
+import { cleanup, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AnalyzeChangesWithAi } from './AnalyzeChangesWithAi'
 import { useWorkspaceStore } from '@/stores/workspace'
@@ -292,4 +292,96 @@ describe('AnalyzeChangesWithAi', () => {
       expect(aiFill).toHaveBeenCalledWith(expect.objectContaining({ purpose: 'analyze_changes' }), '/tmp/repo')
     })
   })
+
+  it('edits descriptions, toggles commits and feature groups, and refines with Enter', async () => {
+    const user = await openAnalysisModal()
+    const description = screen.getAllByPlaceholderText('Optional description')[0]!
+    await user.clear(description)
+    await user.type(description, 'Rewritten')
+    expect(description).toHaveValue('Rewritten')
+
+    const checkboxes = screen.getAllByRole('checkbox', { name: /include this commit/i })
+    await user.click(checkboxes[0]!)
+    expect(checkboxes[0]).not.toBeChecked()
+    await user.click(checkboxes[0]!)
+    expect(checkboxes[0]).toBeChecked()
+
+    await user.click(screen.getByRole('button', { name: 'Toggle Feature A (1 commit)' }))
+    expect(screen.getAllByRole('checkbox', { name: /include this commit/i })[0]).not.toBeChecked()
+
+    await user.type(screen.getByLabelText('Merge the selected commits into one…'), 'Merge them{Enter}')
+    expect(await screen.findByText('Merged commits 1 and 2 into one commit.')).toBeInTheDocument()
+  })
+
+  it('restores the chat input and reports an error when refining fails', async () => {
+    const showToast = vi.fn()
+    useToastStore.setState({ message: null, tone: 'info', show: showToast, clear: vi.fn() })
+    const user = await openAnalysisModal()
+    vi.mocked(window.gitfreddo.aiFill!).mockRejectedValueOnce(new Error('refine failed'))
+
+    const chat = screen.getByLabelText('Merge the selected commits into one…')
+    await user.type(chat, 'Merge them{Enter}')
+    await waitFor(() => expect(showToast).toHaveBeenCalledWith('refine failed', 'error'))
+    expect(chat).toHaveValue('Merge them')
+  })
+
+  it('undoes commits already created when a later commit fails', async () => {
+    const showToast = vi.fn()
+    useToastStore.setState({ message: null, tone: 'info', show: showToast, clear: vi.fn() })
+    let commits = 0
+    vi.mocked(window.gitfreddo.invoke).mockImplementation(async (method: string) => {
+      if (method === 'commit.create' && ++commits === 2) throw new Error('hook rejected')
+      return undefined
+    })
+    const user = await openAnalysisModal()
+    await user.click(screen.getByRole('button', { name: /create 2 commits/i }))
+
+    await waitFor(() => expect(showToast).toHaveBeenCalledWith('hook rejected', 'error'))
+    expect(window.gitfreddo.invoke).toHaveBeenCalledWith('undo.last', {}, '/tmp/repo')
+  })
+
+  it('explains how to recover when undoing the created commits also fails', async () => {
+    const showToast = vi.fn()
+    useToastStore.setState({ message: null, tone: 'info', show: showToast, clear: vi.fn() })
+    let commits = 0
+    vi.mocked(window.gitfreddo.invoke).mockImplementation(async (method: string) => {
+      if (method === 'commit.create' && ++commits === 2) throw new Error('hook rejected')
+      if (method === 'undo.last') throw new Error('reflog busy')
+      return undefined
+    })
+    const user = await openAnalysisModal()
+    await user.click(screen.getByRole('button', { name: /create 2 commits/i }))
+
+    await waitFor(() =>
+      expect(showToast).toHaveBeenCalledWith(expect.stringContaining('git reset --soft HEAD~1'), 'error')
+    )
+  })
+
+  it('reports a failure before any commit was created without undoing', async () => {
+    const showToast = vi.fn()
+    useToastStore.setState({ message: null, tone: 'info', show: showToast, clear: vi.fn() })
+    vi.mocked(window.gitfreddo.invoke).mockImplementation(async (method: string) => {
+      if (method === 'stage.reset') throw new Error('index locked')
+      return undefined
+    })
+    const user = await openAnalysisModal()
+    await user.click(screen.getByRole('button', { name: /create 2 commits/i }))
+
+    await waitFor(() => expect(showToast).toHaveBeenCalledWith('index locked', 'error'))
+    expect(window.gitfreddo.invoke).not.toHaveBeenCalledWith('undo.last', expect.anything(), expect.anything())
+  })
+
+  it('closes from Cancel, and from Close while an analysis is still running', async () => {
+    const user = await openAnalysisModal()
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    vi.mocked(window.gitfreddo.aiFill!).mockImplementationOnce(() => new Promise<string>(() => {}))
+    await user.click(screen.getByRole('button', { name: /^analyze$/i }))
+    const dialog = await screen.findByRole('dialog')
+    const closeButtons = within(dialog).getAllByRole('button', { name: 'Close' })
+    await user.click(closeButtons[closeButtons.length - 1]!)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
 })
+
